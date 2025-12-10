@@ -1,0 +1,35 @@
+{
+  "name": "cyrus-code",
+  "version": "0.1.0",
+  "description": "Hardware-inspired software component architecture tool",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test",
+    "lint": "eslint src",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "component",
+    "architecture",
+    "symbol-table",
+    "code-generation",
+    "composition"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "ts-morph": "^24.0.0",
+    "zod": "^3.24.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
