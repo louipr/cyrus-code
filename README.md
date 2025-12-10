@@ -60,11 +60,13 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Documentation
 
+- **[Research Foundation](docs/research-foundation.md)** - Why this approach, research findings, gap analysis
 - [ADR-001: Symbol Table Architecture](docs/adr/001-symbol-table-architecture.md)
 - [ADR-002: Multi-Level Abstraction](docs/adr/002-multi-level-abstraction.md)
 - [ADR-003: Interface Definition System](docs/adr/003-interface-definition-system.md)
 - [C4 Context Diagram](docs/c4/context.md)
 - [C4 Container Diagram](docs/c4/container.md)
+- [Symbol Table Schema](docs/spec/symbol-table-schema.md)
 
 ## Quick Start
 
