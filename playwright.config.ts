@@ -15,7 +15,7 @@ export default defineConfig({
   timeout: 30000,
   retries: 0,
   workers: 1, // Critical: Electron requires serial execution
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [['html', { outputFolder: '/tmp/cyrus-code-report', open: 'never' }], ['list']],
   use: {
     trace: 'on-first-retry',
   },
