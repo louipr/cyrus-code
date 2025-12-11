@@ -53,25 +53,25 @@ C4Dynamic
     Person(developer, "Developer", "Validates wiring")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(linker, "Linker", "TypeScript", "Connection validation")
+    Container(wiring, "Wiring", "TypeScript", "Connection validation")
     Container(interfaceValidator, "Interface Validator", "Zod", "Type checking")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Symbol lookup")
 
     Rel(developer, cli, "1. cyrus-code validate")
-    Rel(cli, linker, "2. Get all connections")
-    Rel(linker, symbolTable, "3. Resolve source/target symbols")
-    Rel(linker, interfaceValidator, "4. Validate each connection")
+    Rel(cli, wiring, "2. Get all connections")
+    Rel(wiring, symbolTable, "3. Resolve source/target symbols")
+    Rel(wiring, interfaceValidator, "4. Validate each connection")
     Rel(interfaceValidator, symbolTable, "5. Lookup port types")
-    Rel(interfaceValidator, linker, "6. Return type compatibility result")
-    Rel(linker, cli, "7. Return validation result")
+    Rel(interfaceValidator, wiring, "6. Return type compatibility result")
+    Rel(wiring, cli, "7. Return validation result")
     Rel(cli, developer, "8. Display errors/warnings")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code validate`
-2. CLI invokes Linker to check all connections
-3. Linker resolves each connection's source and target symbols
+2. CLI invokes Wiring to check all connections
+3. Wiring resolves each connection's source and target symbols
 4. Interface Validator checks port type compatibility
 5. Symbol Table provides type definitions for comparison
 6. Validation results aggregated (errors, warnings)
@@ -90,14 +90,14 @@ C4Dynamic
     Person(developer, "Developer", "Generates code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(linker, "Linker", "TypeScript", "Validates first")
+    Container(wiring, "Wiring", "TypeScript", "Validates first")
     Container(codeSynthesizer, "Code Synthesizer", "ts-morph", "AST generation")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Component graph")
     System_Ext(fileSystem, "File System", "Output directory")
 
     Rel(developer, cli, "1. cyrus-code generate ./out")
-    Rel(cli, linker, "2. Validate connections")
-    Rel(linker, cli, "3. Validation passed")
+    Rel(cli, wiring, "2. Validate connections")
+    Rel(wiring, cli, "3. Validation passed")
     Rel(cli, codeSynthesizer, "4. Generate from graph")
     Rel(codeSynthesizer, symbolTable, "5. Read component graph")
     Rel(codeSynthesizer, codeSynthesizer, "6. Build AST")
@@ -108,7 +108,7 @@ C4Dynamic
 ### Steps
 
 1. Developer runs `cyrus-code generate ./out`
-2. CLI first validates all connections via Linker
+2. CLI first validates all connections via Wiring
 3. If validation passes, proceed to generation
 4. Code Synthesizer reads the full component graph
 5. AST is built for each component with connections wired

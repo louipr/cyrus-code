@@ -21,7 +21,7 @@ C4Container
         Container(symbolTable, "Symbol Table", "SQLite + TypeScript", "Persistent registry of all components with versions")
         Container(componentRegistry, "Component Registry", "TypeScript", "Component discovery, loading, version resolution")
         Container(interfaceValidator, "Interface Validator", "TypeScript + Zod", "Type checking and port compatibility validation")
-        Container(linker, "Linker", "TypeScript", "Connection validation and dependency graph resolution")
+        Container(wiring, "Wiring", "TypeScript", "Connection validation and dependency graph resolution")
         Container(codeSynthesizer, "Code Synthesizer", "ts-morph", "AST-based code generation from component graph")
 
         Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Build-time call graph analysis for dead code detection")
@@ -45,17 +45,17 @@ C4Container
     Rel(aiAgent, cli, "API calls")
 
     Rel(cli, symbolTable, "Creates, reads, updates, deletes symbols")
-    Rel(cli, linker, "Validates connections")
+    Rel(cli, wiring, "Validates connections")
     Rel(cli, codeSynthesizer, "Generates code")
     Rel(visualEditor, symbolTable, "Queries components")
-    Rel(visualEditor, linker, "Validates wiring")
+    Rel(visualEditor, wiring, "Validates wiring")
     Rel(languageServer, symbolTable, "Provides completions and diagnostics")
 
     Rel(symbolTable, symbolDb, "Persists symbols")
     Rel(componentRegistry, componentStore, "Loads components")
     Rel(componentRegistry, packageRegistry, "Resolves versions")
     Rel(interfaceValidator, symbolTable, "Looks up types")
-    Rel(linker, interfaceValidator, "Validates port connections")
+    Rel(wiring, interfaceValidator, "Validates port connections")
     Rel(codeSynthesizer, symbolTable, "Reads component graph")
     Rel(codeSynthesizer, fileSystem, "Writes generated code")
 
@@ -108,7 +108,7 @@ C4Container
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution |
 | **Interface Validator** | TypeScript + Zod | Port type checking and compatibility |
-| **Linker** | TypeScript | Connection graph validation |
+| **Wiring** | TypeScript | Connection graph validation |
 | **Code Synthesizer** | ts-morph | AST-based code generation |
 
 ### Analysis Services (ADR-005, ADR-006)
@@ -151,14 +151,14 @@ Source File → Parser → Symbol Table → Symbol Database
 ### Validation Flow
 
 ```
-Connection Config → Linker → Interface Validator → Symbol Table → Result
+Connection Config → Wiring → Interface Validator → Symbol Table → Result
                       ↓              ↓
                   [Error]        [Error]
               Missing symbol   Type mismatch
 ```
 
 1. Configuration defines connections
-2. Linker collects all connections
+2. Wiring collects all connections
    - **Error**: Missing symbol → Reports unresolved reference
 3. Interface Validator checks each connection
    - **Error**: Type mismatch → Reports incompatible port types

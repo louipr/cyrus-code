@@ -656,7 +656,7 @@ Add new containers to the architecture:
 │  • Symbol Table               │  • Spec Manager                 │
 │  • Component Registry         │  • Test Generator               │
 │  • Interface Validator        │  • Impact Analyzer              │
-│  • Linker                     │  • Release Manager              │
+│  • Wiring                     │  • Release Manager              │
 │  • Code Synthesizer           │  • Migration Engine             │
 │  • Static Analyzer            │  • Feedback Collector           │
 │  • Runtime Tracer             │  • Requirement Tracer           │

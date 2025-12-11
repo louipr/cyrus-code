@@ -33,7 +33,7 @@ Borrow from digital design (ASIC/FPGA):
 **Symbol-table tracking at multiple abstraction levels** enables:
 
 1. **Deterministic composition** - Same inputs → same outputs
-2. **AI-assisted configuration** - Agents query registry, not hallucinate code
+2. **AI-assisted configuration** - Agents query symbol table, not hallucinate code
 3. **Compile-time verification** - Catch interface mismatches before runtime
 4. **Version-aware dependencies** - SemVer compatibility enforcement
 
@@ -49,12 +49,13 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Status
 
-**Phase: Slice 1 Complete**
+**Phase: Slice 2 In Progress**
 
 ### Completed
 - [x] Architecture: 9 ADRs, C4 diagrams, symbol table schema
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
-- [x] 72 unit tests + 4 E2E tests passing
+- [x] Slice 2 Backend: Validator Service, Wiring Service
+- [x] 123 unit tests + 4 E2E tests passing
 - [x] Electron desktop app with React frontend
 
 ### Implementation Approach: Vertical Slices
@@ -64,7 +65,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Linker, Validator | Canvas, Validation | Not Started |
+| 2: Wiring | Wiring, Validator | Canvas, Validation | 🔄 Backend Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | Not Started |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |
@@ -107,7 +108,7 @@ npm install
 npm run build:all
 
 # Run tests
-npm test           # 72 unit tests
+npm test           # 123 unit tests
 npm run test:e2e   # 4 E2E tests
 
 # Launch desktop app

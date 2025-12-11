@@ -197,7 +197,7 @@ authSubsystem.addChild(rbacModule);   // L2
 class CyrusCodeFacade {
   constructor(
     private symbolTable: SymbolTable,
-    private linker: Linker,
+    private wiring: WiringService,
     private synthesizer: CodeSynthesizer,
     private analyzer: StaticAnalyzer,
   ) {}
@@ -208,7 +208,7 @@ class CyrusCodeFacade {
   }
 
   async generate(outputDir: string): Promise<void> {
-    const validationResult = await this.linker.validate();
+    const validationResult = await this.wiring.validate();
     if (!validationResult.valid) throw new ValidationError(validationResult);
 
     const graph = await this.symbolTable.getGraph();
@@ -552,7 +552,7 @@ class DeadCodeMonitor implements StatusObserver {
 
 ### Mediator
 
-**Where**: Linker (component connection coordination)
+**Where**: Wiring (component connection coordination)
 
 **Why**: Centralizes complex communication between components.
 
@@ -563,7 +563,7 @@ interface ConnectionMediator {
   notifyChange(symbolId: string): void;
 }
 
-class Linker implements ConnectionMediator {
+class WiringService implements ConnectionMediator {
   constructor(
     private symbolTable: SymbolTable,
     private validator: InterfaceValidator,

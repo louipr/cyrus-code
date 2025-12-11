@@ -155,7 +155,7 @@ interface SymbolTable {
 
 ### Positive
 
-- **Deterministic queries**: AI agents query registry instead of hallucinating
+- **Deterministic queries**: AI agents query symbol table instead of hallucinating
 - **Version tracking**: SemVer compatibility enforced
 - **Change detection**: Content hashing detects modifications
 - **Cross-level tracing**: L4 interface → L0 types fully tracked

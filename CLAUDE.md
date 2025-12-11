@@ -49,7 +49,7 @@ Inspired by HDL signals:
 - **Ports**: Named, typed connection points
 - **Direction**: `in`, `out`, `inout`
 - **Schema**: Zod/TypeScript types for validation
-- **Linking**: Compile-time verification of connections
+- **Wiring**: Compile-time verification of connections
 
 ## Feature Overview
 
@@ -75,20 +75,24 @@ Inspired by HDL signals:
 
 ## Terminology
 
-| Term | Definition |
-|------|------------|
-| **Symbol** | A tracked entity in the symbol table (component, type, module) |
-| **Port** | A typed connection point on a component |
-| **Signal** | Data flowing between ports |
-| **Linking** | Connecting component ports and validating compatibility |
-| **Synthesis** | Generating source code from component graph |
-| **Status** | Usage state: declared → referenced → tested → executed |
-| **Generation Gap** | Pattern: generated base class + manual subclass |
-| **Backend** | Language-specific code generator (TypeScript, Python, etc.) |
-| **Import** | Adding untracked manual code to the symbol table |
-| **Composition** | Versioned snapshot of a complete system (all components + connections) |
-| **Impact Analysis** | Determining what breaks when a component changes |
-| **Contract Test** | Test auto-generated from port type definitions |
+| Term | Definition | Note |
+|------|------------|------|
+| **Symbol Table** | Persistent database tracking all components | Expanded from compiler term; persistent, not ephemeral |
+| **Symbol** | A tracked entity in the symbol table (component, type, module) | |
+| **Port** | A typed connection point on a component | HDL-inspired, not network ports |
+| **Signal** | Data flowing between ports | HDL-inspired, not Unix signals |
+| **Wiring** | Connecting component ports and validating compatibility | Avoids "linking" (compiler term) |
+| **Synthesis** | Generating source code from component graph | HDL-inspired (like RTL synthesis) |
+| **Status** | Usage state: declared → referenced → tested → executed | |
+| **Generation Gap** | Pattern: generated base class + manual subclass | |
+| **Backend** | Language-specific code generator (TypeScript, Python, etc.) | Like compiler backend, not web backend |
+| **Import** | Adding untracked manual code to the symbol table | |
+| **Composition** | Versioned snapshot of a complete system (all components + connections) | |
+| **Impact Analysis** | Determining what breaks when a component changes | |
+| **Contract Test** | Test auto-generated from port type definitions | |
+| **Container** | C4 Model deployable unit | C4 terminology, not Docker containers |
+
+> **Terminology Note**: cyrus-code uses hardware-inspired terminology (ports, signals, wiring, synthesis) deliberately borrowed from HDL/ASIC design. "Symbol Table" is used in an expanded sense compared to compiler theory—it's a persistent component registry, not an ephemeral compilation artifact. When in doubt, prefer "symbol table" over "registry" to avoid confusion with runtime service discovery patterns.
 
 ## Commands
 

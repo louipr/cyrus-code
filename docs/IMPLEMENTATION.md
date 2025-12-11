@@ -47,9 +47,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 72 | `src/**/*.test.ts` |
+| Unit tests | 123 | `src/**/*.test.ts` |
 | E2E tests | 4 | `tests/e2e/*.spec.ts` |
-| **Total** | **76** | |
+| **Total** | **127** | |
 
 ---
 
@@ -58,7 +58,7 @@ npm run electron:dev   # Dev mode with hot reload
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Linker, Validator | Canvas, Validation | ⏳ Not Started |
+| 2: Wiring | Wiring, Validator | Canvas, Validation | 🔄 In Progress |
 | 3: Generation | Code Synthesizer | Preview, Export | ⏳ Not Started |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ⏳ Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
@@ -121,15 +121,16 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 2.1 | Implement Interface Validator | `src/validator/index.ts` | ⏳ |
-| 2.2 | Implement Zod schema adapter | `src/validator/zod-adapter.ts` | ⏳ |
-| 2.3 | Implement Linker | `src/linker/index.ts` | ⏳ |
-| 2.4 | Implement Connection Manager | `src/linker/connections.ts` | ⏳ |
-| 2.5 | Port compatibility checking | `src/validator/compatibility.ts` | ⏳ |
-| 2.6 | Dependency graph builder | `src/linker/graph.ts` | ⏳ |
-| 2.7 | Extend API Facade | `src/api/facade.ts` | ⏳ |
-| 2.8 | CLI: validate, connect | `src/cli/validate.ts` | ⏳ |
-| 2.9 | Unit tests for Linker | `src/linker/*.test.ts` | ⏳ |
+| 2.1 | Implement Interface Validator | `src/services/validator/index.ts` | ✅ |
+| 2.2 | Validator schema types | `src/services/validator/schema.ts` | ✅ |
+| 2.3 | Port compatibility checking | `src/services/validator/compatibility.ts` | ✅ |
+| 2.4 | Unit tests for Validator | `src/services/validator/index.test.ts` | ✅ (29 tests) |
+| 2.5 | Implement Wiring Service | `src/services/wiring/index.ts` | ✅ |
+| 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
+| 2.7 | Dependency graph builder | `src/services/wiring/graph.ts` | ✅ |
+| 2.8 | Unit tests for Wiring | `src/services/wiring/index.test.ts` | ✅ (22 tests) |
+| 2.9 | Extend API Facade | `src/api/facade.ts` | ⏳ |
+| 2.10 | CLI: connect, graph commands | `src/cli/commands/` | ⏳ |
 
 ### GUI Tasks
 
@@ -288,15 +289,25 @@ cyrus-code/
 │   │   ├── symbol-repository.ts       # Symbol CRUD
 │   │   └── index.ts                   # Re-exports
 │   └── services/                      # Business Logic ✅
-│       ├── registry/                  # Component Registry
+│       ├── registry/                  # Component Registry ✅
 │       │   ├── index.ts               # Registry service
 │       │   └── version.ts             # SemVer utilities
-│       └── symbol-table/              # Symbol Table
-│           ├── schema.ts              # Zod schemas & types
-│           ├── store.ts               # Store service
-│           ├── schema.test.ts         # Schema tests (55 tests)
-│           ├── store.test.ts          # Store tests
-│           └── index.ts               # Re-exports
+│       ├── symbol-table/              # Symbol Table ✅
+│       │   ├── schema.ts              # Zod schemas & types
+│       │   ├── store.ts               # Store service
+│       │   ├── schema.test.ts         # Schema tests (55 tests)
+│       │   ├── store.test.ts          # Store tests
+│       │   └── index.ts               # Re-exports
+│       ├── validator/                 # Interface Validator ✅ (Slice 2)
+│       │   ├── index.ts               # ValidatorService
+│       │   ├── schema.ts              # Validation types
+│       │   ├── compatibility.ts       # Port compatibility rules
+│       │   └── index.test.ts          # Validator tests (29 tests)
+│       └── wiring/                    # Wiring Service ✅ (Slice 2)
+│           ├── index.ts               # WiringService
+│           ├── schema.ts              # Graph types, wiring results
+│           ├── graph.ts               # Dependency graph builder
+│           └── index.test.ts          # Wiring tests (22 tests)
 ├── tests/                             # E2E Tests ✅
 │   └── e2e/
 │       ├── helpers/
@@ -327,8 +338,8 @@ cyrus-code/
 │   ├── services/
 │   │   ├── registry/                  # Component Registry ✅
 │   │   ├── symbol-table/              # Symbol Table ✅
-│   │   ├── validator/                 # Interface Validator (Slice 2)
-│   │   ├── linker/                    # Linker (Slice 2)
+│   │   ├── validator/                 # Interface Validator ✅ (Slice 2)
+│   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
 │   │   ├── synthesizer/               # Code Synthesizer (Slice 3)
 │   │   └── analyzer/                  # Static Analyzer (Slice 4)
 │   └── backends/                      # Language Backends (Slice 3)
@@ -362,7 +373,7 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (72 tests)
+# 2. Run unit tests (123 tests)
 npm test
 
 # 3. Run E2E tests (4 tests)
@@ -374,7 +385,7 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 72 unit tests pass
+- 123 unit tests pass
 - 4 E2E tests pass
 - GUI type-check passes
 

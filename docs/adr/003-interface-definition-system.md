@@ -163,26 +163,26 @@ export const JwtServiceInterface = {
 } as const;
 ```
 
-### Linking Phase
+### Wiring Phase
 
-The linker validates all connections:
+The Wiring service validates all connections:
 
 ```typescript
-interface Linker {
+interface WiringService {
   // Register a connection
   connect(connection: Connection): void;
 
   // Validate all connections
-  validate(): LinkResult;
+  validate(): WiringResult;
 
   // Get resolved connection graph
   getGraph(): ConnectionGraph;
 }
 
-interface LinkResult {
+interface WiringResult {
   valid: boolean;
-  errors: LinkError[];
-  warnings: LinkWarning[];
+  errors: WiringError[];
+  warnings: WiringWarning[];
   graph: ConnectionGraph;
 }
 
@@ -193,7 +193,7 @@ interface ConnectionGraph {
 }
 ```
 
-### Linker Validation Steps
+### Wiring Validation Steps
 
 1. **Collect all components** from symbol table
 2. **Collect all connections** from configuration
@@ -298,7 +298,7 @@ const authConnections: Connection[] = [
 ];
 
 // Validate
-const result = linker.validate();
+const result = wiring.validate();
 if (!result.valid) {
   console.error("Link errors:", result.errors);
 }
