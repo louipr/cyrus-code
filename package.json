@@ -8,6 +8,7 @@
     "cyrus-code": "./dist/src/cli/index.js"
   },
   "scripts": {
+    "preinstall": "node -e \"if(+process.versions.node.split('.')[0]<20){console.error('Node 20+ required. Found: '+process.version);process.exit(1)}\"",
     "build": "tsc -p tsconfig.build.json",
     "build:gui": "vite build",
     "build:all": "npm run build && npm run build:gui",
