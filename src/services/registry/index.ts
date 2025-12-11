@@ -5,7 +5,7 @@
  * Wraps the Symbol Store with additional functionality.
  */
 
-import type { Database as DatabaseType } from 'better-sqlite3';
+import type { DatabaseType } from '../../repositories/persistence.js';
 import {
   type ComponentSymbol,
   type AbstractionLevel,

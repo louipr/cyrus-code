@@ -5,14 +5,10 @@
  * Handles window creation, IPC communication, and backend service initialization.
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { ApiFacade } from '../src/api/facade.js';
 import { registerIpcHandlers } from './ipc-handlers.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -47,7 +43,7 @@ function createWindow(): void {
     mainWindow.webContents.openDevTools();
   } else {
     // Production: load from built files
-    mainWindow.loadFile(path.join(__dirname, '../dist-gui/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../gui/index.html'));
   }
 
   mainWindow.on('closed', () => {

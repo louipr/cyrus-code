@@ -352,6 +352,74 @@ cyrus-code/
 
 ---
 
+## Verification Checklist
+
+### Before Committing
+
+Run these commands to verify the build is healthy:
+
+```bash
+# 1. Build everything
+npm run build:all
+
+# 2. Run unit tests (72 tests)
+npm test
+
+# 3. Run E2E tests (4 tests)
+npm run test:e2e
+
+# 4. Type-check GUI code
+npm run test:gui
+```
+
+**Expected Results:**
+- Build completes without errors
+- 72 unit tests pass
+- 4 E2E tests pass
+- GUI type-check passes
+
+### Native Module Handling
+
+The `better-sqlite3` native module requires rebuilding for different Node.js versions:
+
+| Context | Node Version | Command |
+|---------|--------------|---------|
+| Unit tests | System Node (20.x) | `npm rebuild better-sqlite3` |
+| Electron app | Electron's Node (20.9.0) | `electron-rebuild -f -w better-sqlite3` |
+
+The `npm test` and `npm run test:e2e` scripts handle this automatically.
+
+### Environment Requirements
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Node.js | ≥20.0.0 | For better-sqlite3 compatibility |
+| Electron | 29.x | Uses Node 20.9.0 internally |
+| Playwright | 1.57.x | For Electron E2E testing |
+
+### Known Issues
+
+1. **ELECTRON_RUN_AS_NODE**: VSCode sets this env var which breaks Electron module loading. The scripts handle this by unsetting it.
+
+2. **macOS IPC Permissions**: Running Electron from some terminals may fail with "Permission denied" errors. Playwright handles this correctly for E2E tests.
+
+### Manual GUI Verification
+
+After automated tests pass, optionally verify the GUI manually:
+
+```bash
+npm run electron
+```
+
+**Check:**
+- [ ] App window opens with "cyrus-code" title
+- [ ] Search bar is visible at the top
+- [ ] Component list shows placeholder text (empty registry)
+- [ ] Typing in search bar filters correctly
+- [ ] No console errors in DevTools (Cmd+Option+I)
+
+---
+
 ## References
 
 - [Symbol Table Schema](spec/symbol-table-schema.md) - Canonical type definitions

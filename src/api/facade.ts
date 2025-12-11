@@ -8,8 +8,7 @@
  * All inputs and outputs use DTOs (plain objects) for JSON serialization.
  */
 
-import type { Database as DatabaseType } from 'better-sqlite3';
-import { initDatabase, initMemoryDatabase, closeDatabase } from '../repositories/persistence.js';
+import { type DatabaseType, initDatabase, initMemoryDatabase, closeDatabase } from '../repositories/persistence.js';
 import {
   ComponentRegistry,
   type ComponentQuery,

@@ -5,7 +5,7 @@
  * Provides business logic on top of the repository layer.
  */
 
-import type { Database as DatabaseType } from 'better-sqlite3';
+import type { DatabaseType } from '../../repositories/persistence.js';
 import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import {
   type ComponentSymbol,

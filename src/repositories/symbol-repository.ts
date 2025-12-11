@@ -5,7 +5,7 @@
  * Converts between domain objects and database rows.
  */
 
-import type { Database as DatabaseType } from 'better-sqlite3';
+import type { DatabaseType } from './persistence.js';
 import {
   type ComponentSymbol,
   type Connection,

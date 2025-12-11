@@ -6,7 +6,9 @@
  */
 
 import Database from 'better-sqlite3';
-import type { Database as DatabaseType } from 'better-sqlite3';
+import type { Database as DatabaseType, Statement } from 'better-sqlite3';
+
+export type { DatabaseType, Statement };
 
 // ============================================================================
 // Database Connection
@@ -23,12 +25,13 @@ export function initDatabase(dbPath: string): DatabaseType {
     return db;
   }
 
-  db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  const newDb = new Database(dbPath);
+  newDb.pragma('journal_mode = WAL');
+  newDb.pragma('foreign_keys = ON');
 
-  createSchema(db);
-  return db;
+  createSchema(newDb);
+  db = newDb;
+  return newDb;
 }
 
 /**
@@ -320,61 +323,61 @@ export interface ExecutionInfoRow {
 
 export interface PreparedStatements {
   // Symbols
-  insertSymbol: Database.Statement;
-  getSymbol: Database.Statement;
-  updateSymbol: Database.Statement;
-  deleteSymbol: Database.Statement;
-  listSymbols: Database.Statement;
+  insertSymbol: Statement;
+  getSymbol: Statement;
+  updateSymbol: Statement;
+  deleteSymbol: Statement;
+  listSymbols: Statement;
 
   // Ports
-  insertPort: Database.Statement;
-  getPortsBySymbol: Database.Statement;
-  deletePortsBySymbol: Database.Statement;
+  insertPort: Statement;
+  getPortsBySymbol: Statement;
+  deletePortsBySymbol: Statement;
 
   // Port generics
-  insertPortGeneric: Database.Statement;
-  getPortGenerics: Database.Statement;
+  insertPortGeneric: Statement;
+  getPortGenerics: Statement;
 
   // Tags
-  insertTag: Database.Statement;
-  getTagsBySymbol: Database.Statement;
-  deleteTagsBySymbol: Database.Statement;
+  insertTag: Statement;
+  getTagsBySymbol: Statement;
+  deleteTagsBySymbol: Statement;
 
   // Contains
-  insertContains: Database.Statement;
-  getContainsByParent: Database.Statement;
-  getContainsByChild: Database.Statement;
-  deleteContainsByParent: Database.Statement;
+  insertContains: Statement;
+  getContainsByParent: Statement;
+  getContainsByChild: Statement;
+  deleteContainsByParent: Statement;
 
   // Compatibility
-  insertCompatibility: Database.Statement;
-  getCompatibilityBySymbol: Database.Statement;
-  deleteCompatibilityBySymbol: Database.Statement;
+  insertCompatibility: Statement;
+  getCompatibilityBySymbol: Statement;
+  deleteCompatibilityBySymbol: Statement;
 
   // Connections
-  insertConnection: Database.Statement;
-  getConnection: Database.Statement;
-  deleteConnection: Database.Statement;
-  getConnectionsBySymbol: Database.Statement;
-  getAllConnections: Database.Statement;
+  insertConnection: Statement;
+  getConnection: Statement;
+  deleteConnection: Statement;
+  getConnectionsBySymbol: Statement;
+  getAllConnections: Statement;
 
   // Status info
-  insertStatusReferencedBy: Database.Statement;
-  getStatusReferencedBy: Database.Statement;
-  deleteStatusReferencedBy: Database.Statement;
+  insertStatusReferencedBy: Statement;
+  getStatusReferencedBy: Statement;
+  deleteStatusReferencedBy: Statement;
 
-  insertStatusTestedBy: Database.Statement;
-  getStatusTestedBy: Database.Statement;
-  deleteStatusTestedBy: Database.Statement;
+  insertStatusTestedBy: Statement;
+  getStatusTestedBy: Statement;
+  deleteStatusTestedBy: Statement;
 
-  insertExecutionInfo: Database.Statement;
-  getExecutionInfo: Database.Statement;
-  updateExecutionInfo: Database.Statement;
-  deleteExecutionInfo: Database.Statement;
+  insertExecutionInfo: Statement;
+  getExecutionInfo: Statement;
+  updateExecutionInfo: Statement;
+  deleteExecutionInfo: Statement;
 
-  insertExecutionContext: Database.Statement;
-  getExecutionContexts: Database.Statement;
-  deleteExecutionContexts: Database.Statement;
+  insertExecutionContext: Statement;
+  getExecutionContexts: Statement;
+  deleteExecutionContexts: Statement;
 }
 
 /**
