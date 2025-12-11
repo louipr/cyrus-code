@@ -26,6 +26,8 @@ Borrow from digital design (ASIC/FPGA):
 | Synthesis | AST-based code generation |
 | Place & Route | Component linking and integration |
 
+> **Research & Rationale**: See [Design Rationale](docs/design-rationale.md) for research findings and decision rationale.
+
 ## Core Innovation
 
 **Symbol-table tracking at multiple abstraction levels** enables:
@@ -47,35 +49,61 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Status
 
-**Phase: Planning & Architecture**
+**Phase: Architecture Complete → Ready for Implementation**
 
-- [x] Project scaffold
-- [x] Architecture decision records
-- [ ] Symbol table implementation
-- [ ] Component registry
-- [ ] Interface validator
-- [ ] Code synthesizer
-- [ ] CLI
-- [ ] Visual editor
+> **Note**: No implementation code exists yet. See [CLAUDE.md](CLAUDE.md) for AI development context.
+
+### Completed (Architecture)
+- [x] Project scaffold and dependencies
+- [x] 9 Architecture Decision Records (ADR-001 through ADR-009)
+- [x] Symbol table schema specification
+- [x] C4 architecture diagrams (Context, Container, Component, Dynamic)
+- [x] Design patterns specification (GoF patterns mapped to architecture)
+- [x] GUI framework decision (Electron + React)
+- [x] Implementation plan with vertical slices
+
+### Implementation Approach: Vertical Slices
+
+Each slice delivers end-to-end functionality (backend + GUI) enabling early UX validation. See [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for detailed tracking.
+
+| Slice | Backend | GUI | Status |
+|-------|---------|-----|--------|
+| 1: Foundation | Symbol Table, Registry | Component Browser | Not Started |
+| 2: Wiring | Linker, Validator | Canvas, Validation | Not Started |
+| 3: Generation | Code Synthesizer | Preview, Export | Not Started |
+| 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
+| 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |
+
+### Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Symbol Table | SQLite + TypeScript |
+| AST Manipulation | ts-morph |
+| Schema Validation | Zod |
+| Desktop GUI | Electron + React |
+| Backend Runtime | Node.js
 
 ## Documentation
 
-- **[Research Foundation](docs/research-foundation.md)** - Why this approach, research findings, gap analysis
+- **[Design Rationale](docs/design-rationale.md)** - Why this approach, research findings, gap analysis
+- **[Implementation Tracking](docs/IMPLEMENTATION.md)** - Detailed task breakdown by slice
 - [ADR-001: Symbol Table Architecture](docs/adr/001-symbol-table-architecture.md)
 - [ADR-002: Multi-Level Abstraction](docs/adr/002-multi-level-abstraction.md)
 - [ADR-003: Interface Definition System](docs/adr/003-interface-definition-system.md)
-- [C4 Context Diagram](docs/c4/context.md)
-- [C4 Container Diagram](docs/c4/container.md)
+- [ADR-004: Multi-Language Backends](docs/adr/004-multi-language-backends.md)
+- [ADR-005: Dead Code Detection](docs/adr/005-dead-code-detection.md)
+- [ADR-006: Generation Gap Pattern](docs/adr/006-generation-gap-pattern.md)
+- [ADR-007: Full Lifecycle Architecture](docs/adr/007-full-lifecycle-architecture.md)
+- [ADR-008: Design Patterns](docs/adr/008-design-patterns.md)
+- [ADR-009: Electron GUI Framework](docs/adr/009-electron-gui-framework.md)
+- C4 Diagrams: [Context](docs/c4/1-context.md), [Container](docs/c4/2-container.md), [Component](docs/c4/3-component.md), [Dynamic](docs/c4/dynamic.md)
 - [Symbol Table Schema](docs/spec/symbol-table-schema.md)
 
 ## Quick Start
 
 ```bash
-# Clone
-git clone https://github.com/yourusername/cyrus-code.git
-cd cyrus-code
-
-# Install
+# Install dependencies
 npm install
 
 # Build

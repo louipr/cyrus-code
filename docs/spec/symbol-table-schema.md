@@ -1,5 +1,7 @@
 # Symbol Table Schema Specification
 
+> **Version**: 1.0.0 | **Status**: Stable | **Last Updated**: December 2024
+
 ## Overview
 
 Technical specification for the cyrus-code symbol table - the central registry tracking all components, types, and interfaces.
@@ -52,13 +54,10 @@ interface ComponentSymbol {
   /** Compatible version ranges */
   compatibleWith?: VersionRange[];
 
-  // === Source ===
+  // === Location ===
 
-  /** Where this symbol is defined */
-  source?: SourceInfo;
-
-  /** If generated, what produced it */
-  generatedFrom?: GenerationInfo;
+  /** Where this symbol is defined in the file system */
+  sourceLocation?: SourceLocation;
 
   // === Metadata ===
 
@@ -73,6 +72,22 @@ interface ComponentSymbol {
 
   /** Last modification */
   updatedAt: Date;
+
+  // === Usage Status (ADR-005) ===
+
+  /** Current usage status for dead code detection */
+  status: SymbolStatus;
+
+  /** Detailed status information */
+  statusInfo?: StatusInfo;
+
+  // === Origin Tracking (ADR-006) ===
+
+  /** How this symbol was created */
+  origin: SymbolOrigin;
+
+  /** Generation metadata if origin is 'generated' */
+  generationMeta?: GenerationMetadata;
 }
 ```
 
@@ -120,6 +135,85 @@ type Language =
   | 'python'
   | 'go'
   | 'rust';
+```
+
+### Symbol Status (ADR-005)
+
+```typescript
+/**
+ * Usage status for dead code detection.
+ */
+type SymbolStatus =
+  | 'declared'    // Registered but unreferenced
+  | 'referenced'  // Statically reachable from entry points
+  | 'tested'      // Has test coverage
+  | 'executed';   // Confirmed executed at runtime
+
+/**
+ * Detailed status information.
+ */
+interface StatusInfo {
+  /** When status was last updated */
+  updatedAt: Date;
+
+  /** Analysis that set this status */
+  source: 'registration' | 'static' | 'coverage' | 'runtime';
+
+  /** For 'referenced': symbols that reference this */
+  referencedBy?: string[];
+
+  /** For 'tested': test files that cover this */
+  testedBy?: string[];
+
+  /** For 'executed': execution trace info */
+  executionInfo?: ExecutionInfo;
+}
+
+interface ExecutionInfo {
+  /** First execution timestamp */
+  firstSeen: Date;
+
+  /** Last execution timestamp */
+  lastSeen: Date;
+
+  /** Execution count */
+  count: number;
+
+  /** Execution contexts */
+  contexts: ('test' | 'development' | 'production')[];
+}
+```
+
+### Symbol Origin (ADR-006)
+
+```typescript
+/**
+ * How a symbol was created.
+ */
+type SymbolOrigin =
+  | 'generated'   // Created by cyrus-code generator
+  | 'manual'      // Hand-authored, imported into registry
+  | 'external';   // From external package
+
+/**
+ * Metadata for generated symbols.
+ */
+interface GenerationMetadata {
+  /** Template/component that generated this */
+  templateId: string;
+
+  /** When last regenerated */
+  generatedAt: Date;
+
+  /** Hash of generated content (for change detection) */
+  contentHash: string;
+
+  /** Path to generated file */
+  generatedPath: string;
+
+  /** Path to user implementation file (Generation Gap pattern) */
+  implementationPath?: string;
+}
 ```
 
 ### Port Definitions
@@ -178,6 +272,44 @@ interface TypeReference {
 }
 ```
 
+> **Note: Optional vs Nullable**
+>
+> This schema distinguishes between two concepts:
+> - **Optional (`?`)**: Field can be omitted entirely. Used for interface fields that have reasonable defaults or are contextually unnecessary (e.g., `sourceLocation?` is omitted for external symbols).
+> - **Nullable (`nullable: true`)**: Value must be provided but can explicitly be `null`. Used for type references where null is a valid domain value (e.g., a port that accepts `User | null`).
+>
+> Example: A `PortDefinition` with `required: false` and `defaultValue?: unknown` means the port is optional to connect. A `TypeReference` with `nullable: true` means the connected port accepts null values.
+
+### Connections
+
+```typescript
+/**
+ * A connection between component ports.
+ */
+interface Connection {
+  /** Unique connection identifier */
+  id: string;
+
+  /** Symbol ID of the source component */
+  fromSymbolId: string;
+
+  /** Port name on the source component */
+  fromPort: string;
+
+  /** Symbol ID of the target component */
+  toSymbolId: string;
+
+  /** Port name on the target component */
+  toPort: string;
+
+  /** Optional transformation function ID */
+  transform?: string;
+
+  /** When connection was created */
+  createdAt: Date;
+}
+```
+
 ### Versioning
 
 ```typescript
@@ -207,13 +339,13 @@ interface VersionRange {
 }
 ```
 
-### Source Information
+### Source Location
 
 ```typescript
 /**
- * Location of symbol definition.
+ * Location of symbol definition in the file system.
  */
-interface SourceInfo {
+interface SourceLocation {
   /** Absolute or relative file path */
   filePath: string;
 
@@ -231,23 +363,6 @@ interface SourceInfo {
 
   /** Content hash for change detection */
   contentHash: string;
-}
-
-/**
- * How the symbol was generated.
- */
-interface GenerationInfo {
-  /** What generated this: "manual", "ai", "synthesizer" */
-  generator: string;
-
-  /** Template or prompt ID */
-  templateId?: string;
-
-  /** Generation timestamp */
-  generatedAt: Date;
-
-  /** Configuration used */
-  config?: Record<string, unknown>;
 }
 ```
 
@@ -269,21 +384,28 @@ CREATE TABLE symbols (
   version_patch INTEGER NOT NULL DEFAULT 0,
   version_prerelease TEXT,
 
-  -- Source
-  source_path TEXT,
-  source_start_line INTEGER,
-  source_end_line INTEGER,
-  source_hash TEXT,
-
-  -- Generation
-  generator TEXT,
-  template_id TEXT,
-  generated_at TEXT,
+  -- Location (where symbol is defined)
+  location_path TEXT,
+  location_start_line INTEGER,
+  location_end_line INTEGER,
+  location_hash TEXT,
 
   -- Metadata
   description TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+
+  -- Usage Status (ADR-005)
+  status TEXT NOT NULL DEFAULT 'declared' CHECK (status IN ('declared', 'referenced', 'tested', 'executed')),
+  status_updated_at TEXT,
+  status_analysis_source TEXT,  -- 'registration' | 'static' | 'coverage' | 'runtime'
+
+  -- Origin Tracking (ADR-006)
+  origin TEXT NOT NULL DEFAULT 'manual' CHECK (origin IN ('generated', 'manual', 'external')),
+  generation_template_id TEXT,
+  generation_content_hash TEXT,
+  generation_path TEXT,
+  implementation_path TEXT
 );
 
 -- Ports table
@@ -347,6 +469,12 @@ CREATE INDEX idx_contains_child ON contains(child_id);
 CREATE INDEX idx_tags_tag ON tags(tag);
 CREATE INDEX idx_connections_from ON connections(from_symbol_id);
 CREATE INDEX idx_connections_to ON connections(to_symbol_id);
+
+-- Status indexes (ADR-005)
+CREATE INDEX idx_symbols_status ON symbols(status);
+
+-- Origin index (ADR-006)
+CREATE INDEX idx_symbols_origin ON symbols(origin);
 ```
 
 ## Symbol ID Format
@@ -414,11 +542,57 @@ interface SymbolTable {
   validateSymbol(id: string): Promise<ValidationResult>;
   checkCircular(): Promise<string[][]>;
 
+  // === Status Queries (ADR-005) ===
+
+  findByStatus(status: SymbolStatus): Promise<ComponentSymbol[]>;
+  findUnreachable(): Promise<ComponentSymbol[]>;
+  findUntested(): Promise<ComponentSymbol[]>;
+  updateStatus(id: string, status: SymbolStatus, info: StatusInfo): Promise<void>;
+
+  // === Origin Queries (ADR-006) ===
+
+  findByOrigin(origin: SymbolOrigin): Promise<ComponentSymbol[]>;
+  findGenerated(): Promise<ComponentSymbol[]>;
+  findManual(): Promise<ComponentSymbol[]>;
+  checkModified(id: string): Promise<boolean>;
+
   // === Bulk Operations ===
 
   import(symbols: ComponentSymbol[]): Promise<void>;
   export(): Promise<ComponentSymbol[]>;
   clear(): Promise<void>;
+}
+```
+
+### Validation Result
+
+```typescript
+/**
+ * Result of validation operations.
+ */
+interface ValidationResult {
+  /** Whether validation passed */
+  valid: boolean;
+
+  /** List of errors found */
+  errors: ValidationError[];
+
+  /** List of warnings (non-fatal) */
+  warnings: ValidationError[];
+}
+
+interface ValidationError {
+  /** Error code for programmatic handling */
+  code: string;
+
+  /** Human-readable message */
+  message: string;
+
+  /** Symbol ID(s) involved */
+  symbolIds: string[];
+
+  /** Severity level */
+  severity: 'error' | 'warning';
 }
 ```
 

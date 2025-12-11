@@ -42,6 +42,8 @@ Define a multi-level hierarchy that enables:
 
 Implement a **5-level abstraction hierarchy** (L0-L4).
 
+> **Canonical definitions**: See [Symbol Table Schema Specification](../spec/symbol-table-schema.md) for current type definitions.
+
 ### Level Definitions
 
 #### L0: Primitives

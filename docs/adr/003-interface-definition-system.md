@@ -46,6 +46,8 @@ Define a typed interface system that enables:
 
 Implement a **port-based interface system** inspired by HDL signals.
 
+> **Canonical definitions**: See [Symbol Table Schema Specification](../spec/symbol-table-schema.md) for current type definitions.
+
 ### Port Definition
 
 ```typescript

@@ -30,6 +30,17 @@ C4Context
     Rel(aiAgent, claudeApi, "Reasoning and configuration")
 ```
 
+## Legend
+
+| Element | Notation | Description |
+|---------|----------|-------------|
+| **Person** | Stick figure | Human actor interacting with the system |
+| **System** | Blue box | The system being documented (cyrus-code) |
+| **System_Ext** | Gray box | External systems that cyrus-code integrates with |
+| **Rel** | Arrow with label | Relationship showing data/control flow direction |
+
+> **C4 Model Reference**: This is a Level 1 (Context) diagram showing the system boundary and external dependencies. For internal architecture, see [Level 2: Container](2-container.md).
+
 ## Actors
 
 | Actor | Description | Interactions |

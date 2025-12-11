@@ -4,15 +4,18 @@
 
 Hardware-inspired software component architecture tool. Applies ASIC/FPGA design methodology to software development, enabling deterministic, AI-assisted component composition through symbol-table tracking.
 
-## Vision
+## Document Hierarchy
 
-**Problem**: LLM-driven development produces inconsistent implementations because there's no strict mapping between architecture spec → design patterns → code. The same architecture prompt can yield different implementations based on prompt order, project state, and AI variance.
+| Category | Document | Authority |
+|----------|----------|-----------|
+| **Type Definitions** | `docs/spec/symbol-table-schema.md` | **CANONICAL** - single source of truth |
+| **Project Status** | `README.md` | Current phasing and roadmap |
+| **AI Context** | `CLAUDE.md` | Development context and terminology |
+| **Architecture** | `docs/adr/001-009` | Historical decisions (may have outdated examples) |
+| **Diagrams** | `docs/c4/*.md` | System architecture |
+| **Rationale** | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
-**Solution**: Borrow from digital design (ASIC/FPGA):
-- **Symbol Tables**: Track all components with unique IDs across abstraction levels
-- **Typed Interfaces**: Standardized signals/ports between components (like HDL)
-- **Multi-Stage Build**: Parse → Validate → Link → Generate → Verify
-- **Reusable Blocks**: AI agents configure verified components, not regenerate code
+> **Note**: ADRs contain illustrative code examples that may not match current canonical definitions. Always reference `symbol-table-schema.md` for current type definitions.
 
 ## Core Concepts
 
@@ -30,6 +33,8 @@ L1: Component               [JwtService, RoleGuard, UserEntity]
 L0: Primitive               [JwtPayload type, Role enum, UserId branded type]
 ```
 
+> **Full specification**: See [ADR-002](docs/adr/002-multi-level-abstraction.md) for containment rules, dependency constraints, and detailed examples.
+
 ### Symbol Table
 
 Every component tracked with:
@@ -46,28 +51,27 @@ Inspired by HDL signals:
 - **Schema**: Zod/TypeScript types for validation
 - **Linking**: Compile-time verification of connections
 
-## Technology Stack
+## Feature Overview
 
-| Layer | Technology | Reason |
-|-------|------------|--------|
-| Symbol Table | SQLite + TypeScript | Persistent, queryable, typed |
-| AST Manipulation | ts-morph / TypeScript Compiler API | Native TypeScript support |
-| Interface Schemas | Zod | Runtime + compile-time validation |
-| Component Registry | Custom + SemVer | Version-aware dependency resolution |
-| UI | TBD (Electron or Tauri) | Rich desktop experience |
-| AI Integration | Claude API | Deterministic queries + AI reasoning |
+| Feature | Summary | Details |
+|---------|---------|---------|
+| **Multi-Language** | Language-agnostic definitions, multiple backends | [ADR-004](docs/adr/004-multi-language-backends.md) |
+| **Dead Code Detection** | Track symbol status: declared → referenced → tested → executed | [ADR-005](docs/adr/005-dead-code-detection.md) |
+| **Generation Gap** | Separate generated code from manual customizations | [ADR-006](docs/adr/006-generation-gap-pattern.md) |
+| **Full Lifecycle** | Design → Develop → Test → Deploy → Operate → Evolve | [ADR-007](docs/adr/007-full-lifecycle-architecture.md) |
+| **Design Patterns** | GoF patterns mapped to architecture components | [ADR-008](docs/adr/008-design-patterns.md) |
+| **GUI Framework** | Electron + React with migration-ready architecture | [ADR-009](docs/adr/009-electron-gui-framework.md) |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/symbol-table/` | Symbol table implementation |
-| `src/registry/` | Component registry with versioning |
-| `src/interfaces/` | Port/signal definitions |
-| `src/linker/` | Component connection validation |
-| `src/synthesizer/` | AST-based code generation |
-| `docs/adr/` | Architecture decision records |
-| `docs/spec/` | Technical specifications |
+| `docs/adr/` | Architecture decision records (001-009) |
+| `docs/spec/symbol-table-schema.md` | Canonical type definitions |
+| `docs/c4/` | C4 architecture diagrams (Context, Container, Component, Dynamic) |
+| `docs/design-rationale.md` | Why decisions were made (research + rationale) |
+
+> **Implementation roadmap**: See [README.md](README.md) for planned `src/` directory structure.
 
 ## Terminology
 
@@ -78,25 +82,24 @@ Inspired by HDL signals:
 | **Signal** | Data flowing between ports |
 | **Linking** | Connecting component ports and validating compatibility |
 | **Synthesis** | Generating source code from component graph |
+| **Status** | Usage state: declared → referenced → tested → executed |
+| **Generation Gap** | Pattern: generated base class + manual subclass |
+| **Backend** | Language-specific code generator (TypeScript, Python, etc.) |
+| **Import** | Adding untracked manual code to the symbol table |
+| **Composition** | Versioned snapshot of a complete system (all components + connections) |
+| **Impact Analysis** | Determining what breaks when a component changes |
+| **Contract Test** | Test auto-generated from port type definitions |
 
 ## Commands
 
 ```bash
+# Development (current)
 npm run build          # Compile TypeScript
 npm test               # Run all tests
 npm run dev            # Development mode
 ```
 
-## Relationship to cyrus-studio
-
-cyrus-code is the evolution of cyrus-studio. Key lessons extracted:
-
-1. **requires/provides/conflicts** pattern is sound → becomes port system
-2. **Template-based generation** has limits → replaced by AST synthesis
-3. **Module-level granularity** insufficient → multi-level hierarchy
-4. **String-based interfaces** lack rigor → typed port definitions
-
-See [cyrus-studio](../cyrus-studio/) for the template-based predecessor.
+> **Future CLI**: See [Level 2: Container](docs/c4/2-container.md#cli-commands) for planned `cyrus-code` commands.
 
 ## Development Philosophy
 

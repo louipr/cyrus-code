@@ -34,76 +34,27 @@ Implement a **persistent symbol table** that tracks software components across m
 
 ### Symbol Table Schema
 
+> **Note**: The canonical type definitions are in [Symbol Table Schema Specification](../spec/symbol-table-schema.md). This section provides a summary.
+
+**Core Symbol Structure**:
+- **Identity**: Unique ID (`namespace/name@version`), name, namespace
+- **Classification**: Abstraction level (L0-L4), kind (type/class/module/etc.), language
+- **Interface**: Input/output ports for component wiring
+- **Versioning**: SemVer with compatibility ranges
+- **Source**: File location, content hash for change detection
+- **Metadata**: Tags, description, timestamps
+
 ```typescript
+// Summary - see spec for complete definitions
 interface ComponentSymbol {
-  // Identity
-  id: string;                     // Unique ID: "auth/jwt/JwtService@1.2.0"
-  name: string;                   // Human-readable: "JwtService"
-  namespace: string;              // Hierarchical: "auth/jwt"
-
-  // Classification
-  level: AbstractionLevel;        // L0-L4
-  kind: ComponentKind;            // 'type' | 'class' | 'function' | 'module' | 'subsystem'
-  language: 'typescript' | 'python' | 'go';
-
-  // Interface
-  ports: PortDefinition[];        // Input/output connection points
-
-  // Versioning
-  version: SemVer;                // Current version
-  compatibleWith: VersionRange[]; // Backwards compatibility
-
-  // Source
-  source: SourceInfo;             // File path, line numbers
-  generatedFrom?: string;         // If AI-generated, the prompt/template ID
-
-  // Metadata
-  tags: string[];                 // Searchable tags
-  documentation: string;          // Description
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-type AbstractionLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4';
-
-type ComponentKind =
-  | 'primitive'     // L0: types, enums, branded types
-  | 'component'     // L1: classes, services
-  | 'module'        // L2: cohesive component groups
-  | 'subsystem'     // L3: feature domains
-  | 'interface';    // L4: cross-boundary contracts
-
-interface PortDefinition {
-  name: string;                   // Port identifier
-  direction: 'in' | 'out' | 'inout';
-  type: TypeReference;            // Reference to another symbol
-  required: boolean;              // Must be connected
-  description: string;
-}
-
-interface TypeReference {
-  symbolId: string;               // Points to type symbol
-  generic?: TypeReference[];      // For generic types
-}
-
-interface SemVer {
-  major: number;
-  minor: number;
-  patch: number;
-  prerelease?: string;
-}
-
-interface VersionRange {
-  min: SemVer;
-  max: SemVer;
-  inclusive: boolean;
-}
-
-interface SourceInfo {
-  filePath: string;
-  startLine: number;
-  endLine: number;
-  hash: string;                   // Content hash for change detection
+  id: string;                     // "auth/jwt/JwtService@1.2.0"
+  name: string;
+  namespace: string;
+  level: 'L0' | 'L1' | 'L2' | 'L3' | 'L4';
+  kind: ComponentKind;
+  ports: PortDefinition[];
+  version: SemVer;
+  // ... see spec for full interface
 }
 ```
 
