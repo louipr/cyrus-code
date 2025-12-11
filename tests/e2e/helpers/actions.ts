@@ -49,3 +49,39 @@ export const componentActions = {
     });
   },
 };
+
+export const graphActions = {
+  /**
+   * Switch to graph view.
+   */
+  async switchToGraphView(page: Page): Promise<void> {
+    const toggle = page.locator(selectors.viewToggle);
+    await toggle.locator('button:has-text("Graph")').click();
+    await page.waitForSelector(selectors.graphView, { timeout: 5000 });
+  },
+
+  /**
+   * Switch to browser view.
+   */
+  async switchToBrowserView(page: Page): Promise<void> {
+    const toggle = page.locator(selectors.viewToggle);
+    await toggle.locator('button:has-text("Browser")').click();
+    await page.waitForSelector(selectors.searchBar, { timeout: 5000 });
+  },
+
+  /**
+   * Wait for graph to load.
+   */
+  async waitForGraph(page: Page): Promise<void> {
+    await page.waitForSelector(selectors.graphView, { timeout: 5000 });
+  },
+
+  /**
+   * Click a node in the graph.
+   */
+  async clickNode(page: Page, nodeId: string): Promise<void> {
+    const node = page.locator(selectors.graphNode(nodeId));
+    await node.click();
+    await page.waitForTimeout(300); // Wait for selection update
+  },
+};

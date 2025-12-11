@@ -13,6 +13,12 @@ import type {
   ConnectionDTO,
   ValidationResultDTO,
   SymbolQuery,
+  CreateConnectionRequest,
+  WiringResultDTO,
+  DependencyGraphDTO,
+  GraphStatsDTO,
+  CompatiblePortDTO,
+  UnconnectedPortDTO,
 } from '../api/types';
 
 /**
@@ -52,6 +58,17 @@ interface CyrusAPI {
   status: {
     findUnreachable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     findUntested: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+  };
+  wiring: {
+    connect: (request: CreateConnectionRequest) => Promise<ApiResponse<WiringResultDTO>>;
+    disconnect: (connectionId: string) => Promise<ApiResponse<WiringResultDTO>>;
+    validateConnection: (request: CreateConnectionRequest) => Promise<ApiResponse<ValidationResultDTO>>;
+    getGraph: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
+    detectCycles: () => Promise<ApiResponse<string[][]>>;
+    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
+    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
+    findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
+    findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
 }
 
@@ -113,6 +130,25 @@ function createMockApi(): CyrusAPI {
     status: {
       findUnreachable: () => mockResponse([]),
       findUntested: () => mockResponse([]),
+    },
+    wiring: {
+      connect: () => mockResponse({ success: true, connectionId: 'mock-conn-1' }),
+      disconnect: () => mockResponse({ success: true }),
+      validateConnection: () => mockResponse({ valid: true, errors: [], warnings: [] }),
+      getGraph: () => mockResponse({ nodes: [], edges: [], topologicalOrder: [], cycles: [] }),
+      detectCycles: () => mockResponse([]),
+      getTopologicalOrder: () => mockResponse([]),
+      getStats: () => mockResponse({
+        nodeCount: 0,
+        edgeCount: 0,
+        rootCount: 0,
+        leafCount: 0,
+        connectedComponentCount: 0,
+        hasCycles: false,
+        maxDepth: 0,
+      }),
+      findCompatiblePorts: () => mockResponse([]),
+      findUnconnectedRequired: () => mockResponse([]),
     },
   };
 }

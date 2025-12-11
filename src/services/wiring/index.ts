@@ -5,7 +5,7 @@
  * Provides validation, cycle detection, and graph analysis.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import type { ComponentSymbol, Connection, ValidationResult } from '../symbol-table/schema.js';
 import { createValidationResult } from '../symbol-table/schema.js';
 import type { SymbolStore } from '../symbol-table/store.js';
@@ -159,7 +159,7 @@ export class WiringService {
     }
 
     // Create the connection
-    const connectionId = uuidv4();
+    const connectionId = randomUUID();
     const connection: Connection = {
       id: connectionId,
       fromSymbolId,

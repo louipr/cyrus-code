@@ -21,4 +21,14 @@ export const selectors = {
   // Detail Panel
   detailPanel: '[data-testid="detail-panel"]',
   detailId: '[data-testid="detail-id"]',
+
+  // View Toggle
+  viewToggle: '[data-testid="view-toggle"]',
+
+  // Graph View
+  graphView: '[data-testid="graph-view"]',
+  graphNode: (id: string) => `[data-testid="graph-node-${id}"]`,
+  graphEdge: '[data-testid="graph-edge"]',
+  graphStats: '[data-testid="graph-stats"]',
+  validationOverlay: '[data-testid="validation-overlay"]',
 };
