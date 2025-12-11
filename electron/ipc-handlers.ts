@@ -10,7 +10,7 @@
 
 import { ipcMain } from 'electron';
 import type { ApiFacade } from '../src/api/facade.js';
-import type { SymbolQuery } from '../src/api/types.js';
+import type { SymbolQuery, CreateConnectionRequest } from '../src/api/types.js';
 
 export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
@@ -101,5 +101,54 @@ export function registerIpcHandlers(facade: ApiFacade): void {
 
   ipcMain.handle('status:findUntested', async () => {
     return facade.findUntested();
+  });
+
+  // ==========================================================================
+  // Wiring Operations
+  // ==========================================================================
+
+  ipcMain.handle(
+    'wiring:connect',
+    async (_event, request: CreateConnectionRequest) => {
+      return facade.wireConnection(request);
+    }
+  );
+
+  ipcMain.handle('wiring:disconnect', async (_event, connectionId: string) => {
+    return facade.unwireConnection(connectionId);
+  });
+
+  ipcMain.handle(
+    'wiring:validateConnection',
+    async (_event, request: CreateConnectionRequest) => {
+      return facade.validateConnectionRequest(request);
+    }
+  );
+
+  ipcMain.handle('wiring:getGraph', async (_event, symbolId?: string) => {
+    return facade.getDependencyGraph(symbolId);
+  });
+
+  ipcMain.handle('wiring:detectCycles', async () => {
+    return facade.detectCycles();
+  });
+
+  ipcMain.handle('wiring:getTopologicalOrder', async () => {
+    return facade.getTopologicalOrder();
+  });
+
+  ipcMain.handle('wiring:getStats', async () => {
+    return facade.getGraphStats();
+  });
+
+  ipcMain.handle(
+    'wiring:findCompatiblePorts',
+    async (_event, symbolId: string, portName: string) => {
+      return facade.findCompatiblePorts(symbolId, portName);
+    }
+  );
+
+  ipcMain.handle('wiring:findUnconnectedRequired', async () => {
+    return facade.findUnconnectedRequired();
   });
 }

@@ -17,6 +17,8 @@ import { registerCommand } from './commands/register.js';
 import { listCommand } from './commands/list.js';
 import { getCommand } from './commands/get.js';
 import { validateCommand } from './commands/validate.js';
+import { wireCommand } from './commands/wire.js';
+import { graphCommand } from './commands/graph.js';
 
 const DEFAULT_DB_PATH = '.cyrus-code/registry.db';
 
@@ -37,6 +39,8 @@ COMMANDS:
   list               List components with optional filters
   get <id>           Get component details by ID
   validate           Validate all components and connections
+  wire               Create and manage connections between ports
+  graph              Analyze the dependency graph
   help               Show this help message
 
 GLOBAL OPTIONS:
@@ -61,6 +65,15 @@ EXAMPLES:
 
   # Validate the registry
   cyrus-code validate
+
+  # Wire components together
+  cyrus-code wire auth/JwtService@1.0.0 output auth/UserService@1.0.0 tokenProvider
+
+  # View dependency graph
+  cyrus-code graph
+
+  # Check for cycles
+  cyrus-code graph cycles
 `);
 }
 
@@ -138,6 +151,12 @@ async function main(): Promise<void> {
         break;
       case 'validate':
         await validateCommand(context, commandArgs, args);
+        break;
+      case 'wire':
+        await wireCommand(context, commandArgs, args);
+        break;
+      case 'graph':
+        await graphCommand(context, commandArgs, args);
         break;
       case 'help':
         printHelp();

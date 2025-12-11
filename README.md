@@ -49,14 +49,15 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Status
 
-**Phase: Slice 2 In Progress**
+**Phase: Slice 2 Backend Complete**
 
 ### Completed
 - [x] Architecture: 9 ADRs, C4 diagrams, symbol table schema
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
-- [x] Slice 2 Backend: Validator Service, Wiring Service
+- [x] Slice 2 Backend: Validator Service, Wiring Service, API + CLI
 - [x] 123 unit tests + 4 E2E tests passing
 - [x] Electron desktop app with React frontend
+- [x] CLI commands: `wire`, `graph` with full wiring support
 
 ### Implementation Approach: Vertical Slices
 
@@ -65,7 +66,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator | Canvas, Validation | 🔄 Backend Complete |
+| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | 🔄 Backend Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | Not Started |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |

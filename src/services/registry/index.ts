@@ -62,6 +62,13 @@ export class ComponentRegistry {
     this.store = new SymbolStore(database);
   }
 
+  /**
+   * Get the underlying store for use by other services.
+   */
+  getStore(): SymbolStore {
+    return this.store;
+  }
+
   // ==========================================================================
   // Registration
   // ==========================================================================

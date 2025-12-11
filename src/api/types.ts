@@ -228,3 +228,59 @@ export interface UpdateStatusRequest {
   status: SymbolStatus;
   info: Omit<StatusInfoDTO, 'updatedAt'>;
 }
+
+// ============================================================================
+// Wiring DTOs
+// ============================================================================
+
+export interface GraphNodeDTO {
+  id: string;
+  name: string;
+  namespace: string;
+  level: AbstractionLevel;
+  kind: ComponentKind;
+}
+
+export interface GraphEdgeDTO {
+  id: string;
+  from: string;
+  to: string;
+  fromPort: string;
+  toPort: string;
+}
+
+export interface DependencyGraphDTO {
+  nodes: GraphNodeDTO[];
+  edges: GraphEdgeDTO[];
+  topologicalOrder: string[] | null;
+  cycles: string[][];
+}
+
+export interface GraphStatsDTO {
+  nodeCount: number;
+  edgeCount: number;
+  rootCount: number;
+  leafCount: number;
+  connectedComponentCount: number;
+  hasCycles: boolean;
+  maxDepth: number;
+}
+
+export interface CompatiblePortDTO {
+  symbolId: string;
+  portName: string;
+  score: number;
+}
+
+export interface UnconnectedPortDTO {
+  symbolId: string;
+  portName: string;
+  portDirection: string;
+}
+
+export interface WiringResultDTO {
+  success: boolean;
+  connectionId?: string | undefined;
+  error?: string | undefined;
+  errorCode?: string | undefined;
+}

@@ -17,6 +17,12 @@ import type {
   PaginatedResponse,
   ValidationResultDTO,
   ConnectionDTO,
+  CreateConnectionRequest,
+  WiringResultDTO,
+  DependencyGraphDTO,
+  GraphStatsDTO,
+  CompatiblePortDTO,
+  UnconnectedPortDTO,
 } from '../src/api/types.js';
 
 // Type definitions for the exposed API
@@ -52,6 +58,18 @@ export interface CyrusAPI {
     findUnreachable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     findUntested: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
+  // Wiring operations
+  wiring: {
+    connect: (request: CreateConnectionRequest) => Promise<ApiResponse<WiringResultDTO>>;
+    disconnect: (connectionId: string) => Promise<ApiResponse<WiringResultDTO>>;
+    validateConnection: (request: CreateConnectionRequest) => Promise<ApiResponse<ValidationResultDTO>>;
+    getGraph: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
+    detectCycles: () => Promise<ApiResponse<string[][]>>;
+    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
+    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
+    findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
+    findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
+  };
 }
 
 // Expose the API to the renderer
@@ -83,6 +101,18 @@ const cyrusAPI: CyrusAPI = {
   status: {
     findUnreachable: () => ipcRenderer.invoke('status:findUnreachable'),
     findUntested: () => ipcRenderer.invoke('status:findUntested'),
+  },
+  wiring: {
+    connect: (request) => ipcRenderer.invoke('wiring:connect', request),
+    disconnect: (connectionId) => ipcRenderer.invoke('wiring:disconnect', connectionId),
+    validateConnection: (request) => ipcRenderer.invoke('wiring:validateConnection', request),
+    getGraph: (symbolId) => ipcRenderer.invoke('wiring:getGraph', symbolId),
+    detectCycles: () => ipcRenderer.invoke('wiring:detectCycles'),
+    getTopologicalOrder: () => ipcRenderer.invoke('wiring:getTopologicalOrder'),
+    getStats: () => ipcRenderer.invoke('wiring:getStats'),
+    findCompatiblePorts: (symbolId, portName) =>
+      ipcRenderer.invoke('wiring:findCompatiblePorts', symbolId, portName),
+    findUnconnectedRequired: () => ipcRenderer.invoke('wiring:findUnconnectedRequired'),
   },
 };
 

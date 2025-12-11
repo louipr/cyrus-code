@@ -14,11 +14,11 @@ import {
   type ComponentQuery,
   type ResolveOptions,
 } from '../services/registry/index.js';
+import { WiringService, type ConnectionRequest } from '../services/wiring/index.js';
 import type {
   ComponentSymbolDTO,
   ConnectionDTO,
   ValidationResultDTO,
-  ValidationErrorDTO,
   SymbolQuery,
   ApiResponse,
   PaginatedResponse,
@@ -32,6 +32,13 @@ import type {
   GenerationMetadataDTO,
   PortDefinitionDTO,
   TypeReferenceDTO,
+  DependencyGraphDTO,
+  GraphNodeDTO,
+  GraphEdgeDTO,
+  GraphStatsDTO,
+  CompatiblePortDTO,
+  UnconnectedPortDTO,
+  WiringResultDTO,
 } from './types.js';
 import type {
   ComponentSymbol,
@@ -46,11 +53,11 @@ import type {
 
 export class ApiFacade {
   private registry: ComponentRegistry;
-  private db: DatabaseType;
+  private wiringService: WiringService;
 
   constructor(db: DatabaseType) {
-    this.db = db;
     this.registry = new ComponentRegistry(db);
+    this.wiringService = new WiringService(this.registry.getStore());
   }
 
   // ==========================================================================
@@ -521,6 +528,286 @@ export class ApiFacade {
         success: false,
         error: {
           code: 'CHECK_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  // ==========================================================================
+  // Wiring (validated connections with graph operations)
+  // ==========================================================================
+
+  /**
+   * Wire a connection between ports with full validation.
+   * Unlike createConnection(), this validates port compatibility,
+   * checks for cycles, and uses the WiringService.
+   */
+  wireConnection(request: CreateConnectionRequest): ApiResponse<WiringResultDTO> {
+    try {
+      const connectionRequest: ConnectionRequest = {
+        fromSymbolId: request.fromSymbolId,
+        fromPort: request.fromPort,
+        toSymbolId: request.toSymbolId,
+        toPort: request.toPort,
+        transform: request.transform,
+      };
+
+      const result = this.wiringService.connect(connectionRequest);
+      return {
+        success: true,
+        data: {
+          success: result.success,
+          connectionId: result.connectionId,
+          error: result.error,
+          errorCode: result.errorCode,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'WIRING_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Unwire (disconnect) a connection by ID.
+   */
+  unwireConnection(connectionId: string): ApiResponse<WiringResultDTO> {
+    try {
+      const result = this.wiringService.disconnect(connectionId);
+      return {
+        success: true,
+        data: {
+          success: result.success,
+          connectionId: result.connectionId,
+          error: result.error,
+          errorCode: result.errorCode,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'UNWIRING_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Validate a potential connection without creating it.
+   */
+  validateConnectionRequest(request: CreateConnectionRequest): ApiResponse<ValidationResultDTO> {
+    try {
+      const connectionRequest: ConnectionRequest = {
+        fromSymbolId: request.fromSymbolId,
+        fromPort: request.fromPort,
+        toSymbolId: request.toSymbolId,
+        toPort: request.toPort,
+        transform: request.transform,
+      };
+
+      const result = this.wiringService.validateConnection(connectionRequest);
+      return {
+        success: true,
+        data: this.validationResultToDto(result),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Get the full dependency graph.
+   */
+  getDependencyGraph(symbolId?: string): ApiResponse<DependencyGraphDTO> {
+    try {
+      const graph = symbolId
+        ? this.wiringService.buildSubgraph(symbolId)
+        : this.wiringService.buildDependencyGraph();
+
+      // Convert internal graph nodes to DTOs
+      // GraphNode has: symbolId, name, namespace, level, inputs, outputs
+      // We need to fetch the full symbol for kind
+      const nodes: GraphNodeDTO[] = [];
+      for (const node of graph.nodes.values()) {
+        const symbol = this.registry.get(node.symbolId);
+        nodes.push({
+          id: node.symbolId,
+          name: node.name,
+          namespace: node.namespace,
+          level: node.level,
+          kind: symbol?.kind ?? 'class',
+        });
+      }
+
+      // Convert internal graph edges to DTOs
+      // GraphEdge has: connectionId, fromSymbol, fromPort, toSymbol, toPort
+      const edges: GraphEdgeDTO[] = [];
+      for (const edgeList of graph.edges.values()) {
+        for (const edge of edgeList) {
+          edges.push({
+            id: edge.connectionId,
+            from: edge.fromSymbol,
+            to: edge.toSymbol,
+            fromPort: edge.fromPort,
+            toPort: edge.toPort,
+          });
+        }
+      }
+
+      const dto: DependencyGraphDTO = {
+        nodes,
+        edges,
+        topologicalOrder: graph.topologicalOrder,
+        cycles: graph.cycles,
+      };
+
+      return {
+        success: true,
+        data: dto,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'GRAPH_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Detect cycles in the dependency graph.
+   */
+  detectCycles(): ApiResponse<string[][]> {
+    try {
+      const cycles = this.wiringService.detectCycles();
+      return {
+        success: true,
+        data: cycles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'CYCLE_DETECTION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Get topological order of components.
+   */
+  getTopologicalOrder(): ApiResponse<string[] | null> {
+    try {
+      const order = this.wiringService.getTopologicalOrder();
+      return {
+        success: true,
+        data: order,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'TOPOLOGICAL_SORT_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Get graph statistics.
+   */
+  getGraphStats(): ApiResponse<GraphStatsDTO> {
+    try {
+      const stats = this.wiringService.getGraphStats();
+      return {
+        success: true,
+        data: {
+          nodeCount: stats.nodeCount,
+          edgeCount: stats.edgeCount,
+          rootCount: stats.rootCount,
+          leafCount: stats.leafCount,
+          connectedComponentCount: stats.componentCount,
+          hasCycles: stats.hasCycles,
+          maxDepth: stats.maxDepth,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'STATS_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Find compatible ports for a given source port.
+   */
+  findCompatiblePorts(
+    symbolId: string,
+    portName: string
+  ): ApiResponse<CompatiblePortDTO[]> {
+    try {
+      const compatible = this.wiringService.findCompatiblePorts(symbolId, portName);
+      return {
+        success: true,
+        data: compatible.map((c) => ({
+          symbolId: c.symbolId,
+          portName: c.portName,
+          score: c.score,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'COMPATIBLE_PORTS_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Find all required ports that are not connected.
+   */
+  findUnconnectedRequired(): ApiResponse<UnconnectedPortDTO[]> {
+    try {
+      const unconnected = this.wiringService.findUnconnectedRequiredPorts();
+      return {
+        success: true,
+        data: unconnected.map((u) => ({
+          symbolId: u.symbolId,
+          portName: u.portName,
+          portDirection: u.portDirection,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'UNCONNECTED_PORTS_FAILED',
           message: error instanceof Error ? error.message : String(error),
         },
       };

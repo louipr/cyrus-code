@@ -58,7 +58,7 @@ npm run electron:dev   # Dev mode with hot reload
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator | Canvas, Validation | 🔄 In Progress |
+| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | 🔄 Backend Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | ⏳ Not Started |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ⏳ Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
@@ -129,8 +129,9 @@ npm run electron:dev   # Dev mode with hot reload
 | 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
 | 2.7 | Dependency graph builder | `src/services/wiring/graph.ts` | ✅ |
 | 2.8 | Unit tests for Wiring | `src/services/wiring/index.test.ts` | ✅ (22 tests) |
-| 2.9 | Extend API Facade | `src/api/facade.ts` | ⏳ |
-| 2.10 | CLI: connect, graph commands | `src/cli/commands/` | ⏳ |
+| 2.9 | Extend API Facade with wiring methods | `src/api/facade.ts` | ✅ |
+| 2.10 | CLI: wire, graph commands | `src/cli/commands/wire.ts`, `src/cli/commands/graph.ts` | ✅ |
+| 2.11 | IPC handlers for wiring | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
 
 ### GUI Tasks
 
