@@ -35,3 +35,4 @@ coverage/
 tmp/
 temp/
 .cyrus-code/
+playwright-report/
