@@ -93,13 +93,27 @@ Inspired by HDL signals:
 ## Commands
 
 ```bash
-# Development (current)
-npm run build          # Compile TypeScript
-npm test               # Run all tests
-npm run dev            # Development mode
+# Build
+npm run build          # Build backend (TypeScript)
+npm run build:gui      # Build frontend (Vite)
+npm run build:all      # Build everything
+
+# Test
+npm test               # Run 72 unit tests (auto-rebuilds native module)
+npm run test:gui       # Type-check GUI code
+npm run test:e2e       # Run 4 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:all       # Run unit tests + GUI type-check
+
+# Run
+npm run electron       # Launch desktop app (production build)
+npm run electron:dev   # Dev mode with hot reload
+
+# Utilities
+npm run clean          # Remove dist/
+npm run lint           # ESLint
 ```
 
-> **Future CLI**: See [Level 2: Container](docs/c4/2-container.md#cli-commands) for planned `cyrus-code` commands.
+> **CLI Commands**: See [Level 2: Container](docs/c4/2-container.md#cli-commands) for `cyrus-code` CLI usage.
 
 ## Development Philosophy
 

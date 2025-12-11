@@ -49,18 +49,13 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Status
 
-**Phase: Architecture Complete → Ready for Implementation**
+**Phase: Slice 1 Complete**
 
-> **Note**: No implementation code exists yet. See [CLAUDE.md](CLAUDE.md) for AI development context.
-
-### Completed (Architecture)
-- [x] Project scaffold and dependencies
-- [x] 9 Architecture Decision Records (ADR-001 through ADR-009)
-- [x] Symbol table schema specification
-- [x] C4 architecture diagrams (Context, Container, Component, Dynamic)
-- [x] Design patterns specification (GoF patterns mapped to architecture)
-- [x] GUI framework decision (Electron + React)
-- [x] Implementation plan with vertical slices
+### Completed
+- [x] Architecture: 9 ADRs, C4 diagrams, symbol table schema
+- [x] Slice 1: Symbol Table, Registry, Component Browser GUI
+- [x] 72 unit tests + 4 E2E tests passing
+- [x] Electron desktop app with React frontend
 
 ### Implementation Approach: Vertical Slices
 
@@ -68,7 +63,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
-| 1: Foundation | Symbol Table, Registry | Component Browser | Not Started |
+| 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
 | 2: Wiring | Linker, Validator | Canvas, Validation | Not Started |
 | 3: Generation | Code Synthesizer | Preview, Export | Not Started |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
@@ -76,13 +71,15 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 
 ### Technology Stack
 
-| Layer | Technology |
-|-------|------------|
-| Symbol Table | SQLite + TypeScript |
-| AST Manipulation | ts-morph |
-| Schema Validation | Zod |
-| Desktop GUI | Electron + React |
-| Backend Runtime | Node.js
+| Layer | Technology | Version |
+|-------|------------|---------|
+| Runtime | Node.js | ≥20.0.0 |
+| Desktop GUI | Electron | 29.x |
+| Frontend | React | 18.x |
+| Symbol Table | SQLite (better-sqlite3) | 11.x |
+| AST Manipulation | ts-morph | 24.x |
+| Schema Validation | Zod | 3.x |
+| E2E Testing | Playwright | 1.57.x |
 
 ## Documentation
 
@@ -103,14 +100,18 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install (requires Node.js ≥20.0.0)
 npm install
 
-# Build
-npm run build
+# Build everything
+npm run build:all
 
-# Test
-npm test
+# Run tests
+npm test           # 72 unit tests
+npm run test:e2e   # 4 E2E tests
+
+# Launch desktop app
+npm run electron
 ```
 
 ## See Also
