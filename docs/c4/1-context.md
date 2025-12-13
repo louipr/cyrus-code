@@ -7,27 +7,35 @@ System context showing cyrus-code and its external actors/systems.
 ## Context Diagram
 
 ```mermaid
-C4Context
-    title System Context - cyrus-code
+flowchart TB
+    subgraph users ["Users"]
+        dev["👤 Developer<br/><small>Designs architecture</small>"]
+        ai["🤖 AI Agent<br/><small>Configures components</small>"]
+    end
 
-    Person(developer, "Developer", "Designs system architecture and composes components")
-    Person(aiAgent, "AI Agent", "Configures components via registry queries")
+    cyrus["🔷 cyrus-code<br/><small>Component architecture tool</small>"]
 
-    System(cyrusCode, "cyrus-code", "Hardware-inspired software component architecture tool with symbol table tracking")
+    subgraph external ["External Systems"]
+        local["📁 Local Environment<br/><small>File system, IDE, Git</small>"]
+        registry["📦 Package Registry<br/><small>npm, PyPI, crates.io</small>"]
+        claude["🧠 Claude API<br/><small>AI reasoning</small>"]
+    end
 
-    System_Ext(fileSystem, "File System", "Project source code and generated output")
-    System_Ext(packageRegistry, "Package Registry", "npm, crates.io, PyPI for dependency metadata")
-    System_Ext(versionControl, "Version Control", "Git repository for component versioning")
-    System_Ext(ide, "IDE / Editor", "VS Code, IntelliJ for development")
-    System_Ext(claudeApi, "Claude API", "AI reasoning for component configuration")
+    dev -->|"Defines & wires"| cyrus
+    ai -->|"Queries & configures"| cyrus
+    cyrus -->|"Read/write"| local
+    cyrus -->|"Resolve deps"| registry
+    ai -.->|"AI assistance"| claude
 
-    Rel(developer, cyrusCode, "Defines components, connects interfaces, generates code")
-    Rel(aiAgent, cyrusCode, "Queries registry, configures connections")
-    Rel(cyrusCode, fileSystem, "Reads source, writes generated code")
-    Rel(cyrusCode, packageRegistry, "Resolves external dependencies")
-    Rel(cyrusCode, versionControl, "Tracks component versions")
-    Rel(cyrusCode, ide, "Language server integration")
-    Rel(aiAgent, claudeApi, "Reasoning and configuration")
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#999999,stroke:#666666,color:#fff
+    classDef boundary fill:transparent,stroke:#444,stroke-dasharray:5
+
+    class dev,ai person
+    class cyrus system
+    class local,registry,claude external
+    class users,external boundary
 ```
 
 ## Legend
@@ -52,10 +60,8 @@ C4Context
 
 | System | Purpose | Integration |
 |--------|---------|-------------|
-| **File System** | Source and output storage | Read TypeScript/Python files, write generated code |
-| **Package Registry** | External dependency metadata | Resolve npm/crates/PyPI versions |
-| **Version Control** | Component versioning | Git integration for version tracking |
-| **IDE** | Development environment | Language server protocol for rich editing |
+| **Local Environment** | Development workspace | File system (source/output), IDE (LSP), Git (versioning) |
+| **Package Registry** | Dependency metadata | Resolve npm, PyPI, crates.io versions |
 | **Claude API** | AI reasoning | Component configuration assistance |
 
 ## Key Interactions

@@ -33,7 +33,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 72 unit tests
+npm test               # Run 202 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -47,9 +47,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 123 | `src/**/*.test.ts` |
-| E2E tests | 4 | `tests/e2e/*.spec.ts` |
-| **Total** | **127** | |
+| Unit tests | 202 | `src/**/*.test.ts` |
+| E2E tests | 27 tests (5 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **229** | |
 
 ---
 
@@ -58,9 +58,10 @@ npm run electron:dev   # Dev mode with hot reload
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | 🔄 Backend Complete |
-| 3: Generation | Code Synthesizer | Preview, Export | ⏳ Not Started |
-| 4: Analysis | Static Analyzer | Status, Dead Code | ⏳ Not Started |
+| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
+| 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
+| Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
+| 4: Analysis | Static Analyzer | Status, Dead Code | 🔄 In Progress |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
 ---
@@ -97,6 +98,14 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.G7 | API client (IPC wrapper) | `src/gui/api-client.ts` | ✅ |
 | 1.G8 | Configure Playwright for Electron | `playwright.config.ts`, `tests/e2e/helpers/` | ✅ |
 | 1.G9 | E2E test: Component browser workflow | `tests/e2e/component-browser.spec.ts` | ✅ |
+
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| 1.V1 | `npm run build && npm test` passes | Agent | ✅ |
+| 1.V2 | `npm run test:e2e` passes | Agent | ✅ |
+| 1.V3 | Manual: App launches, search works, component list loads | User | ✅ |
 
 ### Deliverables
 
@@ -137,20 +146,31 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 2.G1 | Canvas component | `src/gui/components/Canvas.tsx` | ⏳ |
-| 2.G2 | Draggable component nodes | `src/gui/components/ComponentNode.tsx` | ⏳ |
-| 2.G3 | Port connection wiring | `src/gui/components/PortWire.tsx` | ⏳ |
-| 2.G4 | Real-time validation overlay | `src/gui/components/ValidationOverlay.tsx` | ⏳ |
-| 2.G5 | Dependency graph view | `src/gui/components/DependencyGraph.tsx` | ⏳ |
-| 2.G6 | Port type tooltips | `src/gui/components/PortTooltip.tsx` | ⏳ |
+| 2.G1 | Canvas component | `src/gui/components/Canvas.tsx` | ✅ |
+| 2.G2 | Draggable component nodes | `src/gui/components/CanvasNode.tsx` | ✅ |
+| 2.G3 | Port connection wiring | `src/gui/components/PortWire.tsx`, `src/gui/components/PendingWire.tsx` | ✅ |
+| 2.G4 | Real-time validation overlay | `src/gui/components/ValidationOverlay.tsx` | ✅ |
+| 2.G5 | Dependency graph view | `src/gui/components/DependencyGraph.tsx` | ✅ |
+| 2.G6 | Port type tooltips | `src/gui/components/PortTooltip.tsx` | ✅ |
+| 2.G7 | Graph statistics panel | `src/gui/components/GraphStats.tsx` | ✅ |
+| 2.G8 | Port handle indicators | `src/gui/components/PortHandle.tsx` | ✅ |
+| 2.G9 | E2E tests for canvas | `tests/e2e/canvas-wiring.spec.ts` | ✅ |
+
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| 2.V1 | `npm run build && npm test` passes | Agent | ✅ |
+| 2.V2 | `npm run test:e2e` passes (canvas tests) | Agent | ✅ |
+| 2.V3 | Manual: Canvas view, drag nodes, view toggle works | User | ⏳ |
 
 ### Deliverables
 
-- [ ] Can drag components onto canvas
-- [ ] Can wire ports between components
-- [ ] Live validation feedback (green/red)
-- [ ] Dependency graph visualization
-- [ ] Error messages for type mismatches
+- [x] Can drag components onto canvas
+- [x] Can wire ports between components (click-to-wire)
+- [x] Live validation feedback (compatible ports highlight green)
+- [x] Dependency graph visualization
+- [x] Port tooltips with type/direction info
 
 ---
 
@@ -160,65 +180,140 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 3.1 | Implement Code Synthesizer | `src/synthesizer/index.ts` | ⏳ |
-| 3.2 | Implement AST Builder | `src/synthesizer/ast-builder.ts` | ⏳ |
-| 3.3 | Implement Generation Gap | `src/synthesizer/generation-gap.ts` | ⏳ |
-| 3.4 | TypeScript backend | `src/backends/typescript/index.ts` | ⏳ |
-| 3.5 | Type mapping (abstract → TS) | `src/backends/typescript/types.ts` | ⏳ |
-| 3.6 | File writer | `src/synthesizer/writer.ts` | ⏳ |
-| 3.7 | Extend API Facade | `src/api/facade.ts` | ⏳ |
-| 3.8 | CLI: generate | `src/cli/generate.ts` | ⏳ |
-| 3.9 | Unit tests for Synthesizer | `src/synthesizer/*.test.ts` | ⏳ |
+| 3.1 | Implement Code Synthesizer | `src/services/synthesizer/index.ts` | ✅ |
+| 3.2 | Implement Codegen utilities | `src/services/synthesizer/codegen.ts` | ✅ |
+| 3.3 | Implement Generation Gap | `src/services/synthesizer/generation-gap.ts` | ✅ |
+| 3.4 | TypeScript backend | `src/services/synthesizer/backends/typescript.ts` | ✅ |
+| 3.5 | Synthesizer schema types | `src/services/synthesizer/schema.ts` | ✅ |
+| 3.6 | Extend API Facade | `src/api/facade.ts` | ✅ |
+| 3.7 | CLI: generate | `src/cli/commands/generate.ts` | ✅ |
+| 3.8 | IPC handlers for synthesizer | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
+| 3.9 | Unit tests for Synthesizer | `src/services/synthesizer/index.test.ts` | ✅ (51 tests) |
 
 ### GUI Tasks
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 3.G1 | Generate button/action | `src/gui/components/GenerateButton.tsx` | ⏳ |
-| 3.G2 | File preview panel | `src/gui/components/FilePreview.tsx` | ⏳ |
-| 3.G3 | Generation progress | `src/gui/components/GenerationProgress.tsx` | ⏳ |
-| 3.G4 | Export to project | `src/gui/components/ExportDialog.tsx` | ⏳ |
-| 3.G5 | Generated file tree | `src/gui/components/FileTree.tsx` | ⏳ |
+| 3.G1 | Generate button/action | `src/gui/components/GenerateButton.tsx` | ✅ |
+| 3.G2 | Code preview panel | `src/gui/components/GenerationPreview.tsx` | ✅ |
+| 3.G3 | Generation result display | `src/gui/components/GenerationResult.tsx` | ✅ |
+| 3.G4 | Export to project dialog | `src/gui/components/ExportDialog.tsx` | ✅ |
+| 3.G5 | Generated file tree | `src/gui/components/FileTree.tsx` | ✅ |
+
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| 3.V1 | `npm run build && npm test` passes | Agent | ✅ |
+| 3.V2 | `npm run test:e2e` passes (generation tests) | Agent | ✅ |
+| 3.V3 | Manual: Generate button, preview modal, code display works | User | ✅ |
+| 3.V4 | Manual: Export All button, export dialog, browse directory, file tree | User | ⏳ |
 
 ### Deliverables
 
-- [ ] Can generate TypeScript code from composition
-- [ ] Generation Gap pattern (base + implementation)
-- [ ] Preview generated files before export
-- [ ] Export to specified directory
+- [x] Can generate TypeScript code from composition
+- [x] Generation Gap pattern (base + implementation)
+- [x] Preview generated files before export
+- [x] Export to specified directory
 
 ---
 
-## Slice 4: Analysis + Dead Code
+## Help System
 
 ### Backend Tasks
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 4.1 | Implement Static Analyzer | `src/analyzer/index.ts` | ⏳ |
-| 4.2 | Call graph builder | `src/analyzer/call-graph.ts` | ⏳ |
-| 4.3 | Status Tracker | `src/symbol-table/status.ts` | ⏳ |
-| 4.4 | Dead code detection | `src/analyzer/dead-code.ts` | ⏳ |
-| 4.5 | Import Detector | `src/importer/index.ts` | ⏳ |
-| 4.6 | Extend API Facade | `src/api/facade.ts` | ⏳ |
-| 4.7 | CLI: analyze, dead, scan, import | `src/cli/analyze.ts` | ⏳ |
-| 4.8 | Unit tests for Analyzer | `src/analyzer/*.test.ts` | ⏳ |
+| H.1 | Help manifest | `docs/help.json` | ✅ |
+| H.2 | Help schema types | `src/services/help/schema.ts` | ✅ |
+| H.3 | Terminal markdown renderer | `src/services/help/renderer.ts` | ✅ |
+| H.4 | HelpService | `src/services/help/index.ts` | ✅ |
+| H.5 | Unit tests | `src/services/help/index.test.ts` | ✅ (28 tests) |
+| H.6 | CLI help command | `src/cli/commands/help.ts` | ✅ |
+| H.7 | IPC handlers | `electron/ipc-handlers.ts` | ✅ |
+
+### GUI Tasks
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| H.G1 | Electron menu | `electron/menu.ts` | ✅ |
+| H.G2 | MermaidDiagram component | `src/gui/components/MermaidDiagram.tsx` | ✅ |
+| H.G3 | HelpDialog component | `src/gui/components/HelpDialog.tsx` | ✅ |
+| H.G4 | AboutDialog component | `src/gui/components/AboutDialog.tsx` | ✅ |
+| H.G5 | F1 shortcut + help button | `src/gui/App.tsx` | ✅ |
+| H.G6 | Help API in preload | `electron/preload.ts` | ✅ |
+| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (5 tests) |
+
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| H.V1 | `npm run build && npm test` passes (202 tests) | Agent | ✅ |
+| H.V2 | CLI: `cyrus-code help`, `help <topic>`, `help --search` | Agent | ✅ |
+| H.V3 | `npm run test:e2e` passes (help dialog tests) | Agent | ✅ |
+| H.V4 | Manual: F1 opens help, topics render, mermaid diagrams | User | ✅ |
+
+### Deliverables
+
+- [x] Manifest-driven help system (`docs/help.json`)
+- [x] CLI help command with search and category filters
+- [x] Terminal markdown renderer (ANSI colors)
+- [x] GUI help dialog with topic browser
+- [x] Mermaid C4 diagram rendering (8 diagrams)
+- [x] F1 keyboard shortcut
+- [x] Help menu in Electron application menu
+- [x] About dialog with version info
+
+---
+
+## Slice 4: Analysis + Dead Code (Phase A)
+
+### Backend Tasks
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| 4.1 | Analyzer schema types | `src/services/analyzer/schema.ts` | ✅ |
+| 4.2 | Call graph builder | `src/services/analyzer/call-graph.ts` | ⏳ |
+| 4.3 | Static Analyzer service | `src/services/analyzer/index.ts` | ⏳ |
+| 4.4 | Unit tests for Analyzer | `src/services/analyzer/*.test.ts` | ⏳ |
+| 4.5 | Extend API Facade | `src/api/facade.ts` | ⏳ |
+| 4.6 | CLI: analyze command | `src/cli/commands/analyze.ts` | ⏳ |
+| 4.7 | CLI: dead command | `src/cli/commands/dead.ts` | ⏳ |
+| 4.8 | CLI: status command | `src/cli/commands/status.ts` | ⏳ |
+| 4.9 | IPC handlers for analyzer | `electron/ipc-handlers.ts` | ⏳ |
 
 ### GUI Tasks
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | 4.G1 | Status badges on nodes | `src/gui/components/StatusBadge.tsx` | ⏳ |
-| 4.G2 | Dead code highlights | `src/gui/components/DeadCodeOverlay.tsx` | ⏳ |
-| 4.G3 | Analysis report panel | `src/gui/components/AnalysisReport.tsx` | ⏳ |
-| 4.G4 | Import wizard | `src/gui/components/ImportWizard.tsx` | ⏳ |
+| 4.G2 | Canvas node status integration | `src/gui/components/CanvasNode.tsx` | ⏳ |
+| 4.G3 | Analysis panel | `src/gui/components/AnalysisPanel.tsx` | ⏳ |
+| 4.G4 | E2E tests for analysis | `tests/e2e/analysis.spec.ts` | ⏳ |
+
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| 4.V1 | `npm run build && npm test` passes with analyzer tests | Agent | ⏳ |
+| 4.V2 | CLI commands work: `cyrus-code analyze`, `dead`, `status` | Agent + User | ⏳ |
+| 4.V3 | `npm run test:e2e` passes (analysis tests) | Agent | ⏳ |
+| 4.V4 | Manual: Status badges visible, analysis panel works | User | ⏳ |
 
 ### Deliverables
 
 - [ ] Analyze code from entry points
 - [ ] Identify dead/unreachable components
-- [ ] Visual status indicators
-- [ ] Import untracked manual code
+- [ ] Visual status indicators on canvas nodes
+- [ ] Analysis summary panel
+
+### Phase B (Deferred)
+
+| Task | Status |
+|------|--------|
+| Import Detector (`src/services/analyzer/import-scanner.ts`) | ⏳ |
+| CLI: scan, import commands | ⏳ |
+| Import wizard GUI | ⏳ |
 
 ---
 
@@ -244,6 +339,15 @@ npm run electron:dev   # Dev mode with hot reload
 | 5.G3 | Impact analysis view | `src/gui/components/ImpactView.tsx` | ⏳ |
 | 5.G4 | Release management | `src/gui/components/ReleaseManager.tsx` | ⏳ |
 
+### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| 5.V1 | `npm run build && npm test` passes with lifecycle tests | Agent | ⏳ |
+| 5.V2 | CLI commands work: `cyrus-code spec`, `test`, `impact`, `release` | Agent + User | ⏳ |
+| 5.V3 | `npm run test:e2e` passes (lifecycle tests) | Agent | ⏳ |
+| 5.V4 | Manual: Requirements editor, test coverage, impact view, release UI works | User | ⏳ |
+
 ### Deliverables
 
 - [ ] Requirement specification management
@@ -255,14 +359,15 @@ npm run electron:dev   # Dev mode with hot reload
 
 ## Project Structure
 
-### Current (Slice 1 Complete)
+### Current (Slice 3 + Help Complete)
 
 ```
 cyrus-code/
 ├── electron/                          # Electron Main Process ✅
 │   ├── main.ts                        # App entry point, window creation
 │   ├── preload.ts                     # Context bridge for IPC
-│   └── ipc-handlers.ts                # IPC handlers → ApiFacade
+│   ├── ipc-handlers.ts                # IPC handlers → ApiFacade
+│   └── menu.ts                        # Application menu with Help ✅
 ├── src/
 │   ├── api/                           # API Layer ✅
 │   │   ├── facade.ts                  # Backend API interface
@@ -275,7 +380,11 @@ cyrus-code/
 │   │       ├── register.ts            # Register component
 │   │       ├── list.ts                # List/query components
 │   │       ├── get.ts                 # Get component details
-│   │       └── validate.ts            # Validate registry
+│   │       ├── validate.ts            # Validate registry
+│   │       ├── wire.ts                # Wire ports ✅ (Slice 2)
+│   │       ├── graph.ts               # Dependency graph ✅ (Slice 2)
+│   │       ├── generate.ts            # Code generation ✅ (Slice 3)
+│   │       └── help.ts                # Help command ✅
 │   ├── gui/                           # React Frontend ✅
 │   │   ├── index.html                 # HTML entry point
 │   │   ├── main.tsx                   # React entry point
@@ -284,7 +393,24 @@ cyrus-code/
 │   │   └── components/                # React components
 │   │       ├── SearchBar.tsx          # Search input
 │   │       ├── ComponentList.tsx      # Filterable component list
-│   │       └── ComponentDetail.tsx    # Detail panel with ports
+│   │       ├── ComponentDetail.tsx    # Detail panel with ports
+│   │       ├── DependencyGraph.tsx    # Graph visualization
+│   │       ├── GraphStats.tsx         # Graph statistics panel
+│   │       ├── ValidationOverlay.tsx  # Real-time validation
+│   │       ├── Canvas.tsx             # Visual wiring canvas
+│   │       ├── CanvasNode.tsx         # Draggable node
+│   │       ├── PortHandle.tsx         # Clickable port indicator
+│   │       ├── PortWire.tsx           # Connection lines
+│   │       ├── PendingWire.tsx        # Wire being drawn
+│   │       ├── PortTooltip.tsx        # Port hover info
+│   │       ├── GenerateButton.tsx     # Code generation trigger
+│   │       ├── GenerationPreview.tsx  # Preview modal
+│   │       ├── GenerationResult.tsx   # Generation results
+│   │       ├── ExportDialog.tsx       # Export to directory dialog
+│   │       ├── FileTree.tsx           # File tree in export dialog
+│   │       ├── HelpDialog.tsx         # Help topic browser ✅
+│   │       ├── AboutDialog.tsx        # Version info dialog ✅
+│   │       └── MermaidDiagram.tsx     # C4 diagram renderer ✅
 │   ├── repositories/                  # Data Access Layer ✅
 │   │   ├── persistence.ts             # SQLite database
 │   │   ├── symbol-repository.ts       # Symbol CRUD
@@ -304,24 +430,45 @@ cyrus-code/
 │       │   ├── schema.ts              # Validation types
 │       │   ├── compatibility.ts       # Port compatibility rules
 │       │   └── index.test.ts          # Validator tests (29 tests)
-│       └── wiring/                    # Wiring Service ✅ (Slice 2)
-│           ├── index.ts               # WiringService
-│           ├── schema.ts              # Graph types, wiring results
-│           ├── graph.ts               # Dependency graph builder
-│           └── index.test.ts          # Wiring tests (22 tests)
+│       ├── wiring/                    # Wiring Service ✅ (Slice 2)
+│       │   ├── index.ts               # WiringService
+│       │   ├── schema.ts              # Graph types, wiring results
+│       │   ├── graph.ts               # Dependency graph builder
+│       │   └── index.test.ts          # Wiring tests (22 tests)
+│       ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
+│       │   ├── index.ts               # SynthesizerService
+│       │   ├── schema.ts              # Generation types
+│       │   ├── codegen.ts             # ts-morph utilities
+│       │   ├── generation-gap.ts      # Two-file pattern
+│       │   ├── backends/              # Language backends
+│       │   │   └── typescript.ts      # TypeScript generator
+│       │   └── index.test.ts          # Synthesizer tests (51 tests)
+│       ├── help/                      # Help System ✅
+│       │   ├── index.ts               # HelpService
+│       │   ├── schema.ts              # Help types
+│       │   ├── renderer.ts            # Terminal markdown renderer
+│       │   └── index.test.ts          # Help tests (28 tests)
+│       └── analyzer/                  # Static Analyzer 🔄 (Slice 4)
+│           ├── schema.ts              # Analysis types ✅
+│           ├── call-graph.ts          # Call graph builder ⏳
+│           ├── index.ts               # AnalyzerService ⏳
+│           └── index.test.ts          # Analyzer tests ⏳
 ├── tests/                             # E2E Tests ✅
 │   └── e2e/
 │       ├── helpers/
 │       │   ├── app.ts                 # Electron launch helper
 │       │   ├── selectors.ts           # Centralized data-testid selectors
+│       │   ├── fixtures.ts            # Test data seeding and cleanup
 │       │   └── actions.ts             # Reusable test actions
-│       └── component-browser.spec.ts  # Component browser E2E tests
+│       ├── component-browser.spec.ts  # Component browser E2E tests
+│       ├── dependency-graph.spec.ts   # Graph view E2E tests
+│       ├── code-generation.spec.ts    # Code generation E2E tests
+│       ├── canvas-wiring.spec.ts      # Canvas wiring E2E tests
+│       └── help-dialog.spec.ts        # Help dialog E2E tests ✅
 ├── docs/                              # Documentation
 ├── vite.config.ts                     # Vite config for GUI
 ├── playwright.config.ts               # Playwright config (workers: 1)
 ├── tsconfig.json                      # Base TypeScript config
-├── tsconfig.build.json                # Production build (excludes tests, GUI)
-├── tsconfig.test.json                 # Test build (includes tests)
 ├── tsconfig.gui.json                  # GUI type-checking (React/DOM)
 └── package.json
 ```
@@ -341,10 +488,9 @@ cyrus-code/
 │   │   ├── symbol-table/              # Symbol Table ✅
 │   │   ├── validator/                 # Interface Validator ✅ (Slice 2)
 │   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
-│   │   ├── synthesizer/               # Code Synthesizer (Slice 3)
+│   │   ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
+│   │   ├── help/                      # Help System ✅
 │   │   └── analyzer/                  # Static Analyzer (Slice 4)
-│   └── backends/                      # Language Backends (Slice 3)
-│       └── typescript/
 ├── tests/
 │   └── e2e/                           # Playwright E2E Tests ✅
 ├── docs/
@@ -374,10 +520,10 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (123 tests)
+# 2. Run unit tests (202 tests)
 npm test
 
-# 3. Run E2E tests (4 tests)
+# 3. Run E2E tests (27 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -386,8 +532,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 123 unit tests pass
-- 4 E2E tests pass
+- 202 unit tests pass
+- 27 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling
@@ -428,6 +574,10 @@ npm run electron
 - [ ] Search bar is visible at the top
 - [ ] Component list shows placeholder text (empty registry)
 - [ ] Typing in search bar filters correctly
+- [ ] View toggle (Browser/Graph/Canvas) works
+- [ ] F1 opens help dialog
+- [ ] Help button (?) visible in header
+- [ ] About dialog accessible from Help menu
 - [ ] No console errors in DevTools (Cmd+Option+I)
 
 ---

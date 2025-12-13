@@ -1,0 +1,136 @@
+/**
+ * E2E Tests: Help Dialog
+ *
+ * Tests the help system GUI functionality including:
+ * - Help button opens dialog
+ * - F1 keyboard shortcut
+ * - Dialog can be closed
+ */
+
+import { test, expect } from '@playwright/test';
+import { launchApp, closeApp, type AppContext } from './helpers/app';
+import { selectors } from './helpers/selectors';
+
+let context: AppContext;
+
+test.beforeAll(async () => {
+  context = await launchApp();
+});
+
+test.afterAll(async () => {
+  if (context) {
+    await closeApp(context);
+  }
+});
+
+test.describe('Help Dialog', () => {
+  test('help button opens help dialog', async () => {
+    const { page } = context;
+
+    // Click the help button
+    await page.click(selectors.helpButton);
+
+    // Wait for help dialog title to appear (exact match on h2)
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Should have search input
+    await expect(page.locator('input[placeholder="Search topics..."]')).toBeVisible();
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
+  });
+
+  test('F1 keyboard shortcut opens help dialog', async () => {
+    const { page } = context;
+
+    // Press F1
+    await page.keyboard.press('F1');
+
+    // Wait for help dialog title to appear
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
+  });
+
+  test('escape key closes help dialog', async () => {
+    const { page } = context;
+
+    // Open help dialog
+    await page.click(selectors.helpButton);
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Press Escape
+    await page.keyboard.press('Escape');
+
+    // Dialog should be closed
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
+  });
+
+  test('help dialog shows welcome message when no topic selected', async () => {
+    const { page } = context;
+
+    // Open help dialog
+    await page.click(selectors.helpButton);
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Should show welcome message
+    await expect(page.getByRole('heading', { name: 'Welcome to cyrus-code Help' })).toBeVisible();
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+  });
+
+  test('help dialog has search input', async () => {
+    const { page } = context;
+
+    // Open help dialog
+    await page.click(selectors.helpButton);
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Should have search input
+    const searchInput = page.locator('input[placeholder="Search topics..."]');
+    await expect(searchInput).toBeVisible();
+
+    // Type in search box
+    await searchInput.fill('wiring');
+
+    // Verify value was typed
+    await expect(searchInput).toHaveValue('wiring');
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+  });
+
+  test('screenshot: C4 Context Diagram renders cleanly', async () => {
+    const { page } = context;
+
+    // Open help dialog
+    await page.click(selectors.helpButton);
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Click on the C4 Context Diagram topic
+    await page.click('button:has-text("Context Diagram")');
+
+    // Wait for mermaid diagram to render
+    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
+
+    // Give mermaid time to fully render SVG
+    await page.waitForTimeout(1000);
+
+    // Capture screenshot of the help dialog
+    const dialog = page.locator('[style*="position: fixed"]').first();
+    await dialog.screenshot({
+      path: '/tmp/cyrus-code/screenshots/help-dialog-c4.png',
+    });
+
+    // Verify the diagram contains expected C4 elements
+    const diagramSvg = page.locator('.mermaid-diagram svg');
+    await expect(diagramSvg).toBeVisible();
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+  });
+});

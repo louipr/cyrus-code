@@ -15,20 +15,39 @@ export const selectors = {
   componentList: '[data-testid="component-list"]',
   componentListLoading: '[data-testid="component-list-loading"]',
   componentListEmpty: '[data-testid="component-list-empty"]',
-  componentListError: '[data-testid="component-list-error"]',
-  componentItem: (id: string) => `[data-testid="component-item-${id}"]`,
 
   // Detail Panel
   detailPanel: '[data-testid="detail-panel"]',
-  detailId: '[data-testid="detail-id"]',
 
   // View Toggle
   viewToggle: '[data-testid="view-toggle"]',
 
   // Graph View
   graphView: '[data-testid="graph-view"]',
-  graphNode: (id: string) => `[data-testid="graph-node-${id}"]`,
   graphEdge: '[data-testid="graph-edge"]',
   graphStats: '[data-testid="graph-stats"]',
-  validationOverlay: '[data-testid="validation-overlay"]',
+
+  // Code Generation
+  previewButton: '[data-testid="preview-button"]',
+  generateButton: '[data-testid="generate-button"]',
+  previewModal: '[data-testid="preview-modal"]',
+  generateResult: '[data-testid="generation-result"]',
+  generateError: '[data-testid="generate-error"]',
+
+  // Canvas (Wiring)
+  canvas: '[data-testid="canvas"]',
+  pendingWire: '[data-testid="pending-wire"]',
+
+  // Help Dialog
+  helpButton: '[data-testid="help-button"]',
+  helpDialog: '[data-testid="help-dialog"]',
+  helpDialogModal: '[style*="position: fixed"]',
+  helpSearchInput: 'input[placeholder="Search topics..."]',
+  helpTopicButton: (name: string) => `button:has-text("${name}")`,
+  helpContent: '[data-testid="help-content"]',
+
+  // Mermaid Diagram
+  mermaidDiagram: '.mermaid-diagram',
+  mermaidSvg: '.mermaid-diagram svg',
+  mermaidError: '.mermaid-error',
 };
