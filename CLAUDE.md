@@ -68,7 +68,7 @@ Inspired by HDL signals:
 |------|---------|
 | `docs/adr/` | Architecture decision records (001-010) |
 | `docs/spec/symbol-table-schema.md` | Canonical type definitions |
-| `docs/c4/` | C4 architecture diagrams (C4-1 Context, C4-2 Container, C4-3 Component) |
+| `docs/c4/` | C4 architecture diagrams (L1 Context, L2 Container, 7 L3 Component, Dynamic) |
 | `docs/runbooks/` | Developer setup and manual verification guides |
 | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
@@ -131,7 +131,7 @@ npm run build:all      # Build everything
 # Test
 npm test               # Run 174 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
-npm run test:e2e       # Run 21 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:e2e       # Run 9 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
