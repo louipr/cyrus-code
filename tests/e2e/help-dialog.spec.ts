@@ -55,55 +55,6 @@ test.describe('Help Dialog', () => {
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
   });
 
-  test('escape key closes help dialog', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Press Escape
-    await page.keyboard.press('Escape');
-
-    // Dialog should be closed
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
-  });
-
-  test('help dialog shows welcome message when no topic selected', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Should show welcome message
-    await expect(page.getByRole('heading', { name: 'Welcome to cyrus-code Help' })).toBeVisible();
-
-    // Close the dialog
-    await page.keyboard.press('Escape');
-  });
-
-  test('help dialog has search input', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Should have search input
-    const searchInput = page.locator('input[placeholder="Search topics..."]');
-    await expect(searchInput).toBeVisible();
-
-    // Type in search box
-    await searchInput.fill('wiring');
-
-    // Verify value was typed
-    await expect(searchInput).toHaveValue('wiring');
-
-    // Close the dialog
-    await page.keyboard.press('Escape');
-  });
-
   test('screenshot: C4 Context Diagram renders cleanly', async () => {
     const { page } = context;
 

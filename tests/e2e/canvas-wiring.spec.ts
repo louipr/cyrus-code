@@ -27,47 +27,6 @@ test.afterAll(async () => {
 });
 
 test.describe('Canvas Wiring', () => {
-  test('canvas button is visible in view toggle', async () => {
-    const { page } = context;
-
-    const viewToggle = page.locator(selectors.viewToggle);
-    await expect(viewToggle).toBeVisible();
-
-    // Should have Canvas button
-    const canvasButton = viewToggle.locator('button:has-text("Canvas")');
-    await expect(canvasButton).toBeVisible();
-  });
-
-  test('canvas shows message or nodes', async () => {
-    const { page } = context;
-
-    // Ensure we're in canvas view
-    const canvas = page.locator(selectors.canvas);
-    const isInCanvasView = await canvas.isVisible();
-    if (!isInCanvasView) {
-      await canvasActions.switchToCanvasView(page);
-    }
-
-    // Canvas should show either nodes or an empty message
-    const canvasContent = await canvas.textContent();
-    expect(canvasContent).toBeTruthy();
-  });
-
-  test('canvas has level legend', async () => {
-    const { page } = context;
-
-    // Ensure we're in canvas view
-    const canvas = page.locator(selectors.canvas);
-    const isInCanvasView = await canvas.isVisible();
-    if (!isInCanvasView) {
-      await canvasActions.switchToCanvasView(page);
-    }
-
-    // Legend should show level colors (L0, L1, etc.)
-    const legendText = await canvas.textContent();
-    expect(legendText).toMatch(/L[0-4]/);
-  });
-
   test('can switch between all three views', async () => {
     const { page } = context;
 

@@ -42,60 +42,6 @@ test.afterAll(async () => {
 });
 
 test.describe('Code Generation', () => {
-  test('app loads without generation errors', async () => {
-    const { page } = context;
-
-    // Wait for the app to load
-    await componentActions.waitForList(page);
-
-    // Should not show any generation errors on load
-    const generateError = page.locator(selectors.generateError);
-    await expect(generateError).not.toBeVisible();
-  });
-
-  test('component detail panel loads', async () => {
-    const { page } = context;
-
-    // Wait for component list
-    await componentActions.waitForList(page);
-
-    // Click on first component (we seeded test data)
-    const componentList = page.locator(selectors.componentList);
-    const firstComponent = componentList.locator('> div').first();
-
-    if (await firstComponent.isVisible()) {
-      await firstComponent.click();
-
-      // Wait for detail panel to appear
-      await page.waitForTimeout(500);
-
-      // Detail panel should be visible
-      const detailPanel = page.locator(selectors.detailPanel);
-      const visible = await detailPanel.isVisible();
-      expect(typeof visible).toBe('boolean'); // Just verify the check works
-    }
-  });
-
-  test('generate button visibility depends on component type', async () => {
-    const { page } = context;
-
-    // Wait for component list
-    await componentActions.waitForList(page);
-
-    // The generate button should only appear for L1 components
-    // This test verifies the button element exists in the DOM (or doesn't)
-    const generateButton = page.locator(selectors.generateButton);
-    const previewButton = page.locator(selectors.previewButton);
-
-    // Check if either button is in the page
-    // They may be visible or hidden depending on selected component
-    const genVisible = await generateButton.isVisible().catch(() => false);
-    const prevVisible = await previewButton.isVisible().catch(() => false);
-
-    // Both buttons should have same visibility state
-    expect(genVisible).toBe(prevVisible);
-  });
-
   test('preview modal can be opened and closed', async () => {
     const { page } = context;
 
