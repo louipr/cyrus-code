@@ -338,12 +338,39 @@ export function HelpDialog({
                     td({ children }) {
                       return <td style={styles.td}>{children}</td>;
                     },
-                    // Style links
+                    // Style links - handle internal navigation vs external links
                     a({ href, children }) {
+                      // External links (http/https) - open in browser
+                      if (href?.startsWith('http://') || href?.startsWith('https://')) {
+                        return (
+                          <a href={href} style={styles.link} target="_blank" rel="noopener noreferrer">
+                            {children}
+                          </a>
+                        );
+                      }
+
+                      // Internal .md links - try to find matching topic
+                      if (href?.endsWith('.md')) {
+                        const handleClick = (e: React.MouseEvent) => {
+                          e.preventDefault();
+                          // Find topic by matching the href filename to topic paths
+                          const matchingTopic = topics.find((t) => t.path.endsWith(href));
+                          if (matchingTopic) {
+                            setSelectedTopic(matchingTopic.id);
+                          }
+                        };
+                        return (
+                          <a href="#" style={styles.link} onClick={handleClick}>
+                            {children}
+                          </a>
+                        );
+                      }
+
+                      // Other relative links - render as non-clickable styled text
                       return (
-                        <a href={href} style={styles.link} target="_blank" rel="noopener noreferrer">
+                        <span style={styles.link}>
                           {children}
-                        </a>
+                        </span>
                       );
                     },
                     // List styling
