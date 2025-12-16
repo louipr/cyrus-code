@@ -131,12 +131,4 @@ flowchart TB
 | **Symbol Database** | SQLite | Persistent symbol storage | ✅ |
 | **Component Store** | File System | Component source and interface files | ✅ |
 
-## Technology Decisions
-
-| Decision | Choice | Rationale | Status |
-|----------|--------|-----------|--------|
-| Symbol storage | SQLite | Single file, queryable, no server | ✅ |
-| AST manipulation | ts-morph | High-level TypeScript API | ✅ |
-| Schema validation | Zod | Runtime + compile-time types | ✅ |
-| Desktop UI | Electron + React | Cross-platform, web tech | ✅ |
-| LSP | TypeScript LSP | IDE agnostic | 🔮 |
+> **Technology Decisions**: See [ADR index](../adr/) for detailed rationale on SQLite, ts-morph, Zod, Electron, and other technology choices.
