@@ -75,7 +75,7 @@
       "id": "c4-component",
       "title": "C4-3 Component Diagram",
       "summary": "Symbol Table internal structure",
-      "path": "docs/c4/3-component.md",
+      "path": "docs/c4/3-component-symbol-table.md",
       "category": "architecture",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture"]
     },

@@ -7,7 +7,7 @@ System context showing cyrus-code's external actors and dependencies.
 **Scope**: Who uses the system and what external systems it integrates with.
 This is the highest-level view—internal architecture is in [Level 2](2-container.md).
 
-> **C4 Navigation**: [L2: Containers](2-container.md) | L3: [Symbol Table](3-component.md) / [Synthesizer](3-component-synthesizer.md) | [Dynamic Flows](dynamic.md)
+> **C4 Navigation**: [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
 
 ## Context Diagram
 

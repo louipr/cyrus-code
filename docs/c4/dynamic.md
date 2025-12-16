@@ -1,4 +1,4 @@
-# C4 Dynamic Diagrams - cyrus-code
+# C4 Dynamic Diagram - cyrus-code
 
 ## Overview
 
@@ -267,4 +267,4 @@ C4Dynamic
 | **System_Ext** | Gray box | External system |
 | **Rel** | Numbered arrow | Interaction step in sequence |
 
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component.md) / [Synthesizer](3-component-synthesizer.md)
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | Dynamic Flows

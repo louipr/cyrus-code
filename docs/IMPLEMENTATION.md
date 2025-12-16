@@ -265,7 +265,7 @@ npm run electron:dev   # Dev mode with hot reload
 |----|------|---------|--------|
 | D.1 | Add implementation status markers | `docs/c4/2-container.md` | ✅ |
 | D.2 | Fix Level 1 Context diagram accuracy | `docs/c4/1-context.md` | ✅ |
-| D.3 | Update Level 3 Component status | `docs/c4/3-component.md` | ✅ |
+| D.3 | Update Level 3 Component status | `docs/c4/3-component-symbol-table.md` | ✅ |
 | D.4 | Mark Dynamic flows 4 & 5 as planned | `docs/c4/dynamic.md` | ✅ |
 | D.5 | Remove ⚠️ Partial status smell | All C4 docs | ✅ |
 
@@ -278,15 +278,16 @@ npm run electron:dev   # Dev mode with hot reload
 | D.8 | Add relationship labels to all L2 arrows | `docs/c4/2-container.md` | ✅ |
 | D.9 | Replace Technology Decisions with ADR reference | `docs/c4/2-container.md` | ✅ |
 | D.10 | Fix container table naming consistency | `docs/c4/2-container.md` | ✅ |
-| D.11 | Add technology annotations to L3 components | `docs/c4/3-component.md` | ✅ |
-| D.12 | Add relationship labels to all L3 arrows | `docs/c4/3-component.md` | ✅ |
-| D.13 | Use consistent naming for external containers | `docs/c4/3-component.md` | ✅ |
+| D.11 | Add technology annotations to L3 components | `docs/c4/3-component-symbol-table.md` | ✅ |
+| D.12 | Add relationship labels to all L3 arrows | `docs/c4/3-component-symbol-table.md` | ✅ |
+| D.13 | Use consistent naming for external containers | `docs/c4/3-component-symbol-table.md` | ✅ |
 | D.14 | Add error handling to dynamic.md flows | `docs/c4/dynamic.md` | ✅ |
 | D.15 | Move CLI Commands from L2 to README | `README.md` | ✅ |
 | D.16 | Add relationship labels and cross-refs to L1 | `docs/c4/1-context.md` | ✅ |
 | D.17 | Aggressive C4 cleanup - remove redundant sections | `docs/c4/*.md` | ✅ |
 | D.18 | Add consistent C4 Navigation across all levels | `docs/c4/*.md` | ✅ |
 | D.19 | Add L3 Component diagram for Code Synthesizer | `docs/c4/3-component-synthesizer.md` | ✅ |
+| D.20 | Add L3 Component diagrams for remaining containers | `docs/c4/3-component-{help,wiring,validator,registry,facade}.md` | ✅ |
 
 ### Deliverables
 
@@ -302,7 +303,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] No redundant Legend sections (standard C4 notation removed from all levels)
 - [x] Consistent C4 Navigation blockquote across L1, L2, L3
 - [x] Aggressive cleanup: L1 (-35% lines), L2 (-19% lines)
-- [x] L3 Component diagrams for complex containers (Symbol Table, Code Synthesizer)
+- [x] L3 Component diagrams for all core containers (Symbol Table, Synthesizer, Help, Wiring, Validator, Registry, Facade)
 
 ---
 
