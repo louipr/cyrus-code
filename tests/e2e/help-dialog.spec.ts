@@ -71,15 +71,22 @@ test.describe('Help Dialog', () => {
     // Give mermaid time to fully render SVG
     await page.waitForTimeout(1000);
 
-    // Capture screenshot of the help dialog
-    const dialog = page.locator('[style*="position: fixed"]').first();
-    await dialog.screenshot({
-      path: '/tmp/cyrus-code/screenshots/help-dialog-c4.png',
+    // Scroll the mermaid diagram into view
+    const diagramSvg = page.locator('.mermaid-diagram svg');
+    await diagramSvg.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+
+    // Capture screenshot of just the mermaid diagram
+    await diagramSvg.screenshot({
+      path: '/tmp/cyrus-code/screenshots/c4-context-diagram.png',
     });
 
-    // Verify the diagram contains expected C4 elements
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    // Verify the diagram is visible and has reasonable size
     await expect(diagramSvg).toBeVisible();
+    const box = await diagramSvg.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThan(100);
+    expect(box!.height).toBeGreaterThan(100);
 
     // Close the dialog
     await page.keyboard.press('Escape');
