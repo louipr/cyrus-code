@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 202 | `src/**/*.test.ts` |
-| E2E tests | 28 tests (5 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **230** | |
+| Unit tests | 174 | `src/**/*.test.ts` |
+| E2E tests | 9 tests (4 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **183** | |
 
 ---
 
@@ -269,12 +269,32 @@ npm run electron:dev   # Dev mode with hot reload
 | D.4 | Mark Dynamic flows 4 & 5 as planned | `docs/c4/dynamic.md` | ✅ |
 | D.5 | Remove ⚠️ Partial status smell | All C4 docs | ✅ |
 
+### C4 Quality Review (Simon Brown Best Practices)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.6 | Add HelpService to diagram and table | `docs/c4/2-container.md` | ✅ |
+| D.7 | Document HelpService architectural exception | `docs/c4/2-container.md` | ✅ |
+| D.8 | Add relationship labels to all L2 arrows | `docs/c4/2-container.md` | ✅ |
+| D.9 | Replace Technology Decisions with ADR reference | `docs/c4/2-container.md` | ✅ |
+| D.10 | Fix container table naming consistency | `docs/c4/2-container.md` | ✅ |
+| D.11 | Add technology annotations to L3 components | `docs/c4/3-component.md` | ✅ |
+| D.12 | Add relationship labels to all L3 arrows | `docs/c4/3-component.md` | ✅ |
+| D.13 | Use consistent naming for external containers | `docs/c4/3-component.md` | ✅ |
+| D.14 | Add error handling to dynamic.md flows | `docs/c4/dynamic.md` | ✅ |
+| D.15 | Move CLI Commands from L2 to README | `README.md` | ✅ |
+
 ### Deliverables
 
 - [x] All C4 diagrams have ✅ Implemented / 🔮 Planned markers
 - [x] Level 1 Context reflects actual external dependencies (File System only)
 - [x] Binary status only (no ⚠️ Partial/Integrated smell)
 - [x] Diagrams align with IMPLEMENTATION.md slice status
+- [x] Level 2 Container follows Simon Brown best practices
+- [x] All relationship arrows labeled with verb phrases
+- [x] Technology annotations on all containers and components
+- [x] No redundant content (ADR references instead of duplicated tables)
+- [x] Clean separation: L2 for static structure, dynamic.md for runtime flows
 
 ---
 
@@ -472,10 +492,9 @@ cyrus-code/
 │       │   ├── selectors.ts           # Centralized data-testid selectors
 │       │   ├── fixtures.ts            # Test data seeding and cleanup
 │       │   └── actions.ts             # Reusable test actions
-│       ├── component-browser.spec.ts  # Component browser E2E tests
-│       ├── dependency-graph.spec.ts   # Graph view E2E tests
-│       ├── code-generation.spec.ts    # Code generation E2E tests
 │       ├── canvas-wiring.spec.ts      # Canvas wiring E2E tests
+│       ├── code-generation.spec.ts    # Code generation E2E tests
+│       ├── dependency-graph.spec.ts   # Graph view E2E tests
 │       └── help-dialog.spec.ts        # Help dialog E2E tests ✅
 ├── docs/                              # Documentation
 ├── vite.config.ts                     # Vite config for GUI
@@ -532,10 +551,10 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (202 tests)
+# 2. Run unit tests (174 tests)
 npm test
 
-# 3. Run E2E tests (28 tests)
+# 3. Run E2E tests (9 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -544,8 +563,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 202 unit tests pass
-- 28 E2E tests pass
+- 174 unit tests pass
+- 9 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling
