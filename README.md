@@ -112,10 +112,70 @@ npm run build:all
 
 # Run tests
 npm test           # 174 unit tests
-npm run test:e2e   # 21 E2E tests
+npm run test:e2e   # 9 E2E tests
 
 # Launch desktop app
 npm run electron
+```
+
+## CLI Commands
+
+### Implemented ✅
+
+```bash
+# Symbol management
+cyrus-code register <file>        # Register component from source
+cyrus-code list [--level L1]      # List symbols, optionally filter
+cyrus-code get <symbol-id>        # Get symbol details
+
+# Wiring
+cyrus-code wire <from> <to>       # Connect component ports
+cyrus-code graph                  # Display dependency graph
+
+# Validation & Generation
+cyrus-code validate               # Validate all connections
+cyrus-code generate <output>      # Generate code from graph
+
+# Help
+cyrus-code help                   # Show help information
+```
+
+### Planned 🔮
+
+```bash
+# Symbol management (ADR-003)
+cyrus-code remove <symbol-id>     # Remove from registry
+
+# Validation
+cyrus-code lint                   # Check for issues
+cyrus-code preview                # Show what would be generated
+
+# Version management (ADR-003)
+cyrus-code version <symbol-id>    # Show version history
+cyrus-code bump <symbol-id> <type># Bump version (major/minor/patch)
+
+# Dead code analysis (ADR-005)
+cyrus-code analyze                # Run static analysis
+cyrus-code analyze --entry <file> # Specify entry points
+cyrus-code dead                   # List dead code candidates
+cyrus-code status <symbol-id>     # Show symbol status
+cyrus-code trace start            # Start runtime tracing (dev mode)
+cyrus-code trace stop             # Stop and report
+
+# Import detection (ADR-006)
+cyrus-code scan                   # Find untracked files
+cyrus-code import <file>          # Import file to registry
+cyrus-code import --interactive   # Interactive import wizard
+cyrus-code check                  # Check for modified generated files
+
+# Lifecycle management (ADR-007)
+cyrus-code spec create <name>     # Create requirement specification
+cyrus-code spec link <req> <sym>  # Link requirement to component
+cyrus-code test generate <symbol> # Generate tests from contracts
+cyrus-code test affected <symbol> # Run affected tests only
+cyrus-code impact <symbol>        # Analyze change impact
+cyrus-code release create <ver>   # Create immutable release
+cyrus-code release diff <v1> <v2> # Compare releases
 ```
 
 ## See Also

@@ -4,7 +4,7 @@
 
 Runtime behavior showing how containers collaborate for key use cases.
 
-> **Note**: These diagrams show **happy-path flows only**. For error handling scenarios (missing symbols, type mismatches, validation failures), see the Data Flow section in [Level 2: Container](2-container.md#data-flow).
+> **Note**: Each flow includes both happy-path and error handling scenarios.
 
 > **Implementation Status Legend:**
 > - ✅ **Implemented** - Working in current codebase
@@ -52,6 +52,15 @@ C4Dynamic
 5. Symbol Database persists the symbol
 6. CLI returns the registered symbol ID to developer
 
+### Error Handling
+
+| Error | Cause | Response |
+|-------|-------|----------|
+| **Parse failure** | Invalid syntax, missing exports | Report parse error with file location |
+| **Duplicate symbol** | Symbol ID already exists | Report conflict, suggest version bump |
+| **Invalid metadata** | Missing required fields (ports, level) | Report validation errors |
+| **Database error** | SQLite write failure | Report persistence error |
+
 ---
 
 ## 2. Validate Connections Flow
@@ -88,6 +97,15 @@ C4Dynamic
 5. Symbol Table provides type definitions for comparison
 6. Validation results aggregated (errors, warnings)
 7. CLI displays results with source locations
+
+### Error Handling
+
+| Error | Cause | Response |
+|-------|-------|----------|
+| **Missing symbol** | Referenced symbol not in registry | Report unresolved reference with source location |
+| **Type mismatch** | Incompatible port types | Report type incompatibility details |
+| **Direction conflict** | Invalid flow direction (e.g., out→out) | Report invalid port direction |
+| **Circular dependency** | Dependency cycle detected | Report cycle path |
 
 ---
 
@@ -126,6 +144,15 @@ C4Dynamic
 5. AST is built for each component with connections wired
 6. Generated files written to output directory
 7. CLI reports what was generated
+
+### Error Handling
+
+| Error | Cause | Response |
+|-------|-------|----------|
+| **Empty graph** | No components registered | Report "nothing to generate" |
+| **Validation failed** | Pre-generation validation errors | Abort, report validation errors |
+| **AST error** | Invalid template or synthesis failure | Report synthesis error with context |
+| **Write failure** | File system error (permissions, disk full) | Report file system error |
 
 ---
 
