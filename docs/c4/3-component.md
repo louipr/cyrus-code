@@ -11,32 +11,35 @@ Internal structure of the Symbol Table container, showing its components and the
 ## Component Diagram
 
 ```mermaid
-C4Component
-    title Component Diagram - Symbol Table Container
+flowchart TD
+    subgraph st ["Symbol Table"]
+        store["Symbol Store"]
+        query["Query Engine"]
+        version["Version Resolver"]
+        conn["Connection Manager"]
+        status["Status Tracker"]
+        persist["Persistence Layer"]
+    end
 
-    Container_Boundary(symbolTable, "Symbol Table") {
-        Component(symbolStore, "Symbol Store", "TypeScript", "In-memory cache of symbols with CRUD operations")
-        Component(queryEngine, "Query Engine", "TypeScript", "Finds symbols by namespace, level, kind, tags")
-        Component(versionResolver, "Version Resolver", "TypeScript + SemVer", "Resolves version constraints and compatibility")
-        Component(connectionManager, "Connection Manager", "TypeScript", "Manages port connections between symbols")
-        Component(statusTracker, "Status Tracker", "TypeScript", "Tracks symbol usage: declared → referenced → tested → executed")
-        Component(persistenceLayer, "Persistence Layer", "better-sqlite3", "SQLite read/write operations")
-    }
+    query --> store
+    version --> store
+    conn --> store
+    status --> store
+    store --> persist
+    persist --> db[("SQLite")]
 
-    ContainerDb(symbolDb, "Symbol Database", "SQLite", "Persistent storage")
+    conn --> val["Validator"]
+    analyzer["Static Analyzer 🔮"] -.-> status
 
-    Container_Ext(interfaceValidator, "Interface Validator", "TypeScript + Zod", "Validates port type compatibility")
-    %% 🔮 Planned: Schema exists, logic not implemented (Slice 4)
-    Container_Ext(staticAnalyzer, "Static Analyzer", "ts-morph", "Updates symbol status [PLANNED]")
+    classDef component fill:#1168bd,color:#fff
+    classDef storage fill:#438dd5,color:#fff
+    classDef external fill:#999,color:#fff
+    classDef planned fill:#666,color:#fff,stroke-dasharray:5
 
-    Rel(symbolStore, persistenceLayer, "Persists changes")
-    Rel(persistenceLayer, symbolDb, "SQL queries")
-    Rel(queryEngine, symbolStore, "Searches cached symbols")
-    Rel(versionResolver, symbolStore, "Looks up versions")
-    Rel(connectionManager, symbolStore, "Reads/writes connections")
-    Rel(connectionManager, interfaceValidator, "Validates port compatibility")
-    Rel(statusTracker, symbolStore, "Updates symbol status")
-    Rel(staticAnalyzer, statusTracker, "Reports reachability")
+    class store,query,version,conn,status,persist component
+    class db storage
+    class val external
+    class analyzer planned
 ```
 
 ## Legend

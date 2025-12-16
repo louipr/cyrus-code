@@ -170,4 +170,41 @@ test.describe('Help Dialog', () => {
     // Close the dialog
     await page.keyboard.press('Escape');
   });
+
+  test('screenshot: C4 Component Diagram renders cleanly', async () => {
+    const { page } = context;
+
+    // Open help dialog
+    await page.click(selectors.helpButton);
+    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
+
+    // Click on the C4 Component Diagram topic
+    await page.click('button:has-text("Component Diagram")');
+
+    // Wait for mermaid diagram to render
+    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
+
+    // Give mermaid time to fully render SVG (C4Component DSL may need more time)
+    await page.waitForTimeout(2000);
+
+    // Scroll the mermaid diagram into view
+    const diagramSvg = page.locator('.mermaid-diagram svg');
+    await diagramSvg.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+
+    // Capture screenshot of just the mermaid diagram
+    await diagramSvg.screenshot({
+      path: '/tmp/cyrus-code/screenshots/c4-component-diagram.png',
+    });
+
+    // Verify the diagram is visible and has reasonable size
+    await expect(diagramSvg).toBeVisible();
+    const box = await diagramSvg.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThan(100);
+    expect(box!.height).toBeGreaterThan(100);
+
+    // Close the dialog
+    await page.keyboard.press('Escape');
+  });
 });

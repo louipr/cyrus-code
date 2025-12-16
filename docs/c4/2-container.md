@@ -21,15 +21,18 @@ flowchart TD
         cli["CLI"]
         gui["GUI"]
         st["Symbol Table"]
+        reg["Registry"]
+        val["Validator"]
         wire["Wiring"]
         synth["Synthesizer"]
         db[("SQLite")]
     end
 
     cli & gui --> st
-    cli --> wire
+    cli --> wire --> val
     cli --> synth
     st --> db
+    reg --> st
     synth --> fs["📁 Files"]
 
     classDef person fill:#08427b,color:#fff
@@ -38,7 +41,7 @@ flowchart TD
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,st,wire,synth container
+    class cli,gui,st,reg,val,wire,synth container
     class db storage
     class fs external
 ```

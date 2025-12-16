@@ -9,8 +9,8 @@ System context showing cyrus-code and its external actors/systems.
 ```mermaid
 flowchart TB
     subgraph users ["Users"]
-        dev["👤 Developer<br/><small>via GUI</small>"]
-        ai["🤖 AI Agent (Claude)<br/><small>via CLI</small>"]
+        dev["👤 Developer<br/><small>GUI & CLI</small>"]
+        ai["🤖 AI Agent<br/><small>CLI</small>"]
     end
 
     cyrus["🔷 cyrus-code<br/><small>Component architecture tool</small>"]
@@ -21,7 +21,7 @@ flowchart TB
 
     dev -->|"register, wire, generate"| cyrus
     ai -->|"register, wire, generate"| cyrus
-    cyrus -->|"Parse source / Generate code"| fs
+    cyrus -->|"read/write"| fs
 
     classDef person fill:#08427b,stroke:#052e56,color:#fff
     classDef system fill:#1168bd,stroke:#0b4884,color:#fff
@@ -49,8 +49,8 @@ flowchart TB
 
 | Actor | Description | Interface |
 |-------|-------------|-----------|
-| **Developer** | Software architect designing systems | GUI (Electron app) |
-| **AI Agent (Claude)** | Claude Code using cyrus-code as a tool | CLI (`cyrus-code` commands) |
+| **Developer** | Software architect designing systems | GUI & CLI |
+| **AI Agent** | Claude Code using cyrus-code as a tool | CLI (`cyrus-code` commands) |
 
 Both actors perform the same operations: `register`, `list`, `wire`, `validate`, `generate`, `graph`.
 
