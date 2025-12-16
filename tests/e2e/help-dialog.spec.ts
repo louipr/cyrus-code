@@ -136,8 +136,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Click on the C4 Component Diagram topic
-    await page.click('button:has-text("Component Diagram")');
+    // Click on the C4-3 Symbol Table Components topic
+    await page.click('button:has-text("Symbol Table Components")');
 
     // Wait for mermaid diagram to render
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });

@@ -73,11 +73,59 @@
     },
     {
       "id": "c4-component",
-      "title": "C4-3 Component Diagram",
-      "summary": "Symbol Table internal structure",
+      "title": "C4-3 Symbol Table Components",
+      "summary": "Symbol Table internal structure - SymbolStore, QueryEngine, VersionManager",
       "path": "docs/c4/3-component-symbol-table.md",
       "category": "architecture",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture"]
+    },
+    {
+      "id": "c4-component-synthesizer",
+      "title": "C4-3 Synthesizer Components",
+      "summary": "Code Synthesizer internal structure - TypeScript backend, generation gap pattern",
+      "path": "docs/c4/3-component-synthesizer.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "synthesizer", "code generation", "ts-morph"]
+    },
+    {
+      "id": "c4-component-help",
+      "title": "C4-3 Help Service Components",
+      "summary": "Help Service internal structure - topic loading, terminal renderer",
+      "path": "docs/c4/3-component-help.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "help", "markdown", "terminal"]
+    },
+    {
+      "id": "c4-component-wiring",
+      "title": "C4-3 Wiring Components",
+      "summary": "Wiring Service internal structure - graph analysis algorithms",
+      "path": "docs/c4/3-component-wiring.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort"]
+    },
+    {
+      "id": "c4-component-validator",
+      "title": "C4-3 Validator Components",
+      "summary": "Interface Validator internal structure - compatibility checking rules",
+      "path": "docs/c4/3-component-validator.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "validator", "compatibility", "type checking"]
+    },
+    {
+      "id": "c4-component-registry",
+      "title": "C4-3 Registry Components",
+      "summary": "Component Registry internal structure - version resolution",
+      "path": "docs/c4/3-component-registry.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "registry", "version", "semver"]
+    },
+    {
+      "id": "c4-component-facade",
+      "title": "C4-3 API Facade Components",
+      "summary": "API Facade internal structure - service routing table",
+      "path": "docs/c4/3-component-facade.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "facade", "API", "routing"]
     },
     {
       "id": "interfaces",
