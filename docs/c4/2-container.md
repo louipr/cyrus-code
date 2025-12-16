@@ -8,6 +8,8 @@ Internal architecture of cyrus-code showing major containers and their responsib
 > - ✅ **Implemented** - Working in current codebase
 > - 🔮 **Planned** - Defined in ADRs, not yet implemented
 
+> **C4 Navigation**: [L1: Context](1-context.md) | L2: Container | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
+
 ## Container Diagram
 
 > **Note**: Containers marked 🔮 are defined in ADRs but not yet implemented. See status tables below.
@@ -63,8 +65,6 @@ flowchart TB
 ```
 
 > **Note**: Help Service has direct IPC access (not through API Facade) because it operates on documentation files, not the symbol table ecosystem.
-
-> **C4 Navigation**: [L1: Context](1-context.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
 
 ## Containers
 

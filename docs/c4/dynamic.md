@@ -10,6 +10,8 @@ Runtime behavior showing how containers collaborate for key use cases.
 > - ✅ **Implemented** - Working in current codebase
 > - 🔮 **Planned** - Defined in ADRs, not yet implemented
 
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | Dynamic Flows
+
 | Flow | Status | Notes |
 |------|--------|-------|
 | 1. Register Component | ✅ | `cyrus-code register` |
@@ -266,5 +268,3 @@ C4Dynamic
 | **ContainerDb** | Cylinder | Database |
 | **System_Ext** | Gray box | External system |
 | **Rel** | Numbered arrow | Interaction step in sequence |
-
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | Dynamic Flows

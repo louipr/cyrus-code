@@ -8,6 +8,8 @@ Internal structure of the Component Registry container, showing its components a
 > - ✅ **Implemented** - Working in current codebase
 > - 🔮 **Planned** - Defined in ADRs, not yet implemented
 
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / Registry / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
+
 ## Component Diagram
 
 ```mermaid
@@ -30,8 +32,6 @@ flowchart TD
     class service,version component
     class st,semver,api,cli external
 ```
-
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / Registry / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
 
 ## Components
 

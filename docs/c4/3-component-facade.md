@@ -8,6 +8,8 @@ Internal structure of the API Facade container, showing its single-component des
 > - ✅ **Implemented** - Working in current codebase
 > - 🔮 **Planned** - Defined in ADRs, not yet implemented
 
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / Facade | [Dynamic Flows](dynamic.md)
+
 ## Component Diagram
 
 ```mermaid
@@ -32,8 +34,6 @@ flowchart TD
     class api,types component
     class cli,gui,registry,wiring,synth external
 ```
-
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component-symbol-table.md) / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / Facade | [Dynamic Flows](dynamic.md)
 
 ## Components
 

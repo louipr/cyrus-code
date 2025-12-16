@@ -8,6 +8,8 @@ Internal structure of the Symbol Table container, showing its components and the
 > - ✅ **Implemented** - Working in current codebase
 > - 🔮 **Planned** - Defined in ADRs, not yet implemented
 
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: Symbol Table / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
+
 ## Component Diagram
 
 ```mermaid
@@ -41,8 +43,6 @@ flowchart TD
     class val external
     class analyzer planned
 ```
-
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: Symbol Table / [Synthesizer](3-component-synthesizer.md) / [Help](3-component-help.md) / [Wiring](3-component-wiring.md) / [Validator](3-component-validator.md) / [Registry](3-component-registry.md) / [Facade](3-component-facade.md) | [Dynamic Flows](dynamic.md)
 
 ## Components
 
