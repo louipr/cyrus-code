@@ -301,7 +301,7 @@ export function HelpDialog({
                         </strong>
                       );
                     },
-                    // Custom code block renderer for mermaid
+                    // Custom code renderer for mermaid, code blocks, and inline code
                     code({ className, children }) {
                       const match = /language-(\w+)/.exec(className ?? '');
                       const language = match?.[1];
@@ -312,11 +312,20 @@ export function HelpDialog({
                         return <MermaidDiagram code={code} />;
                       }
 
-                      // Regular code block
+                      // Fenced code block (has language class)
+                      if (className) {
+                        return (
+                          <pre style={styles.codeBlock}>
+                            <code className={className}>{children}</code>
+                          </pre>
+                        );
+                      }
+
+                      // Inline code (no language class)
                       return (
-                        <pre style={styles.codeBlock}>
-                          <code className={className}>{children}</code>
-                        </pre>
+                        <code style={styles.inlineCode}>
+                          {children}
+                        </code>
                       );
                     },
                     // Style tables
@@ -534,6 +543,14 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '20px 0',
     border: '1px solid #30363d',
     fontFamily: '"SF Mono", "Fira Code", Consolas, monospace',
+  },
+  inlineCode: {
+    backgroundColor: '#282c34',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    fontSize: '0.9em',
+    fontFamily: '"SF Mono", "Fira Code", Consolas, monospace',
+    color: '#e06c75',
   },
   table: {
     borderCollapse: 'collapse',
