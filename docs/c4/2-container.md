@@ -23,18 +23,20 @@ flowchart TB
         gui["GUI<br/><small>Electron + React</small>"]
 
         api["API Facade<br/><small>TypeScript</small>"]
+        help["Help Service<br/><small>TypeScript</small>"]
 
-        reg["Registry<br/><small>TypeScript</small>"]
+        reg["Component Registry<br/><small>TypeScript</small>"]
         wire["Wiring<br/><small>TypeScript</small>"]
-        val["Validator<br/><small>Zod</small>"]
-        synth["Synthesizer<br/><small>ts-morph</small>"]
+        val["Interface Validator<br/><small>Zod</small>"]
+        synth["Code Synthesizer<br/><small>ts-morph</small>"]
 
-        st["Symbol Table<br/><small>TypeScript</small>"]
+        st["Symbol Table<br/><small>SQLite + TypeScript</small>"]
         db[("SQLite")]
     end
 
     cli --> api
     gui -->|"IPC"| api
+    gui -->|"IPC"| help
 
     api -->|"register"| reg
     api -->|"wire"| wire
@@ -47,6 +49,7 @@ flowchart TB
 
     st --> db
     synth -->|"write"| fs["📁 Files"]
+    help -->|"read"| docs["📄 Docs"]
 
     classDef person fill:#08427b,color:#fff
     classDef container fill:#1168bd,color:#fff
@@ -54,10 +57,12 @@ flowchart TB
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,api,reg,wire,val,synth,st container
+    class cli,gui,api,help,reg,wire,val,synth,st container
     class db storage
-    class fs external
+    class fs,docs external
 ```
+
+> **Note**: Help Service has direct IPC access (not through API Facade) because it operates on documentation files, not the symbol table ecosystem.
 
 ## Legend
 
@@ -95,6 +100,7 @@ flowchart TB
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
 | **API Facade** | TypeScript | Single entry point for CLI and GUI; routes to all services | ✅ |
+| **Help Service** | TypeScript | Documentation and help topic management | ✅ |
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
 | **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |
