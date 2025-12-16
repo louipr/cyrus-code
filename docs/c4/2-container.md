@@ -34,7 +34,7 @@ flowchart TB
         db[("SQLite")]
     end
 
-    cli --> api
+    cli -->|"commands"| api
     gui -->|"IPC"| api
     gui -->|"IPC"| help
 
@@ -42,12 +42,12 @@ flowchart TB
     api -->|"wire"| wire
     api -->|"generate"| synth
 
-    reg --> st
-    wire --> val
-    wire --> st
-    synth --> st
+    reg -->|"store"| st
+    wire -->|"validate"| val
+    wire -->|"query"| st
+    synth -->|"query"| st
 
-    st --> db
+    st -->|"persist"| db
     synth -->|"write"| fs["📁 Files"]
     help -->|"read"| docs["📄 Docs"]
 
