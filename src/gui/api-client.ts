@@ -95,6 +95,7 @@ interface CyrusAPI {
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
     listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
+    getC4Hierarchy: () => Promise<ApiResponse<C4Hierarchy | null>>;
     getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
     getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
     search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
@@ -128,6 +129,13 @@ interface HelpSearchResult {
   topic: HelpTopic;
   score: number;
   matchedFields: string[];
+}
+
+interface C4Hierarchy {
+  L1: string[];
+  L2: string[];
+  L3: string[];
+  Dynamic: string[];
 }
 
 declare global {
@@ -225,6 +233,7 @@ function createMockApi(): CyrusAPI {
     help: {
       getCategories: () => mockResponse([]),
       listTopics: () => mockResponse([]),
+      getC4Hierarchy: () => mockResponse(null),
       getByCategory: () => mockResponse([]),
       getTopic: () => mockResponse(undefined),
       search: () => mockResponse([]),

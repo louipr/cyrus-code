@@ -37,11 +37,27 @@ export interface HelpTopic {
 }
 
 /**
+ * C4 Architecture diagram hierarchy for navigation.
+ */
+export interface C4Hierarchy {
+  /** L1 Context diagram topic IDs */
+  L1: string[];
+  /** L2 Container diagram topic IDs */
+  L2: string[];
+  /** L3 Component diagram topic IDs */
+  L3: string[];
+  /** Dynamic flow diagram topic IDs */
+  Dynamic: string[];
+}
+
+/**
  * Help manifest structure (docs/help.json).
  */
 export interface HelpManifest {
   /** Manifest version */
   version: string;
+  /** C4 diagram hierarchy for navigation */
+  c4Hierarchy?: C4Hierarchy;
   /** Available categories */
   categories: HelpCategory[];
   /** All help topics */

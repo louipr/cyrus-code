@@ -1,5 +1,19 @@
 {
   "version": "1.0.0",
+  "c4Hierarchy": {
+    "L1": ["c4-context"],
+    "L2": ["c4-container"],
+    "L3": [
+      "c4-component",
+      "c4-component-synthesizer",
+      "c4-component-help",
+      "c4-component-wiring",
+      "c4-component-validator",
+      "c4-component-registry",
+      "c4-component-facade"
+    ],
+    "Dynamic": ["c4-dynamic"]
+  },
   "categories": [
     {
       "id": "concept",
@@ -126,6 +140,14 @@
       "path": "docs/c4/3-component-facade.md",
       "category": "architecture",
       "keywords": ["C4", "component", "facade", "API", "routing"]
+    },
+    {
+      "id": "c4-dynamic",
+      "title": "C4 Dynamic Flows",
+      "summary": "Runtime behavior showing container collaboration for key use cases",
+      "path": "docs/c4/dynamic.md",
+      "category": "architecture",
+      "keywords": ["C4", "dynamic", "flow", "sequence", "runtime", "register", "validate", "generate"]
     },
     {
       "id": "interfaces",

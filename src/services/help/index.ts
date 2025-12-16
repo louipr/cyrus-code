@@ -13,6 +13,7 @@ import {
   HelpCategory,
   HelpSearchResult,
   HelpOutputFormat,
+  C4Hierarchy,
 } from './schema.js';
 import { renderMarkdownForTerminal } from './renderer.js';
 
@@ -74,6 +75,13 @@ export class HelpService {
    */
   listTopics(): HelpTopic[] {
     return this.loadManifest().topics;
+  }
+
+  /**
+   * Get C4 architecture diagram hierarchy for navigation.
+   */
+  getC4Hierarchy(): C4Hierarchy | null {
+    return this.loadManifest().c4Hierarchy ?? null;
   }
 
   /**

@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MermaidDiagram } from './MermaidDiagram';
+import { C4NavigationBar } from './C4NavigationBar';
 
 interface HelpTopic {
   id: string;
@@ -23,6 +24,13 @@ interface HelpCategory {
   id: string;
   label: string;
   description: string;
+}
+
+interface C4Hierarchy {
+  L1: string[];
+  L2: string[];
+  L3: string[];
+  Dynamic: string[];
 }
 
 interface HelpDialogProps {
@@ -47,6 +55,7 @@ export function HelpDialog({
 }: HelpDialogProps) {
   const [categories, setCategories] = useState<HelpCategory[]>([]);
   const [topics, setTopics] = useState<HelpTopic[]>([]);
+  const [c4Hierarchy, setC4Hierarchy] = useState<C4Hierarchy | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [topicContent, setTopicContent] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState(initialSearch ?? '');
@@ -59,9 +68,10 @@ export function HelpDialog({
 
     const loadData = async () => {
       try {
-        const [catResult, topicsResult] = await Promise.all([
+        const [catResult, topicsResult, hierarchyResult] = await Promise.all([
           window.cyrus.help.getCategories(),
           window.cyrus.help.listTopics(),
+          window.cyrus.help.getC4Hierarchy(),
         ]);
 
         if (catResult.success && catResult.data) {
@@ -70,6 +80,9 @@ export function HelpDialog({
         if (topicsResult.success && topicsResult.data) {
           setTopics(topicsResult.data);
           setFilteredTopics(topicsResult.data);
+        }
+        if (hierarchyResult.success && hierarchyResult.data) {
+          setC4Hierarchy(hierarchyResult.data);
         }
       } catch (err) {
         console.error('Failed to load help data:', err);
@@ -223,6 +236,24 @@ export function HelpDialog({
               <div style={styles.loading}>Loading...</div>
             ) : selectedTopic ? (
               <div style={styles.markdown}>
+                {/* C4 Navigation Bar - shown for C4 architecture topics */}
+                {c4Hierarchy && selectedTopic.startsWith('c4-') && (
+                  <>
+                    <C4NavigationBar
+                      currentTopic={selectedTopic}
+                      hierarchy={c4Hierarchy}
+                      topics={topics}
+                      onNavigate={setSelectedTopic}
+                    />
+                    <details style={styles.statusLegend}>
+                      <summary style={styles.legendSummary}>Implementation Status Legend</summary>
+                      <ul style={styles.legendList}>
+                        <li>✅ <strong>Implemented</strong> - Working in current codebase</li>
+                        <li>🔮 <strong>Planned</strong> - Defined in ADRs, not yet implemented</li>
+                      </ul>
+                    </details>
+                  </>
+                )}
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -602,6 +633,25 @@ const styles: Record<string, React.CSSProperties> = {
   link: {
     color: '#58a6ff',
     textDecoration: 'none',
+  },
+  statusLegend: {
+    marginBottom: '16px',
+    padding: '8px 12px',
+    backgroundColor: '#161b22',
+    border: '1px solid #30363d',
+    borderRadius: '6px',
+    fontSize: '13px',
+    color: '#8b949e',
+  },
+  legendSummary: {
+    cursor: 'pointer',
+    fontWeight: 500,
+    color: '#c9d1d9',
+  },
+  legendList: {
+    margin: '8px 0 0 0',
+    paddingLeft: '20px',
+    listStyle: 'none',
   },
 };
 

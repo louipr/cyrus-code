@@ -267,6 +267,17 @@ export function registerIpcHandlers(facade: ApiFacade): void {
     }
   });
 
+  ipcMain.handle('help:getC4Hierarchy', async () => {
+    try {
+      return { success: true, data: helpService.getC4Hierarchy() };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: error instanceof Error ? error.message : String(error) },
+      };
+    }
+  });
+
   ipcMain.handle('help:getByCategory', async (_event, categoryId: string) => {
     try {
       return { success: true, data: helpService.getByCategory(categoryId) };

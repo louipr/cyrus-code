@@ -98,6 +98,7 @@ export interface CyrusAPI {
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
     listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
+    getC4Hierarchy: () => Promise<ApiResponse<C4Hierarchy | null>>;
     getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
     getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
     search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
@@ -131,6 +132,13 @@ interface HelpSearchResult {
   topic: HelpTopic;
   score: number;
   matchedFields: string[];
+}
+
+interface C4Hierarchy {
+  L1: string[];
+  L2: string[];
+  L3: string[];
+  Dynamic: string[];
 }
 
 // Expose the API to the renderer
@@ -193,6 +201,7 @@ const cyrusAPI: CyrusAPI = {
   help: {
     getCategories: () => ipcRenderer.invoke('help:getCategories'),
     listTopics: () => ipcRenderer.invoke('help:listTopics'),
+    getC4Hierarchy: () => ipcRenderer.invoke('help:getC4Hierarchy'),
     getByCategory: (categoryId) => ipcRenderer.invoke('help:getByCategory', categoryId),
     getTopic: (topicId) => ipcRenderer.invoke('help:getTopic', topicId),
     search: (query) => ipcRenderer.invoke('help:search', query),
