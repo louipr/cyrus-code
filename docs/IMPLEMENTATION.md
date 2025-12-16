@@ -283,6 +283,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.13 | Use consistent naming for external containers | `docs/c4/3-component.md` | ✅ |
 | D.14 | Add error handling to dynamic.md flows | `docs/c4/dynamic.md` | ✅ |
 | D.15 | Move CLI Commands from L2 to README | `README.md` | ✅ |
+| D.16 | Add relationship labels and cross-refs to L1 | `docs/c4/1-context.md` | ✅ |
 
 ### Deliverables
 
