@@ -13,23 +13,23 @@ Internal structure of the Symbol Table container, showing its components and the
 ```mermaid
 flowchart TD
     subgraph st ["Symbol Table"]
-        store["Symbol Store"]
-        query["Query Engine"]
-        version["Version Resolver"]
-        conn["Connection Manager"]
-        status["Status Tracker"]
-        persist["Persistence Layer"]
+        store["Symbol Store<br/><small>TypeScript</small>"]
+        query["Query Engine<br/><small>TypeScript</small>"]
+        version["Version Resolver<br/><small>TypeScript</small>"]
+        conn["Connection Manager<br/><small>TypeScript</small>"]
+        status["Status Tracker<br/><small>TypeScript</small>"]
+        persist["Persistence Layer<br/><small>TypeScript</small>"]
     end
 
-    query --> store
-    version --> store
-    conn --> store
-    status --> store
-    store --> persist
-    persist --> db[("SQLite")]
+    query -->|"lookup"| store
+    version -->|"resolve"| store
+    conn -->|"update"| store
+    status -->|"track"| store
+    store -->|"persist"| persist
+    persist -->|"write"| db[("SQLite")]
 
-    conn --> val["Validator"]
-    analyzer["Static Analyzer 🔮"] -.-> status
+    conn -->|"validate"| val["Interface Validator<br/><small>Zod</small>"]
+    analyzer["Static Analyzer 🔮<br/><small>ts-morph</small>"] -.->|"mark status"| status
 
     classDef component fill:#1168bd,color:#fff
     classDef storage fill:#438dd5,color:#fff
