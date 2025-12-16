@@ -42,17 +42,7 @@ flowchart TD
     class analyzer planned
 ```
 
-## Legend
-
-| Element | Notation | Description |
-|---------|----------|-------------|
-| **Component** | Blue box | Internal component within Symbol Table |
-| **Container_Boundary** | Dashed box | The Symbol Table container boundary |
-| **Container_Ext** | Gray box | External containers that interact with Symbol Table |
-| **ContainerDb** | Cylinder | Database storage |
-| **Rel** | Arrow with label | Data/control flow between components |
-
-> **C4 Model Reference**: This is a C4-3 (Component) diagram showing internal structure of the Symbol Table container. For container overview, see [C4-2: Container](2-container.md).
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | [Dynamic Flows](dynamic.md)
 
 ## Components
 

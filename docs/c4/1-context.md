@@ -2,7 +2,12 @@
 
 ## Overview
 
-System context showing cyrus-code and its external actors/systems.
+System context showing cyrus-code's external actors and dependencies.
+
+**Scope**: Who uses the system and what external systems it integrates with.
+This is the highest-level view—internal architecture is in [Level 2](2-container.md).
+
+> **C4 Navigation**: [L2: Containers](2-container.md) | [L3: Components](3-component.md) | [Dynamic Flows](dynamic.md)
 
 ## Context Diagram
 
@@ -34,17 +39,6 @@ flowchart TB
     class users,external boundary
 ```
 
-## Legend
-
-| Element | Notation | Description |
-|---------|----------|-------------|
-| **Person** | Stick figure | Human actor interacting with the system |
-| **System** | Blue box | The system being documented (cyrus-code) |
-| **System_Ext** | Gray box | External systems that cyrus-code integrates with |
-| **Rel** | Arrow with label | Relationship showing data/control flow direction |
-
-> **C4 Model Reference**: This is a Level 1 (Context) diagram showing the system boundary and external dependencies. For internal architecture, see [Level 2: Container](2-container.md). For Symbol Table internals, see [Level 3: Component](3-component.md). For runtime flows, see [Dynamic Diagrams](dynamic.md).
-
 ## Actors
 
 | Actor | Description | Interface |
@@ -61,9 +55,3 @@ Both actors perform the same operations: `register`, `list`, `wire`, `validate`,
 | **File System** | Source and output storage | Parse existing code, write generated TypeScript files |
 
 > **Note**: Package Registry integration (npm, PyPI, crates.io) is planned for future releases.
-
-## Key Interactions
-
-1. **Developer → cyrus-code** (via GUI): Register components, wire interfaces, generate code
-2. **AI Agent → cyrus-code** (via CLI): Same operations via `cyrus-code` commands
-3. **cyrus-code → File System**: Parse existing source code, generate TypeScript output

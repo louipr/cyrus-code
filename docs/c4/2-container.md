@@ -64,26 +64,7 @@ flowchart TB
 
 > **Note**: Help Service has direct IPC access (not through API Facade) because it operates on documentation files, not the symbol table ecosystem.
 
-## Legend
-
-| Element | Notation | Description |
-|---------|----------|-------------|
-| **Person** | Stick figure | Human actor interacting with containers |
-| **Container** | Blue box | Application or service within the system |
-| **ContainerDb** | Cylinder | Database or persistent storage |
-| **System_Ext** | Gray box | External systems outside cyrus-code |
-| **System_Boundary** | Dashed box | The cyrus-code system boundary |
-| **Rel** | Arrow with label | Data/control flow between elements |
-
-> **C4 Model Reference**: This is a C4-2 (Container) diagram showing internal architecture. For system context, see [C4-1: Context](1-context.md). For Symbol Table internals, see [C4-3: Component](3-component.md). For runtime flows, see [Dynamic Diagrams](dynamic.md).
-
-## Scaling Guidance
-
-> **C4 Best Practice**: Per [Simon Brown's guidance](https://dev.to/simonbrown/diagramming-distributed-architectures-with-the-c4-model-51cm), diagrams with 20+ elements become difficult to understand. cyrus-code currently has ~16 containers, organized into logical subgraphs for clarity.
->
-> If the system grows significantly (30+ containers), consider:
-> - **Focused diagrams**: One diagram per domain/subsystem showing only direct dependencies
-> - **Model-based tooling**: Tools like Structurizr that generate multiple views from a single model
+> **C4 Navigation**: [L1: Context](1-context.md) | [L3: Components](3-component.md) | [Dynamic Flows](dynamic.md)
 
 ## Containers
 
