@@ -19,9 +19,9 @@ flowchart TB
         fs["📁 File System<br/><small>Source & generated code</small>"]
     end
 
-    dev -->|"register, wire, generate"| cyrus
-    ai -->|"register, wire, generate"| cyrus
-    cyrus -->|"read/write"| fs
+    dev -->|"commands & visual editing"| cyrus
+    ai -->|"commands"| cyrus
+    cyrus -->|"read/write code"| fs
 
     classDef person fill:#08427b,stroke:#052e56,color:#fff
     classDef system fill:#1168bd,stroke:#0b4884,color:#fff
@@ -43,7 +43,7 @@ flowchart TB
 | **System_Ext** | Gray box | External systems that cyrus-code integrates with |
 | **Rel** | Arrow with label | Relationship showing data/control flow direction |
 
-> **C4 Model Reference**: This is a Level 1 (Context) diagram showing the system boundary and external dependencies. For internal architecture, see [Level 2: Container](2-container.md).
+> **C4 Model Reference**: This is a Level 1 (Context) diagram showing the system boundary and external dependencies. For internal architecture, see [Level 2: Container](2-container.md). For Symbol Table internals, see [Level 3: Component](3-component.md). For runtime flows, see [Dynamic Diagrams](dynamic.md).
 
 ## Actors
 
