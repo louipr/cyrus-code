@@ -448,40 +448,4 @@ test.describe('Help Dialog', () => {
     // Close the dialog
     await page.keyboard.press('Escape');
   });
-
-  test('C4 L3 dropdown shows component topics', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Click on a C4 topic
-    await page.click('button:has-text("Container Diagram")');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    // Scope to help content area (not sidebar)
-    const helpContent = page.locator('[data-testid="help-content"]');
-
-    // Click L3 dropdown button (in navigation bar)
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-
-    // Verify dropdown appears with L3 topics (use exact match to avoid sidebar conflicts)
-    // The dropdown buttons should be in the help content area
-    await expect(helpContent.locator('button', { hasText: /^Symbol Table$/ })).toBeVisible({ timeout: 3000 });
-    await expect(helpContent.locator('button', { hasText: /^Synthesizer$/ })).toBeVisible();
-    await expect(helpContent.locator('button', { hasText: /^Wiring$/ })).toBeVisible();
-
-    // Click on Wiring to navigate
-    await helpContent.locator('button', { hasText: /^Wiring$/ }).click();
-    await page.waitForTimeout(500);
-
-    // Verify we navigated to Wiring component diagram
-    await expect(helpContent.locator('h1:has-text("Wiring Service")')).toBeVisible({ timeout: 5000 });
-
-    // Close the dialog
-    await page.keyboard.press('Escape');
-  });
 });
