@@ -267,4 +267,4 @@ C4Dynamic
 | **System_Ext** | Gray box | External system |
 | **Rel** | Numbered arrow | Interaction step in sequence |
 
-> **C4 Model Reference**: These are Dynamic diagrams showing runtime collaboration. For static structure, see [Level 2: Container](2-container.md).
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: [Symbol Table](3-component.md) / [Synthesizer](3-component-synthesizer.md)

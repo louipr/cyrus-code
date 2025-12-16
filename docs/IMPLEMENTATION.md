@@ -286,6 +286,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.16 | Add relationship labels and cross-refs to L1 | `docs/c4/1-context.md` | ✅ |
 | D.17 | Aggressive C4 cleanup - remove redundant sections | `docs/c4/*.md` | ✅ |
 | D.18 | Add consistent C4 Navigation across all levels | `docs/c4/*.md` | ✅ |
+| D.19 | Add L3 Component diagram for Code Synthesizer | `docs/c4/3-component-synthesizer.md` | ✅ |
 
 ### Deliverables
 
@@ -301,6 +302,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] No redundant Legend sections (standard C4 notation removed from all levels)
 - [x] Consistent C4 Navigation blockquote across L1, L2, L3
 - [x] Aggressive cleanup: L1 (-35% lines), L2 (-19% lines)
+- [x] L3 Component diagrams for complex containers (Symbol Table, Code Synthesizer)
 
 ---
 

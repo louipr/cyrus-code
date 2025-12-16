@@ -64,7 +64,7 @@ flowchart TB
 
 > **Note**: Help Service has direct IPC access (not through API Facade) because it operates on documentation files, not the symbol table ecosystem.
 
-> **C4 Navigation**: [L1: Context](1-context.md) | [L3: Components](3-component.md) | [Dynamic Flows](dynamic.md)
+> **C4 Navigation**: [L1: Context](1-context.md) | L3: [Symbol Table](3-component.md) / [Synthesizer](3-component-synthesizer.md) | [Dynamic Flows](dynamic.md)
 
 ## Containers
 

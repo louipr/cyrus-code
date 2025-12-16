@@ -42,7 +42,7 @@ flowchart TD
     class analyzer planned
 ```
 
-> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | [Dynamic Flows](dynamic.md)
+> **C4 Navigation**: [L1: Context](1-context.md) | [L2: Containers](2-container.md) | L3: Symbol Table / [Synthesizer](3-component-synthesizer.md) | [Dynamic Flows](dynamic.md)
 
 ## Components
 
