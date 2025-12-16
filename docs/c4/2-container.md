@@ -13,27 +13,36 @@ Internal architecture of cyrus-code showing major containers and their responsib
 > **Note**: Containers marked 🔮 are defined in ADRs but not yet implemented. See status tables below.
 
 ```mermaid
-flowchart TD
-    dev["👤 Developer"] --> cli & gui
-    ai["🤖 AI Agent"] --> cli
+flowchart TB
+    dev["👤 Developer"] -->|"commands"| cli
+    dev -->|"visual editing"| gui
+    ai["🤖 AI Agent"] -->|"commands"| cli
 
     subgraph cyrus ["cyrus-code"]
-        cli["CLI"]
-        gui["GUI"]
-        st["Symbol Table"]
-        reg["Registry"]
-        val["Validator"]
-        wire["Wiring"]
-        synth["Synthesizer"]
+        cli["CLI<br/><small>Node.js</small>"]
+        gui["GUI<br/><small>Electron + React</small>"]
+
+        reg["Registry<br/><small>TypeScript</small>"]
+        wire["Wiring<br/><small>TypeScript</small>"]
+        val["Validator<br/><small>Zod</small>"]
+        synth["Synthesizer<br/><small>ts-morph</small>"]
+
+        st["Symbol Table<br/><small>TypeScript</small>"]
         db[("SQLite")]
     end
 
-    cli & gui --> st
-    cli --> wire --> val
-    cli --> synth
-    st --> db
+    cli -->|"register"| reg
+    cli -->|"wire"| wire
+    cli -->|"generate"| synth
+    gui --> st
+
     reg --> st
-    synth --> fs["📁 Files"]
+    wire --> val
+    wire --> st
+    synth --> st
+
+    st --> db
+    synth -->|"write"| fs["📁 Files"]
 
     classDef person fill:#08427b,color:#fff
     classDef container fill:#1168bd,color:#fff
@@ -41,7 +50,7 @@ flowchart TD
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,st,reg,val,wire,synth container
+    class cli,gui,reg,wire,val,synth,st container
     class db storage
     class fs external
 ```
