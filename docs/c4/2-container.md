@@ -92,8 +92,8 @@ flowchart TB
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
 | **CLI** | Node.js | Primary interface for all operations | ✅ |
-| **Visual Editor** | Electron + React | Graphical component wiring (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
-| **Language Server** | LSP | IDE integration | 🔮 |
+| **GUI** | Electron + React | Graphical component wiring (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
+| **Language Server** | TypeScript | IDE integration (LSP protocol) | 🔮 |
 
 ### Core Services
 
@@ -104,7 +104,7 @@ flowchart TB
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
 | **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |
-| **Wiring** | TypeScript | Connection graph validation | ✅ |
+| **Wiring** | TypeScript | Connection management and graph operations | ✅ |
 | **Code Synthesizer** | ts-morph | AST-based code generation | ✅ |
 
 ### Analysis Services (ADR-005, ADR-006)
