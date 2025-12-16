@@ -22,6 +22,8 @@ flowchart TB
         cli["CLI<br/><small>Node.js</small>"]
         gui["GUI<br/><small>Electron + React</small>"]
 
+        api["API Facade<br/><small>TypeScript</small>"]
+
         reg["Registry<br/><small>TypeScript</small>"]
         wire["Wiring<br/><small>TypeScript</small>"]
         val["Validator<br/><small>Zod</small>"]
@@ -31,10 +33,12 @@ flowchart TB
         db[("SQLite")]
     end
 
-    cli -->|"register"| reg
-    cli -->|"wire"| wire
-    cli -->|"generate"| synth
-    gui --> st
+    cli --> api
+    gui -->|"IPC"| api
+
+    api -->|"register"| reg
+    api -->|"wire"| wire
+    api -->|"generate"| synth
 
     reg --> st
     wire --> val
@@ -50,7 +54,7 @@ flowchart TB
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,reg,wire,val,synth,st container
+    class cli,gui,api,reg,wire,val,synth,st container
     class db storage
     class fs external
 ```
@@ -90,6 +94,7 @@ flowchart TB
 
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
+| **API Facade** | TypeScript | Single entry point for CLI and GUI; routes to all services | ✅ |
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
 | **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |

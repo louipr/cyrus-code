@@ -111,28 +111,30 @@ interface ConnectionManager {
 
 ## Data Flow
 
+> **Note**: All CLI/GUI requests route through [API Facade](2-container.md) before reaching Symbol Table.
+
 ### Register Symbol
 
 ```
-CLI → Symbol Store → Persistence Layer → SQLite
-         ↓
-    Query Engine (index update)
+CLI/GUI → API Facade → Symbol Store → Persistence Layer → SQLite
+                              ↓
+                        Query Engine (index update)
 ```
 
 ### Query Symbol
 
 ```
-CLI → Query Engine → Symbol Store (cache hit)
-                  ↓
-            Persistence Layer → SQLite (cache miss)
+CLI/GUI → API Facade → Query Engine → Symbol Store (cache hit)
+                                   ↓
+                             Persistence Layer → SQLite (cache miss)
 ```
 
 ### Connect Ports
 
 ```
-CLI → Connection Manager → Interface Validator (type check)
-                       ↓
-                  Symbol Store (persist connection)
+CLI/GUI → API Facade → Connection Manager → Interface Validator (type check)
+                                        ↓
+                                   Symbol Store (persist connection)
 ```
 
 ## Design Decisions

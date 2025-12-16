@@ -31,26 +31,29 @@ C4Dynamic
     Person(developer, "Developer", "Registers a component")
 
     Container(cli, "CLI", "Node.js", "Command interface")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     Container(componentRegistry, "Component Registry", "TypeScript", "Parses and validates")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Stores symbols")
     ContainerDb(symbolDb, "Symbol Database", "SQLite", "Persistence")
 
     Rel(developer, cli, "1. cyrus-code register <file>")
-    Rel(cli, componentRegistry, "2. Parse source file")
-    Rel(componentRegistry, componentRegistry, "3. Extract ports, types, metadata")
-    Rel(componentRegistry, symbolTable, "4. Register symbol")
-    Rel(symbolTable, symbolDb, "5. Persist to database")
-    Rel(cli, developer, "6. Return symbol ID")
+    Rel(cli, apiFacade, "2. Route to registry")
+    Rel(apiFacade, componentRegistry, "3. Parse source file")
+    Rel(componentRegistry, componentRegistry, "4. Extract ports, types, metadata")
+    Rel(componentRegistry, symbolTable, "5. Register symbol")
+    Rel(symbolTable, symbolDb, "6. Persist to database")
+    Rel(cli, developer, "7. Return symbol ID")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code register src/auth/JwtService.ts`
-2. CLI invokes Component Registry to parse the source file
-3. Component Registry extracts component metadata, ports, and type references
-4. Symbol Table receives the new symbol with generated ID
-5. Symbol Database persists the symbol
-6. CLI returns the registered symbol ID to developer
+2. CLI routes request to API Facade
+3. API Facade delegates to Component Registry to parse the source file
+4. Component Registry extracts component metadata, ports, and type references
+5. Symbol Table receives the new symbol with generated ID
+6. Symbol Database persists the symbol
+7. CLI returns the registered symbol ID to developer
 
 ### Error Handling
 
@@ -74,29 +77,33 @@ C4Dynamic
     Person(developer, "Developer", "Validates wiring")
 
     Container(cli, "CLI", "Node.js", "Command interface")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     Container(wiring, "Wiring", "TypeScript", "Connection validation")
     Container(interfaceValidator, "Interface Validator", "Zod", "Type checking")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Symbol lookup")
 
     Rel(developer, cli, "1. cyrus-code validate")
-    Rel(cli, wiring, "2. Get all connections")
-    Rel(wiring, symbolTable, "3. Resolve source/target symbols")
-    Rel(wiring, interfaceValidator, "4. Validate each connection")
-    Rel(interfaceValidator, symbolTable, "5. Lookup port types")
-    Rel(interfaceValidator, wiring, "6. Return type compatibility result")
-    Rel(wiring, cli, "7. Return validation result")
-    Rel(cli, developer, "8. Display errors/warnings")
+    Rel(cli, apiFacade, "2. Route to wiring")
+    Rel(apiFacade, wiring, "3. Get all connections")
+    Rel(wiring, symbolTable, "4. Resolve source/target symbols")
+    Rel(wiring, interfaceValidator, "5. Validate each connection")
+    Rel(interfaceValidator, symbolTable, "6. Lookup port types")
+    Rel(interfaceValidator, wiring, "7. Return type compatibility result")
+    Rel(wiring, apiFacade, "8. Return validation result")
+    Rel(cli, developer, "9. Display errors/warnings")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code validate`
-2. CLI invokes Wiring to check all connections
-3. Wiring resolves each connection's source and target symbols
-4. Interface Validator checks port type compatibility
-5. Symbol Table provides type definitions for comparison
-6. Validation results aggregated (errors, warnings)
-7. CLI displays results with source locations
+2. CLI routes request to API Facade
+3. API Facade delegates to Wiring to check all connections
+4. Wiring resolves each connection's source and target symbols
+5. Interface Validator checks port type compatibility
+6. Symbol Table provides type definitions for comparison
+7. Validation results aggregated (errors, warnings)
+8. API Facade returns results to CLI
+9. CLI displays results with source locations
 
 ### Error Handling
 
@@ -120,30 +127,34 @@ C4Dynamic
     Person(developer, "Developer", "Generates code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     Container(wiring, "Wiring", "TypeScript", "Validates first")
     Container(codeSynthesizer, "Code Synthesizer", "ts-morph", "AST generation")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Component graph")
     System_Ext(fileSystem, "File System", "Output directory")
 
     Rel(developer, cli, "1. cyrus-code generate ./out")
-    Rel(cli, wiring, "2. Validate connections")
-    Rel(wiring, cli, "3. Validation passed")
-    Rel(cli, codeSynthesizer, "4. Generate from graph")
-    Rel(codeSynthesizer, symbolTable, "5. Read component graph")
-    Rel(codeSynthesizer, codeSynthesizer, "6. Build AST")
-    Rel(codeSynthesizer, fileSystem, "7. Write source files")
-    Rel(cli, developer, "8. Report generated files")
+    Rel(cli, apiFacade, "2. Route to synthesizer")
+    Rel(apiFacade, wiring, "3. Validate connections first")
+    Rel(wiring, apiFacade, "4. Validation passed")
+    Rel(apiFacade, codeSynthesizer, "5. Generate from graph")
+    Rel(codeSynthesizer, symbolTable, "6. Read component graph")
+    Rel(codeSynthesizer, codeSynthesizer, "7. Build AST")
+    Rel(codeSynthesizer, fileSystem, "8. Write source files")
+    Rel(cli, developer, "9. Report generated files")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code generate ./out`
-2. CLI first validates all connections via Wiring
-3. If validation passes, proceed to generation
-4. Code Synthesizer reads the full component graph
-5. AST is built for each component with connections wired
-6. Generated files written to output directory
-7. CLI reports what was generated
+2. CLI routes request to API Facade
+3. API Facade first validates all connections via Wiring
+4. If validation passes, proceed to generation
+5. API Facade delegates to Code Synthesizer
+6. Code Synthesizer reads the full component graph from Symbol Table
+7. AST is built for each component with connections wired
+8. Generated files written to output directory
+9. CLI reports what was generated
 
 ### Error Handling
 
@@ -169,28 +180,32 @@ C4Dynamic
     Person(developer, "Developer", "Analyzes dead code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     %% 🔮 Planned: Schema exists, logic not implemented (Slice 4)
     Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Call graph [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Status tracking")
     System_Ext(fileSystem, "File System", "Source files")
 
     Rel(developer, cli, "1. cyrus-code analyze --entry main.ts")
-    Rel(cli, staticAnalyzer, "2. Analyze from entry points")
-    Rel(staticAnalyzer, fileSystem, "3. Parse source files")
-    Rel(staticAnalyzer, staticAnalyzer, "4. Build call graph")
-    Rel(staticAnalyzer, symbolTable, "5. Mark reachable as 'referenced'")
-    Rel(staticAnalyzer, symbolTable, "6. Unreachable remain 'declared'")
-    Rel(cli, developer, "7. Report dead code candidates")
+    Rel(cli, apiFacade, "2. Route to analyzer")
+    Rel(apiFacade, staticAnalyzer, "3. Analyze from entry points")
+    Rel(staticAnalyzer, fileSystem, "4. Parse source files")
+    Rel(staticAnalyzer, staticAnalyzer, "5. Build call graph")
+    Rel(staticAnalyzer, symbolTable, "6. Mark reachable as 'referenced'")
+    Rel(staticAnalyzer, symbolTable, "7. Unreachable remain 'declared'")
+    Rel(cli, developer, "8. Report dead code candidates")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code analyze --entry main.ts`
-2. Static Analyzer parses entry point files
-3. Call graph built by traversing AST
-4. Symbols reachable from entry points marked `referenced`
-5. Symbols not in call graph remain `declared` (dead code candidates)
-6. CLI reports unreachable symbols
+2. CLI routes request to API Facade
+3. API Facade delegates to Static Analyzer with entry points
+4. Static Analyzer parses entry point files
+5. Call graph built by traversing AST
+6. Symbols reachable from entry points marked `referenced`
+7. Symbols not in call graph remain `declared` (dead code candidates)
+8. CLI reports unreachable symbols
 
 ---
 
@@ -207,31 +222,38 @@ C4Dynamic
     Person(developer, "Developer", "Imports manual code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     %% 🔮 Planned: Import Detector not implemented
     Container(importDetector, "Import Detector", "ts-morph", "Scans untracked [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Registration")
     System_Ext(fileSystem, "File System", "Project files")
 
     Rel(developer, cli, "1. cyrus-code scan")
-    Rel(cli, importDetector, "2. Find untracked files")
-    Rel(importDetector, fileSystem, "3. List project files")
-    Rel(importDetector, symbolTable, "4. Check which are tracked")
-    Rel(importDetector, cli, "5. Return untracked list")
-    Rel(cli, developer, "6. Display untracked files")
-    Rel(developer, cli, "7. cyrus-code import <file>")
-    Rel(cli, importDetector, "8. Parse and classify")
-    Rel(importDetector, symbolTable, "9. Register with origin='manual'")
-    Rel(cli, developer, "10. Confirm imported")
+    Rel(cli, apiFacade, "2. Route to import detector")
+    Rel(apiFacade, importDetector, "3. Find untracked files")
+    Rel(importDetector, fileSystem, "4. List project files")
+    Rel(importDetector, symbolTable, "5. Check which are tracked")
+    Rel(importDetector, apiFacade, "6. Return untracked list")
+    Rel(cli, developer, "7. Display untracked files")
+    Rel(developer, cli, "8. cyrus-code import <file>")
+    Rel(cli, apiFacade, "9. Route to import detector")
+    Rel(apiFacade, importDetector, "10. Parse and classify")
+    Rel(importDetector, symbolTable, "11. Register with origin='manual'")
+    Rel(cli, developer, "12. Confirm imported")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code scan` to find untracked files
-2. Import Detector compares project files against symbol table
-3. Untracked files reported to developer
-4. Developer selects files to import
-5. Import Detector parses and suggests classification
-6. Symbol registered with `origin='manual'`
+2. CLI routes request to API Facade
+3. API Facade delegates to Import Detector
+4. Import Detector compares project files against symbol table
+5. Untracked files reported to developer via CLI
+6. Developer runs `cyrus-code import <file>`
+7. CLI routes to API Facade, then Import Detector
+8. Import Detector parses and suggests classification
+9. Symbol registered with `origin='manual'`
+10. CLI confirms import to developer
 
 ---
 
