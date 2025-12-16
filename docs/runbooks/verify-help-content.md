@@ -30,7 +30,8 @@ npm run electron
 - [ ] Heading displays correctly
 - [ ] Markdown renders (not raw text)
 - [ ] Mermaid diagrams render as SVG (not code blocks)
-- [ ] Implementation status legend visible (✅/🔮)
+- [ ] C4NavigationBar appears (L1, L2, L3, Dynamic tabs)
+- [ ] Implementation status legend collapsible (click to expand ✅/🔮)
 - [ ] No console errors in DevTools (Cmd+Option+I)
 
 ### 5. Capture Evidence (if requested)

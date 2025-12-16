@@ -1,4 +1,3 @@
-<!-- Part of C4 Architecture: see docs/c4/ for full navigation -->
 # C4 Dynamic Diagram - cyrus-code
 
 ## Overview

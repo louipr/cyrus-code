@@ -1,4 +1,3 @@
-<!-- Part of C4 Architecture: see docs/c4/ for full navigation -->
 # C4 Component Diagram - Wiring Service
 
 ## Overview
@@ -11,21 +10,21 @@ Internal structure of the Wiring container, showing its components and their rel
 flowchart TD
     subgraph wiring ["Wiring"]
         service["WiringService<br/><small>TypeScript</small>"]
-        graph["Graph Analysis<br/><small>TypeScript</small>"]
+        graphAnalysis["Graph Analysis<br/><small>TypeScript</small>"]
         schema["Schema<br/><small>TypeScript</small>"]
     end
 
-    service -->|"build"| graph
+    service -->|"build"| graphAnalysis
     service -->|"delegate"| val["Interface Validator"]
     service -->|"query"| st["Symbol Table"]
-    graph -->|"use types"| schema
+    graphAnalysis -->|"use types"| schema
 
     api["API Facade"] -->|"call"| service
 
     classDef component fill:#1168bd,color:#fff
     classDef external fill:#999,color:#fff
 
-    class service,graph,schema component
+    class service,graphAnalysis,schema component
     class val,st,api external
 ```
 

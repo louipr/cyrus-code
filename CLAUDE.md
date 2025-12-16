@@ -131,7 +131,7 @@ npm run build:all      # Build everything
 # Test
 npm test               # Run 174 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
-npm run test:e2e       # Run 9 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:e2e       # Run 18 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
@@ -144,7 +144,7 @@ npm run clean          # Remove dist/
 npm run lint           # ESLint
 ```
 
-> **CLI Commands**: See [C4-2 Container Diagram](docs/c4/2-container.md#cli-commands) for `cyrus-code` CLI usage.
+> **CLI Commands**: See [README.md](README.md#cli-commands) for `cyrus-code` CLI usage.
 
 ## Development Philosophy
 

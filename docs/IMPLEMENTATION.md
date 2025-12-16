@@ -37,8 +37,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Category | Count | Location |
 |----------|-------|----------|
 | Unit tests | 174 | `src/**/*.test.ts` |
-| E2E tests | 9 tests (4 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **183** | |
+| E2E tests | 18 tests (4 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **192** | |
 
 ---
 
@@ -233,7 +233,7 @@ npm run electron:dev   # Dev mode with hot reload
 | H.G4 | AboutDialog component | `src/gui/components/AboutDialog.tsx` | ✅ |
 | H.G5 | F1 shortcut + help button | `src/gui/App.tsx` | ✅ |
 | H.G6 | Help API in preload | `electron/preload.ts` | ✅ |
-| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (5 tests) |
+| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (14 tests) |
 
 ### Verification Tasks
 
@@ -289,6 +289,17 @@ npm run electron:dev   # Dev mode with hot reload
 | D.19 | Add L3 Component diagram for Code Synthesizer | `docs/c4/3-component-synthesizer.md` | ✅ |
 | D.20 | Add L3 Component diagrams for remaining containers | `docs/c4/3-component-{help,wiring,validator,registry,facade}.md` | ✅ |
 
+### C4 DRY Cleanup (Phase 7)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.21 | Add c4Hierarchy metadata to help.json | `docs/help.json` | ✅ |
+| D.22 | Add getC4Hierarchy API through full stack | `src/services/help/`, `electron/`, `src/gui/api-client.ts` | ✅ |
+| D.23 | Create C4NavigationBar component | `src/gui/components/C4NavigationBar.tsx` | ✅ |
+| D.24 | Integrate nav bar + status legend into HelpDialog | `src/gui/components/HelpDialog.tsx` | ✅ |
+| D.25 | Remove navigation from all C4 markdown files | `docs/c4/*.md` (10 files) | ✅ |
+| D.26 | Add E2E tests for C4 navigation bar | `tests/e2e/help-dialog.spec.ts` | ✅ |
+
 ### Deliverables
 
 - [x] All C4 diagrams have ✅ Implemented / 🔮 Planned markers
@@ -304,6 +315,8 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] Consistent C4 Navigation blockquote across L1, L2, L3
 - [x] Aggressive cleanup: L1 (-35% lines), L2 (-19% lines)
 - [x] L3 Component diagrams for all core containers (Symbol Table, Synthesizer, Help, Wiring, Validator, Registry, Facade)
+- [x] C4NavigationBar component in GUI (DRY: navigation moved from markdown to GUI)
+- [x] Status legend as collapsible GUI element (DRY: removed from 9 markdown files)
 
 ---
 
@@ -451,7 +464,8 @@ cyrus-code/
 │   │       ├── FileTree.tsx           # File tree in export dialog
 │   │       ├── HelpDialog.tsx         # Help topic browser ✅
 │   │       ├── AboutDialog.tsx        # Version info dialog ✅
-│   │       └── MermaidDiagram.tsx     # C4 diagram renderer ✅
+│   │       ├── MermaidDiagram.tsx     # C4 diagram renderer ✅
+│   │       └── C4NavigationBar.tsx    # C4 level navigation ✅
 │   ├── repositories/                  # Data Access Layer ✅
 │   │   ├── persistence.ts             # SQLite database
 │   │   ├── symbol-repository.ts       # Symbol CRUD
@@ -563,7 +577,7 @@ npm run build:all
 # 2. Run unit tests (174 tests)
 npm test
 
-# 3. Run E2E tests (9 tests)
+# 3. Run E2E tests (18 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -573,7 +587,7 @@ npm run test:gui
 **Expected Results:**
 - Build completes without errors
 - 174 unit tests pass
-- 9 E2E tests pass
+- 18 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling
