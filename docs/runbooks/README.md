@@ -6,6 +6,8 @@ Operational procedures for common development tasks.
 
 | Runbook | Purpose |
 |---------|---------|
+| [developer-setup.md](developer-setup.md) | Common development environment setup |
+| [manual-verification.md](manual-verification.md) | Manual GUI verification checklist |
 | [verify-help-content.md](verify-help-content.md) | Verify help dialog renders correctly after C4/docs changes |
 
 ## When to Use Runbooks

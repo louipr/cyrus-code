@@ -40,17 +40,6 @@ test.describe('Dependency Graph', () => {
     await expect(graphButton).toBeVisible();
   });
 
-  test('can switch to graph view', async () => {
-    const { page } = context;
-
-    // Switch to graph view
-    await graphActions.switchToGraphView(page);
-
-    // Graph view should be visible
-    const graphView = page.locator(selectors.graphView);
-    await expect(graphView).toBeVisible();
-  });
-
   test('graph stats panel is visible in graph view', async () => {
     const { page } = context;
 

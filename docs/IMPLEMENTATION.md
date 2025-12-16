@@ -13,17 +13,6 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling:
 - Incremental demos
 - Feedback-informed API design
 
-### Technology Stack
-
-| Layer | Technology | ADR |
-|-------|------------|-----|
-| Symbol Table | SQLite + TypeScript | ADR-001 |
-| AST Manipulation | ts-morph | - |
-| Schema Validation | Zod | ADR-003 |
-| Desktop GUI | Electron + React | ADR-009 |
-| Backend Runtime | Node.js (main process) | ADR-009 |
-| E2E Testing | Playwright | ADR-010 |
-
 ### Build & Test Commands
 
 ```bash

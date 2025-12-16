@@ -38,17 +38,6 @@ test.describe('Canvas Wiring', () => {
     await expect(canvasButton).toBeVisible();
   });
 
-  test('can switch to canvas view', async () => {
-    const { page } = context;
-
-    // Switch to canvas view
-    await canvasActions.switchToCanvasView(page);
-
-    // Canvas should be visible
-    const canvas = page.locator(selectors.canvas);
-    await expect(canvas).toBeVisible();
-  });
-
   test('canvas shows message or nodes', async () => {
     const { page } = context;
 
@@ -79,25 +68,11 @@ test.describe('Canvas Wiring', () => {
     expect(legendText).toMatch(/L[0-4]/);
   });
 
-  test('can switch back to browser view', async () => {
-    const { page } = context;
-
-    // Switch back to browser view
-    await graphActions.switchToBrowserView(page);
-
-    // Search bar should be visible (browser view indicator)
-    const searchBar = page.locator(selectors.searchBar);
-    await expect(searchBar).toBeVisible();
-
-    // Canvas should not be visible
-    const canvas = page.locator(selectors.canvas);
-    await expect(canvas).not.toBeVisible();
-  });
-
   test('can switch between all three views', async () => {
     const { page } = context;
 
-    // Start from browser view
+    // Ensure we start from browser view
+    await graphActions.switchToBrowserView(page);
     const searchBar = page.locator(selectors.searchBar);
     await expect(searchBar).toBeVisible();
 

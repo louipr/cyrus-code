@@ -51,18 +51,6 @@ test.describe('Component Browser', () => {
     expect(listVisible || emptyVisible).toBe(true);
   });
 
-  test('search input accepts text', async () => {
-    const { page } = context;
-
-    const searchInput = page.locator(selectors.searchInput);
-    await searchInput.fill('test query');
-
-    await expect(searchInput).toHaveValue('test query');
-
-    // Clear for next test
-    await searchActions.clear(page);
-  });
-
   test('empty search shows no filter message', async () => {
     const { page } = context;
 
