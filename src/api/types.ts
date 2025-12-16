@@ -284,3 +284,80 @@ export interface WiringResultDTO {
   error?: string | undefined;
   errorCode?: string | undefined;
 }
+
+// ============================================================================
+// Synthesizer DTOs (Code Generation)
+// ============================================================================
+
+/**
+ * Options for code generation.
+ */
+export interface GenerationOptionsDTO {
+  outputDir: string;
+  overwriteGenerated?: boolean | undefined;
+  preserveUserFiles?: boolean | undefined;
+  dryRun?: boolean | undefined;
+  includeComments?: boolean | undefined;
+}
+
+/**
+ * Result of generating a single component.
+ */
+export interface GenerationResultDTO {
+  success: boolean;
+  symbolId: string;
+  generatedPath: string;
+  implementationPath: string;
+  contentHash: string;
+  generatedAt: string; // ISO date string
+  userFileCreated: boolean;
+  warnings: string[];
+  error?: string | undefined;
+}
+
+/**
+ * Result of batch generation.
+ */
+export interface GenerationBatchResultDTO {
+  total: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  results: GenerationResultDTO[];
+}
+
+/**
+ * Preview of generated code without writing.
+ */
+export interface PreviewResultDTO {
+  symbolId: string;
+  generatedContent: string;
+  userStubContent?: string | undefined;
+  generatedPath: string;
+  implementationPath: string;
+  userFileExists: boolean;
+}
+
+/**
+ * Request to generate code for a symbol.
+ */
+export interface GenerateRequest {
+  symbolId: string;
+  options: GenerationOptionsDTO;
+}
+
+/**
+ * Request to generate code for multiple symbols.
+ */
+export interface GenerateBatchRequest {
+  symbolIds: string[];
+  options: GenerationOptionsDTO;
+}
+
+/**
+ * Request to preview generation.
+ */
+export interface PreviewRequest {
+  symbolId: string;
+  outputDir: string;
+}

@@ -7,6 +7,8 @@
 
 import Database from 'better-sqlite3';
 import type { Database as DatabaseType, Statement } from 'better-sqlite3';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export type { DatabaseType, Statement };
 
@@ -23,6 +25,12 @@ let db: DatabaseType | null = null;
 export function initDatabase(dbPath: string): DatabaseType {
   if (db) {
     return db;
+  }
+
+  // Create parent directory if it doesn't exist
+  const parentDir = path.dirname(dbPath);
+  if (!fs.existsSync(parentDir)) {
+    fs.mkdirSync(parentDir, { recursive: true });
   }
 
   const newDb = new Database(dbPath);

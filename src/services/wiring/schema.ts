@@ -242,7 +242,7 @@ export function createEmptyGraph(): DependencyGraph {
 /**
  * Extract input/output port names from a list of port definitions.
  */
-export function categorizeports(
+export function categorizePorts(
   ports: PortDefinition[]
 ): { inputs: string[]; outputs: string[] } {
   const inputs: string[] = [];

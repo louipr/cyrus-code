@@ -12,6 +12,7 @@
     "build": "tsc",
     "build:gui": "vite build",
     "build:all": "npm run build && npm run build:gui",
+    "cli": "npm run build && npm rebuild better-sqlite3 && node dist/src/cli/index.js",
     "dev": "tsc --watch",
     "dev:gui": "vite",
     "electron": "npm run build:all && electron-rebuild -f -w better-sqlite3 && unset ELECTRON_RUN_AS_NODE && electron .",
@@ -49,8 +50,11 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
+    "mermaid": "^11.12.2",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "react-markdown": "^9.1.0",
+    "remark-gfm": "^4.0.1",
     "ts-morph": "^24.0.0",
     "uuid": "^13.0.0",
     "zod": "^3.24.0"

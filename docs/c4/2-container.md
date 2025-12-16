@@ -4,78 +4,43 @@
 
 Internal architecture of cyrus-code showing major containers and their responsibilities.
 
+> **Implementation Status Legend:**
+> - ✅ **Implemented** - Working in current codebase
+> - 🔮 **Planned** - Defined in ADRs, not yet implemented
+
 ## Container Diagram
 
+> **Note**: Containers marked 🔮 are defined in ADRs but not yet implemented. See status tables below.
+
 ```mermaid
-C4Container
-    title Container Diagram - cyrus-code
+flowchart TD
+    dev["👤 Developer"] --> cli & gui
+    ai["🤖 AI Agent"] --> cli
 
-    Person(developer, "Developer", "Designs and composes components")
-    Person(aiAgent, "AI Agent", "Queries and configures via API")
+    subgraph cyrus ["cyrus-code"]
+        cli["CLI"]
+        gui["GUI"]
+        st["Symbol Table"]
+        wire["Wiring"]
+        synth["Synthesizer"]
+        db[("SQLite")]
+    end
 
-    System_Boundary(cyrusCode, "cyrus-code") {
-        Container(cli, "CLI", "Node.js", "Command-line interface for all operations")
-        Container(visualEditor, "Visual Editor", "Electron + React", "Graphical component wiring interface")
-        Container(languageServer, "Language Server", "LSP", "IDE integration for completions and diagnostics")
+    cli & gui --> st
+    cli --> wire
+    cli --> synth
+    st --> db
+    synth --> fs["📁 Files"]
 
-        Container(symbolTable, "Symbol Table", "SQLite + TypeScript", "Persistent registry of all components with versions")
-        Container(componentRegistry, "Component Registry", "TypeScript", "Component discovery, loading, version resolution")
-        Container(interfaceValidator, "Interface Validator", "TypeScript + Zod", "Type checking and port compatibility validation")
-        Container(wiring, "Wiring", "TypeScript", "Connection validation and dependency graph resolution")
-        Container(codeSynthesizer, "Code Synthesizer", "ts-morph", "AST-based code generation from component graph")
+    classDef person fill:#08427b,color:#fff
+    classDef container fill:#1168bd,color:#fff
+    classDef storage fill:#438dd5,color:#fff
+    classDef external fill:#999,color:#fff
 
-        Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Build-time call graph analysis for dead code detection")
-        Container(runtimeTracer, "Runtime Tracer", "TypeScript", "Optional dev-time execution tracing")
-        Container(importDetector, "Import Detector", "ts-morph", "Detect and import untracked manual code")
-
-        Container(specManager, "Spec Manager", "TypeScript", "Requirement specifications and traceability")
-        Container(testGenerator, "Test Generator", "ts-morph", "Contract-based test generation")
-        Container(impactAnalyzer, "Impact Analyzer", "TypeScript", "Change propagation and impact analysis")
-        Container(releaseManager, "Release Manager", "TypeScript", "Composition versioning and deployment")
-
-        ContainerDb(symbolDb, "Symbol Database", "SQLite", "Persistent symbol storage")
-        Container(componentStore, "Component Store", "File System", "Component source files and interfaces")
-    }
-
-    System_Ext(fileSystem, "File System", "Project source and output")
-    System_Ext(packageRegistry, "Package Registry", "npm, crates, PyPI")
-
-    Rel(developer, cli, "Commands")
-    Rel(developer, visualEditor, "Visual wiring")
-    Rel(aiAgent, cli, "API calls")
-
-    Rel(cli, symbolTable, "Creates, reads, updates, deletes symbols")
-    Rel(cli, wiring, "Validates connections")
-    Rel(cli, codeSynthesizer, "Generates code")
-    Rel(visualEditor, symbolTable, "Queries components")
-    Rel(visualEditor, wiring, "Validates wiring")
-    Rel(languageServer, symbolTable, "Provides completions and diagnostics")
-
-    Rel(symbolTable, symbolDb, "Persists symbols")
-    Rel(componentRegistry, componentStore, "Loads components")
-    Rel(componentRegistry, packageRegistry, "Resolves versions")
-    Rel(interfaceValidator, symbolTable, "Looks up types")
-    Rel(wiring, interfaceValidator, "Validates port connections")
-    Rel(codeSynthesizer, symbolTable, "Reads component graph")
-    Rel(codeSynthesizer, fileSystem, "Writes generated code")
-
-    Rel(cli, staticAnalyzer, "Analyzes dead code")
-    Rel(staticAnalyzer, symbolTable, "Updates status and builds call graph")
-    Rel(staticAnalyzer, fileSystem, "Parses source files")
-    Rel(runtimeTracer, symbolTable, "Updates execution status")
-    Rel(cli, importDetector, "Imports untracked files")
-    Rel(importDetector, symbolTable, "Registers manual symbols")
-    Rel(importDetector, fileSystem, "Scans for untracked files")
-
-    Rel(cli, specManager, "Manages requirements")
-    Rel(specManager, symbolTable, "Traces requirements to components")
-    Rel(cli, testGenerator, "Generates tests")
-    Rel(testGenerator, symbolTable, "Reads port contracts")
-    Rel(testGenerator, fileSystem, "Writes test files")
-    Rel(cli, impactAnalyzer, "Analyzes changes")
-    Rel(impactAnalyzer, symbolTable, "Queries dependency graph")
-    Rel(cli, releaseManager, "Manages releases")
-    Rel(releaseManager, symbolTable, "Snapshots compositions")
+    class dev,ai person
+    class cli,gui,st,wire,synth container
+    class db storage
+    class fs external
 ```
 
 ## Legend
@@ -89,51 +54,59 @@ C4Container
 | **System_Boundary** | Dashed box | The cyrus-code system boundary |
 | **Rel** | Arrow with label | Data/control flow between elements |
 
-> **C4 Model Reference**: This is a Level 2 (Container) diagram showing internal architecture. For system context, see [Level 1: Context](1-context.md). For Symbol Table internals, see [Level 3: Component](3-component.md). For runtime flows, see [Dynamic Diagrams](dynamic.md).
+> **C4 Model Reference**: This is a C4-2 (Container) diagram showing internal architecture. For system context, see [C4-1: Context](1-context.md). For Symbol Table internals, see [C4-3: Component](3-component.md). For runtime flows, see [Dynamic Diagrams](dynamic.md).
+
+## Scaling Guidance
+
+> **C4 Best Practice**: Per [Simon Brown's guidance](https://dev.to/simonbrown/diagramming-distributed-architectures-with-the-c4-model-51cm), diagrams with 20+ elements become difficult to understand. cyrus-code currently has ~16 containers, organized into logical subgraphs for clarity.
+>
+> If the system grows significantly (30+ containers), consider:
+> - **Focused diagrams**: One diagram per domain/subsystem showing only direct dependencies
+> - **Model-based tooling**: Tools like Structurizr that generate multiple views from a single model
 
 ## Containers
 
 ### User-Facing
 
-| Container | Technology | Purpose |
-|-----------|------------|---------|
-| **CLI** | Node.js | Primary interface for all operations |
-| **Visual Editor** | Electron + React | Graphical component wiring (see [ADR-009](../adr/009-electron-gui-framework.md)) |
-| **Language Server** | LSP | IDE integration |
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **CLI** | Node.js | Primary interface for all operations | ✅ |
+| **Visual Editor** | Electron + React | Graphical component wiring (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
+| **Language Server** | LSP | IDE integration | 🔮 |
 
 ### Core Services
 
-| Container | Technology | Purpose |
-|-----------|------------|---------|
-| **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components |
-| **Component Registry** | TypeScript | Discovery, loading, version resolution |
-| **Interface Validator** | TypeScript + Zod | Port type checking and compatibility |
-| **Wiring** | TypeScript | Connection graph validation |
-| **Code Synthesizer** | ts-morph | AST-based code generation |
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
+| **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
+| **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |
+| **Wiring** | TypeScript | Connection graph validation | ✅ |
+| **Code Synthesizer** | ts-morph | AST-based code generation | ✅ |
 
 ### Analysis Services (ADR-005, ADR-006)
 
-| Container | Technology | Purpose |
-|-----------|------------|---------|
-| **Static Analyzer** | ts-morph | Build call graphs, detect unreachable code |
-| **Runtime Tracer** | TypeScript | Optional dev-time execution tracking |
-| **Import Detector** | ts-morph | Scan and import untracked manual code |
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **Static Analyzer** | ts-morph | Build call graphs, detect unreachable code | 🔮 |
+| **Runtime Tracer** | TypeScript | Optional dev-time execution tracking | 🔮 |
+| **Import Detector** | ts-morph | Scan and import untracked manual code | 🔮 |
 
 ### Lifecycle Services (ADR-007)
 
-| Container | Technology | Purpose |
-|-----------|------------|---------|
-| **Spec Manager** | TypeScript | Requirements, acceptance criteria, traceability |
-| **Test Generator** | ts-morph | Generate tests from port contracts |
-| **Impact Analyzer** | TypeScript | Change propagation, regression selection |
-| **Release Manager** | TypeScript | Composition snapshots, deployment |
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **Spec Manager** | TypeScript | Requirements, acceptance criteria, traceability | 🔮 |
+| **Test Generator** | ts-morph | Generate tests from port contracts | 🔮 |
+| **Impact Analyzer** | TypeScript | Change propagation, regression selection | 🔮 |
+| **Release Manager** | TypeScript | Composition snapshots, deployment | 🔮 |
 
 ### Storage
 
-| Container | Technology | Purpose |
-|-----------|------------|---------|
-| **Symbol Database** | SQLite | Persistent symbol storage |
-| **Component Store** | File System | Component source and interface files |
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **Symbol Database** | SQLite | Persistent symbol storage | ✅ |
+| **Component Store** | File System | Component source and interface files | ✅ |
 
 ## Data Flow
 
@@ -184,7 +157,9 @@ No components   AST error
 4. Written to output directory
    - **Error**: Write failure → Reports file system error
 
-### Analysis Flow (ADR-005)
+### Analysis Flow (ADR-005) 🔮
+
+> **Status**: Planned - Static Analyzer has schema only, logic not implemented
 
 ```
 Entry Points → Static Analyzer → Call Graph → Symbol Table (status update)
@@ -195,7 +170,9 @@ Entry Points → Static Analyzer → Call Graph → Symbol Table (status update)
 3. Mark reachable symbols as `referenced`
 4. Unreachable symbols flagged as dead code candidates
 
-### Import Flow (ADR-006)
+### Import Flow (ADR-006) 🔮
+
+> **Status**: Planned - Import Detector not implemented
 
 ```
 File System → Import Detector → Parse → Symbol Table (register)
@@ -206,7 +183,9 @@ File System → Import Detector → Parse → Symbol Table (register)
 3. Suggest classification (level, kind, namespace)
 4. Register with `source='manual'`
 
-### Lifecycle Flows (ADR-007)
+### Lifecycle Flows (ADR-007) 🔮
+
+> **Status**: Planned - Spec Manager, Test Generator, Impact Analyzer, Release Manager not implemented
 
 **Design → Test Flow:**
 ```
@@ -225,22 +204,37 @@ Symbol Table → Release Manager → Composition Snapshot → Deployment
 
 ## CLI Commands
 
+### Implemented ✅
+
 ```bash
 # Symbol management
 cyrus-code register <file>        # Register component from source
 cyrus-code list [--level L1]      # List symbols, optionally filter
 cyrus-code get <symbol-id>        # Get symbol details
+
+# Wiring
+cyrus-code wire <from> <to>       # Connect component ports
+cyrus-code graph                  # Display dependency graph
+
+# Validation & Generation
+cyrus-code validate               # Validate all connections
+cyrus-code generate <output>      # Generate code from graph
+
+# Help
+cyrus-code help                   # Show help information
+```
+
+### Planned 🔮
+
+```bash
+# Symbol management (ADR-003)
 cyrus-code remove <symbol-id>     # Remove from registry
 
 # Validation
-cyrus-code validate               # Validate all connections
 cyrus-code lint                   # Check for issues
-
-# Generation
-cyrus-code generate <output>      # Generate code from graph
 cyrus-code preview                # Show what would be generated
 
-# Version management
+# Version management (ADR-003)
 cyrus-code version <symbol-id>    # Show version history
 cyrus-code bump <symbol-id> <type># Bump version (major/minor/patch)
 
@@ -270,10 +264,10 @@ cyrus-code release diff <v1> <v2> # Compare releases
 
 ## Technology Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Symbol storage | SQLite | Single file, queryable, no server |
-| AST manipulation | ts-morph | High-level TypeScript API |
-| Schema validation | Zod | Runtime + compile-time types |
-| Desktop UI | Electron + React | Cross-platform, web tech |
-| LSP | TypeScript LSP | IDE agnostic |
+| Decision | Choice | Rationale | Status |
+|----------|--------|-----------|--------|
+| Symbol storage | SQLite | Single file, queryable, no server | ✅ |
+| AST manipulation | ts-morph | High-level TypeScript API | ✅ |
+| Schema validation | Zod | Runtime + compile-time types | ✅ |
+| Desktop UI | Electron + React | Cross-platform, web tech | ✅ |
+| LSP | TypeScript LSP | IDE agnostic | 🔮 |

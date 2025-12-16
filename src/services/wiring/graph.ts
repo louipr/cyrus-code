@@ -12,7 +12,7 @@ import {
   type GraphEdge,
   type GraphStats,
   createEmptyGraph,
-  categorizeports,
+  categorizePorts,
 } from './schema.js';
 
 // ============================================================================
@@ -30,7 +30,7 @@ export function buildDependencyGraph(
 
   // Add all symbols as nodes
   for (const symbol of symbols) {
-    const { inputs, outputs } = categorizeports(symbol.ports);
+    const { inputs, outputs } = categorizePorts(symbol.ports);
     const node: GraphNode = {
       symbolId: symbol.id,
       name: symbol.name,

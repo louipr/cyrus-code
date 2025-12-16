@@ -15,6 +15,13 @@ import {
   type ResolveOptions,
 } from '../services/registry/index.js';
 import { WiringService, type ConnectionRequest } from '../services/wiring/index.js';
+import {
+  SynthesizerService,
+  type GenerationOptions,
+  type GenerationResult,
+  type GenerationBatchResult,
+  type PreviewResult,
+} from '../services/synthesizer/index.js';
 import type {
   ComponentSymbolDTO,
   ConnectionDTO,
@@ -39,6 +46,13 @@ import type {
   CompatiblePortDTO,
   UnconnectedPortDTO,
   WiringResultDTO,
+  GenerationOptionsDTO,
+  GenerationResultDTO,
+  GenerationBatchResultDTO,
+  PreviewResultDTO,
+  GenerateRequest,
+  GenerateBatchRequest,
+  PreviewRequest,
 } from './types.js';
 import type {
   ComponentSymbol,
@@ -54,10 +68,12 @@ import type {
 export class ApiFacade {
   private registry: ComponentRegistry;
   private wiringService: WiringService;
+  private synthesizerService: SynthesizerService;
 
   constructor(db: DatabaseType) {
     this.registry = new ComponentRegistry(db);
     this.wiringService = new WiringService(this.registry.getStore());
+    this.synthesizerService = new SynthesizerService(this.registry.getStore());
   }
 
   // ==========================================================================
@@ -973,6 +989,167 @@ export class ApiFacade {
   }
 
   // ==========================================================================
+  // Code Generation (Synthesizer)
+  // ==========================================================================
+
+  /**
+   * Generate code for a single symbol.
+   */
+  generateSymbol(request: GenerateRequest): ApiResponse<GenerationResultDTO> {
+    try {
+      const options = this.dtoToGenerationOptions(request.options);
+      const result = this.synthesizerService.generateSymbol(request.symbolId, options);
+      return {
+        success: true,
+        data: this.generationResultToDto(result),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'GENERATION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Generate code for multiple symbols.
+   */
+  generateMultiple(request: GenerateBatchRequest): ApiResponse<GenerationBatchResultDTO> {
+    try {
+      const options = this.dtoToGenerationOptions(request.options);
+      const result = this.synthesizerService.generateMultiple(request.symbolIds, options);
+      return {
+        success: true,
+        data: this.generationBatchResultToDto(result),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'GENERATION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Generate code for all generatable symbols.
+   */
+  generateAll(options: GenerationOptionsDTO): ApiResponse<GenerationBatchResultDTO> {
+    try {
+      const genOptions = this.dtoToGenerationOptions(options);
+      const result = this.synthesizerService.generateAll(genOptions);
+      return {
+        success: true,
+        data: this.generationBatchResultToDto(result),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'GENERATION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Preview code generation without writing files.
+   */
+  previewGeneration(request: PreviewRequest): ApiResponse<PreviewResultDTO> {
+    try {
+      const preview = this.synthesizerService.previewSymbol(request.symbolId, request.outputDir);
+      if (!preview) {
+        return {
+          success: false,
+          error: {
+            code: 'PREVIEW_FAILED',
+            message: `Symbol '${request.symbolId}' not found or not generatable`,
+          },
+        };
+      }
+      return {
+        success: true,
+        data: this.previewResultToDto(preview),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'PREVIEW_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * List all symbols that can be generated.
+   */
+  listGeneratableSymbols(): ApiResponse<ComponentSymbolDTO[]> {
+    try {
+      const symbols = this.synthesizerService.listGeneratableSymbols();
+      return {
+        success: true,
+        data: symbols.map((s) => this.symbolToDto(s)),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'QUERY_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Check if a symbol can be generated.
+   */
+  canGenerateSymbol(symbolId: string): ApiResponse<boolean> {
+    try {
+      return {
+        success: true,
+        data: this.synthesizerService.canGenerate(symbolId),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'CHECK_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  /**
+   * Check if user implementation file exists for a symbol.
+   */
+  hasUserImplementation(symbolId: string, outputDir: string): ApiResponse<boolean> {
+    try {
+      return {
+        success: true,
+        data: this.synthesizerService.hasUserImplementation(symbolId, outputDir),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'CHECK_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  // ==========================================================================
   // DTO Conversion Helpers
   // ==========================================================================
 
@@ -1228,5 +1405,69 @@ export class ApiFacade {
         severity: w.severity,
       })),
     };
+  }
+
+  // ==========================================================================
+  // Synthesizer DTO Conversion Helpers
+  // ==========================================================================
+
+  private dtoToGenerationOptions(dto: GenerationOptionsDTO): GenerationOptions {
+    const options: GenerationOptions = {
+      outputDir: dto.outputDir,
+    };
+    if (dto.overwriteGenerated !== undefined) {
+      options.overwriteGenerated = dto.overwriteGenerated;
+    }
+    if (dto.preserveUserFiles !== undefined) {
+      options.preserveUserFiles = dto.preserveUserFiles;
+    }
+    if (dto.dryRun !== undefined) {
+      options.dryRun = dto.dryRun;
+    }
+    if (dto.includeComments !== undefined) {
+      options.includeComments = dto.includeComments;
+    }
+    return options;
+  }
+
+  private generationResultToDto(result: GenerationResult): GenerationResultDTO {
+    const dto: GenerationResultDTO = {
+      success: result.success,
+      symbolId: result.symbolId,
+      generatedPath: result.generatedPath,
+      implementationPath: result.implementationPath,
+      contentHash: result.contentHash,
+      generatedAt: result.generatedAt.toISOString(),
+      userFileCreated: result.userFileCreated,
+      warnings: result.warnings,
+    };
+    if (result.error !== undefined) {
+      dto.error = result.error;
+    }
+    return dto;
+  }
+
+  private generationBatchResultToDto(result: GenerationBatchResult): GenerationBatchResultDTO {
+    return {
+      total: result.total,
+      succeeded: result.succeeded,
+      failed: result.failed,
+      skipped: result.skipped,
+      results: result.results.map((r) => this.generationResultToDto(r)),
+    };
+  }
+
+  private previewResultToDto(result: PreviewResult): PreviewResultDTO {
+    const dto: PreviewResultDTO = {
+      symbolId: result.symbolId,
+      generatedContent: result.generatedContent,
+      generatedPath: result.generatedPath,
+      implementationPath: result.implementationPath,
+      userFileExists: result.userFileExists,
+    };
+    if (result.userStubContent !== undefined) {
+      dto.userStubContent = result.userStubContent;
+    }
+    return dto;
   }
 }

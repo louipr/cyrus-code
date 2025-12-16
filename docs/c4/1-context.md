@@ -9,23 +9,19 @@ System context showing cyrus-code and its external actors/systems.
 ```mermaid
 flowchart TB
     subgraph users ["Users"]
-        dev["👤 Developer<br/><small>Designs architecture</small>"]
-        ai["🤖 AI Agent<br/><small>Configures components</small>"]
+        dev["👤 Developer<br/><small>via GUI</small>"]
+        ai["🤖 AI Agent (Claude)<br/><small>via CLI</small>"]
     end
 
     cyrus["🔷 cyrus-code<br/><small>Component architecture tool</small>"]
 
     subgraph external ["External Systems"]
-        local["📁 Local Environment<br/><small>File system, IDE, Git</small>"]
-        registry["📦 Package Registry<br/><small>npm, PyPI, crates.io</small>"]
-        claude["🧠 Claude API<br/><small>AI reasoning</small>"]
+        fs["📁 File System<br/><small>Source & generated code</small>"]
     end
 
-    dev -->|"Defines & wires"| cyrus
-    ai -->|"Queries & configures"| cyrus
-    cyrus -->|"Read/write"| local
-    cyrus -->|"Resolve deps"| registry
-    ai -.->|"AI assistance"| claude
+    dev -->|"register, wire, generate"| cyrus
+    ai -->|"register, wire, generate"| cyrus
+    cyrus -->|"Parse source / Generate code"| fs
 
     classDef person fill:#08427b,stroke:#052e56,color:#fff
     classDef system fill:#1168bd,stroke:#0b4884,color:#fff
@@ -34,7 +30,7 @@ flowchart TB
 
     class dev,ai person
     class cyrus system
-    class local,registry,claude external
+    class fs external
     class users,external boundary
 ```
 
@@ -51,23 +47,23 @@ flowchart TB
 
 ## Actors
 
-| Actor | Description | Interactions |
-|-------|-------------|--------------|
-| **Developer** | Software architect designing systems | Defines components, wires interfaces, triggers generation |
-| **AI Agent** | Automated component configurator | Queries symbol table, suggests connections, configures parameters |
+| Actor | Description | Interface |
+|-------|-------------|-----------|
+| **Developer** | Software architect designing systems | GUI (Electron app) |
+| **AI Agent (Claude)** | Claude Code using cyrus-code as a tool | CLI (`cyrus-code` commands) |
+
+Both actors perform the same operations: `register`, `list`, `wire`, `validate`, `generate`, `graph`.
 
 ## External Systems
 
 | System | Purpose | Integration |
 |--------|---------|-------------|
-| **Local Environment** | Development workspace | File system (source/output), IDE (LSP), Git (versioning) |
-| **Package Registry** | Dependency metadata | Resolve npm, PyPI, crates.io versions |
-| **Claude API** | AI reasoning | Component configuration assistance |
+| **File System** | Source and output storage | Parse existing code, write generated TypeScript files |
+
+> **Note**: Package Registry integration (npm, PyPI, crates.io) is planned for future releases.
 
 ## Key Interactions
 
-1. **Developer → cyrus-code**: Define components via CLI or visual editor
-2. **AI Agent → cyrus-code**: Query registry for compatible components
-3. **cyrus-code → File System**: Parse existing code, generate new code
-4. **cyrus-code → Package Registry**: Check external dependency versions
-5. **cyrus-code → IDE**: Provide completions, diagnostics, refactoring
+1. **Developer → cyrus-code** (via GUI): Register components, wire interfaces, generate code
+2. **AI Agent → cyrus-code** (via CLI): Same operations via `cyrus-code` commands
+3. **cyrus-code → File System**: Parse existing source code, generate TypeScript output

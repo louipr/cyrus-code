@@ -48,8 +48,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Category | Count | Location |
 |----------|-------|----------|
 | Unit tests | 202 | `src/**/*.test.ts` |
-| E2E tests | 27 tests (5 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **229** | |
+| E2E tests | 28 tests (5 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **230** | |
 
 ---
 
@@ -61,6 +61,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
 | Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
+| Documentation | C4 diagrams | - | ✅ Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | 🔄 In Progress |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -231,6 +232,7 @@ npm run electron:dev   # Dev mode with hot reload
 | H.5 | Unit tests | `src/services/help/index.test.ts` | ✅ (28 tests) |
 | H.6 | CLI help command | `src/cli/commands/help.ts` | ✅ |
 | H.7 | IPC handlers | `electron/ipc-handlers.ts` | ✅ |
+| H.8 | Add selectComponentByName helper | `tests/e2e/helpers/fixtures.ts` | ✅ |
 
 ### GUI Tasks
 
@@ -263,6 +265,27 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] F1 keyboard shortcut
 - [x] Help menu in Electron application menu
 - [x] About dialog with version info
+
+---
+
+## Documentation
+
+### C4 Diagram Accuracy
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.1 | Add implementation status markers | `docs/c4/2-container.md` | ✅ |
+| D.2 | Fix Level 1 Context diagram accuracy | `docs/c4/1-context.md` | ✅ |
+| D.3 | Update Level 3 Component status | `docs/c4/3-component.md` | ✅ |
+| D.4 | Mark Dynamic flows 4 & 5 as planned | `docs/c4/dynamic.md` | ✅ |
+| D.5 | Remove ⚠️ Partial status smell | All C4 docs | ✅ |
+
+### Deliverables
+
+- [x] All C4 diagrams have ✅ Implemented / 🔮 Planned markers
+- [x] Level 1 Context reflects actual external dependencies (File System only)
+- [x] Binary status only (no ⚠️ Partial/Integrated smell)
+- [x] Diagrams align with IMPLEMENTATION.md slice status
 
 ---
 
@@ -523,7 +546,7 @@ npm run build:all
 # 2. Run unit tests (202 tests)
 npm test
 
-# 3. Run E2E tests (27 tests)
+# 3. Run E2E tests (28 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -533,7 +556,7 @@ npm run test:gui
 **Expected Results:**
 - Build completes without errors
 - 202 unit tests pass
-- 27 E2E tests pass
+- 28 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling

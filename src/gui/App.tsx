@@ -5,22 +5,72 @@
  * Provides the main layout with component browser and dependency graph views.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { ComponentList } from './components/ComponentList';
 import { ComponentDetail } from './components/ComponentDetail';
 import { DependencyGraph } from './components/DependencyGraph';
 import { GraphStats } from './components/GraphStats';
 import { ValidationOverlay } from './components/ValidationOverlay';
+import { Canvas } from './components/Canvas';
+import { ExportDialog } from './components/ExportDialog';
+import { GenerateButton } from './components/GenerateButton';
+import { HelpDialog } from './components/HelpDialog';
+import { AboutDialog } from './components/AboutDialog';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
-type ViewMode = 'browser' | 'graph';
+type ViewMode = 'browser' | 'graph' | 'canvas';
 
 export default function App(): React.ReactElement {
   const [selectedComponent, setSelectedComponent] = useState<ComponentSymbolDTO | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('browser');
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | undefined>();
+  const [helpSearch, setHelpSearch] = useState<string | undefined>();
+
+  // Listen for F1 keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setShowHelpDialog(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Listen for help menu events from Electron
+  useEffect(() => {
+    if (typeof window.cyrus?.help?.onOpen !== 'function') return;
+
+    window.cyrus.help.onOpen(() => {
+      setHelpTopic(undefined);
+      setHelpSearch(undefined);
+      setShowHelpDialog(true);
+    });
+
+    window.cyrus.help.onSearch(() => {
+      setHelpTopic(undefined);
+      setHelpSearch('');
+      setShowHelpDialog(true);
+    });
+
+    window.cyrus.help.onTopic((topicId: string) => {
+      setHelpTopic(topicId);
+      setHelpSearch(undefined);
+      setShowHelpDialog(true);
+    });
+
+    window.cyrus.help.onAbout(() => {
+      setShowAboutDialog(true);
+    });
+  }, []);
 
   // Handle node click from graph view - fetch full component data
   const handleGraphNodeClick = useCallback(async (symbolId: string) => {
@@ -56,10 +106,37 @@ export default function App(): React.ReactElement {
           >
             Graph
           </button>
+          <button
+            style={{
+              ...styles.toggleButton,
+              ...(viewMode === 'canvas' ? styles.toggleButtonActive : {}),
+            }}
+            onClick={() => setViewMode('canvas')}
+            type="button"
+          >
+            Canvas
+          </button>
         </div>
+        <button
+          style={styles.exportButton}
+          onClick={() => setShowExportDialog(true)}
+          type="button"
+          data-testid="export-all-button"
+        >
+          Export All
+        </button>
+        <button
+          style={styles.helpButton}
+          onClick={() => setShowHelpDialog(true)}
+          type="button"
+          data-testid="help-button"
+          title="Help (F1)"
+        >
+          ?
+        </button>
       </header>
 
-      {viewMode === 'browser' ? (
+      {viewMode === 'browser' && (
         <>
           <div style={styles.toolbar}>
             <SearchBar
@@ -79,7 +156,10 @@ export default function App(): React.ReactElement {
 
             <section style={styles.content}>
               {selectedComponent ? (
-                <ComponentDetail component={selectedComponent} />
+                <>
+                  <ComponentDetail component={selectedComponent} />
+                  <GenerateButton component={selectedComponent} />
+                </>
               ) : (
                 <div style={styles.placeholder}>
                   <p>Select a component to view details</p>
@@ -88,7 +168,9 @@ export default function App(): React.ReactElement {
             </section>
           </main>
         </>
-      ) : (
+      )}
+
+      {viewMode === 'graph' && (
         <>
           <GraphStats />
           <main style={styles.graphMain}>
@@ -111,6 +193,47 @@ export default function App(): React.ReactElement {
           </main>
         </>
       )}
+
+      {viewMode === 'canvas' && (
+        <>
+          <GraphStats />
+          <main style={styles.graphMain}>
+            <aside style={styles.graphSidebar}>
+              {selectedComponent ? (
+                <ComponentDetail component={selectedComponent} />
+              ) : (
+                <div style={styles.placeholder}>
+                  <p>Click a node to view details, or wire ports together</p>
+                </div>
+              )}
+            </aside>
+            <section style={styles.graphContent}>
+              <Canvas
+                selectedSymbolId={selectedComponent?.id}
+                onNodeClick={handleGraphNodeClick}
+              />
+              <ValidationOverlay onPortClick={handleGraphNodeClick} />
+            </section>
+          </main>
+        </>
+      )}
+
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+      />
+
+      <HelpDialog
+        isOpen={showHelpDialog}
+        onClose={() => setShowHelpDialog(false)}
+        initialTopic={helpTopic}
+        initialSearch={helpSearch}
+      />
+
+      <AboutDialog
+        isOpen={showAboutDialog}
+        onClose={() => setShowAboutDialog(false)}
+      />
     </div>
   );
 }
@@ -161,6 +284,31 @@ const styles: Record<string, React.CSSProperties> = {
   toggleButtonActive: {
     backgroundColor: '#094771',
     color: '#ffffff',
+  },
+  exportButton: {
+    marginLeft: '16px',
+    padding: '6px 14px',
+    fontSize: '12px',
+    border: 'none',
+    borderRadius: '4px',
+    backgroundColor: '#0e639c',
+    color: '#ffffff',
+    cursor: 'pointer',
+  },
+  helpButton: {
+    marginLeft: '8px',
+    width: '28px',
+    height: '28px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    border: 'none',
+    borderRadius: '50%',
+    backgroundColor: '#3c3c3c',
+    color: '#d4d4d4',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toolbar: {
     padding: '12px 24px',

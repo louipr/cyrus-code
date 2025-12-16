@@ -23,6 +23,14 @@ import type {
   GraphStatsDTO,
   CompatiblePortDTO,
   UnconnectedPortDTO,
+  GenerateRequest,
+  GenerateBatchRequest,
+  PreviewRequest,
+  GenerationOptionsDTO,
+  GenerationResultDTO,
+  GenerationBatchResultDTO,
+  PreviewResultDTO,
+  RegisterSymbolRequest,
 } from '../src/api/types.js';
 
 // Type definitions for the exposed API
@@ -34,6 +42,8 @@ export interface CyrusAPI {
     search: (query: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     resolve: (namespace: string, name: string, constraint?: string) => Promise<ApiResponse<ComponentSymbolDTO>>;
     getVersions: (namespace: string, name: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    register: (request: RegisterSymbolRequest) => Promise<ApiResponse<ComponentSymbolDTO>>;
+    remove: (id: string) => Promise<ApiResponse<void>>;
   };
   // Relationship operations
   relationships: {
@@ -70,6 +80,57 @@ export interface CyrusAPI {
     findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
     findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
+  // Synthesizer operations (code generation)
+  synthesizer: {
+    generate: (request: GenerateRequest) => Promise<ApiResponse<GenerationResultDTO>>;
+    generateMultiple: (request: GenerateBatchRequest) => Promise<ApiResponse<GenerationBatchResultDTO>>;
+    generateAll: (options: GenerationOptionsDTO) => Promise<ApiResponse<GenerationBatchResultDTO>>;
+    preview: (request: PreviewRequest) => Promise<ApiResponse<PreviewResultDTO>>;
+    listGeneratable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    canGenerate: (symbolId: string) => Promise<ApiResponse<boolean>>;
+    hasUserImplementation: (symbolId: string, outputDir: string) => Promise<ApiResponse<boolean>>;
+  };
+  // Dialog operations
+  dialog: {
+    selectDirectory: () => Promise<ApiResponse<string | null>>;
+  };
+  // Help operations
+  help: {
+    getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
+    listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
+    getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
+    getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
+    search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
+    getTopicContent: (topicId: string, format?: 'raw' | 'html') => Promise<ApiResponse<string>>;
+    getAppVersion: () => Promise<ApiResponse<string>>;
+    onOpen: (callback: () => void) => void;
+    onSearch: (callback: () => void) => void;
+    onTopic: (callback: (topicId: string) => void) => void;
+    onAbout: (callback: () => void) => void;
+  };
+}
+
+// Help types (from services/help/schema)
+interface HelpCategory {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface HelpTopic {
+  id: string;
+  title: string;
+  summary: string;
+  path: string;
+  category: string;
+  keywords: string[];
+  related?: string[];
+}
+
+interface HelpSearchResult {
+  topic: HelpTopic;
+  score: number;
+  matchedFields: string[];
 }
 
 // Expose the API to the renderer
@@ -82,6 +143,8 @@ const cyrusAPI: CyrusAPI = {
       ipcRenderer.invoke('symbols:resolve', namespace, name, constraint),
     getVersions: (namespace, name) =>
       ipcRenderer.invoke('symbols:getVersions', namespace, name),
+    register: (request) => ipcRenderer.invoke('symbols:register', request),
+    remove: (id) => ipcRenderer.invoke('symbols:remove', id),
   },
   relationships: {
     getContains: (id) => ipcRenderer.invoke('relationships:getContains', id),
@@ -113,6 +176,42 @@ const cyrusAPI: CyrusAPI = {
     findCompatiblePorts: (symbolId, portName) =>
       ipcRenderer.invoke('wiring:findCompatiblePorts', symbolId, portName),
     findUnconnectedRequired: () => ipcRenderer.invoke('wiring:findUnconnectedRequired'),
+  },
+  synthesizer: {
+    generate: (request) => ipcRenderer.invoke('synthesizer:generate', request),
+    generateMultiple: (request) => ipcRenderer.invoke('synthesizer:generateMultiple', request),
+    generateAll: (options) => ipcRenderer.invoke('synthesizer:generateAll', options),
+    preview: (request) => ipcRenderer.invoke('synthesizer:preview', request),
+    listGeneratable: () => ipcRenderer.invoke('synthesizer:listGeneratable'),
+    canGenerate: (symbolId) => ipcRenderer.invoke('synthesizer:canGenerate', symbolId),
+    hasUserImplementation: (symbolId, outputDir) =>
+      ipcRenderer.invoke('synthesizer:hasUserImplementation', symbolId, outputDir),
+  },
+  dialog: {
+    selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
+  },
+  help: {
+    getCategories: () => ipcRenderer.invoke('help:getCategories'),
+    listTopics: () => ipcRenderer.invoke('help:listTopics'),
+    getByCategory: (categoryId) => ipcRenderer.invoke('help:getByCategory', categoryId),
+    getTopic: (topicId) => ipcRenderer.invoke('help:getTopic', topicId),
+    search: (query) => ipcRenderer.invoke('help:search', query),
+    getTopicContent: (topicId, format = 'raw') =>
+      ipcRenderer.invoke('help:getTopicContent', topicId, format),
+    getAppVersion: () => ipcRenderer.invoke('help:getAppVersion'),
+    // Event listeners for menu actions
+    onOpen: (callback) => {
+      ipcRenderer.on('help:open', callback);
+    },
+    onSearch: (callback) => {
+      ipcRenderer.on('help:search', callback);
+    },
+    onTopic: (callback) => {
+      ipcRenderer.on('help:topic', (_event, topicId: string) => callback(topicId));
+    },
+    onAbout: (callback) => {
+      ipcRenderer.on('help:about', callback);
+    },
   },
 };
 

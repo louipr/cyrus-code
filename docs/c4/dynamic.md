@@ -6,6 +6,18 @@ Runtime behavior showing how containers collaborate for key use cases.
 
 > **Note**: These diagrams show **happy-path flows only**. For error handling scenarios (missing symbols, type mismatches, validation failures), see the Data Flow section in [Level 2: Container](2-container.md#data-flow).
 
+> **Implementation Status Legend:**
+> - ✅ **Implemented** - Working in current codebase
+> - 🔮 **Planned** - Defined in ADRs, not yet implemented
+
+| Flow | Status | Notes |
+|------|--------|-------|
+| 1. Register Component | ✅ | `cyrus-code register` |
+| 2. Validate Connections | ✅ | `cyrus-code validate` |
+| 3. Generate Code | ✅ | `cyrus-code generate` |
+| 4. Dead Code Analysis | 🔮 | Static Analyzer schema only |
+| 5. Import Manual Code | 🔮 | Import Detector not implemented |
+
 ---
 
 ## 1. Register Component Flow
@@ -117,18 +129,21 @@ C4Dynamic
 
 ---
 
-## 4. Dead Code Analysis Flow
+## 4. Dead Code Analysis Flow 🔮
+
+> **Status**: Planned - Static Analyzer has schema only, logic not implemented (ADR-005)
 
 Shows how symbols are marked as reachable or dead.
 
 ```mermaid
 C4Dynamic
-    title Dynamic Diagram - Dead Code Analysis
+    title Dynamic Diagram - Dead Code Analysis [PLANNED]
 
     Person(developer, "Developer", "Analyzes dead code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Call graph analysis")
+    %% 🔮 Planned: Schema exists, logic not implemented (Slice 4)
+    Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Call graph [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Status tracking")
     System_Ext(fileSystem, "File System", "Source files")
 
@@ -152,18 +167,21 @@ C4Dynamic
 
 ---
 
-## 5. Import Manual Code Flow
+## 5. Import Manual Code Flow 🔮
+
+> **Status**: Planned - Import Detector not implemented (ADR-006)
 
 Shows how untracked code is detected and imported.
 
 ```mermaid
 C4Dynamic
-    title Dynamic Diagram - Import Manual Code
+    title Dynamic Diagram - Import Manual Code [PLANNED]
 
     Person(developer, "Developer", "Imports manual code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(importDetector, "Import Detector", "ts-morph", "Scans untracked")
+    %% 🔮 Planned: Import Detector not implemented
+    Container(importDetector, "Import Detector", "ts-morph", "Scans untracked [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Registration")
     System_Ext(fileSystem, "File System", "Project files")
 

@@ -11,7 +11,7 @@ Hardware-inspired software component architecture tool. Applies ASIC/FPGA design
 | **Type Definitions** | `docs/spec/symbol-table-schema.md` | **CANONICAL** - single source of truth |
 | **Project Status** | `README.md` | Current phasing and roadmap |
 | **AI Context** | `CLAUDE.md` | Development context and terminology |
-| **Architecture** | `docs/adr/001-009` | Historical decisions (may have outdated examples) |
+| **Architecture** | `docs/adr/001-010` | Historical decisions (may have outdated examples) |
 | **Diagrams** | `docs/c4/*.md` | System architecture |
 | **Rationale** | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
@@ -66,9 +66,10 @@ Inspired by HDL signals:
 
 | File | Purpose |
 |------|---------|
-| `docs/adr/` | Architecture decision records (001-009) |
+| `docs/adr/` | Architecture decision records (001-010) |
 | `docs/spec/symbol-table-schema.md` | Canonical type definitions |
-| `docs/c4/` | C4 architecture diagrams (Context, Container, Component, Dynamic) |
+| `docs/c4/` | C4 architecture diagrams (C4-1 Context, C4-2 Container, C4-3 Component) |
+| `docs/runbooks/` | Developer setup and manual verification guides |
 | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
 > **Implementation roadmap**: See [README.md](README.md) for planned `src/` directory structure.
@@ -90,9 +91,34 @@ Inspired by HDL signals:
 | **Composition** | Versioned snapshot of a complete system (all components + connections) | |
 | **Impact Analysis** | Determining what breaks when a component changes | |
 | **Contract Test** | Test auto-generated from port type definitions | |
-| **Container** | C4 Model deployable unit | C4 terminology, not Docker containers |
 
-> **Terminology Note**: cyrus-code uses hardware-inspired terminology (ports, signals, wiring, synthesis) deliberately borrowed from HDL/ASIC design. "Symbol Table" is used in an expanded sense compared to compiler theory—it's a persistent component registry, not an ephemeral compilation artifact. When in doubt, prefer "symbol table" over "registry" to avoid confusion with runtime service discovery patterns.
+### Level Terminology (Important!)
+
+cyrus-code uses **two different "level" concepts** that must not be confused:
+
+| Concept | Prefix | Purpose | Example |
+|---------|--------|---------|---------|
+| **Abstraction Level** | `L0`-`L4` | Component classification in symbol table | `L1` = services, classes |
+| **C4 Diagram Level** | `C4-1` to `C4-4` | Architecture visualization zoom | `C4-2` = Container diagram |
+
+**Abstraction Levels (L0-L4)** - Component hierarchy:
+```
+L4: Contracts      → API interfaces (client-api-contract)
+L3: Subsystems     → Grouped modules (auth-subsystem)
+L2: Modules        → Grouped components (jwt-handler)
+L1: Components     → Classes, services (JwtService) ← Code generation target
+L0: Primitives     → Types, enums (JwtPayload)
+```
+
+**C4 Diagram Levels** - Visualization zoom:
+```
+C4-1: Context      → System + external actors
+C4-2: Container    → Deployable units
+C4-3: Component    → Internal structure
+C4-4: Code         → Implementation details
+```
+
+> **Warning**: "L1 Component" (abstraction level) ≠ "C4-3 Component diagram" (visualization). Always use the prefix to avoid ambiguity.
 
 ## Commands
 
@@ -103,12 +129,13 @@ npm run build:gui      # Build frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 72 unit tests (auto-rebuilds native module)
+npm test               # Run 174 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
-npm run test:e2e       # Run 4 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:e2e       # Run 21 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
+npm run cli -- <cmd>   # Run CLI (builds + rebuilds native module)
 npm run electron       # Launch desktop app (production build)
 npm run electron:dev   # Dev mode with hot reload
 
@@ -117,7 +144,7 @@ npm run clean          # Remove dist/
 npm run lint           # ESLint
 ```
 
-> **CLI Commands**: See [Level 2: Container](docs/c4/2-container.md#cli-commands) for `cyrus-code` CLI usage.
+> **CLI Commands**: See [C4-2 Container Diagram](docs/c4/2-container.md#cli-commands) for `cyrus-code` CLI usage.
 
 ## Development Philosophy
 

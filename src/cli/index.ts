@@ -19,6 +19,8 @@ import { getCommand } from './commands/get.js';
 import { validateCommand } from './commands/validate.js';
 import { wireCommand } from './commands/wire.js';
 import { graphCommand } from './commands/graph.js';
+import { generateCommand } from './commands/generate.js';
+import { helpCommand } from './commands/help.js';
 
 const DEFAULT_DB_PATH = '.cyrus-code/registry.db';
 
@@ -41,7 +43,8 @@ COMMANDS:
   validate           Validate all components and connections
   wire               Create and manage connections between ports
   graph              Analyze the dependency graph
-  help               Show this help message
+  generate           Generate TypeScript code from components
+  help [topic]       Show help (run "help --list" for topics)
 
 GLOBAL OPTIONS:
   --db <path>        Database path (default: ${DEFAULT_DB_PATH})
@@ -74,6 +77,17 @@ EXAMPLES:
 
   # Check for cycles
   cyrus-code graph cycles
+
+  # Generate code for a component
+  cyrus-code generate auth/JwtService@1.0.0 --output ./src/generated
+
+  # Generate all components
+  cyrus-code generate --all
+
+  # View help topics
+  cyrus-code help                      # Overview with categories
+  cyrus-code help levels               # View specific topic
+  cyrus-code help --search wiring      # Search topics
 `);
 }
 
@@ -120,6 +134,12 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // Handle help command before database initialization (doesn't need facade)
+  if (command === 'help') {
+    await helpCommand(commandArgs, args);
+    process.exit(0);
+  }
+
   // Initialize the facade
   const dbPath = globalOpts.db as string;
   let facade: ApiFacade;
@@ -158,8 +178,8 @@ async function main(): Promise<void> {
       case 'graph':
         await graphCommand(context, commandArgs, args);
         break;
-      case 'help':
-        printHelp();
+      case 'generate':
+        await generateCommand(context, commandArgs, args);
         break;
       default:
         console.error(`Unknown command: ${command}`);

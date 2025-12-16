@@ -4,6 +4,10 @@
 
 Internal structure of the Symbol Table container, showing its components and their relationships.
 
+> **Implementation Status Legend:**
+> - ✅ **Implemented** - Working in current codebase
+> - 🔮 **Planned** - Defined in ADRs, not yet implemented
+
 ## Component Diagram
 
 ```mermaid
@@ -22,7 +26,8 @@ C4Component
     ContainerDb(symbolDb, "Symbol Database", "SQLite", "Persistent storage")
 
     Container_Ext(interfaceValidator, "Interface Validator", "TypeScript + Zod", "Validates port type compatibility")
-    Container_Ext(staticAnalyzer, "Static Analyzer", "ts-morph", "Updates symbol status from call graph")
+    %% 🔮 Planned: Schema exists, logic not implemented (Slice 4)
+    Container_Ext(staticAnalyzer, "Static Analyzer", "ts-morph", "Updates symbol status [PLANNED]")
 
     Rel(symbolStore, persistenceLayer, "Persists changes")
     Rel(persistenceLayer, symbolDb, "SQL queries")
@@ -44,20 +49,22 @@ C4Component
 | **ContainerDb** | Cylinder | Database storage |
 | **Rel** | Arrow with label | Data/control flow between components |
 
-> **C4 Model Reference**: This is a Level 3 (Component) diagram showing internal structure of the Symbol Table container. For container overview, see [Level 2: Container](2-container.md).
+> **C4 Model Reference**: This is a C4-3 (Component) diagram showing internal structure of the Symbol Table container. For container overview, see [C4-2: Container](2-container.md).
 
 ## Components
 
-| Component | Responsibility | Key Operations | Design Patterns |
-|-----------|----------------|----------------|-----------------|
-| **Symbol Store** | In-memory symbol cache | `register()`, `get()`, `update()`, `remove()` | Repository, Factory Method |
-| **Query Engine** | Symbol discovery | `findByNamespace()`, `findByLevel()`, `search()` | Strategy |
-| **Version Resolver** | SemVer compatibility | `findCompatible()`, `getLatest()`, `checkConstraint()` | Strategy |
-| **Connection Manager** | Port wiring | `connect()`, `disconnect()`, `getConnections()` | Mediator |
-| **Status Tracker** | Usage tracking | `updateStatus()`, `findUnreachable()`, `findUntested()` | Observer, State |
-| **Persistence Layer** | Database I/O | `load()`, `save()`, `transaction()` | Proxy (lazy loading) |
+| Component | Responsibility | Key Operations | Status | Notes |
+|-----------|----------------|----------------|--------|-------|
+| **Symbol Store** | In-memory symbol cache | `register()`, `get()`, `update()`, `remove()` | ✅ | `src/services/symbol-table/store.ts` |
+| **Query Engine** | Symbol discovery | `findByNamespace()`, `findByLevel()`, `search()` | ✅ | Integrated in Symbol Store |
+| **Version Resolver** | SemVer compatibility | `findCompatible()`, `getLatest()`, `checkConstraint()` | ✅ | In `src/services/registry/` |
+| **Connection Manager** | Port wiring | `connect()`, `disconnect()`, `getConnections()` | ✅ | `src/services/symbol-table/store.ts` |
+| **Status Tracker** | Usage tracking | `updateStatus()`, `findUnreachable()`, `findUntested()` | ✅ | Integrated in Symbol Store |
+| **Persistence Layer** | Database I/O | `load()`, `save()`, `transaction()` | ✅ | `src/repositories/persistence.ts` |
 
 > **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) for complete pattern documentation.
+>
+> **Note**: Some components shown as separate in the diagram are integrated into a single implementation for simplicity. The conceptual separation remains valid for understanding responsibilities.
 
 ## Key Interfaces
 

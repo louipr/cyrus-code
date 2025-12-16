@@ -1,0 +1,123 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "concept",
+      "label": "Concepts",
+      "description": "Core concepts and terminology"
+    },
+    {
+      "id": "guide",
+      "label": "Guides",
+      "description": "How-to guides and tutorials"
+    },
+    {
+      "id": "architecture",
+      "label": "Architecture",
+      "description": "Design decisions and diagrams"
+    },
+    {
+      "id": "reference",
+      "label": "Reference",
+      "description": "Technical specifications"
+    }
+  ],
+  "topics": [
+    {
+      "id": "levels",
+      "title": "Abstraction Levels (L0-L4)",
+      "summary": "Understanding the 5-level component hierarchy from primitives to contracts",
+      "path": "docs/adr/002-multi-level-abstraction.md",
+      "category": "concept",
+      "keywords": ["L0", "L1", "L2", "L3", "L4", "abstraction", "hierarchy", "component", "module", "subsystem"]
+    },
+    {
+      "id": "terminology",
+      "title": "Terminology & Glossary",
+      "summary": "Symbol table, ports, wiring, synthesis - key terms explained",
+      "path": "CLAUDE.md",
+      "category": "concept",
+      "keywords": ["symbol table", "port", "wiring", "synthesis", "signal", "glossary", "terms"]
+    },
+    {
+      "id": "getting-started",
+      "title": "Getting Started",
+      "summary": "Developer setup, CLI usage, and common tasks",
+      "path": "docs/runbooks/developer-setup.md",
+      "category": "guide",
+      "keywords": ["setup", "install", "cli", "start", "quick", "npm"]
+    },
+    {
+      "id": "verification",
+      "title": "Manual Verification",
+      "summary": "Step-by-step GUI verification procedures",
+      "path": "docs/runbooks/manual-verification.md",
+      "category": "guide",
+      "keywords": ["test", "verify", "manual", "gui", "electron"]
+    },
+    {
+      "id": "c4-context",
+      "title": "C4-1 Context Diagram",
+      "summary": "System context showing cyrus-code and external actors",
+      "path": "docs/c4/1-context.md",
+      "category": "architecture",
+      "keywords": ["C4", "context", "diagram", "architecture", "actors"]
+    },
+    {
+      "id": "c4-container",
+      "title": "C4-2 Container Diagram",
+      "summary": "Internal architecture showing major containers",
+      "path": "docs/c4/2-container.md",
+      "category": "architecture",
+      "keywords": ["C4", "container", "diagram", "architecture", "cli", "gui"]
+    },
+    {
+      "id": "c4-component",
+      "title": "C4-3 Component Diagram",
+      "summary": "Symbol Table internal structure",
+      "path": "docs/c4/3-component.md",
+      "category": "architecture",
+      "keywords": ["C4", "component", "diagram", "symbol table", "architecture"]
+    },
+    {
+      "id": "interfaces",
+      "title": "Interface Definition System",
+      "summary": "Ports, signals, and HDL-inspired interface design",
+      "path": "docs/adr/003-interface-definition-system.md",
+      "category": "concept",
+      "keywords": ["port", "signal", "interface", "hdl", "wiring", "connection"]
+    },
+    {
+      "id": "generation-gap",
+      "title": "Generation Gap Pattern",
+      "summary": "Separating generated code from manual customizations",
+      "path": "docs/adr/006-generation-gap-pattern.md",
+      "category": "concept",
+      "keywords": ["generation", "gap", "pattern", "generated", "manual", "code"]
+    },
+    {
+      "id": "dead-code",
+      "title": "Dead Code Detection",
+      "summary": "Tracking symbol status from declared to executed",
+      "path": "docs/adr/005-dead-code-detection.md",
+      "category": "concept",
+      "keywords": ["dead code", "status", "declared", "referenced", "tested", "executed"]
+    },
+    {
+      "id": "symbol-schema",
+      "title": "Symbol Table Schema",
+      "summary": "Canonical type definitions for components and ports",
+      "path": "docs/spec/symbol-table-schema.md",
+      "category": "reference",
+      "keywords": ["schema", "type", "symbol", "component", "port", "specification"]
+    },
+    {
+      "id": "design-rationale",
+      "title": "Design Rationale",
+      "summary": "Why decisions were made - research and reasoning",
+      "path": "docs/design-rationale.md",
+      "category": "architecture",
+      "keywords": ["design", "rationale", "why", "decision", "research"]
+    }
+  ]
+}

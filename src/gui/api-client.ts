@@ -19,6 +19,14 @@ import type {
   GraphStatsDTO,
   CompatiblePortDTO,
   UnconnectedPortDTO,
+  GenerateRequest,
+  GenerateBatchRequest,
+  PreviewRequest,
+  GenerationOptionsDTO,
+  GenerationResultDTO,
+  GenerationBatchResultDTO,
+  PreviewResultDTO,
+  RegisterSymbolRequest,
 } from '../api/types';
 
 /**
@@ -39,6 +47,8 @@ interface CyrusAPI {
       namespace: string,
       name: string
     ) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    register: (request: RegisterSymbolRequest) => Promise<ApiResponse<ComponentSymbolDTO>>;
+    remove: (id: string) => Promise<ApiResponse<void>>;
   };
   relationships: {
     getContains: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
@@ -70,6 +80,54 @@ interface CyrusAPI {
     findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
     findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
+  synthesizer: {
+    generate: (request: GenerateRequest) => Promise<ApiResponse<GenerationResultDTO>>;
+    generateMultiple: (request: GenerateBatchRequest) => Promise<ApiResponse<GenerationBatchResultDTO>>;
+    generateAll: (options: GenerationOptionsDTO) => Promise<ApiResponse<GenerationBatchResultDTO>>;
+    preview: (request: PreviewRequest) => Promise<ApiResponse<PreviewResultDTO>>;
+    listGeneratable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    canGenerate: (symbolId: string) => Promise<ApiResponse<boolean>>;
+    hasUserImplementation: (symbolId: string, outputDir: string) => Promise<ApiResponse<boolean>>;
+  };
+  dialog: {
+    selectDirectory: () => Promise<ApiResponse<string | null>>;
+  };
+  help: {
+    getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
+    listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
+    getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
+    getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
+    search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
+    getTopicContent: (topicId: string, format?: 'raw' | 'html') => Promise<ApiResponse<string>>;
+    getAppVersion: () => Promise<ApiResponse<string>>;
+    onOpen: (callback: () => void) => void;
+    onSearch: (callback: () => void) => void;
+    onTopic: (callback: (topicId: string) => void) => void;
+    onAbout: (callback: () => void) => void;
+  };
+}
+
+// Help types
+interface HelpCategory {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface HelpTopic {
+  id: string;
+  title: string;
+  summary: string;
+  path: string;
+  category: string;
+  keywords: string[];
+  related?: string[];
+}
+
+interface HelpSearchResult {
+  topic: HelpTopic;
+  score: number;
+  matchedFields: string[];
 }
 
 declare global {
@@ -111,6 +169,8 @@ function createMockApi(): CyrusAPI {
       search: () => mockResponse([]),
       resolve: () => mockError('Not connected to backend'),
       getVersions: () => mockResponse([]),
+      register: () => mockError('Not connected to backend'),
+      remove: () => mockResponse(undefined),
     },
     relationships: {
       getContains: () => mockResponse([]),
@@ -149,6 +209,31 @@ function createMockApi(): CyrusAPI {
       }),
       findCompatiblePorts: () => mockResponse([]),
       findUnconnectedRequired: () => mockResponse([]),
+    },
+    synthesizer: {
+      generate: () => mockError('Not connected to backend'),
+      generateMultiple: () => mockError('Not connected to backend'),
+      generateAll: () => mockError('Not connected to backend'),
+      preview: () => mockError('Not connected to backend'),
+      listGeneratable: () => mockResponse([]),
+      canGenerate: () => mockResponse(false),
+      hasUserImplementation: () => mockResponse(false),
+    },
+    dialog: {
+      selectDirectory: () => mockResponse(null),
+    },
+    help: {
+      getCategories: () => mockResponse([]),
+      listTopics: () => mockResponse([]),
+      getByCategory: () => mockResponse([]),
+      getTopic: () => mockResponse(undefined),
+      search: () => mockResponse([]),
+      getTopicContent: () => mockResponse('# Help not available\n\nNot connected to backend.'),
+      getAppVersion: () => mockResponse('0.1.0'),
+      onOpen: () => {},
+      onSearch: () => {},
+      onTopic: () => {},
+      onAbout: () => {},
     },
   };
 }

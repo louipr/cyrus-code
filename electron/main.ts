@@ -5,10 +5,11 @@
  * Handles window creation, IPC communication, and backend service initialization.
  */
 
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
 import { ApiFacade } from '../src/api/facade.js';
 import { registerIpcHandlers } from './ipc-handlers.js';
+import { createApplicationMenu } from './menu.js';
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -63,6 +64,10 @@ app.whenReady().then(() => {
 
   // Create the main window
   createWindow();
+
+  // Set application menu
+  const menu = createApplicationMenu(mainWindow);
+  Menu.setApplicationMenu(menu);
 
   // macOS: re-create window when dock icon is clicked
   app.on('activate', () => {

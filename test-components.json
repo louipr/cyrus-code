@@ -1,0 +1,58 @@
+[
+  {
+    "name": "User",
+    "namespace": "test/types",
+    "level": "L0",
+    "kind": "type",
+    "language": "typescript",
+    "version": { "major": 1, "minor": 0, "patch": 0 },
+    "description": "User data type",
+    "tags": ["test"],
+    "status": "declared",
+    "origin": "manual",
+    "ports": []
+  },
+  {
+    "name": "UserService",
+    "namespace": "test/services",
+    "level": "L1",
+    "kind": "service",
+    "language": "typescript",
+    "version": { "major": 1, "minor": 0, "patch": 0 },
+    "description": "User management service",
+    "tags": ["test"],
+    "status": "declared",
+    "origin": "manual",
+    "ports": [
+      {
+        "name": "userId",
+        "direction": "in",
+        "type": { "symbolId": "primitives/string@1.0.0" },
+        "required": true,
+        "multiple": false,
+        "description": "User ID"
+      },
+      {
+        "name": "user",
+        "direction": "out",
+        "type": { "symbolId": "test/types/User@1.0.0" },
+        "required": true,
+        "multiple": false,
+        "description": "User object"
+      }
+    ]
+  },
+  {
+    "name": "AuthModule",
+    "namespace": "test/modules",
+    "level": "L2",
+    "kind": "module",
+    "language": "typescript",
+    "version": { "major": 1, "minor": 0, "patch": 0 },
+    "description": "Authentication module",
+    "tags": ["test"],
+    "status": "declared",
+    "origin": "manual",
+    "ports": []
+  }
+]

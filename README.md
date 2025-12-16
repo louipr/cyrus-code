@@ -49,13 +49,14 @@ L0: Primitive               [JwtPayload, Role enum]
 
 ## Status
 
-**Phase: Slice 2 Backend Complete**
+**Phase: Slice 3 Complete**
 
 ### Completed
-- [x] Architecture: 9 ADRs, C4 diagrams, symbol table schema
+- [x] Architecture: 10 ADRs, C4 diagrams, symbol table schema
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
 - [x] Slice 2 Backend: Validator Service, Wiring Service, API + CLI
-- [x] 123 unit tests + 4 E2E tests passing
+- [x] Slice 3 Backend: Code Synthesizer, Generation Gap pattern, TypeScript backend
+- [x] 174 unit tests + 21 E2E tests passing
 - [x] Electron desktop app with React frontend
 - [x] CLI commands: `wire`, `graph` with full wiring support
 
@@ -66,8 +67,8 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | 🔄 Backend Complete |
-| 3: Generation | Code Synthesizer | Preview, Export | Not Started |
+| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
+| 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |
 
@@ -96,6 +97,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 - [ADR-007: Full Lifecycle Architecture](docs/adr/007-full-lifecycle-architecture.md)
 - [ADR-008: Design Patterns](docs/adr/008-design-patterns.md)
 - [ADR-009: Electron GUI Framework](docs/adr/009-electron-gui-framework.md)
+- [ADR-010: GUI Testing Strategy](docs/adr/010-gui-testing-strategy.md)
 - C4 Diagrams: [Context](docs/c4/1-context.md), [Container](docs/c4/2-container.md), [Component](docs/c4/3-component.md), [Dynamic](docs/c4/dynamic.md)
 - [Symbol Table Schema](docs/spec/symbol-table-schema.md)
 
@@ -109,8 +111,8 @@ npm install
 npm run build:all
 
 # Run tests
-npm test           # 123 unit tests
-npm run test:e2e   # 4 E2E tests
+npm test           # 174 unit tests
+npm run test:e2e   # 21 E2E tests
 
 # Launch desktop app
 npm run electron

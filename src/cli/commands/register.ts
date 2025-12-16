@@ -40,11 +40,11 @@ export async function registerCommand(
   }
 
   // Read and parse the JSON file
-  let symbolData: ComponentSymbolDTO;
+  let parsed: ComponentSymbolDTO | ComponentSymbolDTO[];
   try {
     const absolutePath = resolve(process.cwd(), filePath);
     const content = readFileSync(absolutePath, 'utf-8');
-    symbolData = JSON.parse(content) as ComponentSymbolDTO;
+    parsed = JSON.parse(content) as ComponentSymbolDTO | ComponentSymbolDTO[];
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.error(`Error: File not found: ${filePath}`);
@@ -58,78 +58,101 @@ export async function registerCommand(
     process.exit(1);
   }
 
-  // Set defaults for fields that can be auto-generated
-  const now = new Date().toISOString();
-  const symbol: ComponentSymbolDTO = {
-    ...symbolData,
-    id:
-      symbolData.id ??
-      `${symbolData.namespace}/${symbolData.name}@${symbolData.version.major}.${symbolData.version.minor}.${symbolData.version.patch}`,
-    createdAt: symbolData.createdAt ?? now,
-    updatedAt: symbolData.updatedAt ?? now,
-    status: symbolData.status ?? 'declared',
-    origin: symbolData.origin ?? 'manual',
-  };
+  // Support both single object and array of objects
+  const symbolsData = Array.isArray(parsed) ? parsed : [parsed];
+  const results: ComponentSymbolDTO[] = [];
+  const errors: string[] = [];
 
-  // Register the symbol
-  const result = context.facade.registerSymbol({ symbol });
+  for (const symbolData of symbolsData) {
+    // Set defaults for fields that can be auto-generated
+    const now = new Date().toISOString();
+    const symbol: ComponentSymbolDTO = {
+      ...symbolData,
+      id:
+        symbolData.id ??
+        `${symbolData.namespace}/${symbolData.name}@${symbolData.version.major}.${symbolData.version.minor}.${symbolData.version.patch}`,
+      createdAt: symbolData.createdAt ?? now,
+      updatedAt: symbolData.updatedAt ?? now,
+      status: symbolData.status ?? 'declared',
+      origin: symbolData.origin ?? 'manual',
+    };
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Registration failed'}`);
-    process.exit(1);
+    // Register the symbol
+    const result = context.facade.registerSymbol({ symbol });
+
+    if (!result.success) {
+      errors.push(`${symbol.name}: ${result.error?.message ?? 'Registration failed'}`);
+    } else if (result.data) {
+      results.push(result.data);
+    }
+  }
+
+  // Report results
+  if (errors.length > 0) {
+    for (const err of errors) {
+      console.error(`Error: ${err}`);
+    }
+    if (results.length === 0) {
+      process.exit(1);
+    }
   }
 
   if (opts.json) {
-    console.log(JSON.stringify(result.data, null, 2));
+    console.log(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
   } else {
-    console.log(`Registered: ${result.data?.id}`);
-    console.log(`  Name: ${result.data?.name}`);
-    console.log(`  Namespace: ${result.data?.namespace}`);
-    console.log(`  Level: ${result.data?.level}`);
-    console.log(`  Kind: ${result.data?.kind}`);
-    console.log(
-      `  Version: ${result.data?.version.major}.${result.data?.version.minor}.${result.data?.version.patch}`
-    );
-    if (result.data?.ports && result.data.ports.length > 0) {
-      console.log(`  Ports: ${result.data.ports.length}`);
+    for (const data of results) {
+      console.log(`Registered: ${data.id}`);
+      console.log(`  Name: ${data.name}`);
+      console.log(`  Namespace: ${data.namespace}`);
+      console.log(`  Level: ${data.level}`);
+      console.log(`  Kind: ${data.kind}`);
+      console.log(
+        `  Version: ${data.version.major}.${data.version.minor}.${data.version.patch}`
+      );
+      if (data.ports && data.ports.length > 0) {
+        console.log(`  Ports: ${data.ports.length}`);
+      }
+      if (results.length > 1) {
+        console.log('');
+      }
+    }
+    if (results.length > 1) {
+      console.log(`Total: ${results.length} components registered`);
     }
   }
 }
 
 function printHelp(): void {
   console.log(`
-cyrus-code register - Register a component from JSON file
+cyrus-code register - Register components from JSON file
 
 USAGE:
   cyrus-code register <file> [options]
 
 ARGUMENTS:
-  <file>    Path to JSON file containing component definition
+  <file>    Path to JSON file (single object or array of objects)
 
 OPTIONS:
   --json, -j    Output result as JSON
   --help, -h    Show this help message
 
-EXAMPLE JSON FILE:
-{
-  "name": "JwtService",
-  "namespace": "auth",
-  "level": "L1",
-  "kind": "service",
-  "language": "typescript",
-  "version": { "major": 1, "minor": 0, "patch": 0 },
-  "ports": [
-    {
-      "name": "secretKey",
-      "direction": "in",
-      "type": { "symbolId": "core/String@1.0.0" },
-      "required": true,
-      "multiple": false,
-      "description": "JWT signing secret"
-    }
-  ],
-  "tags": ["auth", "jwt"],
-  "description": "JWT token generation and validation service"
-}
+EXAMPLES:
+
+Single component:
+  {
+    "name": "JwtService",
+    "namespace": "auth",
+    "level": "L1",
+    "kind": "service",
+    "language": "typescript",
+    "version": { "major": 1, "minor": 0, "patch": 0 },
+    "description": "JWT service"
+  }
+
+Multiple components (array):
+  [
+    { "name": "User", "namespace": "types", "level": "L0", "kind": "type", ... },
+    { "name": "UserService", "namespace": "services", "level": "L1", "kind": "service", ... }
+  ]
 `);
 }
