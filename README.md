@@ -98,7 +98,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 - [ADR-008: Design Patterns](docs/adr/008-design-patterns.md)
 - [ADR-009: Electron GUI Framework](docs/adr/009-electron-gui-framework.md)
 - [ADR-010: GUI Testing Strategy](docs/adr/010-gui-testing-strategy.md)
-- C4 Diagrams: [Context](docs/c4/1-context.md), [Container](docs/c4/2-container.md), [Dynamic](docs/c4/4-dynamic.md)
+- C4 Diagrams: [Context](docs/c4/1-context.md), [Container](docs/c4/2-container.md), [Dynamic](docs/c4/dynamic.md)
 - [Symbol Table Schema](docs/spec/symbol-table-schema.md)
 
 ## Quick Start

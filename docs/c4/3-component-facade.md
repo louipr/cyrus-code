@@ -183,7 +183,7 @@ For Electron GUI, the facade methods are exposed via IPC handlers:
 
 ## Data Flow
 
-> **Scope**: These sequence diagrams show **internal component interactions** within the API Facade container (L3). For container-to-container flows, see [Dynamic Diagram](4-dynamic.md).
+> **Scope**: These sequence diagrams show **internal component interactions** within the API Facade container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
 
 ### CLI Request
 

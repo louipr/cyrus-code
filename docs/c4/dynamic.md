@@ -4,6 +4,8 @@
 
 Runtime behavior showing how containers collaborate for key use cases.
 
+> **Note**: Dynamic diagrams are a **supplementary** C4 diagram type (not a "level"). They can exist at any abstraction level to show runtime behavior. The numbered C4 levels are: 1-Context, 2-Container, 3-Component, (4-Code).
+
 > **Note**: Each flow includes both happy-path and error handling scenarios.
 
 | Flow | Status | Notes |

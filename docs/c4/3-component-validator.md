@@ -223,7 +223,7 @@ function validateAllConnections():
 
 ## Data Flow
 
-> **Scope**: These sequence diagrams show **internal component interactions** within the Interface Validator container (L3). For container-to-container flows, see [Dynamic Diagram](4-dynamic.md).
+> **Scope**: These sequence diagrams show **internal component interactions** within the Interface Validator container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
 
 ### Check Port Compatibility
 
