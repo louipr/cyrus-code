@@ -47,6 +47,11 @@
   ],
   "groups": [
     {
+      "id": "c4-overview",
+      "label": "C4 Overview",
+      "category": "architecture"
+    },
+    {
       "id": "symbol-table",
       "label": "Symbol Table",
       "category": "architecture"
@@ -141,18 +146,20 @@
     },
     {
       "id": "c4-context",
-      "title": "C4-1 Context Diagram",
+      "title": "L1 Context",
       "summary": "System context showing cyrus-code and external actors",
       "path": "docs/c4/1-context.md",
       "category": "architecture",
+      "group": "c4-overview",
       "keywords": ["C4", "context", "diagram", "architecture", "actors"]
     },
     {
       "id": "c4-container",
-      "title": "C4-2 Container Diagram",
+      "title": "L2 Container",
       "summary": "Internal architecture showing major containers",
       "path": "docs/c4/2-container.md",
       "category": "architecture",
+      "group": "c4-overview",
       "keywords": ["C4", "container", "diagram", "architecture", "cli", "gui"]
     },
     {
@@ -283,10 +290,11 @@
     },
     {
       "id": "c4-dynamic",
-      "title": "C4 Dynamic Flows",
+      "title": "Dynamic Flows",
       "summary": "Runtime behavior showing container collaboration for key use cases",
       "path": "docs/c4/dynamic.md",
       "category": "architecture",
+      "group": "c4-overview",
       "keywords": ["C4", "dynamic", "flow", "sequence", "runtime", "register", "validate", "generate"]
     },
     {
