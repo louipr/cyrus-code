@@ -1,7 +1,5 @@
 # C4 Component Diagram - Help Service
 
-> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
-
 ## Overview
 
 Internal structure of the Help Service container, showing its components and their relationships.

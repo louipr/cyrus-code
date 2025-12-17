@@ -1,7 +1,5 @@
 # C4 Component Diagram - Symbol Table
 
-> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
-
 ## Overview
 
 Internal structure of the Symbol Table container, showing its components and their relationships.

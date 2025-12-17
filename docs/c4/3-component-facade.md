@@ -1,7 +1,5 @@
 # C4 Component Diagram - API Facade
 
-> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
-
 ## Overview
 
 Internal structure of the API Facade container, showing its single-component design and service routing.

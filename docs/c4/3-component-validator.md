@@ -1,7 +1,5 @@
 # C4 Component Diagram - Interface Validator
 
-> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
-
 ## Overview
 
 Internal structure of the Interface Validator container, showing its components and their relationships.

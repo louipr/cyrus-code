@@ -10,7 +10,7 @@ This specification implements the architecture described in:
 - [ADR-005](../adr/005-dead-code-detection.md): Dead Code Detection (`SymbolStatus`)
 - [ADR-006](../adr/006-generation-gap-pattern.md): Generation Gap Pattern (`SymbolOrigin`)
 
-For architecture visualization, see [C4 Diagrams](../c4/index.md).
+For architecture visualization, see [C4 Diagrams](../c4/1-context.md).
 
 ## Overview
 
