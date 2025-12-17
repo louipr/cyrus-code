@@ -1,5 +1,7 @@
 # C4 Component Diagram - Interface Validator
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Interface Validator container, showing its components and their relationships.
@@ -223,42 +225,49 @@ function validateAllConnections():
 
 ## Data Flow
 
+> **Scope**: These sequence diagrams show **internal component interactions** within the Interface Validator container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+
 ### Check Port Compatibility
 
-```
-Wiring.connect() or API.validate()
-    ↓
-ValidatorService.checkPortCompatibility(from, to)
-    ↓
-1. Lookup symbols from Symbol Table
-    ↓
-2. Find ports on symbols
-    ↓
-3. checkDirectionCompatibility(fromPort.direction, toPort.direction)
-    ↓
-4. checkTypeCompatibility(fromPort.type, toPort.type, typeMode)
-    ↓
-Return CompatibilityResult
+```mermaid
+sequenceDiagram
+    participant Caller as Wiring/API
+    participant Val as ValidatorService
+    participant ST as Symbol Table
+    participant Compat as Compatibility Checker
+
+    Caller->>Val: checkPortCompatibility(from, to)
+    Val->>ST: 1. Lookup symbols
+    ST-->>Val: source/target symbols
+    Val->>Val: 2. Find ports on symbols
+    Val->>Compat: 3. checkDirectionCompatibility()
+    Compat-->>Val: direction result
+    Val->>Compat: 4. checkTypeCompatibility()
+    Compat-->>Val: type result
+    Val-->>Caller: CompatibilityResult
 ```
 
 ### Find Compatible Ports
 
-```
-GUI: User drags from port, find valid targets
-    ↓
-ValidatorService.findCompatiblePorts(from, targetSymbolId)
-    ↓
-1. Get source port from Symbol Table
-    ↓
-2. Get target symbol, iterate its ports
-    ↓
-3. For each port, checkPortCompatibility()
-    ↓
-4. Collect compatible ports with scores
-    ↓
-5. Sort by score descending
-    ↓
-Return PortMatch[] (port, compatibility, score)
+```mermaid
+sequenceDiagram
+    participant GUI
+    participant Val as ValidatorService
+    participant ST as Symbol Table
+    participant Compat as Compatibility Checker
+
+    GUI->>Val: findCompatiblePorts(from, targetSymbolId)
+    Val->>ST: 1. Get source port
+    ST-->>Val: source port
+    Val->>ST: 2. Get target symbol
+    ST-->>Val: target symbol + ports
+    loop Each target port
+        Val->>Compat: 3. checkPortCompatibility()
+        Compat-->>Val: result + score
+    end
+    Val->>Val: 4. Collect compatible ports
+    Val->>Val: 5. Sort by score descending
+    Val-->>GUI: PortMatch[]
 ```
 
 ## Design Decisions

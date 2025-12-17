@@ -1,5 +1,7 @@
 # C4 Component Diagram - Code Synthesizer
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Code Synthesizer container, showing its components and their relationships.
@@ -93,32 +95,59 @@ interface TypeScriptBackend {
 
 ## Data Flow
 
-> **Note**: All CLI/GUI requests route through [API Facade](2-container.md) before reaching Code Synthesizer.
+> **Scope**: These sequence diagrams show **internal component interactions** within the Code Synthesizer container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
 
 ### Generate Symbol
 
-```
-CLI/GUI → API Facade → Synthesizer Service
-                              ↓
-                       TypeScript Backend → Symbol Table (lookup)
-                              ↓
-                       Generation Gap
-                              ↓
-                       Code Generation → ts-morph (build AST)
-                              ↓
-                       File System (write .generated.ts + .ts)
+```mermaid
+sequenceDiagram
+    participant Client as CLI/GUI
+    participant API as API Facade
+    participant Synth as Synthesizer Service
+    participant Backend as TypeScript Backend
+    participant ST as Symbol Table
+    participant Gap as Generation Gap
+    participant CodeGen as Code Generation
+    participant FS as File System
+
+    Client->>API: generate(symbolId)
+    API->>Synth: generateSymbol(symbolId)
+    Synth->>Backend: symbolToComponent(symbol)
+    Backend->>ST: lookup symbol
+    ST-->>Backend: ComponentSymbol
+    Backend-->>Synth: GeneratedComponent
+    Synth->>Gap: generateWithGap(component)
+    Gap->>CodeGen: build AST
+    CodeGen-->>Gap: AST nodes
+    Gap->>FS: write .generated.ts
+    Gap->>FS: write .ts (if new)
+    Gap-->>Synth: GenerationResult
+    Synth-->>API: result
+    API-->>Client: result
 ```
 
 ### Preview Symbol
 
-```
-CLI/GUI → API Facade → Synthesizer Service
-                              ↓
-                       TypeScript Backend → Symbol Table (lookup)
-                              ↓
-                       Generation Gap → previewGeneration()
-                              ↓
-                       Return preview (no file I/O)
+```mermaid
+sequenceDiagram
+    participant Client as CLI/GUI
+    participant API as API Facade
+    participant Synth as Synthesizer Service
+    participant Backend as TypeScript Backend
+    participant ST as Symbol Table
+    participant Gap as Generation Gap
+
+    Client->>API: preview(symbolId)
+    API->>Synth: previewSymbol(symbolId)
+    Synth->>Backend: symbolToComponent(symbol)
+    Backend->>ST: lookup symbol
+    ST-->>Backend: ComponentSymbol
+    Backend-->>Synth: GeneratedComponent
+    Synth->>Gap: previewGeneration()
+    Note over Gap: No file I/O
+    Gap-->>Synth: PreviewResult
+    Synth-->>API: preview
+    API-->>Client: preview
 ```
 
 ## Design Decisions

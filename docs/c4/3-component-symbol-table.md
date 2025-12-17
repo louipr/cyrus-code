@@ -1,5 +1,7 @@
 # C4 Component Diagram - Symbol Table
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Symbol Table container, showing its components and their relationships.
@@ -95,30 +97,79 @@ interface ConnectionManager {
 
 ## Data Flow
 
-> **Note**: All CLI/GUI requests route through [API Facade](2-container.md) before reaching Symbol Table.
+> **Scope**: These sequence diagrams show **internal component interactions** within the Symbol Table container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
 
 ### Register Symbol
 
-```
-CLI/GUI → API Facade → Symbol Store → Persistence Layer → SQLite
-                              ↓
-                        Query Engine (index update)
+```mermaid
+sequenceDiagram
+    participant Client as CLI/GUI
+    participant API as API Facade
+    participant Store as Symbol Store
+    participant Query as Query Engine
+    participant Persist as Persistence Layer
+    participant DB as SQLite
+
+    Client->>API: register(symbol)
+    API->>Store: register(symbol)
+    Store->>Query: update index
+    Store->>Persist: save(symbol)
+    Persist->>DB: INSERT
+    DB-->>Persist: success
+    Persist-->>Store: persisted
+    Store-->>API: symbol ID
+    API-->>Client: result
 ```
 
 ### Query Symbol
 
-```
-CLI/GUI → API Facade → Query Engine → Symbol Store (cache hit)
-                                   ↓
-                             Persistence Layer → SQLite (cache miss)
+```mermaid
+sequenceDiagram
+    participant Client as CLI/GUI
+    participant API as API Facade
+    participant Query as Query Engine
+    participant Store as Symbol Store
+    participant Persist as Persistence Layer
+    participant DB as SQLite
+
+    Client->>API: query(filters)
+    API->>Query: find(filters)
+    Query->>Store: lookup
+    alt cache hit
+        Store-->>Query: cached result
+    else cache miss
+        Store->>Persist: load
+        Persist->>DB: SELECT
+        DB-->>Persist: rows
+        Persist-->>Store: symbols
+        Store-->>Query: result
+    end
+    Query-->>API: symbols
+    API-->>Client: result
 ```
 
 ### Connect Ports
 
-```
-CLI/GUI → API Facade → Connection Manager → Interface Validator (type check)
-                                        ↓
-                                   Symbol Store (persist connection)
+```mermaid
+sequenceDiagram
+    participant Client as CLI/GUI
+    participant API as API Facade
+    participant Conn as Connection Manager
+    participant Val as Interface Validator
+    participant Store as Symbol Store
+
+    Client->>API: connect(from, to)
+    API->>Conn: connect(connection)
+    Conn->>Val: validate types
+    Val-->>Conn: validation result
+    alt valid
+        Conn->>Store: persist connection
+        Store-->>Conn: success
+        Conn-->>API: connected
+    else invalid
+        Conn-->>API: validation error
+    end
+    API-->>Client: result
 ```
 
 ## Design Decisions

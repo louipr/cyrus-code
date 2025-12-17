@@ -1,5 +1,7 @@
 # C4 Component Diagram - Wiring Service
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Wiring container, showing its components and their relationships.
@@ -240,48 +242,61 @@ function wouldCreateCycle(graph, fromSymbolId, toSymbolId):
 
 ## Data Flow
 
+> **Scope**: These sequence diagrams show **internal component interactions** within the Wiring container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+
 ### Connect Ports
 
-```
-WiringService.connect(request)
-    ↓
-1. Validate self-connection (fromSymbolId != toSymbolId)
-    ↓
-2. Lookup source/target symbols from Symbol Table
-    ↓
-3. Find source/target ports on symbols
-    ↓
-4. Check for duplicate connection
-    ↓
-5. Delegate to Validator for port compatibility
-    ↓
-6. Check cardinality (if target port !multiple)
-    ↓
-7. Check wouldCreateCycle()
-    ↓
-8. Create connection with UUID, persist to Symbol Table
-    ↓
-Return WiringResult (success or error with code)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Wiring as WiringService
+    participant ST as Symbol Table
+    participant Val as Interface Validator
+    participant Graph as Graph Analysis
+
+    Client->>Wiring: connect(request)
+    Wiring->>Wiring: 1. Validate self-connection
+    Wiring->>ST: 2. Lookup source/target symbols
+    ST-->>Wiring: symbols
+    Wiring->>Wiring: 3. Find source/target ports
+    Wiring->>Wiring: 4. Check duplicate connection
+    Wiring->>Val: 5. Validate port compatibility
+    Val-->>Wiring: compatibility result
+    Wiring->>Wiring: 6. Check cardinality
+    Wiring->>Graph: 7. wouldCreateCycle()
+    Graph-->>Wiring: cycle check result
+    alt all checks pass
+        Wiring->>ST: 8. Persist connection
+        ST-->>Wiring: success
+        Wiring-->>Client: WiringResult (success)
+    else validation failed
+        Wiring-->>Client: WiringResult (error code)
+    end
 ```
 
 ### Build Dependency Graph
 
-```
-WiringService.buildDependencyGraph()
-    ↓
-1. Get all symbols from Symbol Table
-    ↓
-2. Get all connections from Symbol Table
-    ↓
-3. Create GraphNode for each symbol (with ports categorized)
-    ↓
-4. Create GraphEdge for each connection
-    ↓
-5. Run detectCycles() to find all cycles
-    ↓
-6. If no cycles, compute topologicalSort()
-    ↓
-Return DependencyGraph
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Wiring as WiringService
+    participant ST as Symbol Table
+    participant Graph as Graph Analysis
+
+    Client->>Wiring: buildDependencyGraph()
+    Wiring->>ST: 1. Get all symbols
+    ST-->>Wiring: symbols[]
+    Wiring->>ST: 2. Get all connections
+    ST-->>Wiring: connections[]
+    Wiring->>Graph: 3. Create GraphNodes
+    Wiring->>Graph: 4. Create GraphEdges
+    Wiring->>Graph: 5. detectCycles()
+    Graph-->>Wiring: cycles[]
+    alt no cycles
+        Wiring->>Graph: 6. topologicalSort()
+        Graph-->>Wiring: sorted order
+    end
+    Wiring-->>Client: DependencyGraph
 ```
 
 ## Design Decisions

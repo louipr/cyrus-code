@@ -1,5 +1,7 @@
 # C4 Component Diagram - Help Service
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Help Service container, showing its components and their relationships.
@@ -135,35 +137,44 @@ The renderer converts markdown to ANSI-escaped terminal output:
 
 ## Data Flow
 
+> **Scope**: These sequence diagrams show **internal component interactions** within the Help Service container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+
 ### Get Topic Content
 
-```
-CLI: help <topic>
-    ↓
-HelpService.getTopic(topicId)
-    ↓
-HelpService.getTopicContent(topicId, 'terminal')
-    ↓
-Read markdown file from topic.path
-    ↓
-renderMarkdownForTerminal(content)
-    ↓
-Return ANSI-formatted string
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Help as HelpService
+    participant FS as File System
+    participant Render as Terminal Renderer
+
+    CLI->>Help: help <topic>
+    Help->>Help: getTopic(topicId)
+    Help->>Help: getTopicContent(topicId, 'terminal')
+    Help->>FS: read topic.path
+    FS-->>Help: markdown content
+    Help->>Render: renderMarkdownForTerminal(content)
+    Render-->>Help: ANSI-formatted string
+    Help-->>CLI: formatted output
 ```
 
 ### Search Topics
 
-```
-CLI: help --search <query>
-    ↓
-HelpService.search(query)
-    ↓
-For each topic in manifest.topics:
-    Calculate score based on title/summary/keywords
-    ↓
-Filter score > 0, sort by score descending
-    ↓
-Return HelpSearchResult[]
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Help as HelpService
+    participant Manifest as help.json
+
+    CLI->>Help: help --search <query>
+    Help->>Help: search(query)
+    Help->>Manifest: load topics
+    Manifest-->>Help: HelpTopic[]
+    loop Each topic
+        Help->>Help: calculate score (title/summary/keywords)
+    end
+    Help->>Help: filter score > 0, sort descending
+    Help-->>CLI: HelpSearchResult[]
 ```
 
 ## Design Decisions

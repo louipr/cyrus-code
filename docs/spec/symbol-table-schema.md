@@ -2,6 +2,16 @@
 
 > **Version**: 1.0.0 | **Status**: Stable | **Last Updated**: December 2024
 
+## Context
+
+This specification implements the architecture described in:
+- [ADR-001](../adr/001-symbol-table-architecture.md): Symbol Table Architecture
+- [ADR-002](../adr/002-multi-level-abstraction.md): Multi-Level Abstraction Hierarchy (L0-L4)
+- [ADR-005](../adr/005-dead-code-detection.md): Dead Code Detection (`SymbolStatus`)
+- [ADR-006](../adr/006-generation-gap-pattern.md): Generation Gap Pattern (`SymbolOrigin`)
+
+For architecture visualization, see [C4 Diagrams](../c4/index.md).
+
 ## Overview
 
 Technical specification for the cyrus-code symbol table - the central registry tracking all components, types, and interfaces.

@@ -1,5 +1,7 @@
 # C4 Component Diagram - API Facade
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the API Facade container, showing its single-component design and service routing.
@@ -183,44 +185,51 @@ For Electron GUI, the facade methods are exposed via IPC handlers:
 
 ## Data Flow
 
+> **Scope**: These sequence diagrams show **internal component interactions** within the API Facade container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+
 ### CLI Request
 
-```
-CLI command (e.g., cyrus-code register)
-    ↓
-Parse arguments, build request
-    ↓
-Call ApiFacade method directly
-    ↓
-Facade routes to appropriate service
-    ↓
-Convert result to DTO
-    ↓
-Return ApiResponse
-    ↓
-CLI formats and displays output
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI
+    participant API as ApiFacade
+    participant Service as Target Service
+
+    User->>CLI: cyrus-code register <args>
+    CLI->>CLI: Parse arguments, build request
+    CLI->>API: registerSymbol(request)
+    API->>Service: Route to Component Registry
+    Service-->>API: domain result
+    API->>API: Convert to DTO
+    API-->>CLI: ApiResponse
+    CLI->>CLI: Format output
+    CLI-->>User: Display result
 ```
 
 ### GUI (Electron) Request
 
-```
-React component action
-    ↓
-apiClient.symbols.get(id)  (type-safe wrapper)
-    ↓
-window.electronAPI.invoke('symbols:get', id)
-    ↓
-IPC Main handler (ipc-handlers.ts)
-    ↓
-Call ApiFacade.getSymbol(id)
-    ↓
-Facade routes to Component Registry
-    ↓
-Convert result to DTO
-    ↓
-Return via IPC to renderer
-    ↓
-React component updates state
+```mermaid
+sequenceDiagram
+    participant React as React Component
+    participant Client as apiClient
+    participant IPC as IPC (electronAPI)
+    participant Handler as IPC Handler
+    participant API as ApiFacade
+    participant Service as Component Registry
+
+    React->>Client: symbols.get(id)
+    Client->>IPC: invoke('symbols:get', id)
+    IPC->>Handler: IPC Main handler
+    Handler->>API: getSymbol(id)
+    API->>Service: Route to registry
+    Service-->>API: domain result
+    API->>API: Convert to DTO
+    API-->>Handler: ApiResponse
+    Handler-->>IPC: Return via IPC
+    IPC-->>Client: response
+    Client-->>React: DTO
+    React->>React: Update state
 ```
 
 ## Design Decisions

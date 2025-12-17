@@ -1,5 +1,7 @@
 # C4 Component Diagram - Component Registry
 
+> **Navigation**: [← Container](2-container.md) | [Index](index.md) | [Dynamic →](dynamic.md)
+
 ## Overview
 
 Internal structure of the Component Registry container, showing its components and their relationships.
@@ -245,55 +247,64 @@ function bumpVersion(version, type):
 
 ## Data Flow
 
+> **Scope**: These sequence diagrams show **internal component interactions** within the Component Registry container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+
 ### Resolve Component
 
-```
-CLI: cyrus-code get auth/jwt/JwtService --constraint "^1.0.0"
-    ↓
-ComponentRegistry.resolve(namespace, name, { constraint })
-    ↓
-1. Get all versions: store.getVersions(namespace, name)
-    ↓
-2. Parse constraint: parseConstraint("^1.0.0")
-    ↓
-3. Find best match: findBestMatch(versions, range)
-    ↓
-4. Return matching ComponentSymbol (or undefined)
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Reg as ComponentRegistry
+    participant Ver as Version Resolver
+    participant Store as SymbolStore
+
+    CLI->>Reg: get auth/jwt/JwtService --constraint "^1.0.0"
+    Reg->>Store: 1. getVersions(namespace, name)
+    Store-->>Reg: all versions
+    Reg->>Ver: 2. parseConstraint("^1.0.0")
+    Ver-->>Reg: VersionRange
+    Reg->>Ver: 3. findBestMatch(versions, range)
+    Ver-->>Reg: best matching version
+    Reg-->>CLI: ComponentSymbol (or undefined)
 ```
 
 ### Query Components
 
-```
-CLI: cyrus-code list --level L1 --namespace auth
-    ↓
-ComponentRegistry.query({ level: 'L1', namespace: 'auth' })
-    ↓
-1. Apply filters in order of selectivity
-2. For each filter:
-   - Get matching symbols from store
-   - Intersect with previous results
-    ↓
-3. Return filtered ComponentSymbol[]
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Reg as ComponentRegistry
+    participant Store as SymbolStore
+
+    CLI->>Reg: list --level L1 --namespace auth
+    Reg->>Reg: 1. Apply filters in order of selectivity
+    loop Each filter
+        Reg->>Store: 2. Get matching symbols
+        Store-->>Reg: matching symbols
+        Reg->>Reg: Intersect with previous results
+    end
+    Reg-->>CLI: ComponentSymbol[]
 ```
 
 ### Register New Version
 
-```
-CLI: cyrus-code bump auth/jwt/JwtService@1.0.0 --minor
-    ↓
-ComponentRegistry.registerNewVersion(existingId, 'minor')
-    ↓
-1. Get existing symbol from store
-    ↓
-2. Bump version: bumpVersion(existing.version, 'minor') → 1.1.0
-    ↓
-3. Build new ID: buildSymbolId(namespace, name, newVersion)
-    ↓
-4. Create new symbol (clone with new version, reset status)
-    ↓
-5. Register new symbol in store
-    ↓
-Return new ComponentSymbol
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Reg as ComponentRegistry
+    participant Ver as Version Resolver
+    participant Store as SymbolStore
+
+    CLI->>Reg: bump auth/jwt/JwtService@1.0.0 --minor
+    Reg->>Store: 1. Get existing symbol
+    Store-->>Reg: existing ComponentSymbol
+    Reg->>Ver: 2. bumpVersion(1.0.0, 'minor')
+    Ver-->>Reg: 1.1.0
+    Reg->>Reg: 3. buildSymbolId(namespace, name, 1.1.0)
+    Reg->>Reg: 4. Clone symbol, reset status
+    Reg->>Store: 5. Register new symbol
+    Store-->>Reg: success
+    Reg-->>CLI: new ComponentSymbol
 ```
 
 ## Design Decisions
