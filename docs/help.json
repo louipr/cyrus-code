@@ -12,6 +12,15 @@
       "c4-component-registry",
       "c4-component-facade"
     ],
+    "L4": [
+      "c4-code-symbol-table",
+      "c4-code-wiring",
+      "c4-code-validator",
+      "c4-code-registry",
+      "c4-code-synthesizer",
+      "c4-code-facade",
+      "c4-code-help"
+    ],
     "Dynamic": ["c4-dynamic"]
   },
   "categories": [
@@ -140,6 +149,62 @@
       "path": "docs/c4/3-component-facade.md",
       "category": "architecture",
       "keywords": ["C4", "component", "facade", "API", "routing"]
+    },
+    {
+      "id": "c4-code-symbol-table",
+      "title": "C4-4 Symbol Table Code",
+      "summary": "Interface definitions for Symbol Table components",
+      "path": "docs/c4/4-code-symbol-table.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "symbol table", "API"]
+    },
+    {
+      "id": "c4-code-wiring",
+      "title": "C4-4 Wiring Code",
+      "summary": "Interface definitions and graph algorithms for Wiring Service",
+      "path": "docs/c4/4-code-wiring.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "wiring", "graph", "algorithm"]
+    },
+    {
+      "id": "c4-code-validator",
+      "title": "C4-4 Validator Code",
+      "summary": "Interface definitions, compatibility rules, and validation algorithms",
+      "path": "docs/c4/4-code-validator.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "validator", "compatibility", "algorithm"]
+    },
+    {
+      "id": "c4-code-registry",
+      "title": "C4-4 Registry Code",
+      "summary": "Interface definitions and version resolution algorithms",
+      "path": "docs/c4/4-code-registry.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "registry", "version", "semver"]
+    },
+    {
+      "id": "c4-code-synthesizer",
+      "title": "C4-4 Synthesizer Code",
+      "summary": "Interface definitions for Code Synthesizer components",
+      "path": "docs/c4/4-code-synthesizer.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "synthesizer", "generation"]
+    },
+    {
+      "id": "c4-code-facade",
+      "title": "C4-4 Facade Code",
+      "summary": "Interface definitions, routing table, and IPC channel mapping",
+      "path": "docs/c4/4-code-facade.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "facade", "API", "IPC"]
+    },
+    {
+      "id": "c4-code-help",
+      "title": "C4-4 Help Code",
+      "summary": "Interface definitions and terminal rendering specifications",
+      "path": "docs/c4/4-code-help.md",
+      "category": "architecture",
+      "keywords": ["C4", "code", "interface", "help", "ANSI", "terminal"]
     },
     {
       "id": "c4-dynamic",

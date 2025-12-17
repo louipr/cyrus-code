@@ -8,6 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  type IHelpService,
   HelpManifest,
   HelpTopic,
   HelpCategory,
@@ -16,16 +17,19 @@ import {
   C4Hierarchy,
 } from './schema.js';
 import { renderMarkdownForTerminal } from './renderer.js';
+import { MarkdownPreprocessor } from './preprocessor.js';
 
 /**
  * Help Service - loads and serves help content from the manifest.
  */
-export class HelpService {
+export class HelpService implements IHelpService {
   private manifest: HelpManifest | null = null;
   private projectRoot: string;
+  private preprocessor: MarkdownPreprocessor;
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot ?? this.findProjectRoot();
+    this.preprocessor = new MarkdownPreprocessor(this.projectRoot);
   }
 
   /**
@@ -165,7 +169,10 @@ export class HelpService {
       throw new Error(`Topic file not found: ${filePath}`);
     }
 
-    const content = fs.readFileSync(filePath, 'utf-8');
+    let content = fs.readFileSync(filePath, 'utf-8');
+
+    // Preprocess typescript:include blocks (extract from source files)
+    content = this.preprocessor.process(content);
 
     switch (format) {
       case 'terminal':
@@ -255,3 +262,5 @@ export function getHelpService(projectRoot?: string): HelpService {
 // Re-export types and renderer
 export * from './schema.js';
 export { renderMarkdownForTerminal } from './renderer.js';
+export { TypeScriptExtractor, ExtractedCode } from './extractor.js';
+export { MarkdownPreprocessor, IncludeDirective } from './preprocessor.js';

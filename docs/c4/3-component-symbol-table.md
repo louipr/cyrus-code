@@ -49,49 +49,11 @@ flowchart TD
 | **Status Tracker** | Usage tracking | `updateStatus()`, `findUnreachable()`, `findUntested()` | ✅ | Integrated in Symbol Store |
 | **Persistence Layer** | Database I/O | `load()`, `save()`, `transaction()` | ✅ | `src/repositories/persistence.ts` |
 
+> **Code Details**: See [L4 Code - Symbol Table](4-code-symbol-table.md) for interface definitions.
+>
 > **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) for complete pattern documentation.
 >
 > **Note**: Some components shown as separate in the diagram are integrated into a single implementation for simplicity. The conceptual separation remains valid for understanding responsibilities.
-
-## Key Interfaces
-
-### Symbol Store API
-
-```typescript
-interface SymbolStore {
-  register(symbol: ComponentSymbol): void;
-  get(id: string): ComponentSymbol | undefined;
-  update(id: string, updates: Partial<ComponentSymbol>): void;
-  remove(id: string): void;
-  all(): ComponentSymbol[];
-}
-```
-
-### Query Engine API
-
-```typescript
-interface QueryEngine {
-  findByNamespace(namespace: string): ComponentSymbol[];
-  findByLevel(level: AbstractionLevel): ComponentSymbol[];
-  findByKind(kind: ComponentKind): ComponentSymbol[];
-  findByTag(tag: string): ComponentSymbol[];
-  search(query: string): ComponentSymbol[];
-}
-```
-
-### Connection Manager API
-
-```typescript
-interface ConnectionManager {
-  connect(connection: Connection): ValidationResult;
-  disconnect(connectionId: string): void;
-  getConnections(symbolId: string): Connection[];
-  getAllConnections(): Connection[];
-  validate(): ValidationResult;
-}
-```
-
-> **Type Definitions**: See [Symbol Table Schema](../spec/symbol-table-schema.md) for complete type definitions.
 
 ## Design Decisions
 

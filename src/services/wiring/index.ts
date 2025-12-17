@@ -13,6 +13,7 @@ import { ValidatorService } from '../validator/index.js';
 import type { ValidationOptions } from '../validator/schema.js';
 import { DEFAULT_VALIDATION_OPTIONS, ValidationErrorCode } from '../validator/schema.js';
 import {
+  type IWiringService,
   type DependencyGraph,
   type DependencyGraphDTO,
   type ConnectionRequest,
@@ -41,7 +42,7 @@ import {
 // Wiring Service
 // ============================================================================
 
-export class WiringService {
+export class WiringService implements IWiringService {
   private store: SymbolStore;
   private validator: ValidatorService;
   private options: ValidationOptions;

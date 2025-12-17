@@ -45,17 +45,79 @@ export interface ComponentQuery {
 }
 
 export interface ResolveOptions {
-  /** Version constraint (e.g., "^1.0.0", ">=2.0.0") */
   constraint?: string;
-  /** If true, return latest if no constraint specified */
   preferLatest?: boolean;
+}
+
+export type BumpType = 'major' | 'minor' | 'patch';
+
+// ============================================================================
+// Service Interfaces
+// ============================================================================
+
+/**
+ * Component Registry public API contract.
+ *
+ * High-level service for component discovery, loading, and version resolution.
+ * Wraps the Symbol Store with additional functionality.
+ */
+export interface IComponentRegistry {
+  getStore(): SymbolStore;
+
+  // Registration
+  register(component: Omit<ComponentSymbol, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): ComponentSymbol;
+  registerNewVersion(existingId: string, bumpType: BumpType, changes?: Partial<ComponentSymbol>): ComponentSymbol;
+
+  // Retrieval
+  get(id: string): ComponentSymbol | undefined;
+  resolve(namespace: string, name: string, options?: ResolveOptions): ComponentSymbol | undefined;
+  getLatest(namespace: string, name: string): ComponentSymbol | undefined;
+  getVersions(namespace: string, name: string): ComponentSymbol[];
+
+  // Query
+  query(filters: ComponentQuery): ComponentSymbol[];
+  list(): ComponentSymbol[];
+  search(query: string): ComponentSymbol[];
+
+  // Updates
+  update(id: string, updates: Partial<ComponentSymbol>): void;
+  remove(id: string): void;
+
+  // Relationships
+  getContains(id: string): ComponentSymbol[];
+  getContainedBy(id: string): ComponentSymbol | undefined;
+  getDependents(id: string): ComponentSymbol[];
+  getDependencies(id: string): ComponentSymbol[];
+
+  // Connections
+  connect(connection: Connection): void;
+  disconnect(connectionId: string): void;
+  getConnections(symbolId: string): Connection[];
+  getAllConnections(): Connection[];
+
+  // Status (ADR-005)
+  findUnreachable(): ComponentSymbol[];
+  findUntested(): ComponentSymbol[];
+
+  // Origin (ADR-006)
+  findGenerated(): ComponentSymbol[];
+  findManual(): ComponentSymbol[];
+
+  // Validation
+  validate(): ValidationResult;
+  validateComponent(id: string): ValidationResult;
+  checkCircular(): string[][];
+
+  // Bulk Operations
+  import(components: ComponentSymbol[]): void;
+  export(): ComponentSymbol[];
 }
 
 // ============================================================================
 // Registry Class
 // ============================================================================
 
-export class ComponentRegistry {
+export class ComponentRegistry implements IComponentRegistry {
   private store: SymbolStore;
 
   constructor(database: DatabaseType) {

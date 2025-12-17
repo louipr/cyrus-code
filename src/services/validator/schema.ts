@@ -6,6 +6,63 @@
  */
 
 import { z } from 'zod';
+import type {
+  Connection,
+  PortDefinition,
+  ValidationResult,
+  ValidationError,
+} from '../symbol-table/schema.js';
+
+// ============================================================================
+// Service Interfaces
+// ============================================================================
+
+/**
+ * Validator service public API contract.
+ *
+ * Validates connections between component ports.
+ * Provides compatibility checking, required port validation, and cardinality enforcement.
+ */
+export interface IValidatorService {
+  /** Check if two ports can be connected */
+  checkPortCompatibility(from: PortRef, to: PortRef): CompatibilityResult;
+
+  /** Check direction compatibility only */
+  checkDirectionCompatibility(
+    fromPort: PortDefinition,
+    toPort: PortDefinition
+  ): CompatibilityResult;
+
+  /** Check type compatibility only */
+  checkTypeCompatibility(
+    fromPort: PortDefinition,
+    toPort: PortDefinition
+  ): CompatibilityResult;
+
+  /** Validate a single connection */
+  validateConnection(connection: Connection): ValidationResult;
+
+  /** Validate all connections for a symbol */
+  validateSymbolConnections(symbolId: string): ValidationResult;
+
+  /** Validate all connections in the system */
+  validateAllConnections(): ValidationResult;
+
+  /** Check that all required input ports have connections */
+  checkRequiredPorts(
+    symbolId: string,
+    ports: PortDefinition[]
+  ): ValidationError[];
+
+  /** Check cardinality constraints on all ports */
+  checkCardinality(symbolId: string): ValidationError[];
+
+  /** Find compatible ports on a target symbol for a given source port */
+  findCompatiblePorts(
+    from: PortRef,
+    targetSymbolId: string
+  ): Array<{ port: PortDefinition; compatibility: CompatibilityResult }>;
+}
 
 // ============================================================================
 // Compatibility Result

@@ -6,7 +6,55 @@
  */
 
 import { z } from 'zod';
-import type { PortDefinition } from '../symbol-table/schema.js';
+import type {
+  Connection,
+  PortDefinition,
+  ValidationResult,
+} from '../symbol-table/schema.js';
+
+// ============================================================================
+// Service Interfaces
+// ============================================================================
+
+/**
+ * Wiring service public API contract.
+ *
+ * Manages connections between component ports and builds dependency graphs.
+ * Provides validation, cycle detection, and graph analysis.
+ */
+export interface IWiringService {
+  // Connection operations
+  connect(request: ConnectionRequest): WiringResult;
+  disconnect(connectionId: string): WiringResult;
+  getConnections(symbolId: string): Connection[];
+  getAllConnections(): Connection[];
+
+  // Graph operations
+  buildDependencyGraph(): DependencyGraph;
+  buildSubgraph(symbolId: string): DependencyGraph;
+  getDependencyGraphDTO(): DependencyGraphDTO;
+
+  // Graph analysis
+  detectCycles(): string[][];
+  getTopologicalOrder(): string[] | null;
+  getUpstreamDependencies(symbolId: string): string[];
+  getDownstreamDependencies(symbolId: string): string[];
+  getDirectDependencies(symbolId: string): { upstream: string[]; downstream: string[] };
+  getRootNodes(): string[];
+  getLeafNodes(): string[];
+  getConnectedComponents(): string[][];
+  getGraphStats(): GraphStats;
+
+  // Validation
+  validateAllConnections(): ValidationResult;
+  validateSymbolConnections(symbolId: string): ValidationResult;
+  validateConnection(request: ConnectionRequest): ValidationResult;
+  findCompatiblePorts(fromSymbolId: string, fromPort: string): Array<{ symbolId: string; portName: string; score: number }>;
+
+  // Required port analysis
+  findUnconnectedRequiredPorts(): Array<{ symbolId: string; portName: string; portDirection: string }>;
+  hasAllRequiredPortsConnected(symbolId: string): boolean;
+}
 
 // ============================================================================
 // Graph Nodes

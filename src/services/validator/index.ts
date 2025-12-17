@@ -14,6 +14,7 @@ import type {
 } from '../symbol-table/schema.js';
 import { createValidationResult } from '../symbol-table/schema.js';
 import {
+  type IValidatorService,
   type CompatibilityResult,
   type PortRef,
   type ValidationOptions,
@@ -31,7 +32,7 @@ import {
 // Validator Service
 // ============================================================================
 
-export class ValidatorService {
+export class ValidatorService implements IValidatorService {
   private store: SymbolStore;
   private options: ValidationOptions;
 

@@ -12,6 +12,7 @@ import type {
   GenerationBatchResult,
   PreviewResult,
   GeneratedComponent,
+  ISynthesizerService,
 } from './schema.js';
 import { generationError, emptyBatchResult, GenerationErrorCode } from './schema.js';
 import { symbolToComponent, isGeneratable } from './backends/typescript.js';
@@ -32,7 +33,7 @@ export { getGeneratedPaths, fileExists } from './generation-gap.js';
  * Provides high-level API for generating TypeScript code from
  * symbols in the symbol table using the Generation Gap pattern.
  */
-export class SynthesizerService {
+export class SynthesizerService implements ISynthesizerService {
   constructor(private store: SymbolStore) {}
 
   // ===========================================================================

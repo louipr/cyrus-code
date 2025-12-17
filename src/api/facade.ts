@@ -23,6 +23,7 @@ import {
   type PreviewResult,
 } from '../services/synthesizer/index.js';
 import type {
+  IApiFacade,
   ComponentSymbolDTO,
   ConnectionDTO,
   ValidationResultDTO,
@@ -65,7 +66,7 @@ import type {
 // Facade Class
 // ============================================================================
 
-export class ApiFacade {
+export class ApiFacade implements IApiFacade {
   private registry: ComponentRegistry;
   private wiringService: WiringService;
   private synthesizerService: SynthesizerService;

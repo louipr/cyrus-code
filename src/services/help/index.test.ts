@@ -8,6 +8,8 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { HelpService } from './index.js';
 import { renderMarkdownForTerminal } from './renderer.js';
+import { TypeScriptExtractor } from './extractor.js';
+import { MarkdownPreprocessor } from './preprocessor.js';
 
 // Tests run from project root via npm test
 const projectRoot = process.cwd();
@@ -238,6 +240,249 @@ describe('Terminal Markdown Renderer', () => {
     it('should render horizontal rule', () => {
       const result = renderMarkdownForTerminal('---');
       assert.ok(result.includes('─')); // box drawing
+    });
+  });
+});
+
+describe('TypeScriptExtractor', () => {
+  let extractor: TypeScriptExtractor;
+
+  beforeEach(() => {
+    extractor = new TypeScriptExtractor(projectRoot);
+  });
+
+  describe('extractExports', () => {
+    it('should extract specific interface from schema.ts', () => {
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['HelpTopic']
+      );
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.name, 'HelpTopic');
+      assert.strictEqual(results[0]?.kind, 'interface');
+      assert.ok(results[0]?.code.includes('export interface HelpTopic'));
+    });
+
+    it('should extract multiple exports', () => {
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['HelpTopic', 'HelpCategory']
+      );
+      assert.strictEqual(results.length, 2);
+      const names = results.map((r) => r.name);
+      assert.ok(names.includes('HelpTopic'));
+      assert.ok(names.includes('HelpCategory'));
+    });
+
+    it('should extract type alias', () => {
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['HelpOutputFormat']
+      );
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.kind, 'type');
+      assert.ok(results[0]?.code.includes('HelpOutputFormat'));
+    });
+
+    it('should return error for missing file', () => {
+      const results = extractor.extractExports(
+        'src/nonexistent/file.ts',
+        ['Foo']
+      );
+      assert.strictEqual(results.length, 1);
+      assert.ok(results[0]?.code.includes('Error: File not found'));
+    });
+
+    it('should return error for missing export', () => {
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['NonExistentInterface']
+      );
+      assert.strictEqual(results.length, 1);
+      assert.ok(results[0]?.code.includes('Error: Export(s) not found'));
+      assert.ok(results[0]?.code.includes('Available exports'));
+    });
+  });
+
+  describe('extractAllExports', () => {
+    it('should extract all exports from a file', () => {
+      const results = extractor.extractAllExports('src/services/help/schema.ts');
+      assert.ok(results.length >= 4, 'Should have multiple exports');
+      const names = results.map((r) => r.name);
+      assert.ok(names.includes('HelpTopic'));
+      assert.ok(names.includes('HelpCategory'));
+      assert.ok(names.includes('HelpOutputFormat'));
+    });
+
+    it('should return error for missing file', () => {
+      const results = extractor.extractAllExports('src/nonexistent/file.ts');
+      assert.strictEqual(results.length, 1);
+      assert.ok(results[0]?.code.includes('Error: File not found'));
+    });
+  });
+
+  describe('JSDoc extraction', () => {
+    it('should include JSDoc comments when present', () => {
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['HelpTopic']
+      );
+      assert.strictEqual(results.length, 1);
+      // HelpTopic has JSDoc
+      assert.ok(
+        results[0]?.code.includes('/**'),
+        'Should include JSDoc comment'
+      );
+    });
+  });
+
+  describe('cache', () => {
+    it('should clear cache', () => {
+      // Extract once to populate cache
+      extractor.extractExports('src/services/help/schema.ts', ['HelpTopic']);
+      // Clear should not throw
+      extractor.clearCache();
+      // Should still work after clear
+      const results = extractor.extractExports(
+        'src/services/help/schema.ts',
+        ['HelpTopic']
+      );
+      assert.strictEqual(results.length, 1);
+    });
+  });
+});
+
+describe('MarkdownPreprocessor', () => {
+  let preprocessor: MarkdownPreprocessor;
+
+  beforeEach(() => {
+    preprocessor = new MarkdownPreprocessor(projectRoot);
+  });
+
+  describe('parseDirective', () => {
+    it('should parse YAML-like syntax', () => {
+      const directive = preprocessor.parseDirective(`
+source: src/services/help/schema.ts
+exports: [HelpTopic, HelpCategory]
+`);
+      assert.strictEqual(directive.source, 'src/services/help/schema.ts');
+      assert.deepStrictEqual(directive.exports, ['HelpTopic', 'HelpCategory']);
+      assert.strictEqual(directive.includeJsDoc, true);
+    });
+
+    it('should parse shorthand syntax', () => {
+      const directive = preprocessor.parseDirective(
+        'src/services/help/schema.ts#HelpTopic'
+      );
+      assert.strictEqual(directive.source, 'src/services/help/schema.ts');
+      assert.deepStrictEqual(directive.exports, ['HelpTopic']);
+    });
+
+    it('should parse shorthand without export name', () => {
+      const directive = preprocessor.parseDirective('src/services/help/schema.ts');
+      assert.strictEqual(directive.source, 'src/services/help/schema.ts');
+      assert.deepStrictEqual(directive.exports, []);
+    });
+
+    it('should parse include-jsdoc option', () => {
+      const directive = preprocessor.parseDirective(`
+source: src/services/help/schema.ts
+include-jsdoc: false
+`);
+      assert.strictEqual(directive.includeJsDoc, false);
+    });
+  });
+
+  describe('process', () => {
+    it('should replace typescript:include block with extracted code', () => {
+      const markdown = `
+# Test
+
+\`\`\`typescript:include
+source: src/services/help/schema.ts
+exports: [HelpOutputFormat]
+\`\`\`
+
+Some text after.
+`;
+      const result = preprocessor.process(markdown);
+      assert.ok(!result.includes('typescript:include'), 'Should remove directive');
+      assert.ok(result.includes('```typescript'), 'Should have typescript block');
+      assert.ok(result.includes('HelpOutputFormat'), 'Should include extracted type');
+      assert.ok(result.includes('Some text after'), 'Should preserve surrounding text');
+    });
+
+    it('should handle shorthand syntax', () => {
+      const markdown = `
+\`\`\`typescript:include src/services/help/schema.ts#HelpCategory
+\`\`\`
+`;
+      const result = preprocessor.process(markdown);
+      assert.ok(result.includes('HelpCategory'));
+      assert.ok(result.includes('```typescript'));
+    });
+
+    it('should handle multiple include blocks', () => {
+      const markdown = `
+## Types
+
+\`\`\`typescript:include src/services/help/schema.ts#HelpTopic
+\`\`\`
+
+## More Types
+
+\`\`\`typescript:include src/services/help/schema.ts#HelpCategory
+\`\`\`
+`;
+      const result = preprocessor.process(markdown);
+      assert.ok(result.includes('HelpTopic'));
+      assert.ok(result.includes('HelpCategory'));
+    });
+
+    it('should pass through non-include blocks unchanged', () => {
+      const markdown = `
+\`\`\`typescript
+const x = 1;
+\`\`\`
+`;
+      const result = preprocessor.process(markdown);
+      assert.strictEqual(result, markdown);
+    });
+
+    it('should show error for missing source', () => {
+      const markdown = `
+\`\`\`typescript:include
+exports: [Foo]
+\`\`\`
+`;
+      const result = preprocessor.process(markdown);
+      assert.ok(result.includes('Error: No source file specified'));
+    });
+
+    it('should show error for missing file', () => {
+      const markdown = `
+\`\`\`typescript:include
+source: src/nonexistent/file.ts
+exports: [Foo]
+\`\`\`
+`;
+      const result = preprocessor.process(markdown);
+      assert.ok(result.includes('Error: File not found'));
+    });
+  });
+
+  describe('integration with HelpService', () => {
+    it('should preprocess content when getting topic', () => {
+      // This tests that HelpService.getTopicContent uses the preprocessor
+      // We'll create a mock scenario by checking that the preprocessor
+      // doesn't break existing content
+      const service = new HelpService(projectRoot);
+
+      // Get content that doesn't have typescript:include
+      const content = service.getTopicContent('levels', 'raw');
+      assert.ok(content.length > 0, 'Should return content');
+      // Content should be unchanged since it has no typescript:include
+      assert.ok(content.includes('#'), 'Should have markdown');
     });
   });
 });

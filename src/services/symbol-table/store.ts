@@ -17,6 +17,7 @@ import {
   type StatusInfo,
   type ValidationResult,
   type ValidationError,
+  type ISymbolStore,
   buildSymbolId,
   formatSemVer,
   createValidationResult,
@@ -28,7 +29,7 @@ import {
 // Store Class
 // ============================================================================
 
-export class SymbolStore {
+export class SymbolStore implements ISymbolStore {
   private repo: SymbolRepository;
 
   constructor(database: DatabaseType) {

@@ -8,6 +8,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { MermaidDiagram } from './MermaidDiagram';
 import { C4NavigationBar } from './C4NavigationBar';
 
@@ -343,12 +345,50 @@ export function HelpDialog({
                         return <MermaidDiagram code={code} />;
                       }
 
-                      // Fenced code block (has language class)
+                      // Fenced code block (has language class) - use syntax highlighting
                       if (className) {
+                        const [copied, setCopied] = useState(false);
+
+                        const handleCopy = async () => {
+                          try {
+                            await navigator.clipboard.writeText(code);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          } catch (err) {
+                            console.error('Failed to copy:', err);
+                          }
+                        };
+
                         return (
-                          <pre style={styles.codeBlock}>
-                            <code className={className}>{children}</code>
-                          </pre>
+                          <div style={styles.codeBlockWrapper}>
+                            <button
+                              style={styles.copyButton}
+                              onClick={handleCopy}
+                              title="Copy to clipboard"
+                            >
+                              {copied ? '✓ Copied' : 'Copy'}
+                            </button>
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={language || 'typescript'}
+                              PreTag="div"
+                              customStyle={{
+                                margin: 0,
+                                padding: '14px 18px',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                border: '1px solid #30363d',
+                                backgroundColor: '#282c34',
+                              }}
+                              codeTagProps={{
+                                style: {
+                                  fontFamily: '"SF Mono", "Fira Code", Consolas, monospace',
+                                },
+                              }}
+                            >
+                              {code}
+                            </SyntaxHighlighter>
+                          </div>
                         );
                       }
 
@@ -591,6 +631,25 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e0e0e0',
     lineHeight: 1.7,
     fontSize: '14px',
+  },
+  codeBlockWrapper: {
+    position: 'relative',
+    margin: '20px 0',
+  },
+  copyButton: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    padding: '4px 10px',
+    fontSize: '11px',
+    fontWeight: 500,
+    backgroundColor: '#30363d',
+    color: '#c9d1d9',
+    border: '1px solid #484f58',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    zIndex: 10,
+    transition: 'background-color 0.15s',
   },
   codeBlock: {
     backgroundColor: '#161b22',
