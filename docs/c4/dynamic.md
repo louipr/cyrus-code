@@ -15,6 +15,7 @@ Runtime behavior showing how containers collaborate for key use cases.
 | 3. Generate Code | ✅ | `cyrus-code generate` |
 | 4. Dead Code Analysis | 🔮 | Static Analyzer schema only |
 | 5. Import Manual Code | 🔮 | Import Detector not implemented |
+| 6. Internal Flows | ✅ | Wiring algorithm, IPC architecture |
 
 ---
 
@@ -252,6 +253,98 @@ C4Dynamic
 8. Import Detector parses and suggests classification
 9. Symbol registered with `origin='manual'`
 10. CLI confirms import to developer
+
+---
+
+## 6. Internal Flows
+
+> **Note**: These sequence diagrams show internal component interactions for key algorithms. They complement the container-level flows above.
+
+### Wiring: Connect Ports
+
+The 8-step validation sequence when connecting two ports:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Wiring as WiringService
+    participant ST as Symbol Table
+    participant Val as Interface Validator
+    participant Graph as Graph Analysis
+
+    Client->>Wiring: connect(request)
+    Wiring->>Wiring: 1. Validate self-connection
+    Wiring->>ST: 2. Lookup source/target symbols
+    ST-->>Wiring: symbols
+    Wiring->>Wiring: 3. Find source/target ports
+    Wiring->>Wiring: 4. Check duplicate connection
+    Wiring->>Val: 5. Validate port compatibility
+    Val-->>Wiring: compatibility result
+    Wiring->>Wiring: 6. Check cardinality
+    Wiring->>Graph: 7. wouldCreateCycle()
+    Graph-->>Wiring: cycle check result
+    alt all checks pass
+        Wiring->>ST: 8. Persist connection
+        ST-->>Wiring: success
+        Wiring-->>Client: WiringResult (success)
+    else validation failed
+        Wiring-->>Client: WiringResult (error code)
+    end
+```
+
+### Wiring: Build Dependency Graph
+
+How the dependency graph is constructed with cycle detection:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Wiring as WiringService
+    participant ST as Symbol Table
+    participant Graph as Graph Analysis
+
+    Client->>Wiring: buildDependencyGraph()
+    Wiring->>ST: 1. Get all symbols
+    ST-->>Wiring: symbols[]
+    Wiring->>ST: 2. Get all connections
+    ST-->>Wiring: connections[]
+    Wiring->>Graph: 3. Create GraphNodes
+    Wiring->>Graph: 4. Create GraphEdges
+    Wiring->>Graph: 5. detectCycles()
+    Graph-->>Wiring: cycles[]
+    alt no cycles
+        Wiring->>Graph: 6. topologicalSort()
+        Graph-->>Wiring: sorted order
+    end
+    Wiring-->>Client: DependencyGraph
+```
+
+### IPC Architecture (Electron)
+
+How GUI requests flow through Electron's IPC layer:
+
+```mermaid
+sequenceDiagram
+    participant React as React Component
+    participant Client as apiClient
+    participant IPC as IPC (electronAPI)
+    participant Handler as IPC Handler
+    participant API as ApiFacade
+    participant Service as Component Registry
+
+    React->>Client: symbols.get(id)
+    Client->>IPC: invoke('symbols:get', id)
+    IPC->>Handler: IPC Main handler
+    Handler->>API: getSymbol(id)
+    API->>Service: Route to registry
+    Service-->>API: domain result
+    API->>API: Convert to DTO
+    API-->>Handler: ApiResponse
+    Handler-->>IPC: Return via IPC
+    IPC-->>Client: response
+    Client-->>React: DTO
+    React->>React: Update state
+```
 
 ---
 

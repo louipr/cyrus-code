@@ -238,65 +238,6 @@ function wouldCreateCycle(graph, fromSymbolId, toSymbolId):
     return fromSymbolId in downstream || fromSymbolId == toSymbolId
 ```
 
-## Data Flow
-
-> **Scope**: These sequence diagrams show **internal component interactions** within the Wiring container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
-
-### Connect Ports
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Wiring as WiringService
-    participant ST as Symbol Table
-    participant Val as Interface Validator
-    participant Graph as Graph Analysis
-
-    Client->>Wiring: connect(request)
-    Wiring->>Wiring: 1. Validate self-connection
-    Wiring->>ST: 2. Lookup source/target symbols
-    ST-->>Wiring: symbols
-    Wiring->>Wiring: 3. Find source/target ports
-    Wiring->>Wiring: 4. Check duplicate connection
-    Wiring->>Val: 5. Validate port compatibility
-    Val-->>Wiring: compatibility result
-    Wiring->>Wiring: 6. Check cardinality
-    Wiring->>Graph: 7. wouldCreateCycle()
-    Graph-->>Wiring: cycle check result
-    alt all checks pass
-        Wiring->>ST: 8. Persist connection
-        ST-->>Wiring: success
-        Wiring-->>Client: WiringResult (success)
-    else validation failed
-        Wiring-->>Client: WiringResult (error code)
-    end
-```
-
-### Build Dependency Graph
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Wiring as WiringService
-    participant ST as Symbol Table
-    participant Graph as Graph Analysis
-
-    Client->>Wiring: buildDependencyGraph()
-    Wiring->>ST: 1. Get all symbols
-    ST-->>Wiring: symbols[]
-    Wiring->>ST: 2. Get all connections
-    ST-->>Wiring: connections[]
-    Wiring->>Graph: 3. Create GraphNodes
-    Wiring->>Graph: 4. Create GraphEdges
-    Wiring->>Graph: 5. detectCycles()
-    Graph-->>Wiring: cycles[]
-    alt no cycles
-        Wiring->>Graph: 6. topologicalSort()
-        Graph-->>Wiring: sorted order
-    end
-    Wiring-->>Client: DependencyGraph
-```
-
 ## Design Decisions
 
 | Decision | Rationale |

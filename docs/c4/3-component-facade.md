@@ -181,55 +181,6 @@ For Electron GUI, the facade methods are exposed via IPC handlers:
 
 > **Note**: IPC handlers are defined in `electron/ipc-handlers.ts`
 
-## Data Flow
-
-> **Scope**: These sequence diagrams show **internal component interactions** within the API Facade container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
-
-### CLI Request
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant CLI
-    participant API as ApiFacade
-    participant Service as Target Service
-
-    User->>CLI: cyrus-code register <args>
-    CLI->>CLI: Parse arguments, build request
-    CLI->>API: registerSymbol(request)
-    API->>Service: Route to Component Registry
-    Service-->>API: domain result
-    API->>API: Convert to DTO
-    API-->>CLI: ApiResponse
-    CLI->>CLI: Format output
-    CLI-->>User: Display result
-```
-
-### GUI (Electron) Request
-
-```mermaid
-sequenceDiagram
-    participant React as React Component
-    participant Client as apiClient
-    participant IPC as IPC (electronAPI)
-    participant Handler as IPC Handler
-    participant API as ApiFacade
-    participant Service as Component Registry
-
-    React->>Client: symbols.get(id)
-    Client->>IPC: invoke('symbols:get', id)
-    IPC->>Handler: IPC Main handler
-    Handler->>API: getSymbol(id)
-    API->>Service: Route to registry
-    Service-->>API: domain result
-    API->>API: Convert to DTO
-    API-->>Handler: ApiResponse
-    Handler-->>IPC: Return via IPC
-    IPC-->>Client: response
-    Client-->>React: DTO
-    React->>React: Update state
-```
-
 ## Design Decisions
 
 | Decision | Rationale |
