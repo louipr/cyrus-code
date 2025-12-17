@@ -12,6 +12,7 @@ import {
   HelpManifest,
   HelpTopic,
   HelpCategory,
+  HelpGroup,
   HelpSearchResult,
   HelpOutputFormat,
   C4Hierarchy,
@@ -72,6 +73,13 @@ export class HelpService implements IHelpService {
    */
   getCategories(): HelpCategory[] {
     return this.loadManifest().categories;
+  }
+
+  /**
+   * Get all help groups (collapsible sections within categories).
+   */
+  getGroups(): HelpGroup[] {
+    return this.loadManifest().groups ?? [];
   }
 
   /**

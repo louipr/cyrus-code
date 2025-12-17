@@ -256,6 +256,17 @@ export function registerIpcHandlers(facade: ApiFacade): void {
     }
   });
 
+  ipcMain.handle('help:getGroups', async () => {
+    try {
+      return { success: true, data: helpService.getGroups() };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: error instanceof Error ? error.message : String(error) },
+      };
+    }
+  });
+
   ipcMain.handle('help:listTopics', async () => {
     try {
       return { success: true, data: helpService.listTopics() };

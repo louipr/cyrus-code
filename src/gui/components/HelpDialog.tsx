@@ -20,7 +20,7 @@ interface HelpTopic {
   path: string;
   category: string;
   keywords: string[];
-  sidebarHidden?: boolean;
+  group?: string;
 }
 
 interface HelpCategory {
@@ -29,10 +29,17 @@ interface HelpCategory {
   description: string;
 }
 
+interface HelpGroup {
+  id: string;
+  label: string;
+  category: string;
+}
+
 interface C4Hierarchy {
   L1: string[];
   L2: string[];
   L3: string[];
+  L4: string[];
   Dynamic: string[];
 }
 
@@ -57,6 +64,7 @@ export function HelpDialog({
   initialSearch,
 }: HelpDialogProps) {
   const [categories, setCategories] = useState<HelpCategory[]>([]);
+  const [groups, setGroups] = useState<HelpGroup[]>([]);
   const [topics, setTopics] = useState<HelpTopic[]>([]);
   const [c4Hierarchy, setC4Hierarchy] = useState<C4Hierarchy | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -64,21 +72,26 @@ export function HelpDialog({
   const [searchQuery, setSearchQuery] = useState(initialSearch ?? '');
   const [filteredTopics, setFilteredTopics] = useState<HelpTopic[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Load categories and topics on mount
+  // Load categories, groups, and topics on mount
   useEffect(() => {
     if (!isOpen) return;
 
     const loadData = async () => {
       try {
-        const [catResult, topicsResult, hierarchyResult] = await Promise.all([
+        const [catResult, groupsResult, topicsResult, hierarchyResult] = await Promise.all([
           window.cyrus.help.getCategories(),
+          window.cyrus.help.getGroups(),
           window.cyrus.help.listTopics(),
           window.cyrus.help.getC4Hierarchy(),
         ]);
 
         if (catResult.success && catResult.data) {
           setCategories(catResult.data);
+        }
+        if (groupsResult.success && groupsResult.data) {
+          setGroups(groupsResult.data);
         }
         if (topicsResult.success && topicsResult.data) {
           setTopics(topicsResult.data);
@@ -175,14 +188,42 @@ export function HelpDialog({
 
   if (!isOpen) return null;
 
-  // Group topics by category (hide sidebar-hidden topics unless searching)
+  // Toggle group expansion
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  // Group topics by category, with collapsible groups
   const isSearching = searchQuery.trim().length > 0;
-  const topicsByCategory = categories.map((cat) => ({
-    ...cat,
-    topics: filteredTopics.filter((t) =>
-      t.category === cat.id && (isSearching || !t.sidebarHidden)
-    ),
-  }));
+
+  // Build structured sidebar data
+  const sidebarData = categories.map((cat) => {
+    const categoryTopics = filteredTopics.filter((t) => t.category === cat.id);
+    const categoryGroups = groups.filter((g) => g.category === cat.id);
+
+    // Topics without a group (ungrouped)
+    const ungroupedTopics = categoryTopics.filter((t) => !t.group);
+
+    // Topics within groups
+    const groupedData = categoryGroups.map((group) => ({
+      ...group,
+      topics: categoryTopics.filter((t) => t.group === group.id),
+    }));
+
+    return {
+      ...cat,
+      ungroupedTopics,
+      groups: groupedData,
+    };
+  });
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -212,12 +253,14 @@ export function HelpDialog({
 
             {/* Topic list */}
             <div style={styles.topicList}>
-              {topicsByCategory.map(
+              {sidebarData.map(
                 (cat) =>
-                  cat.topics.length > 0 && (
+                  (cat.ungroupedTopics.length > 0 || cat.groups.some((g) => g.topics.length > 0)) && (
                     <div key={cat.id} style={styles.category}>
                       <div style={styles.categoryLabel}>{cat.label}</div>
-                      {cat.topics.map((topic) => (
+
+                      {/* Ungrouped topics */}
+                      {cat.ungroupedTopics.map((topic) => (
                         <button
                           key={topic.id}
                           data-testid={`help-topic-${topic.id}`}
@@ -230,6 +273,44 @@ export function HelpDialog({
                           <span style={styles.topicTitle}>{topic.title}</span>
                         </button>
                       ))}
+
+                      {/* Collapsible groups */}
+                      {cat.groups.map(
+                        (group) =>
+                          group.topics.length > 0 && (
+                            <div key={group.id} style={styles.groupContainer}>
+                              <button
+                                style={styles.groupHeader}
+                                onClick={() => toggleGroup(group.id)}
+                                data-testid={`help-group-${group.id}`}
+                              >
+                                <span style={styles.groupChevron}>
+                                  {expandedGroups.has(group.id) || isSearching ? '▼' : '▶'}
+                                </span>
+                                <span>{group.label}</span>
+                                <span style={styles.groupCount}>({group.topics.length})</span>
+                              </button>
+                              {(expandedGroups.has(group.id) || isSearching) && (
+                                <div style={styles.groupTopics}>
+                                  {group.topics.map((topic) => (
+                                    <button
+                                      key={topic.id}
+                                      data-testid={`help-topic-${topic.id}`}
+                                      style={{
+                                        ...styles.topicButton,
+                                        ...styles.groupedTopicButton,
+                                        ...(selectedTopic === topic.id ? styles.topicButtonActive : {}),
+                                      }}
+                                      onClick={() => setSelectedTopic(topic.id)}
+                                    >
+                                      <span style={styles.topicTitle}>{topic.title}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                      )}
                     </div>
                   )
               )}
@@ -602,6 +683,40 @@ const styles: Record<string, React.CSSProperties> = {
   },
   topicTitle: {
     display: 'block',
+  },
+  groupContainer: {
+    marginTop: '4px',
+  },
+  groupHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    width: '100%',
+    padding: '6px 16px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#aaa',
+    fontSize: '12px',
+    fontWeight: 500,
+  },
+  groupChevron: {
+    fontSize: '8px',
+    width: '10px',
+  },
+  groupCount: {
+    color: '#666',
+    fontSize: '11px',
+    marginLeft: 'auto',
+  },
+  groupTopics: {
+    marginLeft: '8px',
+    borderLeft: '1px solid #3c3c3c',
+  },
+  groupedTopicButton: {
+    paddingLeft: '24px',
+    fontSize: '12px',
   },
   content: {
     flex: 1,

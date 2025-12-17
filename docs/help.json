@@ -45,6 +45,18 @@
       "description": "Technical specifications"
     }
   ],
+  "groups": [
+    {
+      "id": "c4-l3",
+      "label": "C4-3 Components",
+      "category": "architecture"
+    },
+    {
+      "id": "c4-l4",
+      "label": "C4-4 Code",
+      "category": "architecture"
+    }
+  ],
   "topics": [
     {
       "id": "levels",
@@ -96,127 +108,129 @@
     },
     {
       "id": "c4-component",
-      "title": "C4-3 Symbol Table Components",
+      "title": "Symbol Table",
       "summary": "Symbol Table internal structure - SymbolStore, QueryEngine, VersionManager",
       "path": "docs/c4/3-component-symbol-table.md",
       "category": "architecture",
+      "group": "c4-l3",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture"]
     },
     {
       "id": "c4-component-synthesizer",
-      "title": "C4-3 Synthesizer Components",
+      "title": "Synthesizer",
       "summary": "Code Synthesizer internal structure - TypeScript backend, generation gap pattern",
       "path": "docs/c4/3-component-synthesizer.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "synthesizer", "code generation", "ts-morph"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "synthesizer", "code generation", "ts-morph"]
     },
     {
       "id": "c4-component-help",
-      "title": "C4-3 Help Service Components",
+      "title": "Help Service",
       "summary": "Help Service internal structure - topic loading, terminal renderer",
       "path": "docs/c4/3-component-help.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "help", "markdown", "terminal"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "help", "markdown", "terminal"]
     },
     {
       "id": "c4-component-wiring",
-      "title": "C4-3 Wiring Components",
+      "title": "Wiring",
       "summary": "Wiring Service internal structure - graph analysis algorithms",
       "path": "docs/c4/3-component-wiring.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort"]
     },
     {
       "id": "c4-component-validator",
-      "title": "C4-3 Validator Components",
+      "title": "Validator",
       "summary": "Interface Validator internal structure - compatibility checking rules",
       "path": "docs/c4/3-component-validator.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "validator", "compatibility", "type checking"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "validator", "compatibility", "type checking"]
     },
     {
       "id": "c4-component-registry",
-      "title": "C4-3 Registry Components",
+      "title": "Registry",
       "summary": "Component Registry internal structure - version resolution",
       "path": "docs/c4/3-component-registry.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "registry", "version", "semver"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "registry", "version", "semver"]
     },
     {
       "id": "c4-component-facade",
-      "title": "C4-3 API Facade Components",
+      "title": "API Facade",
       "summary": "API Facade internal structure - service routing table",
       "path": "docs/c4/3-component-facade.md",
       "category": "architecture",
-      "keywords": ["C4", "component", "facade", "API", "routing"],
-      "sidebarHidden": true
+      "group": "c4-l3",
+      "keywords": ["C4", "component", "facade", "API", "routing"]
     },
     {
       "id": "c4-code-symbol-table",
-      "title": "C4-4 Symbol Table Code",
+      "title": "Symbol Table",
       "summary": "Interface definitions for Symbol Table components",
       "path": "docs/c4/4-code-symbol-table.md",
       "category": "architecture",
+      "group": "c4-l4",
       "keywords": ["C4", "code", "interface", "symbol table", "API"]
     },
     {
       "id": "c4-code-wiring",
-      "title": "C4-4 Wiring Code",
+      "title": "Wiring",
       "summary": "Interface definitions and graph algorithms for Wiring Service",
       "path": "docs/c4/4-code-wiring.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "wiring", "graph", "algorithm"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "wiring", "graph", "algorithm"]
     },
     {
       "id": "c4-code-validator",
-      "title": "C4-4 Validator Code",
+      "title": "Validator",
       "summary": "Interface definitions, compatibility rules, and validation algorithms",
       "path": "docs/c4/4-code-validator.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "validator", "compatibility", "algorithm"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "validator", "compatibility", "algorithm"]
     },
     {
       "id": "c4-code-registry",
-      "title": "C4-4 Registry Code",
+      "title": "Registry",
       "summary": "Interface definitions and version resolution algorithms",
       "path": "docs/c4/4-code-registry.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "registry", "version", "semver"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "registry", "version", "semver"]
     },
     {
       "id": "c4-code-synthesizer",
-      "title": "C4-4 Synthesizer Code",
+      "title": "Synthesizer",
       "summary": "Interface definitions for Code Synthesizer components",
       "path": "docs/c4/4-code-synthesizer.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "synthesizer", "generation"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "synthesizer", "generation"]
     },
     {
       "id": "c4-code-facade",
-      "title": "C4-4 Facade Code",
+      "title": "Facade",
       "summary": "Interface definitions, routing table, and IPC channel mapping",
       "path": "docs/c4/4-code-facade.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "facade", "API", "IPC"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "facade", "API", "IPC"]
     },
     {
       "id": "c4-code-help",
-      "title": "C4-4 Help Code",
+      "title": "Help",
       "summary": "Interface definitions and terminal rendering specifications",
       "path": "docs/c4/4-code-help.md",
       "category": "architecture",
-      "keywords": ["C4", "code", "interface", "help", "ANSI", "terminal"],
-      "sidebarHidden": true
+      "group": "c4-l4",
+      "keywords": ["C4", "code", "interface", "help", "ANSI", "terminal"]
     },
     {
       "id": "c4-dynamic",

@@ -18,6 +18,9 @@ export interface IHelpService {
   /** Get all help categories */
   getCategories(): HelpCategory[];
 
+  /** Get all help groups (collapsible sections within categories) */
+  getGroups(): HelpGroup[];
+
   /** Get all help topics */
   listTopics(): HelpTopic[];
 
@@ -63,6 +66,18 @@ export interface HelpCategory {
 }
 
 /**
+ * Help topic group (collapsible section within a category).
+ */
+export interface HelpGroup {
+  /** Unique group identifier */
+  id: string;
+  /** Display label */
+  label: string;
+  /** Category this group belongs to */
+  category: string;
+}
+
+/**
  * Help topic entry in the manifest.
  */
 export interface HelpTopic {
@@ -80,6 +95,8 @@ export interface HelpTopic {
   keywords: string[];
   /** Related topic IDs (optional) */
   related?: string[];
+  /** Group within category (optional, for collapsible sections) */
+  group?: string;
 }
 
 /**
@@ -92,6 +109,8 @@ export interface C4Hierarchy {
   L2: string[];
   /** L3 Component diagram topic IDs */
   L3: string[];
+  /** L4 Code diagram topic IDs */
+  L4: string[];
   /** Dynamic flow diagram topic IDs */
   Dynamic: string[];
 }
@@ -106,6 +125,8 @@ export interface HelpManifest {
   c4Hierarchy?: C4Hierarchy;
   /** Available categories */
   categories: HelpCategory[];
+  /** Collapsible groups within categories */
+  groups?: HelpGroup[];
   /** All help topics */
   topics: HelpTopic[];
 }
