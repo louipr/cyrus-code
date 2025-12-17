@@ -94,6 +94,7 @@ interface CyrusAPI {
   };
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
+    getGroups: () => Promise<ApiResponse<HelpGroup[]>>;
     listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
     getC4Hierarchy: () => Promise<ApiResponse<C4Hierarchy | null>>;
     getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
@@ -113,6 +114,12 @@ interface HelpCategory {
   id: string;
   label: string;
   description: string;
+}
+
+interface HelpGroup {
+  id: string;
+  label: string;
+  category: string;
 }
 
 interface HelpTopic {
@@ -232,6 +239,7 @@ function createMockApi(): CyrusAPI {
     },
     help: {
       getCategories: () => mockResponse([]),
+      getGroups: () => mockResponse([]),
       listTopics: () => mockResponse([]),
       getC4Hierarchy: () => mockResponse(null),
       getByCategory: () => mockResponse([]),

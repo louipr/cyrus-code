@@ -642,4 +642,4 @@ npm run electron
 - [ADR-009](adr/009-electron-gui-framework.md) - GUI framework decision
 - [ADR-008](adr/008-design-patterns.md) - Design patterns
 - [ADR-010](adr/010-gui-testing-strategy.md) - GUI testing strategy (Playwright)
-- [C4 Container Diagram](c4/2-container.md) - System architecture
+- [L2 Container Diagram](c4/2-container.md) - System architecture

@@ -61,18 +61,18 @@ npm run test:e2e -- --grep "help"
 
 ## C4 Diagram Topics
 
-| Topic | File | Test |
-|-------|------|------|
-| C4-1 Context | `docs/c4/1-context.md` | `"C4 Context"` |
-| C4-2 Container | `docs/c4/2-container.md` | `"C4 Container"` |
-| C4-3 Symbol Table | `docs/c4/3-component-symbol-table.md` | - |
-| C4-3 Synthesizer | `docs/c4/3-component-synthesizer.md` | - |
-| C4-3 Help | `docs/c4/3-component-help.md` | - |
-| C4-3 Wiring | `docs/c4/3-component-wiring.md` | - |
-| C4-3 Validator | `docs/c4/3-component-validator.md` | - |
-| C4-3 Registry | `docs/c4/3-component-registry.md` | - |
-| C4-3 Facade | `docs/c4/3-component-facade.md` | - |
-| C4 Dynamic | `docs/c4/dynamic.md` | - |
+| Topic | File | Group |
+|-------|------|-------|
+| L1 Context | `docs/c4/1-context.md` | C4 Overview |
+| L2 Container | `docs/c4/2-container.md` | C4 Overview |
+| L3 Component (Symbol Table) | `docs/c4/3-component-symbol-table.md` | Symbol Table |
+| L3 Component (Synthesizer) | `docs/c4/3-component-synthesizer.md` | Synthesizer |
+| L3 Component (Help) | `docs/c4/3-component-help.md` | Help Service |
+| L3 Component (Wiring) | `docs/c4/3-component-wiring.md` | Wiring Service |
+| L3 Component (Validator) | `docs/c4/3-component-validator.md` | Validator |
+| L3 Component (Registry) | `docs/c4/3-component-registry.md` | Registry |
+| L3 Component (Facade) | `docs/c4/3-component-facade.md` | API Facade |
+| Dynamic Flows | `docs/c4/dynamic.md` | C4 Overview |
 
 ## Quick Verification Command
 

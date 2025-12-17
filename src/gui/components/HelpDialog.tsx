@@ -770,16 +770,6 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 10,
     transition: 'background-color 0.15s',
   },
-  codeBlock: {
-    backgroundColor: '#161b22',
-    padding: '14px 18px',
-    borderRadius: '6px',
-    overflow: 'auto',
-    fontSize: '13px',
-    margin: '20px 0',
-    border: '1px solid #30363d',
-    fontFamily: '"SF Mono", "Fira Code", Consolas, monospace',
-  },
   inlineCode: {
     backgroundColor: '#282c34',
     padding: '2px 6px',
