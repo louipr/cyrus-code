@@ -47,13 +47,38 @@
   ],
   "groups": [
     {
-      "id": "c4-l3",
-      "label": "C4-3 Components",
+      "id": "symbol-table",
+      "label": "Symbol Table",
       "category": "architecture"
     },
     {
-      "id": "c4-l4",
-      "label": "C4-4 Code",
+      "id": "wiring",
+      "label": "Wiring Service",
+      "category": "architecture"
+    },
+    {
+      "id": "validator",
+      "label": "Validator",
+      "category": "architecture"
+    },
+    {
+      "id": "registry",
+      "label": "Registry",
+      "category": "architecture"
+    },
+    {
+      "id": "synthesizer",
+      "label": "Synthesizer",
+      "category": "architecture"
+    },
+    {
+      "id": "facade",
+      "label": "API Facade",
+      "category": "architecture"
+    },
+    {
+      "id": "help-service",
+      "label": "Help Service",
       "category": "architecture"
     }
   ],
@@ -73,6 +98,30 @@
       "path": "CLAUDE.md",
       "category": "concept",
       "keywords": ["symbol table", "port", "wiring", "synthesis", "signal", "glossary", "terms"]
+    },
+    {
+      "id": "interfaces",
+      "title": "Interface Definition System",
+      "summary": "Ports, signals, and HDL-inspired interface design",
+      "path": "docs/adr/003-interface-definition-system.md",
+      "category": "concept",
+      "keywords": ["port", "signal", "interface", "hdl", "wiring", "connection"]
+    },
+    {
+      "id": "generation-gap",
+      "title": "Generation Gap Pattern",
+      "summary": "Separating generated code from manual customizations",
+      "path": "docs/adr/006-generation-gap-pattern.md",
+      "category": "concept",
+      "keywords": ["generation", "gap", "pattern", "generated", "manual", "code"]
+    },
+    {
+      "id": "dead-code",
+      "title": "Dead Code Detection",
+      "summary": "Tracking symbol status from declared to executed",
+      "path": "docs/adr/005-dead-code-detection.md",
+      "category": "concept",
+      "keywords": ["dead code", "status", "declared", "referenced", "tested", "executed"]
     },
     {
       "id": "getting-started",
@@ -108,128 +157,128 @@
     },
     {
       "id": "c4-component",
-      "title": "Symbol Table",
+      "title": "L3 Component",
       "summary": "Symbol Table internal structure - SymbolStore, QueryEngine, VersionManager",
       "path": "docs/c4/3-component-symbol-table.md",
       "category": "architecture",
-      "group": "c4-l3",
+      "group": "symbol-table",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture"]
     },
     {
-      "id": "c4-component-synthesizer",
-      "title": "Synthesizer",
-      "summary": "Code Synthesizer internal structure - TypeScript backend, generation gap pattern",
-      "path": "docs/c4/3-component-synthesizer.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "synthesizer", "code generation", "ts-morph"]
-    },
-    {
-      "id": "c4-component-help",
-      "title": "Help Service",
-      "summary": "Help Service internal structure - topic loading, terminal renderer",
-      "path": "docs/c4/3-component-help.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "help", "markdown", "terminal"]
-    },
-    {
-      "id": "c4-component-wiring",
-      "title": "Wiring",
-      "summary": "Wiring Service internal structure - graph analysis algorithms",
-      "path": "docs/c4/3-component-wiring.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort"]
-    },
-    {
-      "id": "c4-component-validator",
-      "title": "Validator",
-      "summary": "Interface Validator internal structure - compatibility checking rules",
-      "path": "docs/c4/3-component-validator.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "validator", "compatibility", "type checking"]
-    },
-    {
-      "id": "c4-component-registry",
-      "title": "Registry",
-      "summary": "Component Registry internal structure - version resolution",
-      "path": "docs/c4/3-component-registry.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "registry", "version", "semver"]
-    },
-    {
-      "id": "c4-component-facade",
-      "title": "API Facade",
-      "summary": "API Facade internal structure - service routing table",
-      "path": "docs/c4/3-component-facade.md",
-      "category": "architecture",
-      "group": "c4-l3",
-      "keywords": ["C4", "component", "facade", "API", "routing"]
-    },
-    {
       "id": "c4-code-symbol-table",
-      "title": "Symbol Table",
+      "title": "L4 Code",
       "summary": "Interface definitions for Symbol Table components",
       "path": "docs/c4/4-code-symbol-table.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "symbol-table",
       "keywords": ["C4", "code", "interface", "symbol table", "API"]
     },
     {
+      "id": "c4-component-wiring",
+      "title": "L3 Component",
+      "summary": "Wiring Service internal structure - graph analysis algorithms",
+      "path": "docs/c4/3-component-wiring.md",
+      "category": "architecture",
+      "group": "wiring",
+      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort"]
+    },
+    {
       "id": "c4-code-wiring",
-      "title": "Wiring",
+      "title": "L4 Code",
       "summary": "Interface definitions and graph algorithms for Wiring Service",
       "path": "docs/c4/4-code-wiring.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "wiring",
       "keywords": ["C4", "code", "interface", "wiring", "graph", "algorithm"]
     },
     {
+      "id": "c4-component-validator",
+      "title": "L3 Component",
+      "summary": "Interface Validator internal structure - compatibility checking rules",
+      "path": "docs/c4/3-component-validator.md",
+      "category": "architecture",
+      "group": "validator",
+      "keywords": ["C4", "component", "validator", "compatibility", "type checking"]
+    },
+    {
       "id": "c4-code-validator",
-      "title": "Validator",
+      "title": "L4 Code",
       "summary": "Interface definitions, compatibility rules, and validation algorithms",
       "path": "docs/c4/4-code-validator.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "validator",
       "keywords": ["C4", "code", "interface", "validator", "compatibility", "algorithm"]
     },
     {
+      "id": "c4-component-registry",
+      "title": "L3 Component",
+      "summary": "Component Registry internal structure - version resolution",
+      "path": "docs/c4/3-component-registry.md",
+      "category": "architecture",
+      "group": "registry",
+      "keywords": ["C4", "component", "registry", "version", "semver"]
+    },
+    {
       "id": "c4-code-registry",
-      "title": "Registry",
+      "title": "L4 Code",
       "summary": "Interface definitions and version resolution algorithms",
       "path": "docs/c4/4-code-registry.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "registry",
       "keywords": ["C4", "code", "interface", "registry", "version", "semver"]
     },
     {
+      "id": "c4-component-synthesizer",
+      "title": "L3 Component",
+      "summary": "Code Synthesizer internal structure - TypeScript backend, generation gap pattern",
+      "path": "docs/c4/3-component-synthesizer.md",
+      "category": "architecture",
+      "group": "synthesizer",
+      "keywords": ["C4", "component", "synthesizer", "code generation", "ts-morph"]
+    },
+    {
       "id": "c4-code-synthesizer",
-      "title": "Synthesizer",
+      "title": "L4 Code",
       "summary": "Interface definitions for Code Synthesizer components",
       "path": "docs/c4/4-code-synthesizer.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "synthesizer",
       "keywords": ["C4", "code", "interface", "synthesizer", "generation"]
     },
     {
+      "id": "c4-component-facade",
+      "title": "L3 Component",
+      "summary": "API Facade internal structure - service routing table",
+      "path": "docs/c4/3-component-facade.md",
+      "category": "architecture",
+      "group": "facade",
+      "keywords": ["C4", "component", "facade", "API", "routing"]
+    },
+    {
       "id": "c4-code-facade",
-      "title": "Facade",
+      "title": "L4 Code",
       "summary": "Interface definitions, routing table, and IPC channel mapping",
       "path": "docs/c4/4-code-facade.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "facade",
       "keywords": ["C4", "code", "interface", "facade", "API", "IPC"]
     },
     {
+      "id": "c4-component-help",
+      "title": "L3 Component",
+      "summary": "Help Service internal structure - topic loading, terminal renderer",
+      "path": "docs/c4/3-component-help.md",
+      "category": "architecture",
+      "group": "help-service",
+      "keywords": ["C4", "component", "help", "markdown", "terminal"]
+    },
+    {
       "id": "c4-code-help",
-      "title": "Help",
+      "title": "L4 Code",
       "summary": "Interface definitions and terminal rendering specifications",
       "path": "docs/c4/4-code-help.md",
       "category": "architecture",
-      "group": "c4-l4",
+      "group": "help-service",
       "keywords": ["C4", "code", "interface", "help", "ANSI", "terminal"]
     },
     {
@@ -241,28 +290,12 @@
       "keywords": ["C4", "dynamic", "flow", "sequence", "runtime", "register", "validate", "generate"]
     },
     {
-      "id": "interfaces",
-      "title": "Interface Definition System",
-      "summary": "Ports, signals, and HDL-inspired interface design",
-      "path": "docs/adr/003-interface-definition-system.md",
-      "category": "concept",
-      "keywords": ["port", "signal", "interface", "hdl", "wiring", "connection"]
-    },
-    {
-      "id": "generation-gap",
-      "title": "Generation Gap Pattern",
-      "summary": "Separating generated code from manual customizations",
-      "path": "docs/adr/006-generation-gap-pattern.md",
-      "category": "concept",
-      "keywords": ["generation", "gap", "pattern", "generated", "manual", "code"]
-    },
-    {
-      "id": "dead-code",
-      "title": "Dead Code Detection",
-      "summary": "Tracking symbol status from declared to executed",
-      "path": "docs/adr/005-dead-code-detection.md",
-      "category": "concept",
-      "keywords": ["dead code", "status", "declared", "referenced", "tested", "executed"]
+      "id": "design-rationale",
+      "title": "Design Rationale",
+      "summary": "Why decisions were made - research and reasoning",
+      "path": "docs/design-rationale.md",
+      "category": "architecture",
+      "keywords": ["design", "rationale", "why", "decision", "research"]
     },
     {
       "id": "symbol-schema",
@@ -271,14 +304,6 @@
       "path": "docs/spec/symbol-table-schema.md",
       "category": "reference",
       "keywords": ["schema", "type", "symbol", "component", "port", "specification"]
-    },
-    {
-      "id": "design-rationale",
-      "title": "Design Rationale",
-      "summary": "Why decisions were made - research and reasoning",
-      "path": "docs/design-rationale.md",
-      "category": "architecture",
-      "keywords": ["design", "rationale", "why", "decision", "research"]
     }
   ]
 }
