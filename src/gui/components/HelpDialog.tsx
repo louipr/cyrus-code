@@ -20,6 +20,7 @@ interface HelpTopic {
   path: string;
   category: string;
   keywords: string[];
+  sidebarHidden?: boolean;
 }
 
 interface HelpCategory {
@@ -174,10 +175,13 @@ export function HelpDialog({
 
   if (!isOpen) return null;
 
-  // Group topics by category
+  // Group topics by category (hide sidebar-hidden topics unless searching)
+  const isSearching = searchQuery.trim().length > 0;
   const topicsByCategory = categories.map((cat) => ({
     ...cat,
-    topics: filteredTopics.filter((t) => t.category === cat.id),
+    topics: filteredTopics.filter((t) =>
+      t.category === cat.id && (isSearching || !t.sidebarHidden)
+    ),
   }));
 
   return (
