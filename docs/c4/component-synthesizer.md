@@ -42,8 +42,6 @@ flowchart TD
 | **Generation Gap** | Two-file pattern (ADR-006) | `generateWithGap()`, `generateBaseClassContent()`, `generateUserStubContent()` | ✅ | `src/services/synthesizer/generation-gap.ts` |
 | **Schema** | Type definitions, helpers | `GenerationResult`, `GeneratedComponent`, `GeneratedPort` | ✅ | `src/services/synthesizer/schema.ts` |
 
-> **Code Details**: See [L4 Code - Code Synthesizer](4-code-synthesizer.md) for interface definitions.
->
 > **Design Patterns**: See [ADR-006: Generation Gap Pattern](../adr/006-generation-gap-pattern.md) for the two-file generation approach.
 
 ## Design Decisions
@@ -55,3 +53,33 @@ flowchart TD
 | L1-only generation | Clear scope: L0 = types, L1 = implementations, L2+ = compositions |
 | Port-based methods | HDL-inspired: `onInput()` handlers, `emitOutput()` emitters |
 | Content hashing | SHA256 hash for change detection, avoid unnecessary rewrites |
+
+---
+
+## Code Details
+
+### Synthesizer Service API
+
+```typescript:include
+source: src/services/synthesizer/schema.ts
+exports: [ISynthesizerService]
+```
+
+### Generation Result Types
+
+```typescript:include
+source: src/services/synthesizer/schema.ts
+exports: [GenerationResult, GenerationBatchResult, PreviewResult, GeneratedComponent, GeneratedPort]
+```
+
+### TypeScript Backend API
+
+```typescript:include
+source: src/services/synthesizer/schema.ts
+exports: [TypeScriptBackend]
+```
+
+### Notes
+
+- **Source Files**: `src/services/synthesizer/index.ts`, `src/services/synthesizer/backends/typescript.ts`, `src/services/synthesizer/codegen.ts`, `src/services/synthesizer/generation-gap.ts`
+- **Design Patterns**: See [ADR-006: Generation Gap Pattern](../adr/006-generation-gap-pattern.md) for the two-file generation approach.

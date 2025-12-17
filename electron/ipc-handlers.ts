@@ -336,6 +336,17 @@ export function registerIpcHandlers(facade: ApiFacade): void {
     }
   );
 
+  ipcMain.handle('help:getTopicSubsections', async (_event, topicId: string) => {
+    try {
+      return { success: true, data: helpService.getTopicSubsections(topicId) };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: error instanceof Error ? error.message : String(error) },
+      };
+    }
+  });
+
   ipcMain.handle('help:getAppVersion', async () => {
     return { success: true, data: app.getVersion() };
   });

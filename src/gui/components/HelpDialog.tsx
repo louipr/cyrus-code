@@ -5,42 +5,56 @@
  * and mermaid diagram visualization.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { MermaidDiagram } from './MermaidDiagram';
-import { C4NavigationBar } from './C4NavigationBar';
+import type {
+  HelpTopic,
+  HelpCategory,
+  HelpGroup,
+  DocumentHeading,
+} from '../../services/help/schema';
 
-interface HelpTopic {
-  id: string;
-  title: string;
-  summary: string;
-  path: string;
-  category: string;
-  keywords: string[];
-  group?: string;
+/**
+ * Convert heading text to a slug for anchor links.
+ * "Code Details" → "code-details"
+ */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
-interface HelpCategory {
-  id: string;
-  label: string;
-  description: string;
+/**
+ * Heading node with children for hierarchical sidebar display.
+ * h2 headings become parent nodes, h3 headings become children.
+ */
+interface HeadingNode {
+  heading: DocumentHeading;
+  children: DocumentHeading[];
 }
 
-interface HelpGroup {
-  id: string;
-  label: string;
-  category: string;
-}
+/**
+ * Build a tree from flat headings array.
+ * h2 headings become parent nodes, h3 headings are nested under their parent h2.
+ */
+function buildHeadingTree(headings: DocumentHeading[]): HeadingNode[] {
+  const tree: HeadingNode[] = [];
+  let currentH2: HeadingNode | null = null;
 
-interface C4Hierarchy {
-  L1: string[];
-  L2: string[];
-  L3: string[];
-  L4: string[];
-  Dynamic: string[];
+  for (const heading of headings) {
+    if (heading.level === 2) {
+      currentH2 = { heading, children: [] };
+      tree.push(currentH2);
+    } else if (heading.level === 3 && currentH2) {
+      currentH2.children.push(heading);
+    }
+  }
+  return tree;
 }
 
 interface HelpDialogProps {
@@ -66,13 +80,16 @@ export function HelpDialog({
   const [categories, setCategories] = useState<HelpCategory[]>([]);
   const [groups, setGroups] = useState<HelpGroup[]>([]);
   const [topics, setTopics] = useState<HelpTopic[]>([]);
-  const [c4Hierarchy, setC4Hierarchy] = useState<C4Hierarchy | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [topicContent, setTopicContent] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState(initialSearch ?? '');
   const [filteredTopics, setFilteredTopics] = useState<HelpTopic[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedH2s, setExpandedH2s] = useState<Set<string>>(new Set());
+  const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
+  const [topicHeadings, setTopicHeadings] = useState<DocumentHeading[]>([]);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Load categories, groups, and topics on mount
   useEffect(() => {
@@ -80,11 +97,10 @@ export function HelpDialog({
 
     const loadData = async () => {
       try {
-        const [catResult, groupsResult, topicsResult, hierarchyResult] = await Promise.all([
+        const [catResult, groupsResult, topicsResult] = await Promise.all([
           window.cyrus.help.getCategories(),
           window.cyrus.help.getGroups(),
           window.cyrus.help.listTopics(),
-          window.cyrus.help.getC4Hierarchy(),
         ]);
 
         if (catResult.success && catResult.data) {
@@ -96,9 +112,6 @@ export function HelpDialog({
         if (topicsResult.success && topicsResult.data) {
           setTopics(topicsResult.data);
           setFilteredTopics(topicsResult.data);
-        }
-        if (hierarchyResult.success && hierarchyResult.data) {
-          setC4Hierarchy(hierarchyResult.data);
         }
       } catch (err) {
         console.error('Failed to load help data:', err);
@@ -122,23 +135,33 @@ export function HelpDialog({
     }
   }, [isOpen, initialSearch]);
 
-  // Load topic content when selected
+  // Load topic content and headings when selected
   useEffect(() => {
     if (!selectedTopic) {
       setTopicContent('');
+      setTopicHeadings([]);
       return;
     }
 
     const loadContent = async () => {
       setLoading(true);
       try {
-        const result = await window.cyrus.help.getTopicContent(selectedTopic, 'raw');
-        if (result.success && result.data) {
-          setTopicContent(result.data);
+        // Load content and headings in parallel
+        const [contentResult, headingsResult] = await Promise.all([
+          window.cyrus.help.getTopicContent(selectedTopic, 'raw'),
+          window.cyrus.help.getTopicSubsections(selectedTopic),
+        ]);
+
+        if (contentResult.success && contentResult.data) {
+          setTopicContent(contentResult.data);
+        }
+        if (headingsResult.success && headingsResult.data) {
+          setTopicHeadings(headingsResult.data);
         }
       } catch (err) {
         console.error('Failed to load topic content:', err);
         setTopicContent('# Error\n\nFailed to load topic content.');
+        setTopicHeadings([]);
       } finally {
         setLoading(false);
       }
@@ -168,6 +191,39 @@ export function HelpDialog({
     const debounce = setTimeout(search, 200);
     return () => clearTimeout(debounce);
   }, [searchQuery, topics]);
+
+  // Scroll to anchor after content loads
+  useEffect(() => {
+    if (!loading && pendingAnchor && contentRef.current) {
+      // Small delay to ensure DOM is updated after markdown render
+      const timer = setTimeout(() => {
+        const element = contentRef.current?.querySelector(`#${pendingAnchor}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setPendingAnchor(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, pendingAnchor, topicContent]);
+
+  // Handle topic selection with anchor support
+  const handleSelectTopic = useCallback((topicId: string) => {
+    const topic = topics.find(t => t.id === topicId);
+    setSelectedTopic(topicId);
+    if (topic?.anchor) {
+      setPendingAnchor(topic.anchor);
+    } else {
+      setPendingAnchor(null);
+      // Scroll to top when no anchor
+      contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [topics]);
+
+  // Handle clicking a subsection heading in the sidebar
+  const handleSubsectionClick = useCallback((anchor: string) => {
+    setPendingAnchor(anchor);
+  }, []);
 
   // Handle escape key
   const handleKeyDown = useCallback(
@@ -200,6 +256,22 @@ export function HelpDialog({
       return next;
     });
   };
+
+  // Toggle h2 heading expansion in sidebar
+  const toggleH2 = (anchor: string) => {
+    setExpandedH2s((prev) => {
+      const next = new Set(prev);
+      if (next.has(anchor)) {
+        next.delete(anchor);
+      } else {
+        next.add(anchor);
+      }
+      return next;
+    });
+  };
+
+  // Build heading tree from flat array
+  const headingTree = buildHeadingTree(topicHeadings);
 
   // Group topics by category, with collapsible groups
   const isSearching = searchQuery.trim().length > 0;
@@ -261,56 +333,183 @@ export function HelpDialog({
 
                       {/* Ungrouped topics */}
                       {cat.ungroupedTopics.map((topic) => (
-                        <button
-                          key={topic.id}
-                          data-testid={`help-topic-${topic.id}`}
-                          style={{
-                            ...styles.topicButton,
-                            ...(selectedTopic === topic.id ? styles.topicButtonActive : {}),
-                          }}
-                          onClick={() => setSelectedTopic(topic.id)}
-                        >
-                          <span style={styles.topicTitle}>{topic.title}</span>
-                        </button>
+                        <div key={topic.id}>
+                          <button
+                            data-testid={`help-topic-${topic.id}`}
+                            style={{
+                              ...styles.topicButton,
+                              ...(selectedTopic === topic.id ? styles.topicButtonActive : {}),
+                            }}
+                            onClick={() => handleSelectTopic(topic.id)}
+                          >
+                            <span style={styles.topicTitle}>{topic.title}</span>
+                          </button>
+                          {/* h2/h3 tree for selected topic */}
+                          {selectedTopic === topic.id && headingTree.length > 0 && (
+                            <div style={styles.subsectionList}>
+                              {headingTree.map((node) => (
+                                <div key={node.heading.anchor}>
+                                  <button
+                                    style={styles.h2ButtonNested}
+                                    onClick={() => {
+                                      handleSubsectionClick(node.heading.anchor);
+                                      toggleH2(node.heading.anchor);
+                                    }}
+                                  >
+                                    <span style={styles.h2Chevron}>
+                                      {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                    </span>
+                                    {node.heading.title}
+                                  </button>
+                                  {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
+                                    <div style={styles.h3ListNested}>
+                                      {node.children.map((h3) => (
+                                        <button
+                                          key={h3.anchor}
+                                          style={styles.h3ButtonNested}
+                                          onClick={() => handleSubsectionClick(h3.anchor)}
+                                        >
+                                          {h3.title}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
 
                       {/* Collapsible groups */}
-                      {cat.groups.map(
-                        (group) =>
-                          group.topics.length > 0 && (
-                            <div key={group.id} style={styles.groupContainer}>
-                              <button
-                                style={styles.groupHeader}
-                                onClick={() => toggleGroup(group.id)}
-                                data-testid={`help-group-${group.id}`}
-                              >
-                                <span style={styles.groupChevron}>
-                                  {expandedGroups.has(group.id) || isSearching ? '▼' : '▶'}
-                                </span>
-                                <span>{group.label}</span>
+                      {cat.groups.map((group) => {
+                        if (group.topics.length === 0) return null;
+
+                        const isSingleTopic = group.topics.length === 1;
+                        const singleTopic = isSingleTopic ? group.topics[0] : null;
+                        const isGroupSelected = singleTopic && selectedTopic === singleTopic.id;
+
+                        return (
+                          <div key={group.id} style={styles.groupContainer}>
+                            <button
+                              style={{
+                                ...styles.groupHeader,
+                                ...(isGroupSelected ? styles.groupHeaderActive : {}),
+                              }}
+                              onClick={() => {
+                                if (isSingleTopic && singleTopic) {
+                                  // Single topic: load document directly
+                                  handleSelectTopic(singleTopic.id);
+                                } else {
+                                  // Multi-topic: toggle expand
+                                  toggleGroup(group.id);
+                                }
+                              }}
+                              data-testid={`help-group-${group.id}`}
+                            >
+                              <span style={styles.groupChevron}>
+                                {isSingleTopic
+                                  ? (isGroupSelected ? '▼' : '▶')
+                                  : (expandedGroups.has(group.id) || isSearching ? '▼' : '▶')}
+                              </span>
+                              <span>{group.label}</span>
+                              {!isSingleTopic && (
                                 <span style={styles.groupCount}>({group.topics.length})</span>
-                              </button>
-                              {(expandedGroups.has(group.id) || isSearching) && (
-                                <div style={styles.groupTopics}>
-                                  {group.topics.map((topic) => (
+                              )}
+                            </button>
+
+                            {/* Single-topic: show h2/h3 tree directly under group */}
+                            {isSingleTopic && isGroupSelected && headingTree.length > 0 && (
+                              <div style={styles.groupTopics}>
+                                {headingTree.map((node) => (
+                                  <div key={node.heading.anchor}>
                                     <button
-                                      key={topic.id}
+                                      style={styles.h2Button}
+                                      onClick={() => {
+                                        handleSubsectionClick(node.heading.anchor);
+                                        toggleH2(node.heading.anchor);
+                                      }}
+                                    >
+                                      <span style={styles.h2Chevron}>
+                                        {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                      </span>
+                                      {node.heading.title}
+                                    </button>
+                                    {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
+                                      <div style={styles.h3List}>
+                                        {node.children.map((h3) => (
+                                          <button
+                                            key={h3.anchor}
+                                            style={styles.h3Button}
+                                            onClick={() => handleSubsectionClick(h3.anchor)}
+                                          >
+                                            {h3.title}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Multi-topic: show topics when expanded */}
+                            {!isSingleTopic && (expandedGroups.has(group.id) || isSearching) && (
+                              <div style={styles.groupTopics}>
+                                {group.topics.map((topic) => (
+                                  <div key={topic.id}>
+                                    <button
                                       data-testid={`help-topic-${topic.id}`}
                                       style={{
                                         ...styles.topicButton,
                                         ...styles.groupedTopicButton,
                                         ...(selectedTopic === topic.id ? styles.topicButtonActive : {}),
                                       }}
-                                      onClick={() => setSelectedTopic(topic.id)}
+                                      onClick={() => handleSelectTopic(topic.id)}
                                     >
                                       <span style={styles.topicTitle}>{topic.title}</span>
                                     </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )
-                      )}
+                                    {/* h2/h3 tree for selected topic in multi-topic group */}
+                                    {selectedTopic === topic.id && headingTree.length > 0 && (
+                                      <div style={styles.subsectionList}>
+                                        {headingTree.map((node) => (
+                                          <div key={node.heading.anchor}>
+                                            <button
+                                              style={styles.h2ButtonNested}
+                                              onClick={() => {
+                                                handleSubsectionClick(node.heading.anchor);
+                                                toggleH2(node.heading.anchor);
+                                              }}
+                                            >
+                                              <span style={styles.h2Chevron}>
+                                                {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                              </span>
+                                              {node.heading.title}
+                                            </button>
+                                            {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
+                                              <div style={styles.h3ListNested}>
+                                                {node.children.map((h3) => (
+                                                  <button
+                                                    key={h3.anchor}
+                                                    style={styles.h3ButtonNested}
+                                                    onClick={() => handleSubsectionClick(h3.anchor)}
+                                                  >
+                                                    {h3.title}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )
               )}
@@ -318,29 +517,11 @@ export function HelpDialog({
           </div>
 
           {/* Content */}
-          <div style={styles.content} data-testid="help-content">
+          <div ref={contentRef} style={styles.content} data-testid="help-content">
             {loading ? (
               <div style={styles.loading}>Loading...</div>
             ) : selectedTopic ? (
               <div style={styles.markdown}>
-                {/* C4 Navigation Bar - shown for C4 architecture topics */}
-                {c4Hierarchy && selectedTopic.startsWith('c4-') && (
-                  <>
-                    <C4NavigationBar
-                      currentTopic={selectedTopic}
-                      hierarchy={c4Hierarchy}
-                      topics={topics}
-                      onNavigate={setSelectedTopic}
-                    />
-                    <details style={styles.statusLegend}>
-                      <summary style={styles.legendSummary}>Implementation Status Legend</summary>
-                      <ul style={styles.legendList}>
-                        <li>✅ <strong>Implemented</strong> - Working in current codebase</li>
-                        <li>🔮 <strong>Planned</strong> - Defined in ADRs, not yet implemented</li>
-                      </ul>
-                    </details>
-                  </>
-                )}
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -360,8 +541,12 @@ export function HelpDialog({
                       );
                     },
                     h2({ children }) {
+                      // Generate ID from heading text for anchor navigation
+                      const text = typeof children === 'string' ? children :
+                        Array.isArray(children) ? children.join('') : '';
+                      const id = slugify(String(text));
                       return (
-                        <h2 style={{
+                        <h2 id={id} style={{
                           fontSize: '18px',
                           fontWeight: 600,
                           color: '#e6edf3',
@@ -718,6 +903,91 @@ const styles: Record<string, React.CSSProperties> = {
     paddingLeft: '24px',
     fontSize: '12px',
   },
+  subsectionList: {
+    marginLeft: '16px',
+    borderLeft: '1px solid #3c3c3c',
+    paddingLeft: '8px',
+    marginTop: '2px',
+    marginBottom: '4px',
+  },
+  subsectionButton: {
+    display: 'block',
+    width: '100%',
+    padding: '4px 8px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#888',
+    fontSize: '11px',
+  },
+  groupedSubsectionButton: {
+    paddingLeft: '16px',
+  },
+  groupHeaderActive: {
+    backgroundColor: '#37373d',
+    color: '#fff',
+  },
+  h2Button: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    width: '100%',
+    padding: '6px 16px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#ccc',
+    fontSize: '12px',
+  },
+  h2ButtonNested: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    width: '100%',
+    padding: '4px 8px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#aaa',
+    fontSize: '11px',
+  },
+  h2Chevron: {
+    fontSize: '8px',
+    width: '10px',
+  },
+  h3List: {
+    marginLeft: '20px',
+    borderLeft: '1px solid #3c3c3c',
+  },
+  h3ListNested: {
+    marginLeft: '16px',
+    borderLeft: '1px solid #3c3c3c',
+  },
+  h3Button: {
+    display: 'block',
+    width: '100%',
+    padding: '4px 12px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#888',
+    fontSize: '11px',
+  },
+  h3ButtonNested: {
+    display: 'block',
+    width: '100%',
+    padding: '3px 10px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#777',
+    fontSize: '10px',
+  },
   content: {
     flex: 1,
     overflow: 'auto',
@@ -801,25 +1071,6 @@ const styles: Record<string, React.CSSProperties> = {
   link: {
     color: '#58a6ff',
     textDecoration: 'none',
-  },
-  statusLegend: {
-    marginBottom: '16px',
-    padding: '8px 12px',
-    backgroundColor: '#161b22',
-    border: '1px solid #30363d',
-    borderRadius: '6px',
-    fontSize: '13px',
-    color: '#8b949e',
-  },
-  legendSummary: {
-    cursor: 'pointer',
-    fontWeight: 500,
-    color: '#c9d1d9',
-  },
-  legendList: {
-    margin: '8px 0 0 0',
-    paddingLeft: '20px',
-    listStyle: 'none',
   },
 };
 

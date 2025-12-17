@@ -42,6 +42,9 @@ export interface IHelpService {
   /** Get related topics for a given topic */
   getRelatedTopics(topicId: string): HelpTopic[];
 
+  /** Get h2 headings from a topic's markdown for sidebar navigation */
+  getTopicSubsections(topicId: string): DocumentHeading[];
+
   /** Format a topic list for terminal display */
   formatTopicList(topics: HelpTopic[]): string;
 
@@ -97,6 +100,8 @@ export interface HelpTopic {
   related?: string[];
   /** Group within category (optional, for collapsible sections) */
   group?: string;
+  /** Anchor within the document to scroll to (optional, e.g., "code-details") */
+  anchor?: string;
 }
 
 /**
@@ -109,8 +114,8 @@ export interface C4Hierarchy {
   L2: string[];
   /** L3 Component diagram topic IDs */
   L3: string[];
-  /** L4 Code diagram topic IDs */
-  L4: string[];
+  /** L4 Code diagram topic IDs (deprecated - merged into L3) */
+  L4?: string[];
   /** Dynamic flow diagram topic IDs */
   Dynamic: string[];
 }
@@ -145,4 +150,16 @@ export interface HelpSearchResult {
   score: number;
   /** Which fields matched */
   matchedFields: ('title' | 'summary' | 'keywords')[];
+}
+
+/**
+ * Document heading extracted from markdown for sidebar navigation.
+ */
+export interface DocumentHeading {
+  /** Heading text (e.g., "Code Details") */
+  title: string;
+  /** URL-safe anchor slug (e.g., "code-details") */
+  anchor: string;
+  /** Heading level: 2 for h2, 3 for h3 */
+  level: number;
 }

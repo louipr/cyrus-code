@@ -28,6 +28,13 @@ import type {
   PreviewResultDTO,
   RegisterSymbolRequest,
 } from '../api/types';
+import type {
+  HelpCategory,
+  HelpGroup,
+  HelpTopic,
+  HelpSearchResult,
+  C4Hierarchy,
+} from '../services/help/schema';
 
 /**
  * Type definition for the cyrus API exposed via preload script.
@@ -107,42 +114,6 @@ interface CyrusAPI {
     onTopic: (callback: (topicId: string) => void) => void;
     onAbout: (callback: () => void) => void;
   };
-}
-
-// Help types
-interface HelpCategory {
-  id: string;
-  label: string;
-  description: string;
-}
-
-interface HelpGroup {
-  id: string;
-  label: string;
-  category: string;
-}
-
-interface HelpTopic {
-  id: string;
-  title: string;
-  summary: string;
-  path: string;
-  category: string;
-  keywords: string[];
-  related?: string[];
-}
-
-interface HelpSearchResult {
-  topic: HelpTopic;
-  score: number;
-  matchedFields: string[];
-}
-
-interface C4Hierarchy {
-  L1: string[];
-  L2: string[];
-  L3: string[];
-  Dynamic: string[];
 }
 
 declare global {

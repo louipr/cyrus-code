@@ -318,6 +318,34 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] C4NavigationBar component in GUI (DRY: navigation moved from markdown to GUI)
 - [x] Status legend as collapsible GUI element (DRY: removed from 9 markdown files)
 
+### Type Consolidation (Phase 8)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.27 | Consolidate Help types using `import type` | `electron/preload.ts`, `src/gui/api-client.ts` | ✅ |
+| D.28 | Remove duplicate type definitions from GUI components | `src/gui/components/HelpDialog.tsx`, `C4NavigationBar.tsx` | ✅ |
+| D.29 | Fix missing L4 in C4Hierarchy (api-client.ts) | `src/gui/api-client.ts` | ✅ |
+| D.30 | Remove unused `topics` prop from C4NavigationBar | `src/gui/components/C4NavigationBar.tsx`, `HelpDialog.tsx` | ✅ |
+
+**Impact**: ~113 lines of duplicate code removed. Single source of truth: `src/services/help/schema.ts`
+
+**Key insight**: `import type` works across Electron main/renderer boundary because it's erased at compile time (no runtime code).
+
+### L4 Merge into L3 (Phase 9)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.31 | Merge L4 Code into L3 Component docs | `docs/c4/3-component-*.md` (7 files) | ✅ |
+| D.32 | Delete L4 Code markdown files | `docs/c4/4-code-*.md` (7 files deleted) | ✅ |
+| D.33 | Delete L4 E2E tests | `tests/e2e/l4-code.spec.ts` (deleted) | ✅ |
+| D.34 | Remove L4 topics from help.json | `docs/help.json` | ✅ |
+| D.35 | Remove L4 dropdown from C4NavigationBar | `src/gui/components/C4NavigationBar.tsx` | ✅ |
+| D.36 | Deprecate L4 in C4Hierarchy interface | `src/services/help/schema.ts` | ✅ |
+
+**Impact**: 7 fewer docs, 7 fewer help.json entries, L4 dropdown removed, E2E tests reduced 20 → 17 (3 L4 tests removed).
+
+**Rationale**: `typescript:include` makes L4 content dynamic (not duplicated prose). Merging into L3 as `## Code Details` section provides single doc per component.
+
 ---
 
 ## Slice 4: Analysis + Dead Code (Phase A)

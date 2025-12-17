@@ -16,9 +16,11 @@ import {
   HelpSearchResult,
   HelpOutputFormat,
   C4Hierarchy,
+  DocumentHeading,
 } from './schema.js';
 import { renderMarkdownForTerminal } from './renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
+import { extractHeadings } from './headings.js';
 
 /**
  * Help Service - loads and serves help content from the manifest.
@@ -210,6 +212,24 @@ export class HelpService implements IHelpService {
   }
 
   /**
+   * Get h2 headings from a topic's markdown for sidebar navigation.
+   */
+  getTopicSubsections(topicId: string): DocumentHeading[] {
+    const topic = this.getTopic(topicId);
+    if (!topic) {
+      return [];
+    }
+
+    const filePath = path.join(this.projectRoot, topic.path);
+    if (!fs.existsSync(filePath)) {
+      return [];
+    }
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return extractHeadings(content);
+  }
+
+  /**
    * Format a topic list for terminal display.
    */
   formatTopicList(topics: HelpTopic[]): string {
@@ -272,3 +292,4 @@ export * from './schema.js';
 export { renderMarkdownForTerminal } from './renderer.js';
 export { TypeScriptExtractor, ExtractedCode } from './extractor.js';
 export { MarkdownPreprocessor, IncludeDirective } from './preprocessor.js';
+export { extractHeadings, slugify } from './headings.js';

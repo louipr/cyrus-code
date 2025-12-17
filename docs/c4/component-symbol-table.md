@@ -49,8 +49,6 @@ flowchart TD
 | **Status Tracker** | Usage tracking | `updateStatus()`, `findUnreachable()`, `findUntested()` | ✅ | Integrated in Symbol Store |
 | **Persistence Layer** | Database I/O | `load()`, `save()`, `transaction()` | ✅ | `src/repositories/persistence.ts` |
 
-> **Code Details**: See [L4 Code - Symbol Table](4-code-symbol-table.md) for interface definitions.
->
 > **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) for complete pattern documentation.
 >
 > **Note**: Some components shown as separate in the diagram are integrated into a single implementation for simplicity. The conceptual separation remains valid for understanding responsibilities.
@@ -63,3 +61,26 @@ flowchart TD
 | Separate Query Engine | Complex queries isolated from CRUD |
 | Status Tracker as component | ADR-005 dead code detection integrated |
 | Connection validation delegated | Interface Validator owns type checking |
+
+---
+
+## Code Details
+
+### Symbol Store API
+
+```typescript:include
+source: src/services/symbol-table/schema.ts
+exports: [ISymbolStore]
+```
+
+### Core Types
+
+```typescript:include
+source: src/services/symbol-table/schema.ts
+exports: [ComponentSymbol, Connection, ValidationResult]
+```
+
+### Notes
+
+- **Type Definitions**: See [Symbol Table Schema](../spec/symbol-table-schema.md) for complete type definitions.
+- **Source Files**: `src/services/symbol-table/store.ts`, `src/services/symbol-table/schema.ts`

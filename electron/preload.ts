@@ -32,6 +32,14 @@ import type {
   PreviewResultDTO,
   RegisterSymbolRequest,
 } from '../src/api/types.js';
+import type {
+  HelpCategory,
+  HelpGroup,
+  HelpTopic,
+  HelpSearchResult,
+  C4Hierarchy,
+  DocumentHeading,
+} from '../src/services/help/schema.js';
 
 // Type definitions for the exposed API
 export interface CyrusAPI {
@@ -104,50 +112,13 @@ export interface CyrusAPI {
     getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
     search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
     getTopicContent: (topicId: string, format?: 'raw' | 'html') => Promise<ApiResponse<string>>;
+    getTopicSubsections: (topicId: string) => Promise<ApiResponse<DocumentHeading[]>>;
     getAppVersion: () => Promise<ApiResponse<string>>;
     onOpen: (callback: () => void) => void;
     onSearch: (callback: () => void) => void;
     onTopic: (callback: (topicId: string) => void) => void;
     onAbout: (callback: () => void) => void;
   };
-}
-
-// Help types (from services/help/schema)
-interface HelpCategory {
-  id: string;
-  label: string;
-  description: string;
-}
-
-interface HelpGroup {
-  id: string;
-  label: string;
-  category: string;
-}
-
-interface HelpTopic {
-  id: string;
-  title: string;
-  summary: string;
-  path: string;
-  category: string;
-  keywords: string[];
-  related?: string[];
-  group?: string;
-}
-
-interface HelpSearchResult {
-  topic: HelpTopic;
-  score: number;
-  matchedFields: string[];
-}
-
-interface C4Hierarchy {
-  L1: string[];
-  L2: string[];
-  L3: string[];
-  L4: string[];
-  Dynamic: string[];
 }
 
 // Expose the API to the renderer
@@ -217,6 +188,7 @@ const cyrusAPI: CyrusAPI = {
     search: (query) => ipcRenderer.invoke('help:search', query),
     getTopicContent: (topicId, format = 'raw') =>
       ipcRenderer.invoke('help:getTopicContent', topicId, format),
+    getTopicSubsections: (topicId) => ipcRenderer.invoke('help:getTopicSubsections', topicId),
     getAppVersion: () => ipcRenderer.invoke('help:getAppVersion'),
     // Event listeners for menu actions
     onOpen: (callback) => {

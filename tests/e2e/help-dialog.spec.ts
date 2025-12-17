@@ -14,25 +14,33 @@ import { selectors } from './helpers/selectors';
 let context: AppContext;
 
 /**
- * Helper to expand a sidebar group if the topic isn't already visible.
- * This handles the toggle behavior - if group is already expanded,
- * clicking it again would collapse it.
+ * Helper to expand a sidebar group and click a topic.
+ * Handles both single-topic groups (where clicking group header loads document)
+ * and multi-topic groups (where clicking group expands to show topics).
  */
 async function expandGroupAndClickTopic(page: Page, groupId: string, topicId: string) {
   const topicSelector = `[data-testid="help-topic-${topicId}"]`;
   const groupSelector = `[data-testid="help-group-${groupId}"]`;
 
-  // Check if topic is already visible (group already expanded)
+  // Check if topic button is already visible (multi-topic group already expanded)
   const topicVisible = await page.locator(topicSelector).isVisible();
 
-  if (!topicVisible) {
-    // Expand the group
+  if (topicVisible) {
+    // Multi-topic group, topic button is visible - click it
+    await page.click(topicSelector);
+  } else {
+    // Click the group header
     await page.click(groupSelector);
-    await page.waitForSelector(topicSelector, { timeout: 5000 });
-  }
 
-  // Click the topic
-  await page.click(topicSelector);
+    // Check if topic button appears (multi-topic group) or if document loads directly (single-topic group)
+    const topicAppearsAfterClick = await page.locator(topicSelector).isVisible({ timeout: 500 }).catch(() => false);
+
+    if (topicAppearsAfterClick) {
+      // Multi-topic group - click the topic button
+      await page.click(topicSelector);
+    }
+    // For single-topic groups, clicking group header already loaded the document
+  }
 }
 
 test.beforeAll(async () => {
@@ -194,15 +202,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Synthesizer$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'synthesizer', 'c4-component-synthesizer');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -228,15 +229,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Help$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'help-service', 'c4-component-help');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -262,15 +256,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Wiring$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'wiring', 'c4-component-wiring');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -296,15 +283,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Validator$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'validator', 'c4-component-validator');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -330,15 +310,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Registry$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'registry', 'c4-component-registry');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -364,15 +337,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via L3 dropdown - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("L3: Component")').click();
-    await page.waitForTimeout(300);
-    await helpContent.locator('button', { hasText: /^Facade$/ }).click();
+    // Navigate via sidebar
+    await expandGroupAndClickTopic(page, 'facade', 'c4-component-facade');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -398,13 +364,8 @@ test.describe('Help Dialog', () => {
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate via main nav button (not L3 dropdown) - first open a C4 doc
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    const helpContent = page.locator('[data-testid="help-content"]');
-    await helpContent.locator('button:has-text("Dynamic")').click();
+    // Navigate via sidebar (c4-dynamic is in c4-overview group)
+    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-dynamic');
 
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
@@ -422,52 +383,6 @@ test.describe('Help Dialog', () => {
     expect(box!.width).toBeGreaterThan(100);
     expect(box!.height).toBeGreaterThan(100);
 
-    await page.keyboard.press('Escape');
-  });
-
-  test('C4 navigation bar appears and works', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Click on a C4 topic (L2 Container)
-    await expandGroupAndClickTopic(page, 'c4-overview', 'c4-container');
-
-    // Wait for content to load
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(1000);
-
-    // Scope to help content area (not sidebar) for navigation bar checks
-    const helpContent = page.locator('[data-testid="help-content"]');
-
-    // Verify C4 navigation bar is visible with expected tabs
-    const navBar = helpContent.locator('button:has-text("L1: Context")');
-    await expect(navBar).toBeVisible({ timeout: 5000 });
-
-    // Verify all level tabs are present (scoped to help content)
-    await expect(helpContent.locator('button:has-text("L2: Container")')).toBeVisible();
-    await expect(helpContent.locator('button:has-text("L3: Component")')).toBeVisible();
-    await expect(helpContent.locator('button:has-text("Dynamic")')).toBeVisible();
-
-    // Verify status legend is present (collapsible details element)
-    const legend = helpContent.locator('summary:has-text("Implementation Status Legend")');
-    await expect(legend).toBeVisible();
-
-    // Click L1 to navigate to Context diagram
-    await helpContent.locator('button:has-text("L1: Context")').click();
-    await page.waitForTimeout(500);
-
-    // Verify we navigated (should now show Context Diagram content)
-    await expect(helpContent.locator('h1:has-text("Context Diagram")')).toBeVisible({ timeout: 5000 });
-
-    // Capture screenshot of help dialog showing navigation bar
-    await helpContent.screenshot({
-      path: '/tmp/cyrus-code/screenshots/c4-navigation-bar.png',
-    });
-
-    // Close the dialog
     await page.keyboard.press('Escape');
   });
 });

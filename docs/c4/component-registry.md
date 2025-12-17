@@ -1,12 +1,55 @@
-# C4 Code - Component Registry
+# C4 Component Diagram - Component Registry
 
 ## Overview
 
-Code-level interface definitions and version resolution algorithms for the Component Registry container.
+Internal structure of the Component Registry container, showing its components and their relationships.
 
-> **Note**: C4 Level 4 (Code) documents implementation details. For architectural structure, see [L3 Component - Component Registry](3-component-registry.md).
+## Component Diagram
 
-## Interfaces
+```mermaid
+flowchart TD
+    subgraph registry ["Component Registry"]
+        service["ComponentRegistry<br/><small>TypeScript</small>"]
+        version["Version Resolver<br/><small>TypeScript</small>"]
+    end
+
+    service -->|"resolve"| version
+    service -->|"wrap"| st["Symbol Table<br/>(SymbolStore)"]
+    version -->|"use"| semver["SemVer Utils"]
+
+    api["API Facade"] -->|"call"| service
+    cli["CLI"] -->|"call"| service
+
+    classDef component fill:#1168bd,color:#fff
+    classDef external fill:#999,color:#fff
+
+    class service,version component
+    class st,semver,api,cli external
+```
+
+## Components
+
+| Component | Responsibility | Key Operations | Status | Notes |
+|-----------|----------------|----------------|--------|-------|
+| **ComponentRegistry** | High-level CRUD, query, version resolution | `register()`, `resolve()`, `query()`, `getVersions()` | ✅ | `src/services/registry/index.ts` |
+| **Version Resolver** | SemVer constraint parsing and matching | `parseConstraint()`, `satisfies()`, `findBestMatch()`, `bumpVersion()` | ✅ | `src/services/registry/version.ts` |
+
+> **Design Patterns**: See [ADR-001: Symbol Table Architecture](../adr/001-symbol-table-architecture.md) for registry concepts.
+
+## Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Wrap SymbolStore | Registry adds version resolution, query logic on top of raw store |
+| npm-style constraints | Familiar to JavaScript developers, well-defined semantics |
+| Highest match wins | `findBestMatch` returns newest compatible version (like npm) |
+| Caret default | `^1.2.3` allows minor updates, balances stability and updates |
+| Filter chaining | Query applies filters in order, intersecting results |
+| Reset status on bump | New version starts as `declared`, must be re-verified |
+
+---
+
+## Code Details
 
 ### ComponentRegistry API
 
@@ -29,9 +72,9 @@ source: src/services/symbol-table/schema.ts
 exports: [SemVer, VersionRange]
 ```
 
-## Algorithms
+### Algorithms
 
-### Version Constraint Parsing
+#### Version Constraint Parsing
 
 Parses npm-style version constraints into `VersionRange`:
 
@@ -85,7 +128,7 @@ function parseConstraint(constraint):
     throw "Unknown constraint format"
 ```
 
-### Satisfies Check
+#### Satisfies Check
 
 ```
 function satisfies(version, range):
@@ -106,7 +149,7 @@ function satisfies(version, range):
     return true
 ```
 
-### Find Best Match
+#### Find Best Match
 
 ```
 function findBestMatch(versions, constraint):
@@ -120,7 +163,7 @@ function findBestMatch(versions, constraint):
     return matching[0]  // Return highest matching version
 ```
 
-### Version Comparison
+#### Version Comparison
 
 ```
 function compareSemVer(a, b):
@@ -130,7 +173,7 @@ function compareSemVer(a, b):
     // Note: prerelease comparison not shown for brevity
 ```
 
-### Version Bump
+#### Version Bump
 
 ```
 function bumpVersion(version, type):
@@ -140,7 +183,7 @@ function bumpVersion(version, type):
         case 'patch': return { major: version.major, minor: version.minor, patch: version.patch + 1 }
 ```
 
-## Notes
+### Notes
 
 - **Source Files**: `src/services/registry/index.ts`, `src/services/registry/version.ts`
 - **Design Patterns**: See [ADR-001: Symbol Table Architecture](../adr/001-symbol-table-architecture.md) for registry concepts.
