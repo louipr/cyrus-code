@@ -270,8 +270,8 @@ export function HelpDialog({
     });
   };
 
-  // Build heading tree from flat array
-  const headingTree = buildHeadingTree(topicHeadings);
+  // Build heading tree from flat array, filtering to only h2s with h3 children
+  const headingTree = buildHeadingTree(topicHeadings).filter(node => node.children.length > 0);
 
   // Group topics by category, with collapsible groups
   const isSearching = searchQuery.trim().length > 0;
