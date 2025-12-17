@@ -240,7 +240,7 @@ function wouldCreateCycle(graph, fromSymbolId, toSymbolId):
 
 ## Data Flow
 
-> **Scope**: These sequence diagrams show **internal component interactions** within the Wiring container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+> **Scope**: These sequence diagrams show **internal component interactions** within the Wiring container (L3). For container-to-container flows, see [Dynamic Diagram](4-dynamic.md).
 
 ### Connect Ports
 

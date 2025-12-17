@@ -253,6 +253,16 @@ C4Dynamic
 
 ---
 
+## Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Validate before generate | Fail fast - don't generate invalid code |
+| Error handling tables per flow | Clear documentation of failure modes |
+| Mark planned flows with 🔮 | Distinguish implemented vs roadmap |
+
+---
+
 ## Legend
 
 | Element | Notation | Description |

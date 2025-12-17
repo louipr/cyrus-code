@@ -145,8 +145,8 @@ test.describe('Help Dialog', () => {
     // Give mermaid time to fully render SVG (C4Component DSL may need more time)
     await page.waitForTimeout(2000);
 
-    // Scroll the mermaid diagram into view
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    // Scroll the mermaid diagram into view (use .first() since page has multiple diagrams)
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
 
@@ -185,7 +185,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-synthesizer-diagram.png',
@@ -219,7 +219,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-help-diagram.png',
@@ -253,7 +253,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-wiring-diagram.png',
@@ -287,7 +287,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-validator-diagram.png',
@@ -321,7 +321,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-registry-diagram.png',
@@ -355,7 +355,7 @@ test.describe('Help Dialog', () => {
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
-    const diagramSvg = page.locator('.mermaid-diagram svg');
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
     await diagramSvg.scrollIntoViewIfNeeded();
     await diagramSvg.screenshot({
       path: '/tmp/cyrus-code/screenshots/c4-l3-facade-diagram.png',

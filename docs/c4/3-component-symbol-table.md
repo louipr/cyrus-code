@@ -95,7 +95,7 @@ interface ConnectionManager {
 
 ## Data Flow
 
-> **Scope**: These sequence diagrams show **internal component interactions** within the Symbol Table container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+> **Scope**: These sequence diagrams show **internal component interactions** within the Symbol Table container (L3). For container-to-container flows, see [Dynamic Diagram](4-dynamic.md).
 
 ### Register Symbol
 

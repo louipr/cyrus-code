@@ -93,7 +93,7 @@ interface TypeScriptBackend {
 
 ## Data Flow
 
-> **Scope**: These sequence diagrams show **internal component interactions** within the Code Synthesizer container (L3). For container-to-container flows, see [Dynamic Diagram](dynamic.md).
+> **Scope**: These sequence diagrams show **internal component interactions** within the Code Synthesizer container (L3). For container-to-container flows, see [Dynamic Diagram](4-dynamic.md).
 
 ### Generate Symbol
 

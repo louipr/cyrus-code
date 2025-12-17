@@ -2,10 +2,7 @@
 
 ## Overview
 
-System context showing cyrus-code's external actors and dependencies.
-
-**Scope**: Who uses the system and what external systems it integrates with.
-This is the highest-level view—internal architecture is in [Level 2](2-container.md).
+System context showing cyrus-code's external actors and dependencies. This is the highest-level view—internal architecture is in [Level 2](2-container.md).
 
 ## Context Diagram
 
@@ -53,3 +50,10 @@ Both actors perform the same operations: `register`, `list`, `wire`, `validate`,
 | **File System** | Source and output storage | Parse existing code, write generated TypeScript files |
 
 > **Note**: Package Registry integration (npm, PyPI, crates.io) is planned for future releases.
+
+## Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Separate Developer and AI actors | Different interaction patterns (visual vs CLI-only) |
+| File System as only external system | Keeps L1 focused; package registries are future scope |

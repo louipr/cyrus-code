@@ -79,7 +79,7 @@ flowchart TB
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
 | **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |
-| **Wiring** | TypeScript | Connection management and graph operations | ✅ |
+| **Wiring Service** | TypeScript | Connection management and graph operations | ✅ |
 | **Code Synthesizer** | ts-morph | AST-based code generation | ✅ |
 
 ### Analysis Services (ADR-005, ADR-006)
@@ -107,3 +107,11 @@ flowchart TB
 | **Component Store** | File System | Component source and interface files | ✅ |
 
 > **Technology Decisions**: See [ADR index](../adr/) for detailed rationale on SQLite, ts-morph, Zod, Electron, and other technology choices.
+
+## Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| API Facade as single entry point | Unified interface for CLI and GUI |
+| Help Service bypasses API Facade | Documentation separate from symbol table domain |
+| SQLite for persistence | Embedded, no server required, portable |

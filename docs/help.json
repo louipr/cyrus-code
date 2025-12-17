@@ -145,7 +145,7 @@
       "id": "c4-dynamic",
       "title": "C4 Dynamic Flows",
       "summary": "Runtime behavior showing container collaboration for key use cases",
-      "path": "docs/c4/dynamic.md",
+      "path": "docs/c4/4-dynamic.md",
       "category": "architecture",
       "keywords": ["C4", "dynamic", "flow", "sequence", "runtime", "register", "validate", "generate"]
     },
