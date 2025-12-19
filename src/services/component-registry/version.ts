@@ -8,7 +8,6 @@ import {
   type SemVer,
   type VersionRange,
   parseSemVer,
-  formatSemVer,
   compareSemVer,
 } from '../symbol-table/schema.js';
 
@@ -231,6 +230,3 @@ export function sortVersionsDesc(versions: SemVer[]): SemVer[] {
 export function sortVersionsAsc(versions: SemVer[]): SemVer[] {
   return [...versions].sort((a, b) => compareSemVer(a, b));
 }
-
-// Re-export from schema for convenience
-export { parseSemVer, formatSemVer, compareSemVer };

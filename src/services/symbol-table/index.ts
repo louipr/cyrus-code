@@ -5,21 +5,40 @@
  * Provides the low-level CRUD operations and persistence layer.
  *
  * For higher-level operations (version resolution, queries), use component-registry.
- */
-
-import type { DatabaseType } from '../../repositories/persistence.js';
-import { SymbolStore } from './store.js';
-
-/**
- * Factory function for creating SymbolStore instances.
- * Preferred over direct instantiation for dependency injection support.
  *
- * @param database - Database instance for persistence
- * @returns SymbolStore instance
+ * For internal types (Zod schemas, helper functions), import directly:
+ *   - ./schema.js - All Zod schemas and helper functions
+ *   - ./store.js - SymbolStore implementation
+ *   - ./query-service.js - SymbolQueryService implementation
  */
-export function createSymbolStore(database: DatabaseType): SymbolStore {
-  return new SymbolStore(database);
-}
 
-export * from './schema.js';
-export * from './store.js';
+// Service (primary API)
+export { SymbolStore } from './store.js';
+
+// Commonly used types
+export type {
+  ComponentSymbol,
+  PortDefinition,
+  TypeReference,
+  Connection,
+  ValidationResult,
+  ValidationError,
+  AbstractionLevel,
+  ComponentKind,
+  Language,
+  SemVer,
+  SymbolStatus,
+  SymbolOrigin,
+  StatusInfo,
+  PortDirection,
+  SourceLocation,
+} from './schema.js';
+
+// Commonly used utilities
+export {
+  createValidationResult,
+  formatSemVer,
+  parseSemVer,
+  compareSemVer,
+  buildSymbolId,
+} from './schema.js';

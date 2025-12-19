@@ -117,8 +117,6 @@ export interface C4Hierarchy {
   L2: string[];
   /** L3 Component diagram topic IDs */
   L3: string[];
-  /** L4 Code diagram topic IDs (deprecated - merged into L3) */
-  L4?: string[];
   /** Dynamic flow diagram topic IDs */
   Dynamic: string[];
 }

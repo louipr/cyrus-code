@@ -19,9 +19,6 @@ import { PendingWire } from './PendingWire';
 import { PortTooltip } from './PortTooltip';
 import { LEVEL_COLORS } from '../constants/colors';
 
-// Re-export for backwards compatibility
-export { LEVEL_COLORS } from '../constants/colors';
-
 const NODE_WIDTH = 200;
 const NODE_HEIGHT = 100;
 const LEVEL_GAP_X = 280;

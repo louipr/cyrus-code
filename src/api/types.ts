@@ -16,17 +16,7 @@ import type {
   SymbolStatus,
   SymbolOrigin,
   PortDirection,
-} from '../services/symbol-table/schema.js';
-
-// Re-export enums for convenience
-export type {
-  AbstractionLevel,
-  ComponentKind,
-  Language,
-  SymbolStatus,
-  SymbolOrigin,
-  PortDirection,
-};
+} from '../services/symbol-table/index.js';
 
 // ============================================================================
 // DTO Types (JSON-serializable versions)

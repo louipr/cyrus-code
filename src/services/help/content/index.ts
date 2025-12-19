@@ -1,24 +1,26 @@
 /**
  * Help Content Module
  *
- * Re-exports all content-related components:
- * - Types (schema)
- * - Data access (repository)
- * - Formatting (formatter, terminal-renderer)
- * - Processing (preprocessor, headings, typescript-extractor)
+ * Provides access to help system types and utilities.
+ *
+ * For internal implementations, import directly from submodules:
+ *   - ./repository.js - HelpRepository data access
+ *   - ./formatter.js - HelpFormatter terminal formatting
+ *   - ./preprocessor.js - MarkdownPreprocessor
+ *   - ./typescript-extractor.js - TypeScriptExtractor
  */
 
-// Types
-export * from './schema.js';
+// Commonly used types
+export type {
+  HelpTopic,
+  HelpCategory,
+  HelpGroup,
+  HelpSearchResult,
+  HelpOutputFormat,
+  C4Hierarchy,
+  DocumentHeading,
+} from './schema.js';
 
-// Data access
-export { HelpRepository } from './repository.js';
-
-// Formatting
-export { HelpFormatter } from './formatter.js';
-export { renderMarkdownForTerminal } from './terminal-renderer.js';
-
-// Processing
-export { MarkdownPreprocessor } from './preprocessor.js';
-export { extractHeadings, slugify } from './headings.js';
+// Commonly used utilities
+export { slugify } from './headings.js';
 export { TypeScriptExtractor, type ExtractedCode } from './typescript-extractor.js';

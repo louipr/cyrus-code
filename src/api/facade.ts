@@ -60,7 +60,7 @@ import type {
   Connection,
   ValidationResult,
   PortDefinition,
-} from '../services/symbol-table/schema.js';
+} from '../services/symbol-table/index.js';
 
 // ============================================================================
 // Facade Class

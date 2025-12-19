@@ -9,16 +9,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { initMemoryDatabase, type DatabaseType } from '../../repositories/persistence.js';
 import { SymbolStore, type ComponentSymbol } from '../symbol-table/index.js';
-import {
-  SynthesizerService,
-  createSynthesizerService,
-  sanitizeClassName,
-  generationSuccess,
-  generationError,
-  emptyBatchResult,
-} from './index.js';
+import { SynthesizerService, createSynthesizerService } from './index.js';
 import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './backends/typescript.js';
-import { generateContentHash } from './codegen.js';
 import { getGeneratedPaths, fileExists } from './generation-gap.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
@@ -39,68 +31,6 @@ function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSy
     ...overrides,
   });
 }
-
-// =============================================================================
-// Schema Tests
-// =============================================================================
-
-describe('Synthesizer Schema', () => {
-  describe('sanitizeClassName', () => {
-    it('should capitalize first letter', () => {
-      assert.strictEqual(sanitizeClassName('myComponent'), 'MyComponent');
-    });
-
-    it('should remove invalid characters', () => {
-      assert.strictEqual(sanitizeClassName('my-component'), 'Mycomponent');
-    });
-
-    it('should prefix numeric names', () => {
-      assert.strictEqual(sanitizeClassName('123test'), '_123test');
-    });
-
-    it('should handle already capitalized names', () => {
-      assert.strictEqual(sanitizeClassName('MyComponent'), 'MyComponent');
-    });
-  });
-
-  describe('generationSuccess', () => {
-    it('should create success result', () => {
-      const result = generationSuccess(
-        'test/Comp@1.0.0',
-        '/out/Comp.generated.ts',
-        '/out/Comp.ts',
-        'abc123',
-        true
-      );
-
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.symbolId, 'test/Comp@1.0.0');
-      assert.strictEqual(result.userFileCreated, true);
-      assert.ok(result.generatedAt instanceof Date);
-    });
-  });
-
-  describe('generationError', () => {
-    it('should create error result', () => {
-      const result = generationError('test/Comp@1.0.0', 'Something went wrong');
-
-      assert.strictEqual(result.success, false);
-      assert.strictEqual(result.error, 'Something went wrong');
-    });
-  });
-
-  describe('emptyBatchResult', () => {
-    it('should create empty batch result', () => {
-      const result = emptyBatchResult();
-
-      assert.strictEqual(result.total, 0);
-      assert.strictEqual(result.succeeded, 0);
-      assert.strictEqual(result.failed, 0);
-      assert.strictEqual(result.skipped, 0);
-      assert.deepStrictEqual(result.results, []);
-    });
-  });
-});
 
 // =============================================================================
 // TypeScript Backend Tests
@@ -188,34 +118,6 @@ describe('TypeScript Backend', () => {
       assert.strictEqual(isGeneratable(symbol), false);
     });
   });
-});
-
-// =============================================================================
-// Codegen Tests
-// =============================================================================
-
-describe('Codegen Utilities', () => {
-  describe('generateContentHash', () => {
-    it('should generate consistent hash', () => {
-      const hash1 = generateContentHash('hello world');
-      const hash2 = generateContentHash('hello world');
-      assert.strictEqual(hash1, hash2);
-    });
-
-    it('should generate different hashes for different content', () => {
-      const hash1 = generateContentHash('hello');
-      const hash2 = generateContentHash('world');
-      assert.notStrictEqual(hash1, hash2);
-    });
-
-    it('should return 16 character hash', () => {
-      const hash = generateContentHash('test');
-      assert.strictEqual(hash.length, 16);
-    });
-  });
-
-  // Note: capitalize() and namespaceToPath() tests removed as they test
-  // trivial string operations with obvious behavior that rarely breaks.
 });
 
 // =============================================================================

@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import type { GraphNodeDTO, ComponentSymbolDTO } from '../../api/types';
-import { LEVEL_COLORS } from './Canvas';
+import { LEVEL_COLORS } from '../constants/colors';
 import { PortHandle } from './PortHandle';
 
 interface CanvasNodeProps {
