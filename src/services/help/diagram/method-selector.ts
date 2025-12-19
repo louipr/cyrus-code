@@ -5,7 +5,7 @@
  * Implements the "tell the story" principle from C4 model.
  */
 
-import { MethodInfo } from '../schema.js';
+import { MethodInfo } from './schema.js';
 
 /**
  * Strategy for method selection.

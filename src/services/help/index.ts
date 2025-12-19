@@ -21,11 +21,11 @@ import {
   HelpOutputFormat,
   C4Hierarchy,
   DocumentHeading,
-} from './schema.js';
-import { renderMarkdownForTerminal } from './terminal-renderer.js';
-import { MarkdownPreprocessor } from './preprocessor.js';
-import { HelpRepository } from './repository.js';
-import { HelpFormatter } from './formatter.js';
+  renderMarkdownForTerminal,
+  MarkdownPreprocessor,
+  HelpRepository,
+  HelpFormatter,
+} from './content/index.js';
 
 /**
  * Help Service - orchestrates help content access and formatting.
@@ -221,4 +221,4 @@ export function createHelpService(projectRoot?: string): HelpService {
 }
 
 // Re-export public types (used by electron/preload.ts and GUI)
-export * from './schema.js';
+export * from './content/index.js';

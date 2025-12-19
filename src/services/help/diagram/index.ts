@@ -21,23 +21,23 @@ import {
   C4Diagram,
   applyDefaults,
 } from './schema.js';
-import { InterfaceExtractor } from './extractor/interface-extractor.js';
-import { TypeExtractor } from './extractor/type-extractor.js';
-import { RelationshipExtractor } from './extractor/relationship-extractor.js';
-import { ClassDiagramBuilder } from './builder/class-diagram-builder.js';
-import { MermaidRenderer } from './renderer/mermaid-renderer.js';
-import { DiagramRenderer, rendererRegistry } from './renderer/diagram-renderer.js';
-import { TypeSimplifier } from './simplifier/type-simplifier.js';
+import { InterfaceExtractor } from './interface-extractor.js';
+import { TypeExtractor } from './type-extractor.js';
+import { RelationshipExtractor } from './relationship-extractor.js';
+import { ClassDiagramBuilder } from './class-diagram-builder.js';
+import { MermaidRenderer } from './mermaid-renderer.js';
+import { DiagramRenderer, rendererRegistry } from './diagram-renderer.js';
+import { TypeSimplifier } from './type-simplifier.js';
 
 // Re-export public types and utilities
 // Note: extractors NOT exported (internal implementation detail)
 export * from './schema.js';
-export * from './builder/class-diagram-builder.js';
-export * from './builder/method-selector.js';
-export * from './renderer/diagram-renderer.js';
-export * from './renderer/mermaid-renderer.js';
-export * from './simplifier/type-simplifier.js';
-export * from './simplifier/type-registry.js';
+export * from './class-diagram-builder.js';
+export * from './method-selector.js';
+export * from './diagram-renderer.js';
+export * from './mermaid-renderer.js';
+export * from './type-simplifier.js';
+export * from './type-registry.js';
 
 /**
  * C4-4 Code Diagram Generator.

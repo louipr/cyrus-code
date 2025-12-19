@@ -13,9 +13,9 @@ import {
   SyntaxKind,
   PropertyDeclaration,
 } from 'ts-morph';
-import { ClassInfo, AttributeInfo, MethodInfo, Visibility, Stereotype } from '../schema.js';
-import { TypeSimplifier, defaultSimplifier } from '../simplifier/type-simplifier.js';
-import { SourceFileManager } from '../../../source-tools/index.js';
+import { ClassInfo, AttributeInfo, MethodInfo, Visibility, Stereotype } from './schema.js';
+import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
+import { SourceFileManager } from '../../source-tools/index.js';
 
 /**
  * Extracts type, class, and enum information for C4-4 diagrams.

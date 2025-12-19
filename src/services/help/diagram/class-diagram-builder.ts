@@ -11,7 +11,7 @@ import {
   RelationshipInfo,
   DiagramConfig,
   applyDefaults,
-} from '../schema.js';
+} from './schema.js';
 import { MethodSelector, defaultMethodSelector } from './method-selector.js';
 
 /**

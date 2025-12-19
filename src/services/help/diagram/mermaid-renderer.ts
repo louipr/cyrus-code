@@ -11,7 +11,7 @@ import {
   AttributeInfo,
   RelationshipInfo,
   Visibility,
-} from '../schema.js';
+} from './schema.js';
 import {
   DiagramRenderer,
   RenderOptions,

@@ -5,8 +5,8 @@
  * Provides caching and ts-morph project management for AST extraction.
  *
  * Used by:
- * - help/diagram-generator/extractor/* (InterfaceExtractor, TypeExtractor, RelationshipExtractor)
- * - help/typescript-extractor.ts (TypeScriptExtractor)
+ * - help/diagram/* (InterfaceExtractor, TypeExtractor, RelationshipExtractor)
+ * - help/content/typescript-extractor.ts (TypeScriptExtractor)
  *
  * Exports:
  * - SourceFileManager: ts-morph Project wrapper with file caching

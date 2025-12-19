@@ -6,9 +6,9 @@
  */
 
 import { InterfaceDeclaration, MethodSignature } from 'ts-morph';
-import { ClassInfo, MethodInfo, ParameterInfo } from '../schema.js';
-import { TypeSimplifier, defaultSimplifier } from '../simplifier/type-simplifier.js';
-import { SourceFileManager } from '../../../source-tools/index.js';
+import { ClassInfo, MethodInfo, ParameterInfo } from './schema.js';
+import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
+import { SourceFileManager } from '../../source-tools/index.js';
 
 /**
  * Extracts interface information for C4-4 diagrams.

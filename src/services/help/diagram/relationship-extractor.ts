@@ -6,9 +6,9 @@
  */
 
 import { MethodSignature, PropertySignature } from 'ts-morph';
-import { RelationshipInfo, RelationshipType } from '../schema.js';
-import { TypeSimplifier, defaultSimplifier } from '../simplifier/type-simplifier.js';
-import { SourceFileManager } from '../../../source-tools/index.js';
+import { RelationshipInfo, RelationshipType } from './schema.js';
+import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
+import { SourceFileManager } from '../../source-tools/index.js';
 
 /**
  * Context for relationship inference.

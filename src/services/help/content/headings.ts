@@ -5,7 +5,7 @@
  * Uses the same slugify algorithm as HelpDialog for deterministic anchor matching.
  */
 
-import type { DocumentHeading } from './schema';
+import type { DocumentHeading } from './schema.js';
 
 /**
  * Convert heading text to a URL-safe anchor slug.

@@ -5,11 +5,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { C4DiagramGenerator } from './index.js';
-import { TypeSimplificationRegistry } from './simplifier/type-registry.js';
-import { TypeSimplifier } from './simplifier/type-simplifier.js';
-import { ClassDiagramBuilder } from './builder/class-diagram-builder.js';
-import { DefaultMethodSelector } from './builder/method-selector.js';
-import { MermaidRenderer } from './renderer/mermaid-renderer.js';
+import { TypeSimplificationRegistry } from './type-registry.js';
+import { TypeSimplifier } from './type-simplifier.js';
+import { ClassDiagramBuilder } from './class-diagram-builder.js';
+import { DefaultMethodSelector } from './method-selector.js';
+import { MermaidRenderer } from './mermaid-renderer.js';
 
 // Tests run from project root via npm test
 const projectRoot = process.cwd();

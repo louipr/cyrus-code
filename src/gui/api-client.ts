@@ -35,7 +35,7 @@ import type {
   HelpSearchResult,
   C4Hierarchy,
   DocumentHeading,
-} from '../services/help/schema';
+} from '../services/help/content/schema';
 
 /**
  * Type definition for the cyrus API exposed via preload script.

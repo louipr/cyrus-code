@@ -5,7 +5,7 @@
  * Allows multiple output formats (Mermaid, PlantUML, etc.)
  */
 
-import { C4Diagram } from '../schema.js';
+import { C4Diagram } from './schema.js';
 
 /**
  * Render options.
