@@ -22,7 +22,7 @@ export interface IHelpService {
   getGroups(): HelpGroup[];
 
   /** Get all help topics */
-  listTopics(): HelpTopic[];
+  getTopics(): HelpTopic[];
 
   /** Get C4 architecture diagram hierarchy for navigation */
   getC4Hierarchy(): C4Hierarchy | null;

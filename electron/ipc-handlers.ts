@@ -267,9 +267,9 @@ export function registerIpcHandlers(facade: ApiFacade): void {
     }
   });
 
-  ipcMain.handle('help:listTopics', async () => {
+  ipcMain.handle('help:getTopics', async () => {
     try {
-      return { success: true, data: helpService.listTopics() };
+      return { success: true, data: helpService.getTopics() };
     } catch (error) {
       return {
         success: false,

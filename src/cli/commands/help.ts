@@ -37,7 +37,7 @@ export async function helpCommand(
 
   // Handle --list: show all topics
   if (opts.list) {
-    const topics = helpService.listTopics();
+    const topics = helpService.getTopics();
     console.log('\n\x1b[1m\x1b[36mAll Help Topics\x1b[0m\n');
     console.log(helpService.formatTopicList(topics));
     return;
@@ -86,7 +86,7 @@ export async function helpCommand(
     if (!topic) {
       console.log(`Topic "${topicId}" not found.`);
       console.log('\nAvailable topics:');
-      const topics = helpService.listTopics();
+      const topics = helpService.getTopics();
       for (const t of topics.slice(0, 10)) {
         console.log(`  ${t.id.padEnd(20)} ${t.title}`);
       }

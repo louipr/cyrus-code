@@ -90,7 +90,7 @@ export function HelpDialog({
         const [catResult, groupsResult, topicsResult] = await Promise.all([
           window.cyrus.help.getCategories(),
           window.cyrus.help.getGroups(),
-          window.cyrus.help.listTopics(),
+          window.cyrus.help.getTopics(),
         ]);
 
         if (catResult.success && catResult.data) {

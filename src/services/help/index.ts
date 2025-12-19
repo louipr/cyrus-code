@@ -72,8 +72,8 @@ export class HelpService implements IHelpService {
     return this.repository.getGroups();
   }
 
-  listTopics(): HelpTopic[] {
-    return this.repository.listTopics();
+  getTopics(): HelpTopic[] {
+    return this.repository.getTopics();
   }
 
   getC4Hierarchy(): C4Hierarchy | null {
@@ -105,7 +105,7 @@ export class HelpService implements IHelpService {
    * Matches against title, summary, and keywords.
    */
   search(query: string): HelpSearchResult[] {
-    const topics = this.repository.listTopics();
+    const topics = this.repository.getTopics();
     const queryLower = query.toLowerCase();
     const results: HelpSearchResult[] = [];
 

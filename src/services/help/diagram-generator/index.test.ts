@@ -79,17 +79,6 @@ describe('C4DiagramGenerator', () => {
     });
   });
 
-  describe('generateForType', () => {
-    it('should generate diagram for a type alias', () => {
-      const result = generator.generateForType(
-        'src/services/symbol-table/schema.ts',
-        'ComponentSymbol'
-      );
-
-      assert.strictEqual(result.diagram.classes.length, 1, 'Should have 1 class');
-      assert.ok(result.rendered.includes('ComponentSymbol'), 'Should include type name');
-    });
-  });
 });
 
 describe('TypeSimplificationRegistry', () => {

@@ -92,8 +92,6 @@ export interface DiagramConfig {
   showRelationships?: boolean;
   /** Filter methods by category comment */
   methodCategories?: string[];
-  /** Whether to include inherited members (default: false) */
-  includeInherited?: boolean;
 }
 
 /**
@@ -129,7 +127,6 @@ export const DEFAULT_CONFIG: Required<DiagramConfig> = {
   includeTypes: [],
   showRelationships: true,
   methodCategories: [],
-  includeInherited: false,
 };
 
 /**

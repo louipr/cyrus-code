@@ -58,29 +58,4 @@ export class HelpFormatter {
 
     return lines.join('\n');
   }
-
-  /**
-   * Format search results for terminal display.
-   */
-  formatSearchResults(
-    results: Array<{ topic: HelpTopic; score: number; matchedFields: string[] }>
-  ): string {
-    if (results.length === 0) {
-      return 'No matching topics found.';
-    }
-
-    const lines: string[] = [];
-    lines.push('\x1b[1m\x1b[36mSearch Results\x1b[0m');
-    lines.push('');
-
-    for (const { topic, matchedFields } of results) {
-      lines.push(`  \x1b[1m${topic.id}\x1b[0m`);
-      lines.push(`    ${topic.title}`);
-      lines.push(`    \x1b[90m${topic.summary}\x1b[0m`);
-      lines.push(`    \x1b[90mMatched: ${matchedFields.join(', ')}\x1b[0m`);
-      lines.push('');
-    }
-
-    return lines.join('\n');
-  }
 }

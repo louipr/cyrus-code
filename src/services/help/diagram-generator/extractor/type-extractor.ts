@@ -30,45 +30,6 @@ export class TypeExtractor {
   }
 
   /**
-   * Extract a type alias as ClassInfo.
-   */
-  extractTypeAlias(filePath: string, typeName: string): ClassInfo | null {
-    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
-    if (!sourceFile) return null;
-
-    const typeAlias = sourceFile.getTypeAlias(typeName);
-    if (!typeAlias) return null;
-
-    return this.extractTypeAliasInfo(typeAlias);
-  }
-
-  /**
-   * Extract a class as ClassInfo.
-   */
-  extractClass(filePath: string, className: string): ClassInfo | null {
-    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
-    if (!sourceFile) return null;
-
-    const classDecl = sourceFile.getClass(className);
-    if (!classDecl) return null;
-
-    return this.extractClassInfo(classDecl);
-  }
-
-  /**
-   * Extract an enum as ClassInfo.
-   */
-  extractEnum(filePath: string, enumName: string): ClassInfo | null {
-    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
-    if (!sourceFile) return null;
-
-    const enumDecl = sourceFile.getEnum(enumName);
-    if (!enumDecl) return null;
-
-    return this.extractEnumInfo(enumDecl);
-  }
-
-  /**
    * Extract any named export as ClassInfo.
    * Automatically detects the type (interface, type alias, class, enum).
    */
@@ -118,51 +79,6 @@ export class TypeExtractor {
 
     // Could extend this to follow imports if needed
     return null;
-  }
-
-  /**
-   * Get all exported types from a file.
-   */
-  extractAllTypes(filePath: string): ClassInfo[] {
-    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
-    if (!sourceFile) return [];
-
-    const results: ClassInfo[] = [];
-
-    // Interfaces
-    for (const iface of sourceFile.getInterfaces()) {
-      if (iface.isExported()) {
-        results.push({
-          name: iface.getName(),
-          stereotype: 'interface',
-          attributes: this.extractInterfaceProperties(iface),
-          methods: [],
-        });
-      }
-    }
-
-    // Type aliases
-    for (const typeAlias of sourceFile.getTypeAliases()) {
-      if (typeAlias.isExported()) {
-        results.push(this.extractTypeAliasInfo(typeAlias));
-      }
-    }
-
-    // Classes
-    for (const classDecl of sourceFile.getClasses()) {
-      if (classDecl.isExported()) {
-        results.push(this.extractClassInfo(classDecl));
-      }
-    }
-
-    // Enums
-    for (const enumDecl of sourceFile.getEnums()) {
-      if (enumDecl.isExported()) {
-        results.push(this.extractEnumInfo(enumDecl));
-      }
-    }
-
-    return results;
   }
 
   /**

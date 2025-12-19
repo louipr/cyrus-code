@@ -45,14 +45,14 @@ describe('HelpService', () => {
     });
   });
 
-  describe('listTopics', () => {
+  describe('getTopics', () => {
     it('should return all topics', () => {
-      const topics = service.listTopics();
+      const topics = service.getTopics();
       assert.ok(topics.length > 0, 'Should have at least one topic');
     });
 
     it('should have required fields for each topic', () => {
-      const topics = service.listTopics();
+      const topics = service.getTopics();
       for (const topic of topics) {
         assert.ok(topic.id, 'Topic should have id');
         assert.ok(topic.title, 'Topic should have title');

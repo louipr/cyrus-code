@@ -36,22 +36,6 @@ export class InterfaceExtractor {
   }
 
   /**
-   * Extract all exported interfaces from a file.
-   */
-  extractAllInterfaces(filePath: string): ClassInfo[] {
-    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
-    if (!sourceFile) return [];
-
-    const results: ClassInfo[] = [];
-    for (const iface of sourceFile.getInterfaces()) {
-      if (iface.isExported()) {
-        results.push(this.extractInterfaceInfo(iface));
-      }
-    }
-    return results;
-  }
-
-  /**
    * Get all type references used in an interface.
    * Used for relationship discovery.
    */

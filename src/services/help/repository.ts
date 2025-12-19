@@ -63,7 +63,7 @@ export class HelpRepository {
   /**
    * Get all help topics.
    */
-  listTopics(): HelpTopic[] {
+  getTopics(): HelpTopic[] {
     return this.loadManifest().topics;
   }
 

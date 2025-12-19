@@ -119,20 +119,6 @@ export class DefaultMethodSelector implements MethodSelector {
 
     return result;
   }
-
-  /**
-   * Get priority for a category.
-   */
-  getCategoryPriority(category: string): number {
-    return this.categoryPriority[category] ?? 0;
-  }
-
-  /**
-   * Register a custom category priority.
-   */
-  setCategoryPriority(category: string, priority: number): void {
-    this.categoryPriority[category] = priority;
-  }
 }
 
 /**

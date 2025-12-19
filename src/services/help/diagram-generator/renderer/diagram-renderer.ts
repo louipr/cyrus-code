@@ -84,13 +84,6 @@ export class RendererRegistry {
   getFormats(): string[] {
     return Array.from(this.renderers.keys());
   }
-
-  /**
-   * Check if a format is supported.
-   */
-  supports(format: string): boolean {
-    return this.renderers.has(format);
-  }
 }
 
 /**

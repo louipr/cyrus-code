@@ -106,7 +106,7 @@ export interface CyrusAPI {
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
     getGroups: () => Promise<ApiResponse<HelpGroup[]>>;
-    listTopics: () => Promise<ApiResponse<HelpTopic[]>>;
+    getTopics: () => Promise<ApiResponse<HelpTopic[]>>;
     getC4Hierarchy: () => Promise<ApiResponse<C4Hierarchy | null>>;
     getByCategory: (categoryId: string) => Promise<ApiResponse<HelpTopic[]>>;
     getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
@@ -181,7 +181,7 @@ const cyrusAPI: CyrusAPI = {
   help: {
     getCategories: () => ipcRenderer.invoke('help:getCategories'),
     getGroups: () => ipcRenderer.invoke('help:getGroups'),
-    listTopics: () => ipcRenderer.invoke('help:listTopics'),
+    getTopics: () => ipcRenderer.invoke('help:getTopics'),
     getC4Hierarchy: () => ipcRenderer.invoke('help:getC4Hierarchy'),
     getByCategory: (categoryId) => ipcRenderer.invoke('help:getByCategory', categoryId),
     getTopic: (topicId) => ipcRenderer.invoke('help:getTopic', topicId),

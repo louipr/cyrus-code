@@ -3,28 +3,15 @@
  *
  * Generates C4 Level 4 (Code) diagrams with UML class notation.
  *
- * USAGE:
- * - Standard: Use createC4DiagramGenerator() factory
- * - Advanced: Import from submodules for custom composition:
- *   - builder/: ClassDiagramBuilder for custom diagram construction
- *   - renderer/: MermaidRenderer or custom renderers
- *   - simplifier/: TypeSimplifier for custom type mapping
- *   - extractor/: InterfaceExtractor, TypeExtractor for custom extraction
- *
  * @example
  * ```typescript
- * // Standard usage
- * const generator = createC4DiagramGenerator('/path/to/project');
+ * const generator = new C4DiagramGenerator('/path/to/project');
  * const result = generator.generateForInterface(
  *   'src/services/symbol-table/schema.ts',
  *   'ISymbolStore',
  *   { maxMethods: 8, includeTypes: ['ComponentSymbol', 'Connection'] }
  * );
  * console.log(result.rendered);
- *
- * // Advanced usage - custom renderer
- * import { ClassDiagramBuilder } from '@/services/c4-diagram/builder';
- * import { InterfaceExtractor } from '@/services/c4-diagram/extractor';
  * ```
  */
 
@@ -32,7 +19,6 @@ import {
   DiagramConfig,
   DiagramResult,
   C4Diagram,
-  ClassInfo,
   applyDefaults,
 } from './schema.js';
 import { InterfaceExtractor } from './extractor/interface-extractor.js';
@@ -141,114 +127,11 @@ export class C4DiagramGenerator {
   }
 
   /**
-   * Generate a diagram for multiple files (component-level view).
-   *
-   * Use this when a component spans multiple files and you want
-   * to show how they relate.
-   */
-  generateForComponent(
-    files: string[],
-    entryInterface: string,
-    config?: DiagramConfig
-  ): DiagramResult {
-    const cfg = applyDefaults(config);
-    const warnings: string[] = [];
-
-    const builder = new ClassDiagramBuilder(cfg);
-    const knownTypes = new Set<string>();
-
-    // Find the entry interface
-    let entryFile: string | null = null;
-    let primaryClass: ClassInfo | null = null;
-
-    for (const file of files) {
-      const iface = this.interfaceExtractor.extractInterface(file, entryInterface);
-      if (iface) {
-        primaryClass = iface;
-        entryFile = file;
-        break;
-      }
-    }
-
-    if (!primaryClass || !entryFile) {
-      return this.errorResult(`Entry interface '${entryInterface}' not found in provided files`);
-    }
-
-    builder.addPrimary(primaryClass);
-    builder.addSource(entryFile);
-    knownTypes.add(entryInterface);
-
-    // Extract all types from all files
-    for (const file of files) {
-      builder.addSource(file);
-      const types = this.typeExtractor.extractAllTypes(file);
-      for (const type of types) {
-        knownTypes.add(type.name);
-        builder.addClass(type);
-      }
-    }
-
-    // Filter to requested types if specified
-    if (cfg.includeTypes.length > 0) {
-      builder.filterClasses([entryInterface, ...cfg.includeTypes]);
-    }
-
-    // Extract relationships
-    if (cfg.showRelationships) {
-      for (const file of files) {
-        const relationships = this.relationshipExtractor.extractFromInterface(
-          file,
-          entryInterface,
-          knownTypes
-        );
-        builder.addRelationships(relationships);
-      }
-    }
-
-    const diagram = builder.build();
-    const rendered = this.defaultRenderer.render(diagram);
-
-    return { diagram, rendered, warnings };
-  }
-
-  /**
-   * Generate a simple diagram for a single type (no relationships).
-   */
-  generateForType(
-    filePath: string,
-    typeName: string,
-    config?: DiagramConfig
-  ): DiagramResult {
-    const cfg = { ...applyDefaults(config), showRelationships: false };
-
-    const typeInfo = this.typeExtractor.findType(filePath, typeName);
-    if (!typeInfo) {
-      return this.errorResult(`Type '${typeName}' not found in ${filePath}`);
-    }
-
-    const builder = new ClassDiagramBuilder(cfg);
-    builder.addPrimary(typeInfo);
-    builder.addSource(filePath);
-
-    const diagram = builder.build();
-    const rendered = this.defaultRenderer.render(diagram);
-
-    return { diagram, rendered, warnings: [] };
-  }
-
-  /**
    * Render an existing diagram with a specific renderer.
    */
   render(diagram: C4Diagram, format: string = 'mermaid'): string {
     const renderer = rendererRegistry.get(format) ?? this.defaultRenderer;
     return renderer.render(diagram);
-  }
-
-  /**
-   * Get available render formats.
-   */
-  getAvailableFormats(): string[] {
-    return rendererRegistry.getFormats();
   }
 
   /**
@@ -270,11 +153,4 @@ export class C4DiagramGenerator {
       warnings: [message],
     };
   }
-}
-
-/**
- * Create a C4 diagram generator for a project.
- */
-export function createC4DiagramGenerator(projectRoot: string): C4DiagramGenerator {
-  return new C4DiagramGenerator(projectRoot);
 }
