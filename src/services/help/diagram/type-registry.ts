@@ -197,9 +197,10 @@ export class TypeSimplificationRegistry {
       priority: 40,
     });
 
-    // Simplify inline object types
+    // Simplify inline object types (handles nested braces and embedded objects)
+    // Matches { ... } anywhere in string, including nested { }
     this.registerRule({
-      pattern: /^\{[^}]+\}$/,
+      pattern: /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g,
       replacement: 'object',
       priority: 30,
     });

@@ -103,7 +103,34 @@ export const helpActions = {
   },
 
   /**
-   * Select a topic by name from the sidebar.
+   * Navigate to a topic via sidebar group and topic buttons.
+   * Handles both single-topic groups (clicking group loads content)
+   * and multi-topic groups (clicking group expands, then click topic).
+   */
+  async navigateToTopic(page: Page, groupId: string, topicId: string): Promise<void> {
+    const topicSelector = `[data-testid="help-topic-${topicId}"]`;
+    const groupSelector = `[data-testid="help-group-${groupId}"]`;
+
+    // Check if topic button is already visible (multi-topic group already expanded)
+    const topicVisible = await page.locator(topicSelector).isVisible();
+
+    if (topicVisible) {
+      await page.click(topicSelector);
+    } else {
+      // Click the group header
+      await page.click(groupSelector);
+
+      // Check if topic button appears (multi-topic group) or if document loads directly
+      const topicAppearsAfterClick = await page.locator(topicSelector).isVisible({ timeout: 500 }).catch(() => false);
+
+      if (topicAppearsAfterClick) {
+        await page.click(topicSelector);
+      }
+    }
+  },
+
+  /**
+   * Select a topic by name from the sidebar (legacy - use navigateToTopic for groups).
    */
   async selectTopic(page: Page, topicName: string): Promise<void> {
     await page.click(selectors.helpTopicButton(topicName));
@@ -120,6 +147,25 @@ export const helpActions = {
   },
 
   /**
+   * Count rendered mermaid diagrams on the page.
+   */
+  async countDiagrams(page: Page): Promise<number> {
+    return page.locator(selectors.mermaidSvg).count();
+  },
+
+  /**
+   * Check for mermaid diagram rendering errors.
+   * Returns error text if found, null otherwise.
+   */
+  async checkForDiagramErrors(page: Page): Promise<string | null> {
+    const errorLocator = page.locator('.mermaid-error, [data-testid="diagram-error"]');
+    if (await errorLocator.isVisible({ timeout: 500 }).catch(() => false)) {
+      return errorLocator.textContent();
+    }
+    return null;
+  },
+
+  /**
    * Capture screenshot of help dialog.
    */
   async captureScreenshot(page: Page, filename: string): Promise<void> {
@@ -127,6 +173,39 @@ export const helpActions = {
     await dialog.screenshot({
       path: `/tmp/cyrus-code/screenshots/${filename}`,
     });
+  },
+
+  /**
+   * Capture screenshot of just the first mermaid diagram.
+   */
+  async captureDiagramScreenshot(page: Page, filename: string): Promise<void> {
+    const diagram = page.locator(selectors.mermaidSvg).first();
+    await diagram.scrollIntoViewIfNeeded();
+    await diagram.screenshot({
+      path: `/tmp/cyrus-code/screenshots/${filename}`,
+    });
+  },
+
+  /**
+   * Capture screenshots of scrollable content area at top, middle, and bottom.
+   */
+  async captureScrollableContent(page: Page, basename: string): Promise<void> {
+    const contentArea = page.locator(selectors.helpContent);
+
+    // Top
+    await contentArea.evaluate(el => el.scrollTop = 0);
+    await page.waitForTimeout(300);
+    await contentArea.screenshot({ path: `/tmp/cyrus-code/screenshots/${basename}-top.png` });
+
+    // Middle
+    await contentArea.evaluate(el => el.scrollTop = el.scrollHeight / 2);
+    await page.waitForTimeout(300);
+    await contentArea.screenshot({ path: `/tmp/cyrus-code/screenshots/${basename}-middle.png` });
+
+    // Bottom
+    await contentArea.evaluate(el => el.scrollTop = el.scrollHeight);
+    await page.waitForTimeout(300);
+    await contentArea.screenshot({ path: `/tmp/cyrus-code/screenshots/${basename}-bottom.png` });
   },
 
   /**

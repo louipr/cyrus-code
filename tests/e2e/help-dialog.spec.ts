@@ -7,41 +7,12 @@
  * - Dialog can be closed
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 import { selectors } from './helpers/selectors';
+import { helpActions } from './helpers/actions';
 
 let context: AppContext;
-
-/**
- * Helper to expand a sidebar group and click a topic.
- * Handles both single-topic groups (where clicking group header loads document)
- * and multi-topic groups (where clicking group expands to show topics).
- */
-async function expandGroupAndClickTopic(page: Page, groupId: string, topicId: string) {
-  const topicSelector = `[data-testid="help-topic-${topicId}"]`;
-  const groupSelector = `[data-testid="help-group-${groupId}"]`;
-
-  // Check if topic button is already visible (multi-topic group already expanded)
-  const topicVisible = await page.locator(topicSelector).isVisible();
-
-  if (topicVisible) {
-    // Multi-topic group, topic button is visible - click it
-    await page.click(topicSelector);
-  } else {
-    // Click the group header
-    await page.click(groupSelector);
-
-    // Check if topic button appears (multi-topic group) or if document loads directly (single-topic group)
-    const topicAppearsAfterClick = await page.locator(topicSelector).isVisible({ timeout: 500 }).catch(() => false);
-
-    if (topicAppearsAfterClick) {
-      // Multi-topic group - click the topic button
-      await page.click(topicSelector);
-    }
-    // For single-topic groups, clicking group header already loaded the document
-  }
-}
 
 test.beforeAll(async () => {
   context = await launchApp();
@@ -109,7 +80,7 @@ test.describe('Help Dialog', () => {
       await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
       // Navigate to topic via sidebar
-      await expandGroupAndClickTopic(page, group, topic);
+      await helpActions.navigateToTopic(page, group, topic);
 
       // Wait for mermaid diagram to render
       await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
