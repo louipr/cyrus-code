@@ -19,226 +19,98 @@ import {
 } from './schema.js';
 
 describe('Symbol ID', () => {
-  describe('parseSymbolId', () => {
-    it('should parse full symbol ID with namespace', () => {
-      const result = parseSymbolId('auth/jwt/JwtService@1.2.3');
-      assert.deepStrictEqual(result, {
-        namespace: 'auth/jwt',
-        name: 'JwtService',
-        version: '1.2.3',
-      });
+  it('should parse and build valid symbol IDs', () => {
+    // Parse with namespace
+    assert.deepStrictEqual(parseSymbolId('auth/jwt/JwtService@1.2.3'), {
+      namespace: 'auth/jwt', name: 'JwtService', version: '1.2.3',
     });
-
-    it('should parse symbol ID without namespace', () => {
-      const result = parseSymbolId('AuthService@1.0.0');
-      assert.deepStrictEqual(result, {
-        namespace: '',
-        name: 'AuthService',
-        version: '1.0.0',
-      });
+    // Parse without namespace
+    assert.deepStrictEqual(parseSymbolId('AuthService@1.0.0'), {
+      namespace: '', name: 'AuthService', version: '1.0.0',
     });
-
-    it('should parse nested namespace', () => {
-      const result = parseSymbolId('core/auth/jwt/JwtService@2.0.0');
-      assert.deepStrictEqual(result, {
-        namespace: 'core/auth/jwt',
-        name: 'JwtService',
-        version: '2.0.0',
-      });
+    // Parse nested namespace
+    assert.deepStrictEqual(parseSymbolId('core/auth/jwt/JwtService@2.0.0'), {
+      namespace: 'core/auth/jwt', name: 'JwtService', version: '2.0.0',
     });
-
-    it('should return null for invalid format', () => {
-      assert.strictEqual(parseSymbolId('invalid'), null);
-      assert.strictEqual(parseSymbolId('no/version'), null);
-      assert.strictEqual(parseSymbolId('@version'), null);
-    });
+    // Build with namespace
+    assert.strictEqual(buildSymbolId('auth/jwt', 'JwtService', { major: 1, minor: 2, patch: 3 }), 'auth/jwt/JwtService@1.2.3');
+    // Build without namespace
+    assert.strictEqual(buildSymbolId('', 'AuthService', { major: 1, minor: 0, patch: 0 }), 'AuthService@1.0.0');
+    // Build with prerelease and build
+    assert.strictEqual(buildSymbolId('core', 'Service', { major: 2, minor: 0, patch: 0, prerelease: 'beta.1', build: '20241210' }), 'core/Service@2.0.0-beta.1+20241210');
   });
 
-  describe('buildSymbolId', () => {
-    it('should build symbol ID with namespace', () => {
-      const id = buildSymbolId('auth/jwt', 'JwtService', {
-        major: 1,
-        minor: 2,
-        patch: 3,
-      });
-      assert.strictEqual(id, 'auth/jwt/JwtService@1.2.3');
-    });
-
-    it('should build symbol ID without namespace', () => {
-      const id = buildSymbolId('', 'AuthService', {
-        major: 1,
-        minor: 0,
-        patch: 0,
-      });
-      assert.strictEqual(id, 'AuthService@1.0.0');
-    });
-
-    it('should include prerelease and build', () => {
-      const id = buildSymbolId('core', 'Service', {
-        major: 2,
-        minor: 0,
-        patch: 0,
-        prerelease: 'beta.1',
-        build: '20241210',
-      });
-      assert.strictEqual(id, 'core/Service@2.0.0-beta.1+20241210');
-    });
+  it('should return null for invalid symbol IDs', () => {
+    assert.strictEqual(parseSymbolId('invalid'), null);
+    assert.strictEqual(parseSymbolId('no/version'), null);
+    assert.strictEqual(parseSymbolId('@version'), null);
   });
 });
 
 describe('SemVer', () => {
-  describe('parseSemVer', () => {
-    it('should parse basic version', () => {
-      const result = parseSemVer('1.2.3');
-      assert.deepStrictEqual(result, {
-        major: 1,
-        minor: 2,
-        patch: 3,
-        prerelease: undefined,
-        build: undefined,
-      });
-    });
-
-    it('should parse version with prerelease', () => {
-      const result = parseSemVer('1.0.0-alpha.1');
-      assert.deepStrictEqual(result, {
-        major: 1,
-        minor: 0,
-        patch: 0,
-        prerelease: 'alpha.1',
-        build: undefined,
-      });
-    });
-
-    it('should parse version with build', () => {
-      const result = parseSemVer('1.0.0+build.123');
-      assert.deepStrictEqual(result, {
-        major: 1,
-        minor: 0,
-        patch: 0,
-        prerelease: undefined,
-        build: 'build.123',
-      });
-    });
-
-    it('should parse version with prerelease and build', () => {
-      const result = parseSemVer('2.1.0-beta+20241210');
-      assert.deepStrictEqual(result, {
-        major: 2,
-        minor: 1,
-        patch: 0,
-        prerelease: 'beta',
-        build: '20241210',
-      });
-    });
-
-    it('should return null for invalid version', () => {
-      assert.strictEqual(parseSemVer('invalid'), null);
-      assert.strictEqual(parseSemVer('1.2'), null);
-      assert.strictEqual(parseSemVer('1'), null);
-      assert.strictEqual(parseSemVer('a.b.c'), null);
-    });
+  it('should parse and format valid versions', () => {
+    // Parse basic
+    assert.deepStrictEqual(parseSemVer('1.2.3'), { major: 1, minor: 2, patch: 3, prerelease: undefined, build: undefined });
+    // Parse with prerelease
+    assert.deepStrictEqual(parseSemVer('1.0.0-alpha.1'), { major: 1, minor: 0, patch: 0, prerelease: 'alpha.1', build: undefined });
+    // Parse with build
+    assert.deepStrictEqual(parseSemVer('1.0.0+build.123'), { major: 1, minor: 0, patch: 0, prerelease: undefined, build: 'build.123' });
+    // Parse with both
+    assert.deepStrictEqual(parseSemVer('2.1.0-beta+20241210'), { major: 2, minor: 1, patch: 0, prerelease: 'beta', build: '20241210' });
+    // Format basic
+    assert.strictEqual(formatSemVer({ major: 1, minor: 2, patch: 3 }), '1.2.3');
+    // Format with prerelease
+    assert.strictEqual(formatSemVer({ major: 1, minor: 0, patch: 0, prerelease: 'alpha' }), '1.0.0-alpha');
+    // Format with build
+    assert.strictEqual(formatSemVer({ major: 1, minor: 0, patch: 0, build: '123' }), '1.0.0+123');
   });
 
-  describe('formatSemVer', () => {
-    it('should format basic version', () => {
-      const str = formatSemVer({ major: 1, minor: 2, patch: 3 });
-      assert.strictEqual(str, '1.2.3');
-    });
-
-    it('should format version with prerelease', () => {
-      const str = formatSemVer({
-        major: 1,
-        minor: 0,
-        patch: 0,
-        prerelease: 'alpha',
-      });
-      assert.strictEqual(str, '1.0.0-alpha');
-    });
-
-    it('should format version with build', () => {
-      const str = formatSemVer({
-        major: 1,
-        minor: 0,
-        patch: 0,
-        build: '123',
-      });
-      assert.strictEqual(str, '1.0.0+123');
-    });
+  it('should return null for invalid versions', () => {
+    assert.strictEqual(parseSemVer('invalid'), null);
+    assert.strictEqual(parseSemVer('1.2'), null);
+    assert.strictEqual(parseSemVer('1'), null);
+    assert.strictEqual(parseSemVer('a.b.c'), null);
   });
 
-  describe('compareSemVer', () => {
-    it('should compare major versions', () => {
-      const v1: SemVer = { major: 2, minor: 0, patch: 0 };
-      const v2: SemVer = { major: 1, minor: 0, patch: 0 };
-      assert.strictEqual(compareSemVer(v1, v2), 1);
-      assert.strictEqual(compareSemVer(v2, v1), -1);
-    });
-
-    it('should compare minor versions', () => {
-      const v1: SemVer = { major: 1, minor: 2, patch: 0 };
-      const v2: SemVer = { major: 1, minor: 1, patch: 0 };
-      assert.strictEqual(compareSemVer(v1, v2), 1);
-      assert.strictEqual(compareSemVer(v2, v1), -1);
-    });
-
-    it('should compare patch versions', () => {
-      const v1: SemVer = { major: 1, minor: 0, patch: 2 };
-      const v2: SemVer = { major: 1, minor: 0, patch: 1 };
-      assert.strictEqual(compareSemVer(v1, v2), 1);
-      assert.strictEqual(compareSemVer(v2, v1), -1);
-    });
-
-    it('should return 0 for equal versions', () => {
-      const v1: SemVer = { major: 1, minor: 2, patch: 3 };
-      const v2: SemVer = { major: 1, minor: 2, patch: 3 };
-      assert.strictEqual(compareSemVer(v1, v2), 0);
-    });
-
-    it('should treat prerelease as lower precedence', () => {
-      const release: SemVer = { major: 1, minor: 0, patch: 0 };
-      const prerelease: SemVer = {
-        major: 1,
-        minor: 0,
-        patch: 0,
-        prerelease: 'alpha',
-      };
-      assert.strictEqual(compareSemVer(prerelease, release), -1);
-      assert.strictEqual(compareSemVer(release, prerelease), 1);
-    });
+  it('should compare versions correctly', () => {
+    // Major comparison
+    assert.strictEqual(compareSemVer({ major: 2, minor: 0, patch: 0 }, { major: 1, minor: 0, patch: 0 }), 1);
+    assert.strictEqual(compareSemVer({ major: 1, minor: 0, patch: 0 }, { major: 2, minor: 0, patch: 0 }), -1);
+    // Minor comparison
+    assert.strictEqual(compareSemVer({ major: 1, minor: 2, patch: 0 }, { major: 1, minor: 1, patch: 0 }), 1);
+    // Patch comparison
+    assert.strictEqual(compareSemVer({ major: 1, minor: 0, patch: 2 }, { major: 1, minor: 0, patch: 1 }), 1);
+    // Equal versions
+    assert.strictEqual(compareSemVer({ major: 1, minor: 2, patch: 3 }, { major: 1, minor: 2, patch: 3 }), 0);
+    // Prerelease has lower precedence
+    const release: SemVer = { major: 1, minor: 0, patch: 0 };
+    const prerelease: SemVer = { major: 1, minor: 0, patch: 0, prerelease: 'alpha' };
+    assert.strictEqual(compareSemVer(prerelease, release), -1);
+    assert.strictEqual(compareSemVer(release, prerelease), 1);
   });
 });
 
 describe('Kind/Level Validation', () => {
-  describe('validateKindLevel', () => {
-    it('should validate L0 kinds', () => {
-      assert.strictEqual(validateKindLevel('type', 'L0'), true);
-      assert.strictEqual(validateKindLevel('enum', 'L0'), true);
-      assert.strictEqual(validateKindLevel('constant', 'L0'), true);
-      assert.strictEqual(validateKindLevel('class', 'L0'), false);
-    });
-
-    it('should validate L1 kinds', () => {
-      assert.strictEqual(validateKindLevel('function', 'L1'), true);
-      assert.strictEqual(validateKindLevel('class', 'L1'), true);
-      assert.strictEqual(validateKindLevel('service', 'L1'), true);
-      assert.strictEqual(validateKindLevel('type', 'L1'), false);
-    });
-
-    it('should validate L2 kinds', () => {
-      assert.strictEqual(validateKindLevel('module', 'L2'), true);
-      assert.strictEqual(validateKindLevel('class', 'L2'), false);
-    });
-
-    it('should validate L3 kinds', () => {
-      assert.strictEqual(validateKindLevel('subsystem', 'L3'), true);
-      assert.strictEqual(validateKindLevel('module', 'L3'), false);
-    });
-
-    it('should validate L4 kinds', () => {
-      assert.strictEqual(validateKindLevel('contract', 'L4'), true);
-      assert.strictEqual(validateKindLevel('subsystem', 'L4'), false);
-    });
+  it('should validate kind/level combinations for all levels', () => {
+    // L0: type, enum, constant
+    assert.strictEqual(validateKindLevel('type', 'L0'), true);
+    assert.strictEqual(validateKindLevel('enum', 'L0'), true);
+    assert.strictEqual(validateKindLevel('constant', 'L0'), true);
+    assert.strictEqual(validateKindLevel('class', 'L0'), false);
+    // L1: function, class, service
+    assert.strictEqual(validateKindLevel('function', 'L1'), true);
+    assert.strictEqual(validateKindLevel('class', 'L1'), true);
+    assert.strictEqual(validateKindLevel('service', 'L1'), true);
+    assert.strictEqual(validateKindLevel('type', 'L1'), false);
+    // L2: module
+    assert.strictEqual(validateKindLevel('module', 'L2'), true);
+    assert.strictEqual(validateKindLevel('class', 'L2'), false);
+    // L3: subsystem
+    assert.strictEqual(validateKindLevel('subsystem', 'L3'), true);
+    assert.strictEqual(validateKindLevel('module', 'L3'), false);
+    // L4: contract
+    assert.strictEqual(validateKindLevel('contract', 'L4'), true);
+    assert.strictEqual(validateKindLevel('subsystem', 'L4'), false);
   });
 });
 

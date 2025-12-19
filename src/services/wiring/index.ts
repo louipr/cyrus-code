@@ -1,12 +1,12 @@
 /**
  * Wiring Service
  *
- * Manages connections between component ports and builds dependency graphs.
- * Provides validation, cycle detection, and graph analysis.
+ * Manages connections between component ports.
+ * Delegates graph operations to DependencyGraphService.
  */
 
 import { randomUUID } from 'node:crypto';
-import type { ComponentSymbol, Connection, ValidationResult } from '../symbol-table/schema.js';
+import type { Connection, ValidationResult } from '../symbol-table/schema.js';
 import { createValidationResult } from '../symbol-table/schema.js';
 import type { SymbolStore } from '../symbol-table/store.js';
 import { ValidatorService } from '../validator/index.js';
@@ -14,29 +14,13 @@ import type { ValidationOptions } from '../validator/schema.js';
 import { DEFAULT_VALIDATION_OPTIONS, ValidationErrorCode } from '../validator/schema.js';
 import {
   type IWiringService,
-  type DependencyGraph,
-  type DependencyGraphDTO,
   type ConnectionRequest,
   type WiringResult,
-  type GraphStats,
   WiringErrorCode,
   wiringSuccess,
   wiringError,
-  graphToDTO,
 } from './schema.js';
-import {
-  buildDependencyGraph,
-  detectCycles,
-  topologicalSort,
-  getUpstreamDependencies,
-  getDownstreamDependencies,
-  getDirectDependencies,
-  getRootNodes,
-  getLeafNodes,
-  getGraphStats,
-  getConnectedComponents,
-  wouldCreateCycle,
-} from './graph.js';
+import { DependencyGraphService } from './graph-service.js';
 
 // ============================================================================
 // Wiring Service
@@ -45,6 +29,7 @@ import {
 export class WiringService implements IWiringService {
   private store: SymbolStore;
   private validator: ValidatorService;
+  private graphService: DependencyGraphService;
   private options: ValidationOptions;
 
   constructor(
@@ -53,7 +38,15 @@ export class WiringService implements IWiringService {
   ) {
     this.store = store;
     this.validator = new ValidatorService(store, options);
+    this.graphService = new DependencyGraphService(store);
     this.options = { ...DEFAULT_VALIDATION_OPTIONS, ...options };
+  }
+
+  /**
+   * Get the graph service for direct graph operations.
+   */
+  getGraphService(): DependencyGraphService {
+    return this.graphService;
   }
 
   // ==========================================================================
@@ -151,8 +144,7 @@ export class WiringService implements IWiringService {
     }
 
     // Check if connection would create a cycle
-    const graph = this.buildDependencyGraph();
-    if (wouldCreateCycle(graph, fromSymbolId, toSymbolId)) {
+    if (this.graphService.wouldCreateCycle(fromSymbolId, toSymbolId)) {
       return wiringError(
         'Connection would create a circular dependency',
         WiringErrorCode.WOULD_CREATE_CYCLE
@@ -229,130 +221,6 @@ export class WiringService implements IWiringService {
   }
 
   // ==========================================================================
-  // Dependency Graph Operations
-  // ==========================================================================
-
-  /**
-   * Build a dependency graph from all symbols and connections.
-   */
-  buildDependencyGraph(): DependencyGraph {
-    const symbols = this.store.list();
-    const connections = this.store.getAllConnections();
-    return buildDependencyGraph(symbols, connections);
-  }
-
-  /**
-   * Build a dependency graph starting from a specific symbol.
-   * Only includes symbols reachable from the given symbol.
-   */
-  buildSubgraph(symbolId: string): DependencyGraph {
-    const graph = this.buildDependencyGraph();
-
-    // Get all connected symbols (both upstream and downstream)
-    const upstream = getUpstreamDependencies(graph, symbolId);
-    const downstream = getDownstreamDependencies(graph, symbolId);
-    const connectedIds = new Set([symbolId, ...upstream, ...downstream]);
-
-    // Filter nodes and edges
-    const symbols = Array.from(connectedIds)
-      .map((id) => this.store.get(id))
-      .filter((s): s is ComponentSymbol => s !== undefined);
-
-    const connections = this.store.getAllConnections().filter(
-      (c) => connectedIds.has(c.fromSymbolId) && connectedIds.has(c.toSymbolId)
-    );
-
-    return buildDependencyGraph(symbols, connections);
-  }
-
-  /**
-   * Get the dependency graph as a serializable DTO.
-   */
-  getDependencyGraphDTO(): DependencyGraphDTO {
-    return graphToDTO(this.buildDependencyGraph());
-  }
-
-  /**
-   * Detect cycles in the dependency graph.
-   */
-  detectCycles(): string[][] {
-    const graph = this.buildDependencyGraph();
-    return detectCycles(graph);
-  }
-
-  /**
-   * Get topological order of components.
-   * Returns null if the graph has cycles.
-   */
-  getTopologicalOrder(): string[] | null {
-    const graph = this.buildDependencyGraph();
-    return topologicalSort(graph);
-  }
-
-  // ==========================================================================
-  // Graph Traversal
-  // ==========================================================================
-
-  /**
-   * Get all upstream dependencies of a symbol.
-   */
-  getUpstreamDependencies(symbolId: string): string[] {
-    const graph = this.buildDependencyGraph();
-    return getUpstreamDependencies(graph, symbolId);
-  }
-
-  /**
-   * Get all downstream dependencies of a symbol.
-   */
-  getDownstreamDependencies(symbolId: string): string[] {
-    const graph = this.buildDependencyGraph();
-    return getDownstreamDependencies(graph, symbolId);
-  }
-
-  /**
-   * Get direct dependencies (one hop only).
-   */
-  getDirectDependencies(symbolId: string): {
-    upstream: string[];
-    downstream: string[];
-  } {
-    const graph = this.buildDependencyGraph();
-    return getDirectDependencies(graph, symbolId);
-  }
-
-  /**
-   * Get root nodes (entry points with no dependencies).
-   */
-  getRootNodes(): string[] {
-    const graph = this.buildDependencyGraph();
-    return getRootNodes(graph);
-  }
-
-  /**
-   * Get leaf nodes (endpoints with no dependents).
-   */
-  getLeafNodes(): string[] {
-    const graph = this.buildDependencyGraph();
-    return getLeafNodes(graph);
-  }
-
-  /**
-   * Get connected components (disconnected subgraphs).
-   */
-  getConnectedComponents(): string[][] {
-    const graph = this.buildDependencyGraph();
-    return getConnectedComponents(graph);
-  }
-
-  /**
-   * Get statistics about the dependency graph.
-   */
-  getGraphStats(): GraphStats {
-    const graph = this.buildDependencyGraph();
-    return getGraphStats(graph);
-  }
-
-  // ==========================================================================
   // Validation
   // ==========================================================================
 
@@ -407,8 +275,7 @@ export class WiringService implements IWiringService {
     }
 
     // Check if would create cycle
-    const graph = this.buildDependencyGraph();
-    if (wouldCreateCycle(graph, fromSymbolId, toSymbolId)) {
+    if (this.graphService.wouldCreateCycle(fromSymbolId, toSymbolId)) {
       result.errors.push({
         code: 'CIRCULAR_DEPENDENCY',
         message: 'Connection would create a circular dependency',
@@ -437,8 +304,7 @@ export class WiringService implements IWiringService {
       if (symbol.id === fromSymbolId) continue;
 
       // Check if connection would create cycle
-      const graph = this.buildDependencyGraph();
-      if (wouldCreateCycle(graph, fromSymbolId, symbol.id)) continue;
+      if (this.graphService.wouldCreateCycle(fromSymbolId, symbol.id)) continue;
 
       // Find compatible ports on this symbol
       const compatible = this.validator.findCompatiblePorts(
@@ -530,6 +396,22 @@ export class WiringService implements IWiringService {
   }
 }
 
-// Re-export schema types
+/**
+ * Factory function for creating WiringService instances.
+ * Preferred over direct instantiation for dependency injection support.
+ *
+ * @param store - SymbolStore instance for symbol and connection management
+ * @param options - Optional validation options
+ * @returns WiringService instance
+ */
+export function createWiringService(
+  store: SymbolStore,
+  options?: Partial<ValidationOptions>
+): WiringService {
+  return new WiringService(store, options);
+}
+
+// Re-export schema types and services
 export * from './schema.js';
-export * from './graph.js';
+export * from './dependency-graph.js';
+export * from './graph-service.js';

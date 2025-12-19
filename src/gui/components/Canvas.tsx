@@ -17,15 +17,10 @@ import { CanvasNode } from './CanvasNode';
 import { PortWire } from './PortWire';
 import { PendingWire } from './PendingWire';
 import { PortTooltip } from './PortTooltip';
+import { LEVEL_COLORS } from '../constants/colors';
 
-// Re-export level colors for consistent theming
-export const LEVEL_COLORS: Record<string, string> = {
-  L0: '#6a9955', // Green - Primitives
-  L1: '#4ec9b0', // Cyan - Components
-  L2: '#dcdcaa', // Yellow - Modules
-  L3: '#ce9178', // Orange - Subsystems
-  L4: '#c586c0', // Purple - Full-Stack
-};
+// Re-export for backwards compatibility
+export { LEVEL_COLORS } from '../constants/colors';
 
 const NODE_WIDTH = 200;
 const NODE_HEIGHT = 100;

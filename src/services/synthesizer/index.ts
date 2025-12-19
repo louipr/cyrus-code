@@ -20,8 +20,8 @@ import { generateWithGap, previewGeneration, getGeneratedPaths, fileExists } fro
 
 // Re-export types and utilities
 export * from './schema.js';
-export { symbolToComponent, isGeneratable } from './backends/typescript.js';
-export { getGeneratedPaths, fileExists } from './generation-gap.js';
+export * from './backends/typescript.js';
+export * from './generation-gap.js';
 
 // =============================================================================
 // Synthesizer Service
@@ -122,7 +122,7 @@ export class SynthesizerService implements ISynthesizerService {
     namespace: string,
     options: GenerationOptions
   ): GenerationBatchResult {
-    const symbols = this.store.findByNamespace(namespace);
+    const symbols = this.store.getQueryService().findByNamespace(namespace);
     const generatableSymbols = symbols.filter(isGeneratable);
     const symbolIds = generatableSymbols.map((s) => s.id);
 

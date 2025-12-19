@@ -50,6 +50,9 @@ export interface IHelpService {
 
   /** Format categories with their topics for terminal display */
   formatCategoryOverview(): string;
+
+  /** Clear all caches (manifest and preprocessor) */
+  clearCache(): void;
 }
 
 // =============================================================================

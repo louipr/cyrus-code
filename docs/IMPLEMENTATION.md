@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 202 unit tests
+npm test               # Run 285 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 174 | `src/**/*.test.ts` |
+| Unit tests | 285 | `src/**/*.test.ts` |
 | E2E tests | 17 tests (4 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **191** | |
+| **Total** | **302** | |
 
 ---
 
@@ -51,7 +51,8 @@ npm run electron:dev   # Dev mode with hot reload
 | 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
 | Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
 | Documentation | C4 diagrams | - | ✅ Complete |
-| 4: Analysis | Static Analyzer | Status, Dead Code | 🔄 In Progress |
+| C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
+| 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
 ---
@@ -67,8 +68,8 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.3 | Implement SQLite persistence | `src/repositories/persistence.ts` | ✅ |
 | 1.4 | Implement Symbol Store | `src/services/symbol-table/store.ts` | ✅ |
 | 1.5 | Implement Symbol Repository | `src/repositories/symbol-repository.ts` | ✅ |
-| 1.6 | Implement Component Registry | `src/services/registry/index.ts` | ✅ |
-| 1.7 | Implement Version Resolver | `src/services/registry/version.ts` | ✅ |
+| 1.6 | Implement Component Registry | `src/services/component-registry/index.ts` | ✅ |
+| 1.7 | Implement Version Resolver | `src/services/component-registry/version.ts` | ✅ |
 | 1.8 | Create API Facade | `src/api/facade.ts` | ✅ |
 | 1.9 | Create API DTOs | `src/api/types.ts` | ✅ |
 | 1.10 | Basic CLI (register, list, get, validate) | `src/cli/` | ✅ |
@@ -346,56 +347,35 @@ npm run electron:dev   # Dev mode with hot reload
 
 **Rationale**: `typescript:include` makes L4 content dynamic (not duplicated prose). Merging into L3 as `## Code Details` section provides single doc per component.
 
+### Phase 10: C4-4 Code Diagram Generator (D.37-D.48)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.37 | Create diagram-generator service structure | `src/services/help/diagram-generator/` | ✅ |
+| D.38 | Schema types (ClassInfo, RelationshipInfo, DiagramConfig) | `schema.ts` | ✅ |
+| D.39 | TypeSimplificationRegistry (pluggable type mappings) | `simplifier/type-registry.ts` | ✅ |
+| D.40 | TypeSimplifier | `simplifier/type-simplifier.ts` | ✅ |
+| D.41 | InterfaceExtractor | `extractor/interface-extractor.ts` | ✅ |
+| D.42 | TypeExtractor | `extractor/type-extractor.ts` | ✅ |
+| D.43 | RelationshipExtractor | `extractor/relationship-extractor.ts` | ✅ |
+| D.44 | ClassDiagramBuilder (fluent builder) | `builder/class-diagram-builder.ts` | ✅ |
+| D.45 | MethodSelector (selective filtering) | `builder/method-selector.ts` | ✅ |
+| D.46 | DiagramRenderer + MermaidRenderer | `renderer/*.ts` | ✅ |
+| D.47 | C4DiagramGenerator facade + preprocessor integration | `index.ts`, `preprocessor.ts` | ✅ |
+| D.48 | Unit tests (24 new tests) | `index.test.ts` | ✅ |
+
+**Summary**: Full C4 Level 4 (Code) diagram generation from TypeScript source. Uses ts-morph for AST analysis. Extracts interfaces, types, and relationships to generate Mermaid classDiagram syntax via `mermaid:c4code` preprocessor directive.
+
 ---
 
-## Slice 4: Analysis + Dead Code (Phase A)
+## Slice 4: Analysis + Dead Code (DEFERRED)
 
-### Backend Tasks
+> **Note:** Analyzer stub (schema.ts only) was deleted during service architecture cleanup.
+> Types can be recreated when implementation resumes. See ADR-005 for design.
 
-| ID | Task | File(s) | Status |
-|----|------|---------|--------|
-| 4.1 | Analyzer schema types | `src/services/analyzer/schema.ts` | ✅ |
-| 4.2 | Call graph builder | `src/services/analyzer/call-graph.ts` | ⏳ |
-| 4.3 | Static Analyzer service | `src/services/analyzer/index.ts` | ⏳ |
-| 4.4 | Unit tests for Analyzer | `src/services/analyzer/*.test.ts` | ⏳ |
-| 4.5 | Extend API Facade | `src/api/facade.ts` | ⏳ |
-| 4.6 | CLI: analyze command | `src/cli/commands/analyze.ts` | ⏳ |
-| 4.7 | CLI: dead command | `src/cli/commands/dead.ts` | ⏳ |
-| 4.8 | CLI: status command | `src/cli/commands/status.ts` | ⏳ |
-| 4.9 | IPC handlers for analyzer | `electron/ipc-handlers.ts` | ⏳ |
+### Status: ❌ Deferred
 
-### GUI Tasks
-
-| ID | Task | File(s) | Status |
-|----|------|---------|--------|
-| 4.G1 | Status badges on nodes | `src/gui/components/StatusBadge.tsx` | ⏳ |
-| 4.G2 | Canvas node status integration | `src/gui/components/CanvasNode.tsx` | ⏳ |
-| 4.G3 | Analysis panel | `src/gui/components/AnalysisPanel.tsx` | ⏳ |
-| 4.G4 | E2E tests for analysis | `tests/e2e/analysis.spec.ts` | ⏳ |
-
-### Verification Tasks
-
-| ID | Task | Type | Status |
-|----|------|------|--------|
-| 4.V1 | `npm run build && npm test` passes with analyzer tests | Agent | ⏳ |
-| 4.V2 | CLI commands work: `cyrus-code analyze`, `dead`, `status` | Agent + User | ⏳ |
-| 4.V3 | `npm run test:e2e` passes (analysis tests) | Agent | ⏳ |
-| 4.V4 | Manual: Status badges visible, analysis panel works | User | ⏳ |
-
-### Deliverables
-
-- [ ] Analyze code from entry points
-- [ ] Identify dead/unreachable components
-- [ ] Visual status indicators on canvas nodes
-- [ ] Analysis summary panel
-
-### Phase B (Deferred)
-
-| Task | Status |
-|------|--------|
-| Import Detector (`src/services/analyzer/import-scanner.ts`) | ⏳ |
-| CLI: scan, import commands | ⏳ |
-| Import wizard GUI | ⏳ |
+All tasks in this slice are deferred pending future implementation needs.
 
 ---
 
@@ -530,12 +510,23 @@ cyrus-code/
 │       │   ├── index.ts               # HelpService
 │       │   ├── schema.ts              # Help types
 │       │   ├── renderer.ts            # Terminal markdown renderer
-│       │   └── index.test.ts          # Help tests (28 tests)
-│       └── analyzer/                  # Static Analyzer 🔄 (Slice 4)
-│           ├── schema.ts              # Analysis types ✅
-│           ├── call-graph.ts          # Call graph builder ⏳
-│           ├── index.ts               # AnalyzerService ⏳
-│           └── index.test.ts          # Analyzer tests ⏳
+│       │   ├── preprocessor.ts        # Markdown preprocessor
+│       │   ├── extractor.ts           # TypeScript code extraction
+│       │   ├── index.test.ts          # Help tests (28 tests)
+│       │   └── diagram-generator/     # C4 Code Diagram Generator ✅
+│       │       ├── index.ts           # C4DiagramGenerator facade
+│       │       ├── schema.ts          # ClassInfo, DiagramConfig types
+│       │       ├── extractor/         # AST extraction
+│       │       ├── builder/           # Diagram construction
+│       │       ├── simplifier/        # Type simplification
+│       │       ├── renderer/          # Output formats
+│       │       └── index.test.ts      # Tests (24 tests)
+│       └── source-tools/              # Source Code Utilities ✅
+│           ├── index.ts               # Barrel exports
+│           ├── schema.ts              # Type definitions
+│           ├── file-cache.ts          # FileCache<T> class
+│           ├── ts-morph-project.ts    # SourceFileManager
+│           └── index.test.ts          # Tests (24 tests)
 ├── tests/                             # E2E Tests ✅
 │   └── e2e/
 │       ├── helpers/
@@ -566,13 +557,13 @@ cyrus-code/
 │   ├── gui/                           # GUI Components ✅
 │   ├── repositories/                  # Data Access Layer ✅
 │   ├── services/
-│   │   ├── registry/                  # Component Registry ✅
+│   │   ├── component-registry/        # Component Registry ✅
 │   │   ├── symbol-table/              # Symbol Table ✅
 │   │   ├── validator/                 # Interface Validator ✅ (Slice 2)
 │   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
 │   │   ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
-│   │   ├── help/                      # Help System ✅
-│   │   └── analyzer/                  # Static Analyzer (Slice 4)
+│   │   ├── help/                      # Help System + Diagram Generator ✅
+│   │   └── source-tools/              # Source Code Utilities ✅
 ├── tests/
 │   └── e2e/                           # Playwright E2E Tests ✅
 ├── docs/
@@ -602,7 +593,7 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (174 tests)
+# 2. Run unit tests (285 tests)
 npm test
 
 # 3. Run E2E tests (17 tests)
@@ -614,8 +605,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 174 unit tests pass
-- 17 E2E tests pass
+- 285 unit tests pass
+- 16 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling

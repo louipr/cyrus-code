@@ -16,11 +16,14 @@ import type {
 // Service Interfaces
 // ============================================================================
 
+// Forward declaration for DependencyGraphService
+import type { DependencyGraphService } from './graph-service.js';
+
 /**
  * Wiring service public API contract.
  *
- * Manages connections between component ports and builds dependency graphs.
- * Provides validation, cycle detection, and graph analysis.
+ * Manages connections between component ports.
+ * For graph operations, use getGraphService().
  */
 export interface IWiringService {
   // Connection operations
@@ -29,21 +32,8 @@ export interface IWiringService {
   getConnections(symbolId: string): Connection[];
   getAllConnections(): Connection[];
 
-  // Graph operations
-  buildDependencyGraph(): DependencyGraph;
-  buildSubgraph(symbolId: string): DependencyGraph;
-  getDependencyGraphDTO(): DependencyGraphDTO;
-
-  // Graph analysis
-  detectCycles(): string[][];
-  getTopologicalOrder(): string[] | null;
-  getUpstreamDependencies(symbolId: string): string[];
-  getDownstreamDependencies(symbolId: string): string[];
-  getDirectDependencies(symbolId: string): { upstream: string[]; downstream: string[] };
-  getRootNodes(): string[];
-  getLeafNodes(): string[];
-  getConnectedComponents(): string[][];
-  getGraphStats(): GraphStats;
+  // Graph service accessor
+  getGraphService(): DependencyGraphService;
 
   // Validation
   validateAllConnections(): ValidationResult;

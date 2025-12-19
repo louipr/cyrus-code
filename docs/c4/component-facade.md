@@ -53,6 +53,15 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Routes To |
+|----------|-----------|
+| **Symbol CRUD** | Component Registry |
+| **Symbol Queries** | Component Registry |
+| **Wiring** | Wiring Service |
+| **Generation** | Synthesizer Service |
+
 ### ApiFacade API
 
 ```typescript:include

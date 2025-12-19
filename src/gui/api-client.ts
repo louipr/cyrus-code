@@ -34,6 +34,7 @@ import type {
   HelpTopic,
   HelpSearchResult,
   C4Hierarchy,
+  DocumentHeading,
 } from '../services/help/schema';
 
 /**
@@ -108,6 +109,7 @@ interface CyrusAPI {
     getTopic: (topicId: string) => Promise<ApiResponse<HelpTopic | undefined>>;
     search: (query: string) => Promise<ApiResponse<HelpSearchResult[]>>;
     getTopicContent: (topicId: string, format?: 'raw' | 'html') => Promise<ApiResponse<string>>;
+    getTopicSubsections: (topicId: string) => Promise<ApiResponse<DocumentHeading[]>>;
     getAppVersion: () => Promise<ApiResponse<string>>;
     onOpen: (callback: () => void) => void;
     onSearch: (callback: () => void) => void;
@@ -217,6 +219,7 @@ function createMockApi(): CyrusAPI {
       getTopic: () => mockResponse(undefined),
       search: () => mockResponse([]),
       getTopicContent: () => mockResponse('# Help not available\n\nNot connected to backend.'),
+      getTopicSubsections: () => mockResponse([]),
       getAppVersion: () => mockResponse('0.1.0'),
       onOpen: () => {},
       onSearch: () => {},

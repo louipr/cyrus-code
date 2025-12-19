@@ -8,6 +8,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { DependencyGraphDTO, GraphNodeDTO, GraphEdgeDTO } from '../../api/types';
 import { apiClient } from '../api-client';
+import { LEVEL_COLORS } from '../constants/colors';
+import { useCanvasTransform } from '../hooks/useCanvasTransform';
 
 interface DependencyGraphProps {
   selectedSymbolId?: string;
@@ -21,15 +23,6 @@ interface NodePosition {
   height: number;
 }
 
-// Level colors (L0-L4)
-const LEVEL_COLORS: Record<string, string> = {
-  L0: '#6a9955',  // Green - Primitives
-  L1: '#4ec9b0',  // Cyan - Components
-  L2: '#dcdcaa',  // Yellow - Modules
-  L3: '#ce9178',  // Orange - Subsystems
-  L4: '#c586c0',  // Purple - Full-Stack
-};
-
 const NODE_WIDTH = 180;
 const NODE_HEIGHT = 60;
 const LEVEL_GAP_X = 250;
@@ -42,10 +35,10 @@ export function DependencyGraph({
   const [graph, setGraph] = useState<DependencyGraphDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [transform, setTransform] = useState({ x: 50, y: 50, scale: 1 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Use shared pan/zoom hook
+  const { transform, handlers } = useCanvasTransform();
 
   useEffect(() => {
     async function fetchGraph(): Promise<void> {
@@ -104,38 +97,6 @@ export function DependencyGraph({
 
   const positions = calculatePositions();
 
-  // Pan handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 0) {
-      setDragging(true);
-      setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
-    }
-  }, [transform]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (dragging) {
-      setTransform(prev => ({
-        ...prev,
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      }));
-    }
-  }, [dragging, dragStart]);
-
-  const handleMouseUp = useCallback(() => {
-    setDragging(false);
-  }, []);
-
-  // Zoom handler
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    setTransform(prev => ({
-      ...prev,
-      scale: Math.min(Math.max(0.3, prev.scale * scaleFactor), 2),
-    }));
-  }, []);
-
   if (loading) {
     return (
       <div style={styles.container} data-testid="graph-view">
@@ -165,11 +126,11 @@ export function DependencyGraph({
       <svg
         ref={svgRef}
         style={styles.svg}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
+        onMouseDown={handlers.handleMouseDown}
+        onMouseMove={handlers.handleMouseMove}
+        onMouseUp={handlers.handleMouseUp}
+        onMouseLeave={handlers.handleMouseUp}
+        onWheel={handlers.handleWheel}
       >
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Render edges first (behind nodes) */}

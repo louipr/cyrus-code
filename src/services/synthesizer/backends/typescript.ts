@@ -9,6 +9,7 @@ import type { ComponentSymbol, PortDefinition, TypeReference } from '../../symbo
 import { formatSemVer } from '../../symbol-table/schema.js';
 import type { GeneratedComponent, GeneratedPort } from '../schema.js';
 import { sanitizeClassName } from '../schema.js';
+import { capitalize } from '../codegen.js';
 
 // =============================================================================
 // Type Mapping
@@ -156,8 +157,7 @@ function portToGeneratedPort(port: PortDefinition): GeneratedPort {
  * Convention: on{PortName} for handlers
  */
 export function inputMethodName(portName: string): string {
-  const capitalized = portName.charAt(0).toUpperCase() + portName.slice(1);
-  return `on${capitalized}`;
+  return `on${capitalize(portName)}`;
 }
 
 /**
@@ -165,8 +165,7 @@ export function inputMethodName(portName: string): string {
  * Convention: emit{PortName} for emitters
  */
 export function outputMethodName(portName: string): string {
-  const capitalized = portName.charAt(0).toUpperCase() + portName.slice(1);
-  return `emit${capitalized}`;
+  return `emit${capitalize(portName)}`;
 }
 
 /**

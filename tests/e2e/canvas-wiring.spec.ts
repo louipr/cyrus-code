@@ -1,12 +1,7 @@
 /**
  * Canvas Wiring E2E Tests
  *
- * Tests the visual wiring canvas functionality:
- * - Canvas view loads and displays nodes
- * - View toggle switches to canvas view
- * - Node dragging changes position
- * - Port tooltip on hover
- * - Click-to-wire interaction
+ * Tests the view switching functionality between Browser, Graph, and Canvas views.
  */
 
 import { test, expect } from '@playwright/test';

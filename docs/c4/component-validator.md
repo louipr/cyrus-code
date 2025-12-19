@@ -53,6 +53,14 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **Port Validation** | `checkPortCompatibility()`, `validateConnection()` |
+| **Batch Validation** | `validateAllConnections()` |
+| **Required Ports** | `checkRequiredPorts()` |
+
 ### ValidatorService API
 
 ```typescript:include

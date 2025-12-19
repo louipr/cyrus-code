@@ -58,6 +58,14 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **Generate** | `generateSymbol()`, `generateMultiple()`, `generateAll()` |
+| **Preview** | `previewSymbol()` |
+| **Query** | `listGeneratable()`, `canGenerate()`, `hasUserImplementation()` |
+
 ### Synthesizer Service API
 
 ```typescript:include

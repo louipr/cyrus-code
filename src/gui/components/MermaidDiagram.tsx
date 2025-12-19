@@ -54,7 +54,6 @@ mermaid.initialize({
     useMaxWidth: true,
     c4ShapeInRow: 3,
     nextLinePaddingX: 15,
-    c4ActorInRow: 2,
     c4BoundaryInRow: 2,
     personFontSize: 14,
     personFontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

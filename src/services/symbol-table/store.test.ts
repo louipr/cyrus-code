@@ -9,10 +9,10 @@ import assert from 'node:assert';
 import {
   initMemoryDatabase,
   closeDatabase,
-  clearAllData,
 } from '../../repositories/persistence.js';
 import { SymbolStore } from './store.js';
-import type { ComponentSymbol, Connection } from './schema.js';
+import type { Connection } from './schema.js';
+import { createSymbol } from '../test-fixtures.js';
 
 describe('SymbolStore', () => {
   let store: SymbolStore;
@@ -25,30 +25,6 @@ describe('SymbolStore', () => {
   afterEach(() => {
     closeDatabase();
   });
-
-  // Helper to create a valid symbol
-  function createSymbol(
-    overrides: Partial<ComponentSymbol> = {}
-  ): ComponentSymbol {
-    const now = new Date();
-    return {
-      id: 'test/TestComponent@1.0.0',
-      name: 'TestComponent',
-      namespace: 'test',
-      level: 'L1',
-      kind: 'service',
-      language: 'typescript',
-      ports: [],
-      version: { major: 1, minor: 0, patch: 0 },
-      tags: [],
-      description: 'Test component',
-      createdAt: now,
-      updatedAt: now,
-      status: 'declared',
-      origin: 'manual',
-      ...overrides,
-    };
-  }
 
   describe('register', () => {
     it('should register a valid symbol', () => {
@@ -168,106 +144,46 @@ describe('SymbolStore', () => {
     });
   });
 
-  describe('findByNamespace', () => {
-    it('should find symbols in namespace', () => {
-      store.register(createSymbol({ id: 'auth/A@1.0.0', namespace: 'auth' }));
-      store.register(createSymbol({ id: 'auth/B@1.0.0', namespace: 'auth' }));
-      store.register(createSymbol({ id: 'core/C@1.0.0', namespace: 'core' }));
+  describe('QueryService', () => {
+    it('should find symbols by namespace, level, kind, and tag', () => {
+      // Setup: Register symbols with various attributes
+      store.register(createSymbol({ id: 'auth/A@1.0.0', namespace: 'auth', level: 'L1', kind: 'service', tags: ['auth', 'jwt'] }));
+      store.register(createSymbol({ id: 'auth/B@1.0.0', namespace: 'auth', level: 'L1', kind: 'class', tags: ['auth'] }));
+      store.register(createSymbol({ id: 'auth/jwt/C@1.0.0', namespace: 'auth/jwt', level: 'L0', kind: 'type', tags: ['core'] }));
+      store.register(createSymbol({ id: 'core/D@1.0.0', namespace: 'core', level: 'L1', kind: 'service', tags: ['core'] }));
 
-      const results = store.findByNamespace('auth');
-      assert.strictEqual(results.length, 2);
-      assert.ok(results.every((r) => r.namespace === 'auth'));
+      const query = store.getQueryService();
+
+      // findByNamespace (includes nested)
+      assert.strictEqual(query.findByNamespace('auth').length, 3);
+      assert.strictEqual(query.findByNamespace('core').length, 1);
+
+      // findByLevel
+      assert.strictEqual(query.findByLevel('L1').length, 3);
+      assert.strictEqual(query.findByLevel('L0').length, 1);
+
+      // findByKind
+      assert.strictEqual(query.findByKind('service').length, 2);
+      assert.strictEqual(query.findByKind('class').length, 1);
+
+      // findByTag
+      assert.strictEqual(query.findByTag('auth').length, 2);
+      assert.strictEqual(query.findByTag('core').length, 2);
     });
 
-    it('should find symbols in nested namespace', () => {
-      store.register(
-        createSymbol({ id: 'auth/jwt/A@1.0.0', namespace: 'auth/jwt' })
-      );
-      store.register(createSymbol({ id: 'auth/B@1.0.0', namespace: 'auth' }));
+    it('should search by name and description', () => {
+      store.register(createSymbol({ id: 'auth/JwtService@1.0.0', name: 'JwtService', description: 'Token handling' }));
+      store.register(createSymbol({ id: 'auth/AuthService@1.0.0', name: 'AuthService', description: 'Handles JWT tokens' }));
 
-      const results = store.findByNamespace('auth');
-      assert.strictEqual(results.length, 2);
-    });
-  });
+      const query = store.getQueryService();
 
-  describe('findByLevel', () => {
-    it('should find symbols by level', () => {
-      store.register(
-        createSymbol({ id: 'a@1.0.0', level: 'L0', kind: 'type' })
-      );
-      store.register(
-        createSymbol({ id: 'b@1.0.0', level: 'L1', kind: 'service' })
-      );
-      store.register(
-        createSymbol({ id: 'c@1.0.0', level: 'L1', kind: 'class' })
-      );
+      // Search by name
+      const byName = query.search('Jwt');
+      assert.strictEqual(byName.length, 2); // Both match 'Jwt' (name or description)
 
-      const results = store.findByLevel('L1');
-      assert.strictEqual(results.length, 2);
-      assert.ok(results.every((r) => r.level === 'L1'));
-    });
-  });
-
-  describe('findByKind', () => {
-    it('should find symbols by kind', () => {
-      store.register(
-        createSymbol({ id: 'a@1.0.0', level: 'L1', kind: 'service' })
-      );
-      store.register(
-        createSymbol({ id: 'b@1.0.0', level: 'L1', kind: 'class' })
-      );
-
-      const results = store.findByKind('service');
-      assert.strictEqual(results.length, 1);
-      const first = results[0];
-      assert.ok(first);
-      assert.strictEqual(first.kind, 'service');
-    });
-  });
-
-  describe('findByTag', () => {
-    it('should find symbols by tag', () => {
-      store.register(createSymbol({ id: 'a@1.0.0', tags: ['auth', 'jwt'] }));
-      store.register(createSymbol({ id: 'b@1.0.0', tags: ['auth'] }));
-      store.register(createSymbol({ id: 'c@1.0.0', tags: ['core'] }));
-
-      const results = store.findByTag('auth');
-      assert.strictEqual(results.length, 2);
-    });
-  });
-
-  describe('search', () => {
-    it('should search by name', () => {
-      store.register(
-        createSymbol({ id: 'auth/JwtService@1.0.0', name: 'JwtService' })
-      );
-      store.register(
-        createSymbol({ id: 'auth/AuthService@1.0.0', name: 'AuthService' })
-      );
-
-      const results = store.search('Jwt');
-      assert.strictEqual(results.length, 1);
-      const first = results[0];
-      assert.ok(first);
-      assert.strictEqual(first.name, 'JwtService');
-    });
-
-    it('should search by description', () => {
-      store.register(
-        createSymbol({
-          id: 'a@1.0.0',
-          description: 'Handles JWT tokens',
-        })
-      );
-      store.register(
-        createSymbol({
-          id: 'b@1.0.0',
-          description: 'User management',
-        })
-      );
-
-      const results = store.search('JWT');
-      assert.strictEqual(results.length, 1);
+      // Search by description only
+      const byDesc = query.search('Token');
+      assert.strictEqual(byDesc.length, 2);
     });
   });
 
@@ -516,11 +432,11 @@ describe('SymbolStore', () => {
       assert.deepStrictEqual(retrieved.statusInfo.referencedBy, ['b@1.0.0']);
     });
 
-    it('should find unreachable symbols', () => {
+    it('should find unreachable symbols via QueryService', () => {
       store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
       store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
 
-      const unreachable = store.findUnreachable();
+      const unreachable = store.getQueryService().findUnreachable();
       assert.strictEqual(unreachable.length, 1);
       const first = unreachable[0];
       assert.ok(first);

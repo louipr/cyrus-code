@@ -53,6 +53,15 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **Connections** | `connect()`, `disconnect()`, `validateConnection()` |
+| **Port Discovery** | `findCompatiblePorts()`, `findUnconnectedRequired()` |
+| **Graph** | `getGraph()`, `getStats()` |
+| **Cycle Analysis** | `detectCycles()`, `getTopologicalOrder()` |
+
 ### WiringService API
 
 ```typescript:include
@@ -62,10 +71,12 @@ exports: [IWiringService]
 
 ### Graph Types
 
-```typescript:include
-source: src/services/wiring/schema.ts
-exports: [DependencyGraph, GraphNode, GraphEdge, GraphStats]
-```
+| Type | Key Fields |
+|------|------------|
+| `DependencyGraph` | `nodes: Map<string, GraphNode>`, `edges: GraphEdge[]` |
+| `GraphNode` | `symbolId`, `symbol`, `inEdges[]`, `outEdges[]` |
+| `GraphEdge` | `id`, `fromSymbol`, `fromPort`, `toSymbol`, `toPort` |
+| `GraphStats` | `nodeCount`, `edgeCount`, `maxDepth`, `connectedComponents` |
 
 ### Error Codes
 

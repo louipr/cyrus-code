@@ -352,6 +352,21 @@ export class ValidatorService implements IValidatorService {
   }
 }
 
+/**
+ * Factory function for creating ValidatorService instances.
+ * Preferred over direct instantiation for dependency injection support.
+ *
+ * @param store - SymbolStore instance for symbol and connection access
+ * @param options - Optional validation options
+ * @returns ValidatorService instance
+ */
+export function createValidatorService(
+  store: SymbolStore,
+  options?: Partial<ValidationOptions>
+): ValidatorService {
+  return new ValidatorService(store, options);
+}
+
 // ============================================================================
 // Re-exports
 // ============================================================================

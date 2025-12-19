@@ -53,6 +53,15 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **Topics** | `getTopic()`, `listTopics()`, `getTopicContent()` |
+| **Categories** | `getCategories()`, `getByCategory()` |
+| **Search** | `search()` |
+| **Related** | `getRelatedTopics()`, `getTopicSubsections()` |
+
 ### HelpService API
 
 ```typescript:include

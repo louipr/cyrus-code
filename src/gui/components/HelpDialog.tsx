@@ -17,17 +17,7 @@ import type {
   HelpGroup,
   DocumentHeading,
 } from '../../services/help/schema';
-
-/**
- * Convert heading text to a slug for anchor links.
- * "Code Details" → "code-details"
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
+import { slugify } from '../../services/help/headings';
 
 /**
  * Heading node with children for hierarchical sidebar display.

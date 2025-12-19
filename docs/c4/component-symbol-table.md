@@ -1,9 +1,5 @@
 # C4 Component Diagram - Symbol Table
 
-## Overview
-
-Internal structure of the Symbol Table container, showing its components and their relationships.
-
 ## Component Diagram
 
 ```mermaid
@@ -38,13 +34,15 @@ flowchart TD
     class analyzer planned
 ```
 
-## Components
+*Figure: Internal structure of the Symbol Table container, showing its components and their relationships.*
+
+### Components
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
 | **Symbol Store** | In-memory symbol cache | `register()`, `get()`, `update()`, `remove()` | ✅ | `src/services/symbol-table/store.ts` |
 | **Query Engine** | Symbol discovery | `findByNamespace()`, `findByLevel()`, `search()` | ✅ | Integrated in Symbol Store |
-| **Version Resolver** | SemVer compatibility | `findCompatible()`, `getLatest()`, `checkConstraint()` | ✅ | In `src/services/registry/` |
+| **Version Resolver** | SemVer compatibility | `findCompatible()`, `getLatest()`, `checkConstraint()` | ✅ | In `src/services/component-registry/` |
 | **Connection Manager** | Port wiring | `connect()`, `disconnect()`, `getConnections()` | ✅ | `src/services/symbol-table/store.ts` |
 | **Status Tracker** | Usage tracking | `updateStatus()`, `findUnreachable()`, `findUntested()` | ✅ | Integrated in Symbol Store |
 | **Persistence Layer** | Database I/O | `load()`, `save()`, `transaction()` | ✅ | `src/repositories/persistence.ts` |
@@ -53,7 +51,20 @@ flowchart TD
 >
 > **Note**: Some components shown as separate in the diagram are integrated into a single implementation for simplicity. The conceptual separation remains valid for understanding responsibilities.
 
-## Design Decisions
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **CRUD** | `register()`, `get()`, `update()`, `remove()` |
+| **Query** | `findByNamespace()`, `findByLevel()`, `findByKind()`, `search()`, `list()` |
+| **Relations** | `getContains()`, `getContainedBy()`, `getDependents()`, `getDependencies()` |
+| **Versions** | `getVersions()`, `getLatest()` |
+| **Status** | `updateStatus()`, `findUnreachable()`, `findUntested()` |
+| **Connections** | `connect()`, `disconnect()`, `getConnections()`, `getAllConnections()` |
+| **Validation** | `validate()`, `validateSymbol()`, `checkCircular()` |
+| **Bulk** | `import()`, `export()` |
+
+### Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
@@ -64,21 +75,24 @@ flowchart TD
 
 ---
 
-## Code Details
+## Code Diagram
 
-### Symbol Store API
+*C4-4 UML class diagram showing the ISymbolStore interface with related types.*
 
-```typescript:include
+```mermaid:c4code
 source: src/services/symbol-table/schema.ts
-exports: [ISymbolStore]
+interface: ISymbolStore
+related: [ComponentSymbol, Connection, ValidationResult]
+maxMethods: 8
 ```
 
 ### Core Types
 
-```typescript:include
-source: src/services/symbol-table/schema.ts
-exports: [ComponentSymbol, Connection, ValidationResult]
-```
+| Type | Key Fields |
+|------|------------|
+| `ComponentSymbol` | `id`, `name`, `namespace`, `level`, `kind`, `ports[]`, `version`, `status`, `origin` |
+| `Connection` | `id`, `fromSymbolId`, `fromPort`, `toSymbolId`, `toPort`, `transform?` |
+| `ValidationResult` | `valid`, `errors[]`, `warnings[]` |
 
 ### Notes
 

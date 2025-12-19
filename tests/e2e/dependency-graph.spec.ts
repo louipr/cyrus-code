@@ -1,11 +1,7 @@
 /**
  * Dependency Graph E2E Tests
  *
- * Tests the graph visualization functionality:
- * - Graph view loads and displays
- * - View toggle switches between browser and graph
- * - Stats panel shows graph statistics
- * - Empty graph shows appropriate message
+ * Tests the graph view toggle visibility and button presence.
  */
 
 import { test, expect } from '@playwright/test';

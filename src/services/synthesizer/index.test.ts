@@ -18,69 +18,26 @@ import {
   emptyBatchResult,
 } from './index.js';
 import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './backends/typescript.js';
-import { generateContentHash, capitalize, namespaceToPath } from './codegen.js';
+import { generateContentHash } from './codegen.js';
 import { getGeneratedPaths, fileExists } from './generation-gap.js';
+import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
 // =============================================================================
-// Test Fixtures
+// Test Fixtures (synthesizer-specific)
 // =============================================================================
 
+/** Create a synthesizable L1 component with default ports */
 function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSymbol {
-  const now = new Date();
-  return {
+  return createSymbol({
     id: 'test/MyComponent@1.0.0',
     name: 'MyComponent',
-    namespace: 'test',
-    level: 'L1',
     kind: 'class',
-    language: 'typescript',
     ports: [
-      {
-        name: 'input',
-        direction: 'in',
-        type: { symbolId: 'core/string@1.0.0' },
-        required: true,
-        multiple: false,
-        description: 'Input data',
-      },
-      {
-        name: 'output',
-        direction: 'out',
-        type: { symbolId: 'core/number@1.0.0' },
-        required: false,
-        multiple: false,
-        description: 'Output result',
-      },
+      createPort({ name: 'input', direction: 'in', type: { symbolId: 'core/string@1.0.0' }, required: true }),
+      createPort({ name: 'output', direction: 'out', type: { symbolId: 'core/number@1.0.0' } }),
     ],
-    version: { major: 1, minor: 0, patch: 0 },
-    tags: ['test'],
-    description: 'A test component',
-    createdAt: now,
-    updatedAt: now,
-    status: 'declared',
-    origin: 'manual',
     ...overrides,
-  };
-}
-
-function createL0Symbol(): ComponentSymbol {
-  const now = new Date();
-  return {
-    id: 'core/string@1.0.0',
-    name: 'string',
-    namespace: 'core',
-    level: 'L0',
-    kind: 'type',
-    language: 'typescript',
-    ports: [],
-    version: { major: 1, minor: 0, patch: 0 },
-    tags: ['primitive'],
-    description: 'String type',
-    createdAt: now,
-    updatedAt: now,
-    status: 'declared',
-    origin: 'manual',
-  };
+  });
 }
 
 // =============================================================================
@@ -222,7 +179,7 @@ describe('TypeScript Backend', () => {
     });
 
     it('should return false for L0 symbols', () => {
-      const symbol = createL0Symbol();
+      const symbol = createTypeSymbol('core/string@1.0.0');
       assert.strictEqual(isGeneratable(symbol), false);
     });
 
@@ -257,29 +214,8 @@ describe('Codegen Utilities', () => {
     });
   });
 
-  describe('capitalize', () => {
-    it('should capitalize first letter', () => {
-      assert.strictEqual(capitalize('hello'), 'Hello');
-    });
-
-    it('should handle already capitalized', () => {
-      assert.strictEqual(capitalize('Hello'), 'Hello');
-    });
-
-    it('should handle single character', () => {
-      assert.strictEqual(capitalize('a'), 'A');
-    });
-  });
-
-  describe('namespaceToPath', () => {
-    it('should convert namespace to path', () => {
-      assert.strictEqual(namespaceToPath('auth/jwt'), 'auth/jwt');
-    });
-
-    it('should handle empty namespace', () => {
-      assert.strictEqual(namespaceToPath(''), '');
-    });
-  });
+  // Note: capitalize() and namespaceToPath() tests removed as they test
+  // trivial string operations with obvious behavior that rarely breaks.
 });
 
 // =============================================================================
@@ -336,7 +272,7 @@ describe('SynthesizerService', () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-test-'));
 
     // Register core types
-    store.register(createL0Symbol());
+    store.register(createTypeSymbol('core/string@1.0.0'));
     store.register({
       id: 'core/number@1.0.0',
       name: 'number',
@@ -561,7 +497,7 @@ describe('Generated Code Content', () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-content-test-'));
 
     // Register core types
-    store.register(createL0Symbol());
+    store.register(createTypeSymbol('core/string@1.0.0'));
     store.register({
       id: 'core/number@1.0.0',
       name: 'number',

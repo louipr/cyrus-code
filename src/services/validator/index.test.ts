@@ -11,9 +11,9 @@ import {
   closeDatabase,
 } from '../../repositories/persistence.js';
 import { SymbolStore } from '../symbol-table/store.js';
-import type { ComponentSymbol, PortDefinition } from '../symbol-table/schema.js';
 import { ValidatorService } from './index.js';
 import { checkDirectionCompatibility, checkTypeCompatibility } from './compatibility.js';
+import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
 describe('ValidatorService', () => {
   let store: SymbolStore;
@@ -29,192 +29,111 @@ describe('ValidatorService', () => {
     closeDatabase();
   });
 
-  // Helper to create a valid symbol
-  function createSymbol(
-    overrides: Partial<ComponentSymbol> = {}
-  ): ComponentSymbol {
-    const now = new Date();
-    return {
-      id: 'test/TestComponent@1.0.0',
-      name: 'TestComponent',
-      namespace: 'test',
-      level: 'L1',
-      kind: 'service',
-      language: 'typescript',
-      ports: [],
-      version: { major: 1, minor: 0, patch: 0 },
-      tags: [],
-      description: 'Test component',
-      createdAt: now,
-      updatedAt: now,
-      status: 'declared',
-      origin: 'manual',
-      ...overrides,
-    };
-  }
-
-  // Helper to create a type symbol (needed for port type references)
-  function createTypeSymbol(id: string): ComponentSymbol {
-    const now = new Date();
-    const parts = id.split('/');
-    const nameParts = parts[parts.length - 1]?.split('@') ?? ['Unknown', '1.0.0'];
-    return {
-      id,
-      name: nameParts[0] ?? 'Unknown',
-      namespace: parts.slice(0, -1).join('/'),
-      level: 'L0',
-      kind: 'type',
-      language: 'typescript',
-      ports: [],
-      version: { major: 1, minor: 0, patch: 0 },
-      tags: [],
-      description: 'Type symbol',
-      createdAt: now,
-      updatedAt: now,
-      status: 'declared',
-      origin: 'manual',
-    };
-  }
-
-  // Helper to create a port
-  function createPort(overrides: Partial<PortDefinition> = {}): PortDefinition {
-    return {
-      name: 'testPort',
-      direction: 'out',
-      type: { symbolId: 'core/String@1.0.0' },
-      required: false,
-      multiple: false,
-      description: 'Test port',
-      ...overrides,
-    };
-  }
-
   describe('Direction Compatibility', () => {
-    it('should allow out -> in connection', () => {
-      const result = checkDirectionCompatibility('out', 'in');
-      assert.ok(result.compatible);
+    it('should allow valid direction combinations', () => {
+      // All valid: out->in, out->inout, inout->in, inout->inout
+      const validCases: Array<['out' | 'in' | 'inout', 'out' | 'in' | 'inout']> = [
+        ['out', 'in'],
+        ['out', 'inout'],
+        ['inout', 'in'],
+        ['inout', 'inout'],
+      ];
+      for (const [from, to] of validCases) {
+        const result = checkDirectionCompatibility(from, to);
+        assert.ok(result.compatible, `Expected ${from} -> ${to} to be compatible`);
+      }
     });
 
-    it('should allow out -> inout connection', () => {
-      const result = checkDirectionCompatibility('out', 'inout');
-      assert.ok(result.compatible);
-    });
-
-    it('should allow inout -> in connection', () => {
-      const result = checkDirectionCompatibility('inout', 'in');
-      assert.ok(result.compatible);
-    });
-
-    it('should allow inout -> inout connection', () => {
-      const result = checkDirectionCompatibility('inout', 'inout');
-      assert.ok(result.compatible);
-    });
-
-    it('should reject in -> in connection', () => {
-      const result = checkDirectionCompatibility('in', 'in');
-      assert.ok(!result.compatible);
-      assert.ok(result.reason?.includes('input ports'));
-    });
-
-    it('should reject out -> out connection', () => {
-      const result = checkDirectionCompatibility('out', 'out');
-      assert.ok(!result.compatible);
-      assert.ok(result.reason?.includes('output ports'));
-    });
-
-    it('should reject in -> out connection', () => {
-      const result = checkDirectionCompatibility('in', 'out');
-      assert.ok(!result.compatible);
-    });
-
-    it('should provide suggestions for incompatible directions', () => {
-      const result = checkDirectionCompatibility('in', 'in');
-      assert.ok(result.suggestions);
-      assert.ok(result.suggestions.length > 0);
+    it('should reject invalid direction combinations with suggestions', () => {
+      // Invalid: in->in, out->out, in->out
+      const invalidCases: Array<['out' | 'in' | 'inout', 'out' | 'in' | 'inout', string]> = [
+        ['in', 'in', 'input ports'],
+        ['out', 'out', 'output ports'],
+        ['in', 'out', ''],
+      ];
+      for (const [from, to, expectedReason] of invalidCases) {
+        const result = checkDirectionCompatibility(from, to);
+        assert.ok(!result.compatible, `Expected ${from} -> ${to} to be incompatible`);
+        if (expectedReason) {
+          assert.ok(result.reason?.includes(expectedReason));
+        }
+        assert.ok(result.suggestions && result.suggestions.length > 0);
+      }
     });
   });
 
   describe('Type Compatibility', () => {
-    it('should allow exact type match', () => {
-      const type1 = { symbolId: 'core/String@1.0.0' };
-      const type2 = { symbolId: 'core/String@1.0.0' };
-      const result = checkTypeCompatibility(type1, type2, 'strict');
-      assert.ok(result.compatible);
-      assert.strictEqual(result.score, 100);
+    it('should allow compatible type scenarios', () => {
+      // Exact match (strict mode)
+      const exactMatch = checkTypeCompatibility(
+        { symbolId: 'core/String@1.0.0' },
+        { symbolId: 'core/String@1.0.0' },
+        'strict'
+      );
+      assert.ok(exactMatch.compatible);
+      assert.strictEqual(exactMatch.score, 100);
+
+      // Non-nullable to nullable (compatible mode)
+      const nullableWiden = checkTypeCompatibility(
+        { symbolId: 'core/String@1.0.0', nullable: false },
+        { symbolId: 'core/String@1.0.0', nullable: true },
+        'compatible'
+      );
+      assert.ok(nullableWiden.compatible);
+
+      // Matching generic parameters
+      const genericMatch = checkTypeCompatibility(
+        { symbolId: 'core/Array@1.0.0', generics: [{ symbolId: 'core/String@1.0.0' }] },
+        { symbolId: 'core/Array@1.0.0', generics: [{ symbolId: 'core/String@1.0.0' }] },
+        'strict'
+      );
+      assert.ok(genericMatch.compatible);
+
+      // Numeric widening (compatible mode)
+      const numericWiden = checkTypeCompatibility(
+        { symbolId: 'builtin/int32@1.0.0' },
+        { symbolId: 'builtin/int64@1.0.0' },
+        'compatible'
+      );
+      assert.ok(numericWiden.compatible);
+      assert.ok(numericWiden.score! < 100); // Score penalty for widening
     });
 
-    it('should reject type mismatch in strict mode', () => {
-      const type1 = { symbolId: 'core/String@1.0.0' };
-      const type2 = { symbolId: 'core/Number@1.0.0' };
-      const result = checkTypeCompatibility(type1, type2, 'strict');
-      assert.ok(!result.compatible);
-      assert.ok(result.reason?.includes('mismatch'));
-    });
+    it('should reject incompatible type scenarios', () => {
+      // Type mismatch (strict mode)
+      const typeMismatch = checkTypeCompatibility(
+        { symbolId: 'core/String@1.0.0' },
+        { symbolId: 'core/Number@1.0.0' },
+        'strict'
+      );
+      assert.ok(!typeMismatch.compatible);
+      assert.ok(typeMismatch.reason?.includes('mismatch'));
 
-    it('should allow non-nullable to nullable in compatible mode', () => {
-      const type1 = { symbolId: 'core/String@1.0.0', nullable: false };
-      const type2 = { symbolId: 'core/String@1.0.0', nullable: true };
-      const result = checkTypeCompatibility(type1, type2, 'compatible');
-      assert.ok(result.compatible);
-    });
+      // Nullable to non-nullable (compatible mode)
+      const nullableNarrow = checkTypeCompatibility(
+        { symbolId: 'core/String@1.0.0', nullable: true },
+        { symbolId: 'core/String@1.0.0', nullable: false },
+        'compatible'
+      );
+      assert.ok(!nullableNarrow.compatible);
+      assert.ok(nullableNarrow.reason?.includes('nullable'));
 
-    it('should reject nullable to non-nullable in compatible mode', () => {
-      const type1 = { symbolId: 'core/String@1.0.0', nullable: true };
-      const type2 = { symbolId: 'core/String@1.0.0', nullable: false };
-      const result = checkTypeCompatibility(type1, type2, 'compatible');
-      assert.ok(!result.compatible);
-      assert.ok(result.reason?.includes('nullable'));
-    });
+      // Generic count mismatch
+      const genericCountMismatch = checkTypeCompatibility(
+        { symbolId: 'core/Array@1.0.0', generics: [{ symbolId: 'core/String@1.0.0' }] },
+        { symbolId: 'core/Array@1.0.0' },
+        'strict'
+      );
+      assert.ok(!genericCountMismatch.compatible);
 
-    it('should check generic parameters', () => {
-      const type1 = {
-        symbolId: 'core/Array@1.0.0',
-        generics: [{ symbolId: 'core/String@1.0.0' }],
-      };
-      const type2 = {
-        symbolId: 'core/Array@1.0.0',
-        generics: [{ symbolId: 'core/String@1.0.0' }],
-      };
-      const result = checkTypeCompatibility(type1, type2, 'strict');
-      assert.ok(result.compatible);
-    });
-
-    it('should reject mismatched generic count', () => {
-      const type1 = {
-        symbolId: 'core/Array@1.0.0',
-        generics: [{ symbolId: 'core/String@1.0.0' }],
-      };
-      const type2 = { symbolId: 'core/Array@1.0.0' };
-      const result = checkTypeCompatibility(type1, type2, 'strict');
-      assert.ok(!result.compatible);
-    });
-
-    it('should reject mismatched generic types', () => {
-      const type1 = {
-        symbolId: 'core/Map@1.0.0',
-        generics: [
-          { symbolId: 'core/String@1.0.0' },
-          { symbolId: 'core/Number@1.0.0' },
-        ],
-      };
-      const type2 = {
-        symbolId: 'core/Map@1.0.0',
-        generics: [
-          { symbolId: 'core/String@1.0.0' },
-          { symbolId: 'core/String@1.0.0' },
-        ],
-      };
-      const result = checkTypeCompatibility(type1, type2, 'strict');
-      assert.ok(!result.compatible);
-      assert.ok(result.reason?.includes('Generic'));
-    });
-
-    it('should allow numeric widening in compatible mode', () => {
-      const type1 = { symbolId: 'builtin/int32@1.0.0' };
-      const type2 = { symbolId: 'builtin/int64@1.0.0' };
-      const result = checkTypeCompatibility(type1, type2, 'compatible');
-      assert.ok(result.compatible);
-      assert.ok(result.score! < 100); // Score penalty for widening
+      // Generic type mismatch
+      const genericTypeMismatch = checkTypeCompatibility(
+        { symbolId: 'core/Map@1.0.0', generics: [{ symbolId: 'core/String@1.0.0' }, { symbolId: 'core/Number@1.0.0' }] },
+        { symbolId: 'core/Map@1.0.0', generics: [{ symbolId: 'core/String@1.0.0' }, { symbolId: 'core/String@1.0.0' }] },
+        'strict'
+      );
+      assert.ok(!genericTypeMismatch.compatible);
+      assert.ok(genericTypeMismatch.reason?.includes('Generic'));
     });
   });
 

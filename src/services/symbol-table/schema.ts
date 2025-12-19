@@ -16,14 +16,6 @@ import { z } from 'zod';
 export const AbstractionLevelSchema = z.enum(['L0', 'L1', 'L2', 'L3', 'L4']);
 export type AbstractionLevel = z.infer<typeof AbstractionLevelSchema>;
 
-export const ABSTRACTION_LEVEL_DESCRIPTIONS: Record<AbstractionLevel, string> = {
-  L0: 'Primitives: types, enums, constants',
-  L1: 'Components: classes, services, functions',
-  L2: 'Modules: cohesive component groups',
-  L3: 'Subsystems: feature domains',
-  L4: 'Interfaces: cross-boundary contracts',
-};
-
 // ============================================================================
 // Component Kinds
 // ============================================================================
@@ -263,11 +255,14 @@ export type ValidationResult = z.infer<typeof ValidationResultSchema>;
 // Service Interfaces
 // ============================================================================
 
+// Forward declaration for SymbolQueryService
+import type { SymbolQueryService } from './query-service.js';
+
 /**
  * Symbol Store public API contract.
  *
  * Service layer for managing ComponentSymbols and their connections.
- * Provides CRUD operations, queries, versioning, and validation.
+ * For queries, use getQueryService().
  */
 export interface ISymbolStore {
   // CRUD Operations
@@ -275,22 +270,10 @@ export interface ISymbolStore {
   get(id: string): ComponentSymbol | undefined;
   update(id: string, updates: Partial<ComponentSymbol>): void;
   remove(id: string): void;
-
-  // Query Operations
-  findByNamespace(namespace: string): ComponentSymbol[];
-  findByLevel(level: AbstractionLevel): ComponentSymbol[];
-  findByKind(kind: ComponentKind): ComponentSymbol[];
-  findByTag(tag: string): ComponentSymbol[];
-  findByStatus(status: SymbolStatus): ComponentSymbol[];
-  findByOrigin(origin: SymbolOrigin): ComponentSymbol[];
-  search(query: string): ComponentSymbol[];
   list(): ComponentSymbol[];
 
-  // Containment & Dependencies
-  getContains(id: string): ComponentSymbol[];
-  getContainedBy(id: string): ComponentSymbol | undefined;
-  getDependents(id: string): ComponentSymbol[];
-  getDependencies(id: string): ComponentSymbol[];
+  // Query Service Accessor
+  getQueryService(): SymbolQueryService;
 
   // Version Operations
   getVersions(namespace: string, name: string): ComponentSymbol[];
@@ -298,12 +281,6 @@ export interface ISymbolStore {
 
   // Status Operations (ADR-005)
   updateStatus(id: string, status: SymbolStatus, info: StatusInfo): void;
-  findUnreachable(): ComponentSymbol[];
-  findUntested(): ComponentSymbol[];
-
-  // Origin Operations (ADR-006)
-  findGenerated(): ComponentSymbol[];
-  findManual(): ComponentSymbol[];
 
   // Connection Operations
   connect(connection: Connection): void;

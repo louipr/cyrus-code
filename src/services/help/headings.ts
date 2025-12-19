@@ -9,7 +9,7 @@ import type { DocumentHeading } from './schema';
 
 /**
  * Convert heading text to a URL-safe anchor slug.
- * Must match the slugify() function in HelpDialog.tsx exactly.
+ * Used by both backend (heading extraction) and GUI (anchor link generation).
  *
  * "Code Details" → "code-details"
  */

@@ -6,15 +6,8 @@
  * TypeScript code into documentation.
  */
 
-import {
-  Project,
-  SourceFile,
-  Node,
-  SyntaxKind,
-  VariableDeclarationKind,
-} from 'ts-morph';
-import * as path from 'path';
-import * as fs from 'fs';
+import { SourceFile, Node, SyntaxKind, VariableDeclarationKind } from 'ts-morph';
+import { SourceFileManager } from '../source-tools/index.js';
 
 /**
  * Extracted code snippet with metadata.
@@ -31,40 +24,23 @@ export interface ExtractedCode {
 }
 
 /**
- * Cache entry with file modification time.
- */
-interface CacheEntry {
-  sourceFile: SourceFile;
-  mtime: number;
-}
-
-/**
  * TypeScript code extractor using ts-morph.
  *
  * Extracts exported interfaces, types, enums, and constants from TypeScript
  * source files. Caches parsed files for performance.
  */
 export class TypeScriptExtractor {
-  private project: Project;
-  private cache: Map<string, CacheEntry> = new Map();
-  private projectRoot: string;
+  private sourceFileManager: SourceFileManager;
 
   constructor(projectRoot: string) {
-    this.projectRoot = projectRoot;
-    this.project = new Project({
-      compilerOptions: {
-        declaration: true,
-        strict: true,
-      },
-      skipAddingFilesFromTsConfig: true,
-    });
+    this.sourceFileManager = new SourceFileManager(projectRoot);
   }
 
   /**
    * Extract specific named exports from a file.
    */
   extractExports(filePath: string, exportNames: string[]): ExtractedCode[] {
-    const sourceFile = this.getSourceFile(filePath);
+    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
     if (!sourceFile) {
       return [
         {
@@ -104,7 +80,7 @@ export class TypeScriptExtractor {
    * Extract all exports from a file.
    */
   extractAllExports(filePath: string): ExtractedCode[] {
-    const sourceFile = this.getSourceFile(filePath);
+    const sourceFile = this.sourceFileManager.getSourceFile(filePath);
     if (!sourceFile) {
       return [
         {
@@ -150,36 +126,6 @@ export class TypeScriptExtractor {
     }
 
     return results;
-  }
-
-  /**
-   * Get a source file, using cache if available and not stale.
-   */
-  private getSourceFile(filePath: string): SourceFile | null {
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(this.projectRoot, filePath);
-
-    if (!fs.existsSync(absolutePath)) {
-      return null;
-    }
-
-    const stat = fs.statSync(absolutePath);
-    const cached = this.cache.get(absolutePath);
-
-    // Return cached if file hasn't changed
-    if (cached && cached.mtime === stat.mtimeMs) {
-      return cached.sourceFile;
-    }
-
-    // Parse and cache the file
-    const sourceFile = this.project.addSourceFileAtPath(absolutePath);
-    this.cache.set(absolutePath, {
-      sourceFile,
-      mtime: stat.mtimeMs,
-    });
-
-    return sourceFile;
   }
 
   /**
@@ -310,6 +256,6 @@ export class TypeScriptExtractor {
    * Clear the cache (useful for testing or force refresh).
    */
   clearCache(): void {
-    this.cache.clear();
+    this.sourceFileManager.clearCache();
   }
 }

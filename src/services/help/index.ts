@@ -3,13 +3,17 @@
  *
  * Provides access to help topics from the manifest-driven help system.
  * Loads topics from docs/help.json and renders markdown for terminal display.
+ *
+ * Orchestrates:
+ * - HelpRepository: Data access (manifest, topics, categories)
+ * - HelpFormatter: Terminal output formatting
+ * - MarkdownPreprocessor: TypeScript code extraction
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import {
   type IHelpService,
-  HelpManifest,
   HelpTopic,
   HelpCategory,
   HelpGroup,
@@ -18,20 +22,24 @@ import {
   C4Hierarchy,
   DocumentHeading,
 } from './schema.js';
-import { renderMarkdownForTerminal } from './renderer.js';
+import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
-import { extractHeadings } from './headings.js';
+import { HelpRepository } from './repository.js';
+import { HelpFormatter } from './formatter.js';
 
 /**
- * Help Service - loads and serves help content from the manifest.
+ * Help Service - orchestrates help content access and formatting.
  */
 export class HelpService implements IHelpService {
-  private manifest: HelpManifest | null = null;
-  private projectRoot: string;
+  private repository: HelpRepository;
+  private formatter: HelpFormatter;
   private preprocessor: MarkdownPreprocessor;
+  private projectRoot: string;
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot ?? this.findProjectRoot();
+    this.repository = new HelpRepository(this.projectRoot);
+    this.formatter = new HelpFormatter();
     this.preprocessor = new MarkdownPreprocessor(this.projectRoot);
   }
 
@@ -52,78 +60,56 @@ export class HelpService implements IHelpService {
     return process.cwd();
   }
 
-  /**
-   * Load the help manifest from docs/help.json.
-   */
-  private loadManifest(): HelpManifest {
-    if (this.manifest) {
-      return this.manifest;
-    }
+  // ==========================================================================
+  // Repository Delegation
+  // ==========================================================================
 
-    const manifestPath = path.join(this.projectRoot, 'docs', 'help.json');
-    if (!fs.existsSync(manifestPath)) {
-      throw new Error(`Help manifest not found: ${manifestPath}`);
-    }
-
-    const content = fs.readFileSync(manifestPath, 'utf-8');
-    this.manifest = JSON.parse(content) as HelpManifest;
-    return this.manifest;
-  }
-
-  /**
-   * Get all help categories.
-   */
   getCategories(): HelpCategory[] {
-    return this.loadManifest().categories;
+    return this.repository.getCategories();
   }
 
-  /**
-   * Get all help groups (collapsible sections within categories).
-   */
   getGroups(): HelpGroup[] {
-    return this.loadManifest().groups ?? [];
+    return this.repository.getGroups();
   }
 
-  /**
-   * Get all help topics.
-   */
   listTopics(): HelpTopic[] {
-    return this.loadManifest().topics;
+    return this.repository.listTopics();
   }
 
-  /**
-   * Get C4 architecture diagram hierarchy for navigation.
-   */
   getC4Hierarchy(): C4Hierarchy | null {
-    return this.loadManifest().c4Hierarchy ?? null;
+    return this.repository.getC4Hierarchy();
   }
 
-  /**
-   * Get topics filtered by category.
-   */
   getByCategory(categoryId: string): HelpTopic[] {
-    const manifest = this.loadManifest();
-    return manifest.topics.filter((topic) => topic.category === categoryId);
+    return this.repository.getByCategory(categoryId);
   }
 
-  /**
-   * Get a specific topic by ID.
-   */
   getTopic(topicId: string): HelpTopic | undefined {
-    const manifest = this.loadManifest();
-    return manifest.topics.find((topic) => topic.id === topicId);
+    return this.repository.getTopic(topicId);
   }
+
+  getRelatedTopics(topicId: string): HelpTopic[] {
+    return this.repository.getRelatedTopics(topicId);
+  }
+
+  getTopicSubsections(topicId: string): DocumentHeading[] {
+    return this.repository.getTopicSubsections(topicId);
+  }
+
+  // ==========================================================================
+  // Search (logic lives here, uses repository data)
+  // ==========================================================================
 
   /**
    * Search topics by query string.
    * Matches against title, summary, and keywords.
    */
   search(query: string): HelpSearchResult[] {
-    const manifest = this.loadManifest();
+    const topics = this.repository.listTopics();
     const queryLower = query.toLowerCase();
     const results: HelpSearchResult[] = [];
 
-    for (const topic of manifest.topics) {
+    for (const topic of topics) {
       let score = 0;
       const matchedFields: ('title' | 'summary' | 'keywords')[] = [];
 
@@ -162,6 +148,10 @@ export class HelpService implements IHelpService {
     return results.sort((a, b) => b.score - a.score);
   }
 
+  // ==========================================================================
+  // Content (preprocessing + format rendering)
+  // ==========================================================================
+
   /**
    * Get the content of a topic's markdown file.
    */
@@ -169,17 +159,7 @@ export class HelpService implements IHelpService {
     topicId: string,
     format: HelpOutputFormat = 'terminal'
   ): string {
-    const topic = this.getTopic(topicId);
-    if (!topic) {
-      throw new Error(`Topic not found: ${topicId}`);
-    }
-
-    const filePath = path.join(this.projectRoot, topic.path);
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Topic file not found: ${filePath}`);
-    }
-
-    let content = fs.readFileSync(filePath, 'utf-8');
+    let content = this.repository.readTopicContent(topicId);
 
     // Preprocess typescript:include blocks (extract from source files)
     content = this.preprocessor.process(content);
@@ -188,7 +168,8 @@ export class HelpService implements IHelpService {
       case 'terminal':
         return renderMarkdownForTerminal(content);
       case 'html':
-        // HTML rendering would be added for Electron GUI
+        // Reserved for future server-side HTML rendering.
+        // GUI currently uses 'raw' and renders markdown client-side.
         return content;
       case 'raw':
         return content;
@@ -197,99 +178,47 @@ export class HelpService implements IHelpService {
     }
   }
 
-  /**
-   * Get related topics for a given topic.
-   */
-  getRelatedTopics(topicId: string): HelpTopic[] {
-    const topic = this.getTopic(topicId);
-    if (!topic || !topic.related) {
-      return [];
-    }
+  // ==========================================================================
+  // Formatter Delegation
+  // ==========================================================================
 
-    return topic.related
-      .map((id) => this.getTopic(id))
-      .filter((t): t is HelpTopic => t !== undefined);
-  }
-
-  /**
-   * Get h2 headings from a topic's markdown for sidebar navigation.
-   */
-  getTopicSubsections(topicId: string): DocumentHeading[] {
-    const topic = this.getTopic(topicId);
-    if (!topic) {
-      return [];
-    }
-
-    const filePath = path.join(this.projectRoot, topic.path);
-    if (!fs.existsSync(filePath)) {
-      return [];
-    }
-
-    const content = fs.readFileSync(filePath, 'utf-8');
-    return extractHeadings(content);
-  }
-
-  /**
-   * Format a topic list for terminal display.
-   */
   formatTopicList(topics: HelpTopic[]): string {
-    if (topics.length === 0) {
-      return 'No topics found.';
-    }
-
-    const lines: string[] = [];
-    for (const topic of topics) {
-      lines.push(`  \x1b[1m${topic.id}\x1b[0m`);
-      lines.push(`    ${topic.title}`);
-      lines.push(`    \x1b[90m${topic.summary}\x1b[0m`);
-      lines.push('');
-    }
-    return lines.join('\n');
+    return this.formatter.formatTopicList(topics);
   }
+
+  formatCategoryOverview(): string {
+    return this.formatter.formatCategoryOverview(
+      this.repository.getCategories(),
+      (categoryId) => this.repository.getByCategory(categoryId)
+    );
+  }
+
+  // ==========================================================================
+  // Cache Management
+  // ==========================================================================
 
   /**
-   * Format categories with their topics for terminal display.
+   * Clear all caches (repository and preprocessor).
+   *
+   * Useful for long-running processes (e.g., Electron GUI) where
+   * files may change and caches need to be invalidated.
    */
-  formatCategoryOverview(): string {
-    const manifest = this.loadManifest();
-    const lines: string[] = [];
-
-    lines.push('\x1b[1m\x1b[36mcyrus-code Help\x1b[0m');
-    lines.push('\x1b[36m═══════════════\x1b[0m');
-    lines.push('');
-
-    for (const category of manifest.categories) {
-      const topics = this.getByCategory(category.id);
-      lines.push(`\x1b[1m\x1b[33m${category.label}\x1b[0m`);
-      lines.push(`\x1b[90m${category.description}\x1b[0m`);
-      lines.push('');
-
-      for (const topic of topics) {
-        lines.push(`  \x1b[32m${topic.id.padEnd(20)}\x1b[0m ${topic.title}`);
-      }
-      lines.push('');
-    }
-
-    lines.push('\x1b[90mUsage: cyrus-code help <topic>\x1b[0m');
-    lines.push('\x1b[90m       cyrus-code help --search <query>\x1b[0m');
-
-    return lines.join('\n');
+  clearCache(): void {
+    this.repository.clearCache();
+    this.preprocessor.clearCache();
   }
 }
 
-// Export singleton instance for convenience
-let defaultInstance: HelpService | null = null;
-
-export function getHelpService(projectRoot?: string): HelpService {
-  if (!defaultInstance || projectRoot) {
-    defaultInstance = new HelpService(projectRoot);
-  }
-  return defaultInstance;
+/**
+ * Factory function for creating HelpService instances.
+ * Preferred over direct instantiation for dependency injection support.
+ *
+ * @param projectRoot - Optional project root path. Auto-detects if not provided.
+ * @returns HelpService instance
+ */
+export function createHelpService(projectRoot?: string): HelpService {
+  return new HelpService(projectRoot);
 }
 
-// Re-export types and renderer
+// Re-export public types (used by electron/preload.ts and GUI)
 export * from './schema.js';
-export { renderMarkdownForTerminal } from './renderer.js';
-export { TypeScriptExtractor, ExtractedCode } from './extractor.js';
-export { MarkdownPreprocessor, IncludeDirective } from './preprocessor.js';
-export { extractHeadings, slugify } from './headings.js';

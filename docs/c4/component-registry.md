@@ -31,8 +31,8 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **ComponentRegistry** | High-level CRUD, query, version resolution | `register()`, `resolve()`, `query()`, `getVersions()` | ✅ | `src/services/registry/index.ts` |
-| **Version Resolver** | SemVer constraint parsing and matching | `parseConstraint()`, `satisfies()`, `findBestMatch()`, `bumpVersion()` | ✅ | `src/services/registry/version.ts` |
+| **ComponentRegistry** | High-level CRUD, query, version resolution | `register()`, `resolve()`, `query()`, `getVersions()` | ✅ | `src/services/component-registry/index.ts` |
+| **Version Resolver** | SemVer constraint parsing and matching | `parseConstraint()`, `satisfies()`, `findBestMatch()`, `bumpVersion()` | ✅ | `src/services/component-registry/version.ts` |
 
 > **Design Patterns**: See [ADR-001: Symbol Table Architecture](../adr/001-symbol-table-architecture.md) for registry concepts.
 
@@ -51,17 +51,25 @@ flowchart TD
 
 ## Code Details
 
+### Quick Reference
+
+| Category | Methods |
+|----------|---------|
+| **CRUD** | `register()`, `get()`, `update()`, `remove()` |
+| **Query** | `query()`, `search()` |
+| **Versions** | `resolve()`, `getVersions()`, `bumpVersion()` |
+
 ### ComponentRegistry API
 
 ```typescript:include
-source: src/services/registry/index.ts
+source: src/services/component-registry/index.ts
 exports: [IComponentRegistry]
 ```
 
 ### Query Types
 
 ```typescript:include
-source: src/services/registry/index.ts
+source: src/services/component-registry/index.ts
 exports: [ComponentQuery, ResolveOptions, BumpType]
 ```
 
@@ -185,5 +193,5 @@ function bumpVersion(version, type):
 
 ### Notes
 
-- **Source Files**: `src/services/registry/index.ts`, `src/services/registry/version.ts`
+- **Source Files**: `src/services/component-registry/index.ts`, `src/services/component-registry/version.ts`
 - **Design Patterns**: See [ADR-001: Symbol Table Architecture](../adr/001-symbol-table-architecture.md) for registry concepts.

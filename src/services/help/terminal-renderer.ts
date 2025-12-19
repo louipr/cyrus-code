@@ -161,10 +161,3 @@ function formatInlineMarkdown(text: string): string {
 
   return result;
 }
-
-/**
- * Get terminal width (default to 80 if not available).
- */
-export function getTerminalWidth(): number {
-  return process.stdout.columns ?? 80;
-}

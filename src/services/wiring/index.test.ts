@@ -11,9 +11,14 @@ import {
   closeDatabase,
 } from '../../repositories/persistence.js';
 import { SymbolStore } from '../symbol-table/store.js';
-import type { ComponentSymbol, PortDefinition } from '../symbol-table/schema.js';
 import { WiringService } from './index.js';
 import { WiringErrorCode } from './schema.js';
+import {
+  createSymbol,
+  createTypeSymbol,
+  createPort,
+  createService,
+} from '../test-fixtures.js';
 
 describe('WiringService', () => {
   let store: SymbolStore;
@@ -28,81 +33,6 @@ describe('WiringService', () => {
   afterEach(() => {
     closeDatabase();
   });
-
-  // Helper to create a valid symbol
-  function createSymbol(
-    overrides: Partial<ComponentSymbol> = {}
-  ): ComponentSymbol {
-    const now = new Date();
-    return {
-      id: 'test/TestComponent@1.0.0',
-      name: 'TestComponent',
-      namespace: 'test',
-      level: 'L1',
-      kind: 'service',
-      language: 'typescript',
-      ports: [],
-      version: { major: 1, minor: 0, patch: 0 },
-      tags: [],
-      description: 'Test component',
-      createdAt: now,
-      updatedAt: now,
-      status: 'declared',
-      origin: 'manual',
-      ...overrides,
-    };
-  }
-
-  // Helper to create a type symbol
-  function createTypeSymbol(id: string): ComponentSymbol {
-    const now = new Date();
-    const parts = id.split('/');
-    const nameParts = parts[parts.length - 1]?.split('@') ?? ['Unknown', '1.0.0'];
-    return {
-      id,
-      name: nameParts[0] ?? 'Unknown',
-      namespace: parts.slice(0, -1).join('/'),
-      level: 'L0',
-      kind: 'type',
-      language: 'typescript',
-      ports: [],
-      version: { major: 1, minor: 0, patch: 0 },
-      tags: [],
-      description: 'Type symbol',
-      createdAt: now,
-      updatedAt: now,
-      status: 'declared',
-      origin: 'manual',
-    };
-  }
-
-  // Helper to create a port
-  function createPort(overrides: Partial<PortDefinition> = {}): PortDefinition {
-    return {
-      name: 'testPort',
-      direction: 'in',
-      type: { symbolId: 'core/String@1.0.0' },
-      required: false,
-      multiple: false,
-      description: 'Test port',
-      ...overrides,
-    };
-  }
-
-  // Helper to create a service with ports
-  function createService(
-    id: string,
-    ports: PortDefinition[]
-  ): ComponentSymbol {
-    const parts = id.split('/');
-    const nameParts = parts[parts.length - 1]?.split('@') ?? ['Service', '1.0.0'];
-    return createSymbol({
-      id,
-      name: nameParts[0] ?? 'Service',
-      namespace: parts.slice(0, -1).join('/'),
-      ports,
-    });
-  }
 
   describe('Connection Operations', () => {
     beforeEach(() => {
@@ -445,7 +375,7 @@ describe('WiringService', () => {
     });
 
     it('should build empty graph for no symbols', () => {
-      const graph = wiring.buildDependencyGraph();
+      const graph = wiring.getGraphService().buildGraph();
       assert.strictEqual(graph.nodes.size, 1); // Just the type symbol
       assert.strictEqual(graph.edges.size, 0);
     });
@@ -468,7 +398,7 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const graph = wiring.buildDependencyGraph();
+      const graph = wiring.getGraphService().buildGraph();
       assert.strictEqual(graph.nodes.size, 3); // A, B, and type
       assert.ok(graph.edges.has('test/A@1.0.0'));
     });
@@ -503,7 +433,7 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const order = wiring.getTopologicalOrder();
+      const order = wiring.getGraphService().getTopologicalOrder();
       assert.ok(order);
 
       // A should come before B, B before C
@@ -551,7 +481,7 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const upstream = wiring.getUpstreamDependencies('test/C@1.0.0');
+      const upstream = wiring.getGraphService().getUpstream('test/C@1.0.0');
       assert.ok(upstream.includes('test/A@1.0.0'));
       assert.ok(upstream.includes('test/B@1.0.0'));
     });
@@ -586,7 +516,7 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const downstream = wiring.getDownstreamDependencies('test/A@1.0.0');
+      const downstream = wiring.getGraphService().getDownstream('test/A@1.0.0');
       assert.ok(downstream.includes('test/B@1.0.0'));
       assert.ok(downstream.includes('test/C@1.0.0'));
     });
@@ -621,8 +551,8 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const roots = wiring.getRootNodes();
-      const leaves = wiring.getLeafNodes();
+      const roots = wiring.getGraphService().getRootNodes();
+      const leaves = wiring.getGraphService().getLeafNodes();
 
       // A and the type are roots (no incoming)
       assert.ok(roots.includes('test/A@1.0.0'));
@@ -667,7 +597,7 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const stats = wiring.getGraphStats();
+      const stats = wiring.getGraphService().getStats();
 
       assert.strictEqual(stats.nodeCount, 4); // A, B, C, and type
       assert.strictEqual(stats.edgeCount, 2);

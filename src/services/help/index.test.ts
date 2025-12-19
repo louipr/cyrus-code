@@ -7,8 +7,8 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { HelpService } from './index.js';
-import { renderMarkdownForTerminal } from './renderer.js';
-import { TypeScriptExtractor } from './extractor.js';
+import { renderMarkdownForTerminal } from './terminal-renderer.js';
+import { TypeScriptExtractor } from './typescript-extractor.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
 
 // Tests run from project root via npm test
@@ -157,90 +157,74 @@ describe('HelpService', () => {
 });
 
 describe('Terminal Markdown Renderer', () => {
-  describe('headers', () => {
-    it('should render H1 with cyan and double underline', () => {
-      const result = renderMarkdownForTerminal('# Hello');
-      assert.ok(result.includes('\x1b[1m')); // bold
-      assert.ok(result.includes('\x1b[36m')); // cyan
-      assert.ok(result.includes('Hello'));
-    });
+  it('should render headers (H1, H2, H3) with appropriate styling', () => {
+    // H1: cyan + bold
+    const h1 = renderMarkdownForTerminal('# Hello');
+    assert.ok(h1.includes('\x1b[1m'), 'H1 should be bold');
+    assert.ok(h1.includes('\x1b[36m'), 'H1 should be cyan');
+    assert.ok(h1.includes('Hello'));
 
-    it('should render H2 with yellow and single underline', () => {
-      const result = renderMarkdownForTerminal('## Section');
-      assert.ok(result.includes('\x1b[33m')); // yellow
-      assert.ok(result.includes('Section'));
-    });
+    // H2: yellow
+    const h2 = renderMarkdownForTerminal('## Section');
+    assert.ok(h2.includes('\x1b[33m'), 'H2 should be yellow');
+    assert.ok(h2.includes('Section'));
 
-    it('should render H3 as bold', () => {
-      const result = renderMarkdownForTerminal('### Subsection');
-      assert.ok(result.includes('\x1b[1m')); // bold
-      assert.ok(result.includes('Subsection'));
-    });
+    // H3: bold
+    const h3 = renderMarkdownForTerminal('### Subsection');
+    assert.ok(h3.includes('\x1b[1m'), 'H3 should be bold');
+    assert.ok(h3.includes('Subsection'));
   });
 
-  describe('lists', () => {
-    it('should render unordered list with bullet', () => {
-      const result = renderMarkdownForTerminal('- Item one\n- Item two');
-      assert.ok(result.includes('•')); // bullet
-      assert.ok(result.includes('Item one'));
-      assert.ok(result.includes('Item two'));
-    });
+  it('should render lists (ordered and unordered) with markers', () => {
+    // Unordered list
+    const ul = renderMarkdownForTerminal('- Item one\n- Item two');
+    assert.ok(ul.includes('•'), 'Unordered list should have bullets');
+    assert.ok(ul.includes('Item one'));
+    assert.ok(ul.includes('Item two'));
 
-    it('should render ordered list with numbers', () => {
-      const result = renderMarkdownForTerminal('1. First\n2. Second');
-      assert.ok(result.includes('1.'));
-      assert.ok(result.includes('2.'));
-      assert.ok(result.includes('First'));
-    });
+    // Ordered list
+    const ol = renderMarkdownForTerminal('1. First\n2. Second');
+    assert.ok(ol.includes('1.'));
+    assert.ok(ol.includes('2.'));
+    assert.ok(ol.includes('First'));
   });
 
-  describe('code blocks', () => {
-    it('should render code block with language indicator', () => {
-      const result = renderMarkdownForTerminal('```typescript\nconst x = 1;\n```');
-      assert.ok(result.includes('typescript'));
-      assert.ok(result.includes('const x = 1'));
-    });
+  it('should render code (blocks and inline) with styling', () => {
+    // Code block with language
+    const codeBlock = renderMarkdownForTerminal('```typescript\nconst x = 1;\n```');
+    assert.ok(codeBlock.includes('typescript'));
+    assert.ok(codeBlock.includes('const x = 1'));
 
-    it('should render code block without language', () => {
-      const result = renderMarkdownForTerminal('```\ncode\n```');
-      assert.ok(result.includes('code'));
-    });
+    // Code block without language
+    const plainBlock = renderMarkdownForTerminal('```\ncode\n```');
+    assert.ok(plainBlock.includes('code'));
+
+    // Inline code
+    const inline = renderMarkdownForTerminal('Use `npm install` to install');
+    assert.ok(inline.includes('\x1b[36m'), 'Inline code should be cyan');
+    assert.ok(inline.includes('npm install'));
   });
 
-  describe('inline formatting', () => {
-    it('should render inline code in cyan', () => {
-      const result = renderMarkdownForTerminal('Use `npm install` to install');
-      assert.ok(result.includes('\x1b[36m')); // cyan
-      assert.ok(result.includes('npm install'));
-    });
+  it('should render inline elements and special blocks', () => {
+    // Bold text
+    const bold = renderMarkdownForTerminal('This is **bold** text');
+    assert.ok(bold.includes('\x1b[1m'), 'Bold should use bold ANSI');
+    assert.ok(bold.includes('bold'));
 
-    it('should render bold text', () => {
-      const result = renderMarkdownForTerminal('This is **bold** text');
-      assert.ok(result.includes('\x1b[1m')); // bold
-      assert.ok(result.includes('bold'));
-    });
+    // Links
+    const link = renderMarkdownForTerminal('[link](http://example.com)');
+    assert.ok(link.includes('\x1b[4m'), 'Link should be underlined');
+    assert.ok(link.includes('link'));
+    assert.ok(link.includes('(http://example.com)'));
 
-    it('should render links with URL in parentheses', () => {
-      const result = renderMarkdownForTerminal('[link](http://example.com)');
-      assert.ok(result.includes('\x1b[4m')); // underline
-      assert.ok(result.includes('link'));
-      assert.ok(result.includes('(http://example.com)'));
-    });
-  });
+    // Blockquote
+    const quote = renderMarkdownForTerminal('> This is a quote');
+    assert.ok(quote.includes('│'), 'Blockquote should have vertical bar');
+    assert.ok(quote.includes('This is a quote'));
 
-  describe('blockquotes', () => {
-    it('should render blockquote with vertical bar', () => {
-      const result = renderMarkdownForTerminal('> This is a quote');
-      assert.ok(result.includes('│'));
-      assert.ok(result.includes('This is a quote'));
-    });
-  });
-
-  describe('horizontal rules', () => {
-    it('should render horizontal rule', () => {
-      const result = renderMarkdownForTerminal('---');
-      assert.ok(result.includes('─')); // box drawing
-    });
+    // Horizontal rule
+    const hr = renderMarkdownForTerminal('---');
+    assert.ok(hr.includes('─'), 'HR should use box drawing char');
   });
 });
 
