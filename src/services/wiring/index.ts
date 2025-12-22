@@ -2,11 +2,10 @@
  * Wiring Service
  *
  * Manages connections between component ports.
+ * For graph operations, use getGraphService() to access DependencyGraphService.
  *
  * For internal types, import directly from submodules:
  *   - ./schema.js - All wiring types and error codes
- *   - ./dependency-graph.js - Graph utilities
- *   - ./dependency-graph-service.js - DependencyGraphService
  */
 
 // Service (primary API)

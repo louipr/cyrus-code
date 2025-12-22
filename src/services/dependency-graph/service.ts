@@ -2,11 +2,11 @@
  * Dependency Graph Service
  *
  * Handles graph building, analysis, and traversal operations.
- * Extracted from WiringService for single-responsibility.
+ * Provides high-level orchestration of graph algorithms.
  */
 
 import type { ComponentSymbol, Connection, SymbolTableService } from '../symbol-table/index.js';
-import type { DependencyGraph, DependencyGraphDTO, GraphStats } from './schema.js';
+import type { DependencyGraph, DependencyGraphDTO, GraphStats, IDependencyGraphService } from './schema.js';
 import { graphToDTO } from './schema.js';
 import {
   buildDependencyGraph,
@@ -36,7 +36,7 @@ import {
  * - Graph traversal (upstream/downstream)
  * - Graph analysis (roots, leaves, components, stats)
  */
-export class DependencyGraphService {
+export class DependencyGraphService implements IDependencyGraphService {
   private store: SymbolTableService;
 
   constructor(store: SymbolTableService) {
@@ -183,4 +183,17 @@ export class DependencyGraphService {
     const graph = this.buildGraph();
     return getGraphStats(graph);
   }
+}
+
+/**
+ * Factory function for creating DependencyGraphService instances.
+ * Preferred over direct instantiation for dependency injection support.
+ *
+ * @param store - SymbolTableService instance for symbol and connection access
+ * @returns DependencyGraphService instance
+ */
+export function createDependencyGraphService(
+  store: SymbolTableService
+): DependencyGraphService {
+  return new DependencyGraphService(store);
 }

@@ -127,7 +127,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 2.4 | Unit tests for Compatibility Service | `src/services/compatibility/service.test.ts` | ✅ (29 tests) |
 | 2.5 | Implement Wiring Service | `src/services/wiring/index.ts` | ✅ |
 | 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
-| 2.7 | Dependency graph builder | `src/services/wiring/graph.ts` | ✅ |
+| 2.7 | Dependency Graph Service (extracted from wiring) | `src/services/dependency-graph/` | ✅ |
 | 2.8 | Unit tests for Wiring | `src/services/wiring/index.test.ts` | ✅ (22 tests) |
 | 2.9 | Extend API Facade with wiring methods | `src/api/facade.ts` | ✅ |
 | 2.10 | CLI: wire, graph commands | `src/cli/commands/wire.ts`, `src/cli/commands/graph.ts` | ✅ |

@@ -23,7 +23,8 @@ flowchart TB
 
         reg["Component Registry<br/><small>TypeScript</small>"]
         wire["Wiring<br/><small>TypeScript</small>"]
-        val["Interface Validator<br/><small>Zod</small>"]
+        graph["Dependency Graph<br/><small>TypeScript</small>"]
+        compat["Compatibility<br/><small>TypeScript + Zod</small>"]
         synth["Code Synthesizer<br/><small>ts-morph</small>"]
 
         st["Symbol Table<br/><small>SQLite + TypeScript</small>"]
@@ -39,8 +40,11 @@ flowchart TB
     api -->|"generate"| synth
 
     reg -->|"store"| st
-    wire -->|"validate"| val
+    wire -->|"validate"| compat
+    wire -->|"analyze cycles"| graph
     wire -->|"query"| st
+    compat -->|"query"| st
+    graph -->|"query"| st
     synth -->|"query"| st
 
     st -->|"persist"| db
@@ -53,7 +57,7 @@ flowchart TB
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,api,help,reg,wire,val,synth,st container
+    class cli,gui,api,help,reg,wire,graph,compat,synth,st container
     class db storage
     class fs,docs external
 ```
@@ -78,8 +82,9 @@ flowchart TB
 | **Help Service** | TypeScript | Documentation and help topic management | ✅ |
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
 | **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
-| **Interface Validator** | TypeScript + Zod | Port type checking and compatibility | ✅ |
-| **Wiring Service** | TypeScript | Connection management and graph operations | ✅ |
+| **Dependency Graph** | TypeScript | Graph algorithms: cycle detection, topological sort, traversal | ✅ |
+| **Compatibility** | TypeScript + Zod | Port type checking and compatibility scoring | ✅ |
+| **Wiring Service** | TypeScript | Connection management and validation orchestration | ✅ |
 | **Code Synthesizer** | ts-morph | AST-based code generation | ✅ |
 
 ### Analysis Services (ADR-005, ADR-006)

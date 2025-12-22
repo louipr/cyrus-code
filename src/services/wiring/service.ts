@@ -11,6 +11,7 @@ import { createValidationResult } from '../symbol-table/index.js';
 import { CompatibilityService } from '../compatibility/index.js';
 import type { ValidationOptions } from '../compatibility/schema.js';
 import { DEFAULT_VALIDATION_OPTIONS, ValidationErrorCode } from '../compatibility/schema.js';
+import { DependencyGraphService } from '../dependency-graph/index.js';
 import {
   type IWiringService,
   type ConnectionRequest,
@@ -19,7 +20,6 @@ import {
   wiringSuccess,
   wiringError,
 } from './schema.js';
-import { DependencyGraphService } from './dependency-graph-service.js';
 
 export class WiringService implements IWiringService {
   private store: SymbolTableService;
