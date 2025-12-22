@@ -10,16 +10,16 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
-import { SymbolStore } from './store.js';
+import { SymbolTableService } from './service.js';
 import type { Connection } from './schema.js';
 import { createSymbol } from '../test-fixtures.js';
 
-describe('SymbolStore', () => {
-  let store: SymbolStore;
+describe('SymbolTableService', () => {
+  let store: SymbolTableService;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
-    store = new SymbolStore(db);
+    store = new SymbolTableService(db);
   });
 
   afterEach(() => {
@@ -214,7 +214,7 @@ describe('SymbolStore', () => {
         })
       );
 
-      const versions = store.getVersions('test', 'Svc');
+      const versions = store.getVersionResolver().getVersions('test', 'Svc');
       assert.strictEqual(versions.length, 3);
       const v0 = versions[0];
       const v1 = versions[1];
@@ -247,13 +247,13 @@ describe('SymbolStore', () => {
         })
       );
 
-      const latest = store.getLatest('test', 'Svc');
+      const latest = store.getVersionResolver().getLatest('test', 'Svc');
       assert.ok(latest);
       assert.strictEqual(latest.version.major, 2);
     });
 
     it('should return undefined for non-existent symbol', () => {
-      const latest = store.getLatest('nonexistent', 'Symbol');
+      const latest = store.getVersionResolver().getLatest('nonexistent', 'Symbol');
       assert.strictEqual(latest, undefined);
     });
   });
@@ -312,9 +312,9 @@ describe('SymbolStore', () => {
         createdAt: new Date(),
       };
 
-      store.connect(connection);
+      store.getConnectionManager().connect(connection);
 
-      const connections = store.getConnections('a@1.0.0');
+      const connections = store.getConnectionManager().getConnections('a@1.0.0');
       assert.strictEqual(connections.length, 1);
       const firstConn = connections[0];
       assert.ok(firstConn);
@@ -334,7 +334,7 @@ describe('SymbolStore', () => {
         createdAt: new Date(),
       };
 
-      assert.throws(() => store.connect(connection), /not found/);
+      assert.throws(() => store.getConnectionManager().connect(connection), /not found/);
     });
   });
 
@@ -363,7 +363,7 @@ describe('SymbolStore', () => {
         })
       );
 
-      const result = store.validate();
+      const result = store.getValidator().validate();
       assert.strictEqual(result.valid, true);
       assert.strictEqual(result.errors.length, 0);
     });
@@ -385,7 +385,7 @@ describe('SymbolStore', () => {
         })
       );
 
-      const result = store.validate();
+      const result = store.getValidator().validate();
       assert.strictEqual(result.valid, false);
       assert.ok(result.errors.some((e) => e.code === 'INVALID_TYPE_REFERENCE'));
     });
@@ -411,28 +411,13 @@ describe('SymbolStore', () => {
       store.update('a@1.0.0', { contains: ['b@1.0.0'] });
       store.update('b@1.0.0', { contains: ['a@1.0.0'] });
 
-      const cycles = store.checkCircular();
+      const cycles = store.getValidator().checkCircular();
       assert.ok(cycles.length > 0);
     });
   });
 
-  describe('status operations', () => {
-    it('should update status', () => {
-      store.register(createSymbol({ id: 'a@1.0.0' }));
-
-      store.updateStatus('a@1.0.0', 'referenced', {
-        updatedAt: new Date(),
-        source: 'static',
-        referencedBy: ['b@1.0.0'],
-      });
-
-      const retrieved = store.get('a@1.0.0')!;
-      assert.strictEqual(retrieved.status, 'referenced');
-      assert.ok(retrieved.statusInfo);
-      assert.deepStrictEqual(retrieved.statusInfo.referencedBy, ['b@1.0.0']);
-    });
-
-    it('should find unreachable symbols via QueryService', () => {
+  describe('QueryService', () => {
+    it('should find unreachable symbols', () => {
       store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
       store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
 

@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { initMemoryDatabase, type DatabaseType } from '../../repositories/persistence.js';
-import { SymbolStore, type ComponentSymbol } from '../symbol-table/index.js';
+import { SymbolTableService, type ComponentSymbol } from '../symbol-table/index.js';
 import { SynthesizerService, createSynthesizerService } from './index.js';
 import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './backends/typescript.js';
 import { getGeneratedPaths, fileExists } from './generation-gap.js';
@@ -163,13 +163,13 @@ describe('Generation Gap', () => {
 
 describe('SynthesizerService', () => {
   let db: DatabaseType;
-  let store: SymbolStore;
+  let store: SymbolTableService;
   let service: SynthesizerService;
   let tempDir: string;
 
   beforeEach(() => {
     db = initMemoryDatabase();
-    store = new SymbolStore(db);
+    store = new SymbolTableService(db);
     service = createSynthesizerService(store);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-test-'));
 
@@ -388,13 +388,13 @@ describe('SynthesizerService', () => {
 
 describe('Generated Code Content', () => {
   let db: DatabaseType;
-  let store: SymbolStore;
+  let store: SymbolTableService;
   let service: SynthesizerService;
   let tempDir: string;
 
   beforeEach(() => {
     db = initMemoryDatabase();
-    store = new SymbolStore(db);
+    store = new SymbolTableService(db);
     service = createSynthesizerService(store);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-content-test-'));
 

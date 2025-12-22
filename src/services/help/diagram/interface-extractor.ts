@@ -38,6 +38,9 @@ export class InterfaceExtractor {
   /**
    * Get all type references used in an interface.
    * Used for relationship discovery.
+   *
+   * Uses getTypeNode().getText() to get the original type annotation (e.g., "ComponentSymbol")
+   * rather than getType().getText() which returns the expanded/resolved type.
    */
   getTypeReferences(filePath: string, interfaceName: string): string[] {
     const sourceFile = this.sourceFileManager.getSourceFile(filePath);
@@ -50,14 +53,14 @@ export class InterfaceExtractor {
 
     // Collect references from method signatures
     for (const method of iface.getMethods()) {
-      // From return type
-      const returnType = method.getReturnType().getText();
+      // From return type - use type node to get annotation as written
+      const returnType = method.getReturnTypeNode()?.getText() ?? method.getReturnType().getText();
       const returnRefs = this.simplifier.extractTypeReferences(returnType);
       returnRefs.forEach((r) => references.add(r));
 
-      // From parameters
+      // From parameters - use type node to get annotation as written
       for (const param of method.getParameters()) {
-        const paramType = param.getType().getText();
+        const paramType = param.getTypeNode()?.getText() ?? param.getType().getText();
         const paramRefs = this.simplifier.extractTypeReferences(paramType);
         paramRefs.forEach((r) => references.add(r));
       }
@@ -65,7 +68,7 @@ export class InterfaceExtractor {
 
     // Collect references from properties (if any)
     for (const prop of iface.getProperties()) {
-      const propType = prop.getType().getText();
+      const propType = prop.getTypeNode()?.getText() ?? prop.getType().getText();
       const propRefs = this.simplifier.extractTypeReferences(propType);
       propRefs.forEach((r) => references.add(r));
     }
@@ -107,10 +110,14 @@ export class InterfaceExtractor {
 
   /**
    * Extract method information.
+   *
+   * Uses getTypeNode().getText() to preserve type aliases (e.g., "ComponentSymbol")
+   * instead of the expanded type.
    */
   private extractMethodInfo(method: MethodSignature, category?: string): MethodInfo {
     const parameters: ParameterInfo[] = method.getParameters().map((p) => {
-      const rawType = p.getType().getText();
+      // Prefer type node (annotation as written) over resolved type
+      const rawType = p.getTypeNode()?.getText() ?? p.getType().getText();
       const simplified = this.simplifier.simplify(rawType);
       return {
         name: p.getName(),
@@ -119,7 +126,8 @@ export class InterfaceExtractor {
       };
     });
 
-    const rawReturnType = method.getReturnType().getText();
+    // Prefer type node (annotation as written) over resolved type
+    const rawReturnType = method.getReturnTypeNode()?.getText() ?? method.getReturnType().getText();
     const simplifiedReturn = this.simplifier.simplify(rawReturnType);
 
     const result: MethodInfo = {

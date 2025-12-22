@@ -4,18 +4,24 @@
  * Central registry for tracking all components, types, and interfaces.
  * Provides the low-level CRUD operations and persistence layer.
  *
- * For higher-level operations (version resolution, queries), use component-registry.
- *
- * For internal types (Zod schemas, helper functions), import directly:
- *   - ./schema.js - All Zod schemas and helper functions
- *   - ./store.js - SymbolStore implementation
- *   - ./query-service.js - SymbolQueryService implementation
+ * All public API should be imported from this module.
+ * Internal implementation details are not re-exported.
  */
 
-// Service (primary API)
-export { SymbolStore } from './store.js';
+// =============================================================================
+// Services
+// =============================================================================
 
-// Commonly used types
+export { SymbolTableService, createSymbolTableService } from './service.js';
+export { SymbolQueryService } from './query-service.js';
+export { ConnectionManager } from './connection-manager.js';
+export { VersionResolver } from './version-resolver.js';
+export { SymbolValidator } from './symbol-validator.js';
+
+// =============================================================================
+// Types
+// =============================================================================
+
 export type {
   ComponentSymbol,
   PortDefinition,
@@ -32,13 +38,22 @@ export type {
   StatusInfo,
   PortDirection,
   SourceLocation,
+  VersionRange,
+  ExecutionInfo,
+  GenerationMetadata,
 } from './schema.js';
 
-// Commonly used utilities
+// =============================================================================
+// Utilities
+// =============================================================================
+
 export {
   createValidationResult,
   formatSemVer,
   parseSemVer,
   compareSemVer,
   buildSymbolId,
+  parseSymbolId,
+  validateKindLevel,
+  KIND_TO_LEVEL,
 } from './schema.js';

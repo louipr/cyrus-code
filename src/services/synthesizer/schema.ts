@@ -5,7 +5,7 @@
  * Implements the Generation Gap pattern from ADR-006.
  */
 
-import type { ComponentSymbol, TypeReference } from '../symbol-table/schema.js';
+import type { ComponentSymbol, TypeReference } from '../symbol-table/index.js';
 
 // =============================================================================
 // Service Interfaces

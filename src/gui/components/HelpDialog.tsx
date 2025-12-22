@@ -11,13 +11,14 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { MermaidDiagram } from './MermaidDiagram';
+// Import from types.ts to avoid bundling Node.js dependencies (ts-morph, fs)
 import type {
   HelpTopic,
   HelpCategory,
   HelpGroup,
   DocumentHeading,
-} from '../../services/help/content/index';
-import { slugify } from '../../services/help/content/index';
+} from '../../services/help/content/types';
+import { slugify } from '../../services/help/content/types';
 
 /**
  * Heading node with children for hierarchical sidebar display.
@@ -260,8 +261,8 @@ export function HelpDialog({
     });
   };
 
-  // Build heading tree from flat array, filtering to only h2s with h3 children
-  const headingTree = buildHeadingTree(topicHeadings).filter(node => node.children.length > 0);
+  // Build heading tree from flat array - show all h2s (expandable if they have h3 children)
+  const headingTree = buildHeadingTree(topicHeadings);
 
   // Group topics by category, with collapsible groups
   const isSearching = searchQuery.trim().length > 0;
@@ -337,35 +338,42 @@ export function HelpDialog({
                           {/* h2/h3 tree for selected topic */}
                           {selectedTopic === topic.id && headingTree.length > 0 && (
                             <div style={styles.subsectionList}>
-                              {headingTree.map((node) => (
-                                <div key={node.heading.anchor}>
-                                  <button
-                                    style={styles.h2ButtonNested}
-                                    onClick={() => {
-                                      handleSubsectionClick(node.heading.anchor);
-                                      toggleH2(node.heading.anchor);
-                                    }}
-                                  >
-                                    <span style={styles.h2Chevron}>
-                                      {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
-                                    </span>
-                                    {node.heading.title}
-                                  </button>
-                                  {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
-                                    <div style={styles.h3ListNested}>
-                                      {node.children.map((h3) => (
-                                        <button
-                                          key={h3.anchor}
-                                          style={styles.h3ButtonNested}
-                                          onClick={() => handleSubsectionClick(h3.anchor)}
-                                        >
-                                          {h3.title}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                              {headingTree.map((node) => {
+                                const hasChildren = node.children.length > 0;
+                                return (
+                                  <div key={node.heading.anchor}>
+                                    <button
+                                      style={styles.h2ButtonNested}
+                                      onClick={() => {
+                                        handleSubsectionClick(node.heading.anchor);
+                                        if (hasChildren) toggleH2(node.heading.anchor);
+                                      }}
+                                    >
+                                      {hasChildren ? (
+                                        <span style={styles.h2Chevron}>
+                                          {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                        </span>
+                                      ) : (
+                                        <span style={styles.h2Chevron}>•</span>
+                                      )}
+                                      {node.heading.title}
+                                    </button>
+                                    {hasChildren && expandedH2s.has(node.heading.anchor) && (
+                                      <div style={styles.h3ListNested}>
+                                        {node.children.map((h3) => (
+                                          <button
+                                            key={h3.anchor}
+                                            style={styles.h3ButtonNested}
+                                            onClick={() => handleSubsectionClick(h3.anchor)}
+                                          >
+                                            {h3.title}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -411,35 +419,42 @@ export function HelpDialog({
                             {/* Single-topic: show h2/h3 tree directly under group */}
                             {isSingleTopic && isGroupSelected && headingTree.length > 0 && (
                               <div style={styles.groupTopics}>
-                                {headingTree.map((node) => (
-                                  <div key={node.heading.anchor}>
-                                    <button
-                                      style={styles.h2Button}
-                                      onClick={() => {
-                                        handleSubsectionClick(node.heading.anchor);
-                                        toggleH2(node.heading.anchor);
-                                      }}
-                                    >
-                                      <span style={styles.h2Chevron}>
-                                        {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
-                                      </span>
-                                      {node.heading.title}
-                                    </button>
-                                    {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
-                                      <div style={styles.h3List}>
-                                        {node.children.map((h3) => (
-                                          <button
-                                            key={h3.anchor}
-                                            style={styles.h3Button}
-                                            onClick={() => handleSubsectionClick(h3.anchor)}
-                                          >
-                                            {h3.title}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
+                                {headingTree.map((node) => {
+                                  const hasChildren = node.children.length > 0;
+                                  return (
+                                    <div key={node.heading.anchor}>
+                                      <button
+                                        style={styles.h2Button}
+                                        onClick={() => {
+                                          handleSubsectionClick(node.heading.anchor);
+                                          if (hasChildren) toggleH2(node.heading.anchor);
+                                        }}
+                                      >
+                                        {hasChildren ? (
+                                          <span style={styles.h2Chevron}>
+                                            {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                          </span>
+                                        ) : (
+                                          <span style={styles.h2Chevron}>•</span>
+                                        )}
+                                        {node.heading.title}
+                                      </button>
+                                      {hasChildren && expandedH2s.has(node.heading.anchor) && (
+                                        <div style={styles.h3List}>
+                                          {node.children.map((h3) => (
+                                            <button
+                                              key={h3.anchor}
+                                              style={styles.h3Button}
+                                              onClick={() => handleSubsectionClick(h3.anchor)}
+                                            >
+                                              {h3.title}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
 
@@ -462,35 +477,42 @@ export function HelpDialog({
                                     {/* h2/h3 tree for selected topic in multi-topic group */}
                                     {selectedTopic === topic.id && headingTree.length > 0 && (
                                       <div style={styles.subsectionList}>
-                                        {headingTree.map((node) => (
-                                          <div key={node.heading.anchor}>
-                                            <button
-                                              style={styles.h2ButtonNested}
-                                              onClick={() => {
-                                                handleSubsectionClick(node.heading.anchor);
-                                                toggleH2(node.heading.anchor);
-                                              }}
-                                            >
-                                              <span style={styles.h2Chevron}>
-                                                {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
-                                              </span>
-                                              {node.heading.title}
-                                            </button>
-                                            {expandedH2s.has(node.heading.anchor) && node.children.length > 0 && (
-                                              <div style={styles.h3ListNested}>
-                                                {node.children.map((h3) => (
-                                                  <button
-                                                    key={h3.anchor}
-                                                    style={styles.h3ButtonNested}
-                                                    onClick={() => handleSubsectionClick(h3.anchor)}
-                                                  >
-                                                    {h3.title}
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
+                                        {headingTree.map((node) => {
+                                          const hasChildren = node.children.length > 0;
+                                          return (
+                                            <div key={node.heading.anchor}>
+                                              <button
+                                                style={styles.h2ButtonNested}
+                                                onClick={() => {
+                                                  handleSubsectionClick(node.heading.anchor);
+                                                  if (hasChildren) toggleH2(node.heading.anchor);
+                                                }}
+                                              >
+                                                {hasChildren ? (
+                                                  <span style={styles.h2Chevron}>
+                                                    {expandedH2s.has(node.heading.anchor) ? '▼' : '▶'}
+                                                  </span>
+                                                ) : (
+                                                  <span style={styles.h2Chevron}>•</span>
+                                                )}
+                                                {node.heading.title}
+                                              </button>
+                                              {hasChildren && expandedH2s.has(node.heading.anchor) && (
+                                                <div style={styles.h3ListNested}>
+                                                  {node.children.map((h3) => (
+                                                    <button
+                                                      key={h3.anchor}
+                                                      style={styles.h3ButtonNested}
+                                                      onClick={() => handleSubsectionClick(h3.anchor)}
+                                                    >
+                                                      {h3.title}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     )}
                                   </div>
@@ -549,8 +571,12 @@ export function HelpDialog({
                       );
                     },
                     h3({ children }) {
+                      // Generate ID from heading text for anchor navigation
+                      const text = typeof children === 'string' ? children :
+                        Array.isArray(children) ? children.join('') : '';
+                      const id = slugify(String(text));
                       return (
-                        <h3 style={{
+                        <h3 id={id} style={{
                           fontSize: '15px',
                           fontWeight: 600,
                           color: '#c9d1d9',
@@ -593,6 +619,28 @@ export function HelpDialog({
                           {children}
                         </strong>
                       );
+                    },
+                    // Figure captions and emphasis
+                    em({ children }) {
+                      const text = String(children);
+                      // Check if this is a figure caption
+                      if (text.startsWith('Figure:')) {
+                        return (
+                          <em style={{
+                            display: 'block',
+                            textAlign: 'center',
+                            fontSize: '12px',
+                            color: '#8b949e',
+                            marginTop: '-12px',
+                            marginBottom: '20px',
+                            fontStyle: 'italic',
+                          }}>
+                            {children}
+                          </em>
+                        );
+                      }
+                      // Regular emphasis
+                      return <em style={{ color: '#c9d1d9' }}>{children}</em>;
                     },
                     // Custom code renderer for mermaid, code blocks, and inline code
                     code({ className, children }) {

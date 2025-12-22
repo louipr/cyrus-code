@@ -1,15 +1,15 @@
-# C4 Component Diagram - Interface Validator
+# C4 Component Diagram - Compatibility Service
 
 ## Overview
 
-Internal structure of the Interface Validator container, showing its components and their relationships.
+Internal structure of the Compatibility Service container, showing its components and their relationships.
 
 ## Component Diagram
 
 ```mermaid
 flowchart TD
-    subgraph validator ["Interface Validator"]
-        service["ValidatorService<br/><small>TypeScript</small>"]
+    subgraph compatibility ["Compatibility Service"]
+        service["CompatibilityService<br/><small>TypeScript</small>"]
         compat["Compatibility Checker<br/><small>TypeScript</small>"]
         schema["Schema<br/><small>TypeScript</small>"]
     end
@@ -32,9 +32,9 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **ValidatorService** | Connection validation, required port checking | `checkPortCompatibility()`, `validateConnection()`, `validateAllConnections()` | ✅ | `src/services/validator/index.ts` |
-| **Compatibility Checker** | Direction and type compatibility rules | `checkDirectionCompatibility()`, `checkTypeCompatibility()`, `checkPortCompatibility()` | ✅ | `src/services/validator/compatibility.ts` |
-| **Schema** | Type definitions, error codes | `CompatibilityResult`, `ValidationOptions`, `ValidationErrorCode` | ✅ | `src/services/validator/schema.ts` |
+| **CompatibilityService** | Port compatibility checking, required port validation | `checkPortCompatibility()`, `validateConnection()`, `validateAllConnections()` | ✅ | `src/services/compatibility/index.ts` |
+| **Compatibility Checker** | Direction and type compatibility rules | `checkDirectionCompatibility()`, `checkTypeCompatibility()`, `checkPortCompatibility()` | ✅ | `src/services/compatibility/compatibility.ts` |
+| **Schema** | Type definitions, error codes | `CompatibilityResult`, `ValidationOptions`, `ValidationErrorCode` | ✅ | `src/services/compatibility/schema.ts` |
 
 > **Design Patterns**: See [ADR-003: Interface Definition System](../adr/003-interface-definition-system.md) for interface concepts.
 
@@ -47,7 +47,7 @@ flowchart TD
 | Numeric widening | Match common programming language semantics (int32 → int64 safe) |
 | Nullable widening | T → T|null is safe (widening), reverse requires runtime check |
 | Compatibility scoring | Enable ranking of port matches in GUI for best suggestions |
-| Separate from Wiring | Single responsibility: Wiring coordinates, Validator owns rules |
+| Separate from Wiring | Single responsibility: Wiring coordinates, Compatibility owns rules |
 
 ---
 
@@ -61,31 +61,31 @@ flowchart TD
 | **Batch Validation** | `validateAllConnections()` |
 | **Required Ports** | `checkRequiredPorts()` |
 
-### ValidatorService API
+### CompatibilityService API
 
 ```typescript:include
-source: src/services/validator/schema.ts
-exports: [IValidatorService]
+source: src/services/compatibility/schema.ts
+exports: [ICompatibilityService]
 ```
 
 ### Compatibility Result
 
 ```typescript:include
-source: src/services/validator/schema.ts
+source: src/services/compatibility/schema.ts
 exports: [CompatibilityResult, PortRef]
 ```
 
 ### Validation Options
 
 ```typescript:include
-source: src/services/validator/schema.ts
+source: src/services/compatibility/schema.ts
 exports: [ValidationOptions, TypeCompatibilityMode, DEFAULT_VALIDATION_OPTIONS]
 ```
 
 ### Error Codes
 
 ```typescript:include
-source: src/services/validator/schema.ts
+source: src/services/compatibility/schema.ts
 exports: [ValidationErrorCode]
 ```
 
@@ -186,7 +186,7 @@ function validateAllConnections():
     result = createValidationResult()
 
     // Validate each connection
-    for each connection in store.getAllConnections():
+    for each connection in store.getConnectionManager().getAllConnections():
         connResult = validateConnection(connection)
         result.errors.push(...connResult.errors)
         result.warnings.push(...connResult.warnings)
@@ -203,5 +203,5 @@ function validateAllConnections():
 
 ### Notes
 
-- **Source Files**: `src/services/validator/index.ts`, `src/services/validator/compatibility.ts`, `src/services/validator/schema.ts`
+- **Source Files**: `src/services/compatibility/index.ts`, `src/services/compatibility/compatibility.ts`, `src/services/compatibility/schema.ts`
 - **Design Patterns**: See [ADR-003: Interface Definition System](../adr/003-interface-definition-system.md) for interface concepts.

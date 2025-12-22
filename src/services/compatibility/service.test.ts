@@ -1,5 +1,5 @@
 /**
- * Validator Service Tests
+ * Compatibility Service Tests
  *
  * Tests for port compatibility checking, type validation, and cardinality.
  */
@@ -10,19 +10,19 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
-import { SymbolStore } from '../symbol-table/store.js';
-import { ValidatorService } from './index.js';
+import { SymbolTableService } from '../symbol-table/index.js';
+import { CompatibilityService } from './index.js';
 import { checkDirectionCompatibility, checkTypeCompatibility } from './compatibility.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
-describe('ValidatorService', () => {
-  let store: SymbolStore;
-  let validator: ValidatorService;
+describe('CompatibilityService', () => {
+  let store: SymbolTableService;
+  let service: CompatibilityService;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
-    store = new SymbolStore(db);
-    validator = new ValidatorService(store);
+    store = new SymbolTableService(db);
+    service = new CompatibilityService(store);
   });
 
   afterEach(() => {
@@ -168,7 +168,7 @@ describe('ValidatorService', () => {
       store.register(sourceSymbol);
       store.register(targetSymbol);
 
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'test/Source@1.0.0', portName: 'output' },
         { symbolId: 'test/Target@1.0.0', portName: 'input' }
       );
@@ -206,7 +206,7 @@ describe('ValidatorService', () => {
       store.register(sourceSymbol);
       store.register(targetSymbol);
 
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'test/Source@1.0.0', portName: 'output' },
         { symbolId: 'test/Target@1.0.0', portName: 'input' }
       );
@@ -215,7 +215,7 @@ describe('ValidatorService', () => {
     });
 
     it('should reject non-existent source symbol', () => {
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'nonexistent@1.0.0', portName: 'output' },
         { symbolId: 'test/Target@1.0.0', portName: 'input' }
       );
@@ -241,7 +241,7 @@ describe('ValidatorService', () => {
         })
       );
 
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'test/Source@1.0.0', portName: 'nonexistent' },
         { symbolId: 'test/Target@1.0.0', portName: 'input' }
       );
@@ -266,7 +266,7 @@ describe('ValidatorService', () => {
         })
       );
 
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'test/Self@1.0.0', portName: 'port' },
         { symbolId: 'test/Self@1.0.0', portName: 'port' }
       );
@@ -323,7 +323,7 @@ describe('ValidatorService', () => {
       store.register(target);
 
       // Create two connections directly via store (bypassing WiringService validation)
-      store.connect({
+      store.getConnectionManager().connect({
         id: 'conn-1',
         fromSymbolId: 'test/Source1@1.0.0',
         fromPort: 'output',
@@ -331,7 +331,7 @@ describe('ValidatorService', () => {
         toPort: 'input',
         createdAt: new Date(),
       });
-      store.connect({
+      store.getConnectionManager().connect({
         id: 'conn-2',
         fromSymbolId: 'test/Source2@1.0.0',
         fromPort: 'output',
@@ -341,7 +341,7 @@ describe('ValidatorService', () => {
       });
 
       // checkCardinality should detect the violation
-      const errors = validator.checkCardinality('test/Target@1.0.0');
+      const errors = service.checkCardinality('test/Target@1.0.0');
 
       assert.strictEqual(errors.length, 1);
       assert.ok(errors[0]?.message.includes('2 connections'));
@@ -390,7 +390,7 @@ describe('ValidatorService', () => {
       store.register(target);
 
       // First connection
-      store.connect({
+      store.getConnectionManager().connect({
         id: 'conn-1',
         fromSymbolId: 'test/Source1@1.0.0',
         fromPort: 'output',
@@ -400,7 +400,7 @@ describe('ValidatorService', () => {
       });
 
       // Second connection check should succeed
-      const result = validator.checkPortCompatibility(
+      const result = service.checkPortCompatibility(
         { symbolId: 'test/Source2@1.0.0', portName: 'output' },
         { symbolId: 'test/Target@1.0.0', portName: 'input' }
       );
@@ -428,7 +428,7 @@ describe('ValidatorService', () => {
 
       store.register(component);
 
-      const errors = validator.checkRequiredPorts('test/Component@1.0.0', component.ports);
+      const errors = service.checkRequiredPorts('test/Component@1.0.0', component.ports);
 
       assert.strictEqual(errors.length, 1);
       assert.ok(errors[0]?.message.includes('requiredInput'));
@@ -464,7 +464,7 @@ describe('ValidatorService', () => {
       store.register(source);
       store.register(target);
 
-      store.connect({
+      store.getConnectionManager().connect({
         id: 'conn-1',
         fromSymbolId: 'test/Source@1.0.0',
         fromPort: 'output',
@@ -473,7 +473,7 @@ describe('ValidatorService', () => {
         createdAt: new Date(),
       });
 
-      const errors = validator.checkRequiredPorts('test/Target@1.0.0', target.ports);
+      const errors = service.checkRequiredPorts('test/Target@1.0.0', target.ports);
 
       assert.strictEqual(errors.length, 0);
     });
@@ -496,7 +496,7 @@ describe('ValidatorService', () => {
 
       store.register(component);
 
-      const errors = validator.checkRequiredPorts('test/Component@1.0.0', component.ports);
+      const errors = service.checkRequiredPorts('test/Component@1.0.0', component.ports);
 
       assert.strictEqual(errors.length, 0);
     });
@@ -542,7 +542,7 @@ describe('ValidatorService', () => {
         createdAt: new Date(),
       };
 
-      const result = validator.validateConnection(connection);
+      const result = service.validateConnection(connection);
 
       assert.ok(result.valid);
       assert.strictEqual(result.errors.length, 0);
@@ -588,7 +588,7 @@ describe('ValidatorService', () => {
         createdAt: new Date(),
       };
 
-      const result = validator.validateConnection(connection);
+      const result = service.validateConnection(connection);
 
       assert.ok(!result.valid);
       assert.ok(result.errors.length > 0);
@@ -636,7 +636,7 @@ describe('ValidatorService', () => {
         })
       );
 
-      const compatiblePorts = validator.findCompatiblePorts(
+      const compatiblePorts = service.findCompatiblePorts(
         { symbolId: 'test/Source@1.0.0', portName: 'output' },
         'test/Target@1.0.0'
       );

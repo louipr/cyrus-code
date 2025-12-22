@@ -1,20 +1,20 @@
 /**
- * Validator Service
+ * Compatibility Service
  *
- * Validates connections between component ports.
+ * Checks port compatibility for connections between components.
  * Provides compatibility checking, required port validation, and cardinality enforcement.
  */
 
-import type { SymbolStore } from '../symbol-table/store.js';
 import type {
+  SymbolTableService,
   Connection,
   PortDefinition,
   ValidationResult,
   ValidationError,
-} from '../symbol-table/schema.js';
-import { createValidationResult } from '../symbol-table/schema.js';
+} from '../symbol-table/index.js';
+import { createValidationResult } from '../symbol-table/index.js';
 import {
-  type IValidatorService,
+  type ICompatibilityService,
   type CompatibilityResult,
   type PortRef,
   type ValidationOptions,
@@ -28,11 +28,11 @@ import {
   checkTypeCompatibility,
 } from './compatibility.js';
 
-export class ValidatorService implements IValidatorService {
-  private store: SymbolStore;
+export class CompatibilityService implements ICompatibilityService {
+  private store: SymbolTableService;
   private options: ValidationOptions;
 
-  constructor(store: SymbolStore, options?: Partial<ValidationOptions>) {
+  constructor(store: SymbolTableService, options?: Partial<ValidationOptions>) {
     this.store = store;
     this.options = { ...DEFAULT_VALIDATION_OPTIONS, ...options };
   }
@@ -167,7 +167,7 @@ export class ValidatorService implements IValidatorService {
     }
 
     // Get all connections involving this symbol
-    const connections = this.store.getConnections(symbolId);
+    const connections = this.store.getConnectionManager().getConnections(symbolId);
 
     // Validate each connection
     for (const conn of connections) {
@@ -192,7 +192,7 @@ export class ValidatorService implements IValidatorService {
   validateAllConnections(): ValidationResult {
     const result = createValidationResult();
 
-    const connections = this.store.getAllConnections();
+    const connections = this.store.getConnectionManager().getAllConnections();
 
     for (const conn of connections) {
       const connResult = this.validateConnection(conn);
@@ -293,7 +293,7 @@ export class ValidatorService implements IValidatorService {
    * Get all connections where this port is the target.
    */
   private getConnectionsToPort(to: PortRef): Connection[] {
-    const allConnections = this.store.getAllConnections();
+    const allConnections = this.store.getConnectionManager().getAllConnections();
     return allConnections.filter(
       (c) => c.toSymbolId === to.symbolId && c.toPort === to.portName
     );
@@ -303,7 +303,7 @@ export class ValidatorService implements IValidatorService {
    * Get all connections where this port is the source.
    */
   private getConnectionsFromPort(from: PortRef): Connection[] {
-    const allConnections = this.store.getAllConnections();
+    const allConnections = this.store.getConnectionManager().getAllConnections();
     return allConnections.filter(
       (c) => c.fromSymbolId === from.symbolId && c.fromPort === from.portName
     );
@@ -349,16 +349,16 @@ export class ValidatorService implements IValidatorService {
 }
 
 /**
- * Factory function for creating ValidatorService instances.
+ * Factory function for creating CompatibilityService instances.
  * Preferred over direct instantiation for dependency injection support.
  *
  * @param store - SymbolStore instance for symbol and connection access
  * @param options - Optional validation options
- * @returns ValidatorService instance
+ * @returns CompatibilityService instance
  */
-export function createValidatorService(
-  store: SymbolStore,
+export function createCompatibilityService(
+  store: SymbolTableService,
   options?: Partial<ValidationOptions>
-): ValidatorService {
-  return new ValidatorService(store, options);
+): CompatibilityService {
+  return new CompatibilityService(store, options);
 }

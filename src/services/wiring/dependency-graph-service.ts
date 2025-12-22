@@ -5,8 +5,7 @@
  * Extracted from WiringService for single-responsibility.
  */
 
-import type { ComponentSymbol, Connection } from '../symbol-table/schema.js';
-import type { SymbolStore } from '../symbol-table/store.js';
+import type { ComponentSymbol, Connection, SymbolTableService } from '../symbol-table/index.js';
 import type { DependencyGraph, DependencyGraphDTO, GraphStats } from './schema.js';
 import { graphToDTO } from './schema.js';
 import {
@@ -38,9 +37,9 @@ import {
  * - Graph analysis (roots, leaves, components, stats)
  */
 export class DependencyGraphService {
-  private store: SymbolStore;
+  private store: SymbolTableService;
 
-  constructor(store: SymbolStore) {
+  constructor(store: SymbolTableService) {
     this.store = store;
   }
 
@@ -53,7 +52,7 @@ export class DependencyGraphService {
    */
   buildGraph(): DependencyGraph {
     const symbols = this.store.list();
-    const connections = this.store.getAllConnections();
+    const connections = this.store.getConnectionManager().getAllConnections();
     return buildDependencyGraph(symbols, connections);
   }
 
@@ -74,7 +73,7 @@ export class DependencyGraphService {
       .map((id) => this.store.get(id))
       .filter((s): s is ComponentSymbol => s !== undefined);
 
-    const connections = this.store.getAllConnections().filter(
+    const connections = this.store.getConnectionManager().getAllConnections().filter(
       (c) => connectedIds.has(c.fromSymbolId) && connectedIds.has(c.toSymbolId)
     );
 

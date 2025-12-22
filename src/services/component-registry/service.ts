@@ -1,92 +1,41 @@
 /**
- * Component Registry
+ * Component Registry Service
  *
  * High-level service for component registration and version resolution.
- * Provides value-add logic on top of SymbolStore:
+ * Provides value-add logic on top of SymbolTableService:
  *
  * - register(): Auto-generates ID from namespace/name/version
  * - registerNewVersion(): Bumps version with metadata preservation
  * - resolve(): Semver constraint matching
  * - query(): Multi-filter queries
  *
- * For direct CRUD operations, use `getStore()` to access SymbolStore.
+ * For direct CRUD operations, use `getStore()` to access SymbolTableService.
  */
 
 import type { DatabaseType } from '../../repositories/persistence.js';
-import {
-  type ComponentSymbol,
-  type AbstractionLevel,
-  type ComponentKind,
-  type Language,
-  type SymbolStatus,
-  type SymbolOrigin,
-  buildSymbolId,
-} from '../symbol-table/schema.js';
-import { SymbolStore } from '../symbol-table/store.js';
+import type { ComponentSymbol } from '../symbol-table/index.js';
+import { buildSymbolId, SymbolTableService } from '../symbol-table/index.js';
 import {
   parseConstraint,
   findBestMatch,
   bumpVersion,
 } from './version.js';
+import type {
+  IComponentRegistryService,
+  ComponentQuery,
+  ResolveOptions,
+  BumpType,
+} from './schema.js';
 
 // ============================================================================
-// Registry Types
+// Service Class
 // ============================================================================
 
-export interface ComponentQuery {
-  namespace?: string;
-  level?: AbstractionLevel;
-  kind?: ComponentKind;
-  language?: Language;
-  status?: SymbolStatus;
-  origin?: SymbolOrigin;
-  tag?: string;
-  search?: string;
-}
-
-export interface ResolveOptions {
-  constraint?: string;
-  preferLatest?: boolean;
-}
-
-export type BumpType = 'major' | 'minor' | 'patch';
-
-// ============================================================================
-// Service Interface
-// ============================================================================
-
-/**
- * Component Registry public API contract.
- *
- * Provides high-level operations on top of SymbolStore.
- * For direct CRUD, use `getStore()` to access the underlying store.
- */
-export interface IComponentRegistry {
-  /** Access the underlying SymbolStore for direct operations */
-  getStore(): SymbolStore;
-
-  /** Register a new component (auto-generates ID if not provided) */
-  register(component: Omit<ComponentSymbol, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): ComponentSymbol;
-
-  /** Register a new version of an existing component (bumps version, copies metadata) */
-  registerNewVersion(existingId: string, bumpType: BumpType, changes?: Partial<ComponentSymbol>): ComponentSymbol;
-
-  /** Resolve a component by namespace/name with optional semver constraint */
-  resolve(namespace: string, name: string, options?: ResolveOptions): ComponentSymbol | undefined;
-
-  /** Query components with multiple filters */
-  query(filters: ComponentQuery): ComponentSymbol[];
-}
-
-// ============================================================================
-// Registry Class
-// ============================================================================
-
-export class ComponentRegistry implements IComponentRegistry {
-  private store: SymbolStore;
+export class ComponentRegistryService implements IComponentRegistryService {
+  private store: SymbolTableService;
 
   constructor(database: DatabaseType) {
-    this.store = new SymbolStore(database);
+    this.store = new SymbolTableService(database);
   }
 
   /**
@@ -94,7 +43,7 @@ export class ComponentRegistry implements IComponentRegistry {
    *
    * Use this for CRUD, relationships, connections, validation, etc.
    */
-  getStore(): SymbolStore {
+  getStore(): SymbolTableService {
     return this.store;
   }
 
@@ -188,7 +137,7 @@ export class ComponentRegistry implements IComponentRegistry {
     name: string,
     options: ResolveOptions = {}
   ): ComponentSymbol | undefined {
-    const versions = this.store.getVersions(namespace, name);
+    const versions = this.store.getVersionResolver().getVersions(namespace, name);
     if (versions.length === 0) return undefined;
 
     if (options.constraint) {
@@ -208,7 +157,7 @@ export class ComponentRegistry implements IComponentRegistry {
     }
 
     if (options.preferLatest !== false) {
-      return this.store.getLatest(namespace, name);
+      return this.store.getVersionResolver().getLatest(namespace, name);
     }
 
     return versions[0];
@@ -277,13 +226,17 @@ export class ComponentRegistry implements IComponentRegistry {
   }
 }
 
+// ============================================================================
+// Factory Function
+// ============================================================================
+
 /**
- * Factory function for creating ComponentRegistry instances.
+ * Factory function for creating ComponentRegistryService instances.
  * Preferred over direct instantiation for dependency injection support.
  *
  * @param database - Database instance for persistence
- * @returns ComponentRegistry instance
+ * @returns ComponentRegistryService instance
  */
-export function createComponentRegistry(database: DatabaseType): ComponentRegistry {
-  return new ComponentRegistry(database);
+export function createComponentRegistryService(database: DatabaseType): ComponentRegistryService {
+  return new ComponentRegistryService(database);
 }

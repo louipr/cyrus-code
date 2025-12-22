@@ -127,6 +127,20 @@ export class TypeSimplificationRegistry {
    * Register built-in simplification rules.
    */
   private registerBuiltinRules(): void {
+    // Import types: import("...").TypeName -> TypeName
+    this.registerRule({
+      pattern: /import\([^)]+\)\.(\w+)/g,
+      replacement: (_match, typeName) => typeName ?? 'unknown',
+      priority: 110,
+    });
+
+    // String literal unions: "foo" | "bar" | "baz" -> string
+    this.registerRule({
+      pattern: /^"[^"]*"(?:\s*\|\s*"[^"]*")+$/,
+      replacement: 'string',
+      priority: 105,
+    });
+
     // Zod inferred types: z.infer<typeof FooSchema> -> Foo
     this.registerRule({
       pattern: /z\.infer<typeof\s+(\w+)Schema>/,

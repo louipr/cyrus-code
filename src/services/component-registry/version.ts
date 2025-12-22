@@ -4,12 +4,8 @@
  * SemVer version parsing, comparison, and constraint resolution.
  */
 
-import {
-  type SemVer,
-  type VersionRange,
-  parseSemVer,
-  compareSemVer,
-} from '../symbol-table/schema.js';
+import type { SemVer, VersionRange } from '../symbol-table/index.js';
+import { parseSemVer, compareSemVer } from '../symbol-table/index.js';
 
 // ============================================================================
 // Version Constraint Parsing

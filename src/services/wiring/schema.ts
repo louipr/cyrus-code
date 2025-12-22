@@ -10,14 +10,14 @@ import type {
   Connection,
   PortDefinition,
   ValidationResult,
-} from '../symbol-table/schema.js';
+} from '../symbol-table/index.js';
 
 // ============================================================================
 // Service Interfaces
 // ============================================================================
 
 // Forward declaration for DependencyGraphService
-import type { DependencyGraphService } from './graph-service.js';
+import type { DependencyGraphService } from './dependency-graph-service.js';
 
 /**
  * Wiring service public API contract.
@@ -36,8 +36,6 @@ export interface IWiringService {
   getGraphService(): DependencyGraphService;
 
   // Validation
-  validateAllConnections(): ValidationResult;
-  validateSymbolConnections(symbolId: string): ValidationResult;
   validateConnection(request: ConnectionRequest): ValidationResult;
   findCompatiblePorts(fromSymbolId: string, fromPort: string): Array<{ symbolId: string; portName: string; score: number }>;
 

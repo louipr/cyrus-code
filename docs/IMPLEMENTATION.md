@@ -83,7 +83,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.G1 | Initialize Electron project | `electron/main.ts`, `electron/preload.ts` | ✅ |
 | 1.G2 | Create React frontend with Vite | `vite.config.ts`, `src/gui/index.html`, `src/gui/main.tsx`, `src/gui/App.tsx` | ✅ |
 | 1.G3 | Component list view | `src/gui/components/ComponentList.tsx` | ✅ |
-| 1.G4 | Component detail panel | `src/gui/components/ComponentDetail.tsx` | ✅ |
+| 1.G4 | Component detail panel | `src/gui/components/dDetail.tsx` | ✅ |
 | 1.G5 | Search/filter controls | `src/gui/components/SearchBar.tsx` | ✅ |
 | 1.G6 | Electron IPC handlers | `electron/ipc-handlers.ts` | ✅ |
 | 1.G7 | API client (IPC wrapper) | `src/gui/api-client.ts` | ✅ |
@@ -121,10 +121,10 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 2.1 | Implement Interface Validator | `src/services/validator/index.ts` | ✅ |
-| 2.2 | Validator schema types | `src/services/validator/schema.ts` | ✅ |
-| 2.3 | Port compatibility checking | `src/services/validator/compatibility.ts` | ✅ |
-| 2.4 | Unit tests for Validator | `src/services/validator/index.test.ts` | ✅ (29 tests) |
+| 2.1 | Implement Compatibility Service | `src/services/compatibility/index.ts` | ✅ |
+| 2.2 | Compatibility Service schema types | `src/services/compatibility/schema.ts` | ✅ |
+| 2.3 | Port compatibility checking | `src/services/compatibility/compatibility.ts` | ✅ |
+| 2.4 | Unit tests for Compatibility Service | `src/services/compatibility/service.test.ts` | ✅ (29 tests) |
 | 2.5 | Implement Wiring Service | `src/services/wiring/index.ts` | ✅ |
 | 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
 | 2.7 | Dependency graph builder | `src/services/wiring/graph.ts` | ✅ |
@@ -488,11 +488,11 @@ cyrus-code/
 │       │   ├── schema.test.ts         # Schema tests (55 tests)
 │       │   ├── store.test.ts          # Store tests
 │       │   └── index.ts               # Re-exports
-│       ├── validator/                 # Interface Validator ✅ (Slice 2)
-│       │   ├── index.ts               # ValidatorService
+│       ├── compatibility/             # Compatibility Service ✅ (Slice 2)
+│       │   ├── index.ts               # CompatibilityService
 │       │   ├── schema.ts              # Validation types
 │       │   ├── compatibility.ts       # Port compatibility rules
-│       │   └── index.test.ts          # Validator tests (29 tests)
+│       │   └── service.test.ts        # Compatibility tests (29 tests)
 │       ├── wiring/                    # Wiring Service ✅ (Slice 2)
 │       │   ├── index.ts               # WiringService
 │       │   ├── schema.ts              # Graph types, wiring results
@@ -559,7 +559,7 @@ cyrus-code/
 │   ├── services/
 │   │   ├── component-registry/        # Component Registry ✅
 │   │   ├── symbol-table/              # Symbol Table ✅
-│   │   ├── validator/                 # Interface Validator ✅ (Slice 2)
+│   │   ├── compatibility/             # Compatibility Service ✅ (Slice 2)
 │   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
 │   │   ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
 │   │   ├── help/                      # Help System + Diagram Generator ✅

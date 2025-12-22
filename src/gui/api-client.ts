@@ -28,6 +28,7 @@ import type {
   PreviewResultDTO,
   RegisterSymbolRequest,
 } from '../api/types';
+// Import from types.ts to avoid bundling Node.js dependencies (ts-morph, fs)
 import type {
   HelpCategory,
   HelpGroup,
@@ -35,7 +36,7 @@ import type {
   HelpSearchResult,
   C4Hierarchy,
   DocumentHeading,
-} from '../services/help/content/index';
+} from '../services/help/content/types';
 
 /**
  * Type definition for the cyrus API exposed via preload script.

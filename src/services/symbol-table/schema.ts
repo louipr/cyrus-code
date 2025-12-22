@@ -252,53 +252,6 @@ export const ValidationResultSchema = z.object({
 export type ValidationResult = z.infer<typeof ValidationResultSchema>;
 
 // ============================================================================
-// Service Interfaces
-// ============================================================================
-
-// Forward declaration for SymbolQueryService
-import type { SymbolQueryService } from './query-service.js';
-
-/**
- * Symbol Store public API contract.
- *
- * Service layer for managing ComponentSymbols and their connections.
- * For queries, use getQueryService().
- */
-export interface ISymbolStore {
-  // CRUD Operations
-  register(symbol: ComponentSymbol): void;
-  get(id: string): ComponentSymbol | undefined;
-  update(id: string, updates: Partial<ComponentSymbol>): void;
-  remove(id: string): void;
-  list(): ComponentSymbol[];
-
-  // Query Service Accessor
-  getQueryService(): SymbolQueryService;
-
-  // Version Operations
-  getVersions(namespace: string, name: string): ComponentSymbol[];
-  getLatest(namespace: string, name: string): ComponentSymbol | undefined;
-
-  // Status Operations (ADR-005)
-  updateStatus(id: string, status: SymbolStatus, info: StatusInfo): void;
-
-  // Connection Operations
-  connect(connection: Connection): void;
-  disconnect(connectionId: string): void;
-  getConnections(symbolId: string): Connection[];
-  getAllConnections(): Connection[];
-
-  // Validation
-  validate(): ValidationResult;
-  validateSymbol(id: string): ValidationResult;
-  checkCircular(): string[][];
-
-  // Bulk Operations
-  import(symbols: ComponentSymbol[]): void;
-  export(): ComponentSymbol[];
-}
-
-// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -428,4 +381,39 @@ export function validateKindLevel(
   level: AbstractionLevel
 ): boolean {
   return KIND_TO_LEVEL[kind] === level;
+}
+
+// ============================================================================
+// Service Interface
+// ============================================================================
+
+// Forward declarations for composed services
+import type { SymbolQueryService } from './query-service.js';
+import type { ConnectionManager } from './connection-manager.js';
+import type { VersionResolver } from './version-resolver.js';
+import type { SymbolValidator } from './symbol-validator.js';
+
+/**
+ * Symbol Table Service public API contract.
+ *
+ * Central registry for tracking all components, types, and interfaces.
+ * Provides CRUD operations and access to composed services.
+ */
+export interface ISymbolTableService {
+  // Service accessors
+  getQueryService(): SymbolQueryService;
+  getConnectionManager(): ConnectionManager;
+  getVersionResolver(): VersionResolver;
+  getValidator(): SymbolValidator;
+
+  // CRUD Operations
+  register(symbol: ComponentSymbol): void;
+  get(id: string): ComponentSymbol | undefined;
+  update(id: string, updates: Partial<ComponentSymbol>): void;
+  remove(id: string): void;
+  list(): ComponentSymbol[];
+
+  // Bulk Operations
+  import(symbols: ComponentSymbol[]): void;
+  export(): ComponentSymbol[];
 }

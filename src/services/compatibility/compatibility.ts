@@ -9,7 +9,7 @@ import type {
   PortDefinition,
   PortDirection,
   TypeReference,
-} from '../symbol-table/schema.js';
+} from '../symbol-table/index.js';
 import {
   type CompatibilityResult,
   type TypeCompatibilityMode,

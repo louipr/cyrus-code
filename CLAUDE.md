@@ -13,6 +13,7 @@ Hardware-inspired software component architecture tool. Applies ASIC/FPGA design
 | **AI Context** | `CLAUDE.md` | Development context and terminology |
 | **Architecture** | `docs/adr/001-010` | Historical decisions (may have outdated examples) |
 | **Diagrams** | `docs/c4/*.md` | System architecture |
+| **Diagram Authoring** | `docs/c4/AUTHORING.md` | How to create C4 Level 3/4 diagrams |
 | **Rationale** | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
 > **Note**: ADRs contain illustrative code examples that may not match current canonical definitions. Always reference `symbol-table-schema.md` for current type definitions.
@@ -152,3 +153,27 @@ npm run lint           # ESLint
 2. **Interfaces before implementation** - Define ports, then fill in components
 3. **Verify before generate** - Multi-stage pipeline catches errors early
 4. **Configure, don't regenerate** - AI selects and wires components, not rewrites them
+
+### Code Quality Principles
+
+**CRITICAL: Anti-Legacy, Pro-Quality Philosophy**
+
+| Principle | Meaning |
+|-----------|---------|
+| **Anti-backward-compatibility** | Never keep old APIs "just in case". Delete deprecated code immediately. |
+| **Anti-redundancy** | Never duplicate methods across interfaces. One method, one place. |
+| **Anti-legacy** | No `@deprecated` annotations. Remove, don't mark. |
+| **Pro-aggressive-redesign** | Quality over convenience. Refactor callers when improving APIs. |
+| **SOLID over shortcuts** | ISP means interfaces stay focused. No "fat facades" with duplicated methods. |
+
+**Specific Anti-Patterns to Avoid:**
+- Facade interfaces that duplicate methods from composed services (violates ISP)
+- Keeping old method signatures alongside new ones (use new, delete old)
+- Re-exporting types "for convenience" when direct import is cleaner
+- Comments like `// deprecated`, `// legacy`, `// for backward compat`
+
+**When Refactoring:**
+1. Change the design to be correct
+2. Update ALL callers to use new API
+3. Delete old code completely
+4. Never leave transitional scaffolding

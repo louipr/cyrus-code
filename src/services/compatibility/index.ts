@@ -1,7 +1,7 @@
 /**
- * Validator Service
+ * Compatibility Service
  *
- * Validates connections between component ports.
+ * Checks port compatibility for connections between components.
  *
  * For internal types, import directly from submodules:
  *   - ./schema.js - All validation types and error codes
@@ -9,7 +9,7 @@
  */
 
 // Service (primary API)
-export { ValidatorService } from './service.js';
+export { CompatibilityService } from './service.js';
 
 // Commonly used types
 export type { ValidationOptions } from './schema.js';

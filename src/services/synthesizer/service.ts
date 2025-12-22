@@ -5,7 +5,7 @@
  * Converts symbols to TypeScript code using ts-morph.
  */
 
-import type { SymbolStore, ComponentSymbol } from '../symbol-table/index.js';
+import type { SymbolTableService, ComponentSymbol } from '../symbol-table/index.js';
 import type {
   GenerationOptions,
   GenerationResult,
@@ -25,7 +25,7 @@ import { generateWithGap, previewGeneration, getGeneratedPaths, fileExists } fro
  * symbols in the symbol table using the Generation Gap pattern.
  */
 export class SynthesizerService implements ISynthesizerService {
-  constructor(private store: SymbolStore) {}
+  constructor(private store: SymbolTableService) {}
 
   // ===========================================================================
   // Single Symbol Generation
@@ -217,6 +217,6 @@ export class SynthesizerService implements ISynthesizerService {
 /**
  * Create a new SynthesizerService.
  */
-export function createSynthesizerService(store: SymbolStore): SynthesizerService {
+export function createSynthesizerService(store: SymbolTableService): SynthesizerService {
   return new SynthesizerService(store);
 }

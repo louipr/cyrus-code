@@ -140,6 +140,9 @@ export class RelationshipExtractor {
 
   /**
    * Extract relationships from a method signature.
+   *
+   * Uses getTypeNode().getText() to get the original type annotation (e.g., "ComponentSymbol")
+   * rather than getType().getText() which returns the expanded/resolved type for Zod-inferred types.
    */
   private extractFromMethod(
     method: MethodSignature,
@@ -148,8 +151,8 @@ export class RelationshipExtractor {
   ): RelationshipInfo[] {
     const relationships: RelationshipInfo[] = [];
 
-    // Return type
-    const returnType = method.getReturnType().getText();
+    // Return type - use type node to get annotation as written
+    const returnType = method.getReturnTypeNode()?.getText() ?? method.getReturnType().getText();
     const returnRefs = this.simplifier.extractTypeReferences(returnType);
     for (const ref of returnRefs) {
       if (knownTypes.has(ref) && ref !== sourceName) {
@@ -163,9 +166,9 @@ export class RelationshipExtractor {
       }
     }
 
-    // Parameters
+    // Parameters - use type node to get annotation as written
     for (const param of method.getParameters()) {
-      const paramType = param.getType().getText();
+      const paramType = param.getTypeNode()?.getText() ?? param.getType().getText();
       const paramRefs = this.simplifier.extractTypeReferences(paramType);
       for (const ref of paramRefs) {
         if (knownTypes.has(ref) && ref !== sourceName) {
@@ -185,6 +188,8 @@ export class RelationshipExtractor {
 
   /**
    * Extract relationships from a property signature.
+   *
+   * Uses getTypeNode().getText() to get the original type annotation.
    */
   private extractFromProperty(
     prop: PropertySignature,
@@ -193,7 +198,8 @@ export class RelationshipExtractor {
   ): RelationshipInfo[] {
     const relationships: RelationshipInfo[] = [];
 
-    const propType = prop.getType().getText();
+    // Use type node to get annotation as written
+    const propType = prop.getTypeNode()?.getText() ?? prop.getType().getText();
     const propRefs = this.simplifier.extractTypeReferences(propType);
     for (const ref of propRefs) {
       if (knownTypes.has(ref) && ref !== sourceName) {

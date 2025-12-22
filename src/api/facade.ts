@@ -10,7 +10,7 @@
 
 import { type DatabaseType, initDatabase, initMemoryDatabase, closeDatabase } from '../repositories/persistence.js';
 import {
-  ComponentRegistry,
+  ComponentRegistryService,
   type ComponentQuery,
   type ResolveOptions,
 } from '../services/component-registry/index.js';
@@ -67,12 +67,12 @@ import type {
 // ============================================================================
 
 export class ApiFacade implements IApiFacade {
-  private registry: ComponentRegistry;
+  private registry: ComponentRegistryService;
   private wiringService: WiringService;
   private synthesizerService: SynthesizerService;
 
   constructor(db: DatabaseType) {
-    this.registry = new ComponentRegistry(db);
+    this.registry = new ComponentRegistryService(db);
     this.wiringService = new WiringService(this.registry.getStore());
     this.synthesizerService = new SynthesizerService(this.registry.getStore());
   }
@@ -294,10 +294,10 @@ export class ApiFacade implements IApiFacade {
     namespace: string,
     name: string
   ): ApiResponse<ComponentSymbolDTO[]> {
-    const versions = this.registry.getStore().getVersions(namespace, name);
+    const versions = this.registry.getStore().getVersionResolver().getVersions(namespace, name);
     return {
       success: true,
-      data: versions.map((s) => this.symbolToDto(s)),
+      data: versions.map((s: ComponentSymbol) => this.symbolToDto(s)),
     };
   }
 
@@ -408,7 +408,7 @@ export class ApiFacade implements IApiFacade {
         createdAt: new Date(),
       };
 
-      this.registry.getStore().connect(connection);
+      this.registry.getStore().getConnectionManager().connect(connection);
       return {
         success: true,
         data: this.connectionToDto(connection),
@@ -429,7 +429,7 @@ export class ApiFacade implements IApiFacade {
    */
   removeConnection(connectionId: string): ApiResponse<void> {
     try {
-      this.registry.getStore().disconnect(connectionId);
+      this.registry.getStore().getConnectionManager().disconnect(connectionId);
       return { success: true };
     } catch (error) {
       return {
@@ -447,10 +447,10 @@ export class ApiFacade implements IApiFacade {
    */
   getConnections(symbolId: string): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.registry.getStore().getConnections(symbolId);
+      const connections = this.registry.getStore().getConnectionManager().getConnections(symbolId);
       return {
         success: true,
-        data: connections.map((c) => this.connectionToDto(c)),
+        data: connections.map((c: Connection) => this.connectionToDto(c)),
       };
     } catch (error) {
       return {
@@ -468,10 +468,10 @@ export class ApiFacade implements IApiFacade {
    */
   getAllConnections(): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.registry.getStore().getAllConnections();
+      const connections = this.registry.getStore().getConnectionManager().getAllConnections();
       return {
         success: true,
-        data: connections.map((c) => this.connectionToDto(c)),
+        data: connections.map((c: Connection) => this.connectionToDto(c)),
       };
     } catch (error) {
       return {
@@ -493,7 +493,7 @@ export class ApiFacade implements IApiFacade {
    */
   validate(): ApiResponse<ValidationResultDTO> {
     try {
-      const result = this.registry.getStore().validate();
+      const result = this.registry.getStore().getValidator().validate();
       return {
         success: true,
         data: this.validationResultToDto(result),
@@ -514,7 +514,7 @@ export class ApiFacade implements IApiFacade {
    */
   validateSymbol(id: string): ApiResponse<ValidationResultDTO> {
     try {
-      const result = this.registry.getStore().validateSymbol(id);
+      const result = this.registry.getStore().getValidator().validateSymbol(id);
       return {
         success: true,
         data: this.validationResultToDto(result),
@@ -535,7 +535,7 @@ export class ApiFacade implements IApiFacade {
    */
   checkCircular(): ApiResponse<string[][]> {
     try {
-      const cycles = this.registry.getStore().checkCircular();
+      const cycles = this.registry.getStore().getValidator().checkCircular();
       return {
         success: true,
         data: cycles,

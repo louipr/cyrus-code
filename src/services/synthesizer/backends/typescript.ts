@@ -5,8 +5,8 @@
  * Maps abstract types to TypeScript types and handles TS-specific patterns.
  */
 
-import type { ComponentSymbol, PortDefinition, TypeReference } from '../../symbol-table/schema.js';
-import { formatSemVer } from '../../symbol-table/schema.js';
+import type { ComponentSymbol, PortDefinition, TypeReference } from '../../symbol-table/index.js';
+import { formatSemVer } from '../../symbol-table/index.js';
 import type { GeneratedComponent, GeneratedPort } from '../schema.js';
 import { sanitizeClassName } from '../schema.js';
 import { capitalize } from '../codegen.js';

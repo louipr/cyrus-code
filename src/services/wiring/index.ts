@@ -6,7 +6,7 @@
  * For internal types, import directly from submodules:
  *   - ./schema.js - All wiring types and error codes
  *   - ./dependency-graph.js - Graph utilities
- *   - ./graph-service.js - DependencyGraphService
+ *   - ./dependency-graph-service.js - DependencyGraphService
  */
 
 // Service (primary API)

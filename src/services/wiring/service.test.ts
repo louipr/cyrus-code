@@ -10,7 +10,8 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
-import { SymbolStore } from '../symbol-table/store.js';
+import { SymbolTableService } from '../symbol-table/index.js';
+import { CompatibilityService } from '../compatibility/index.js';
 import { WiringService } from './index.js';
 import { WiringErrorCode } from './schema.js';
 import {
@@ -21,12 +22,12 @@ import {
 } from '../test-fixtures.js';
 
 describe('WiringService', () => {
-  let store: SymbolStore;
+  let store: SymbolTableService;
   let wiring: WiringService;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
-    store = new SymbolStore(db);
+    store = new SymbolTableService(db);
     wiring = new WiringService(store);
   });
 
@@ -671,7 +672,9 @@ describe('WiringService', () => {
         toPort: 'in',
       });
 
-      const result = wiring.validateAllConnections();
+      // Validate connections using CompatibilityService directly
+      const compatibility = new CompatibilityService(store);
+      const result = compatibility.validateAllConnections();
       assert.strictEqual(result.valid, true);
     });
 

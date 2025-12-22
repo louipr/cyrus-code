@@ -157,7 +157,7 @@
       "id": "c4-component",
       "title": "Symbol Table",
       "summary": "Symbol Table internal structure - SymbolStore, QueryEngine, VersionManager",
-      "path": "docs/c4/component-symbol-table.md",
+      "path": "docs/c4/symbol-table.md",
       "category": "architecture",
       "group": "symbol-table",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture", "code", "API"]
@@ -240,6 +240,14 @@
       "path": "docs/spec/symbol-table-schema.md",
       "category": "reference",
       "keywords": ["schema", "type", "symbol", "component", "port", "specification"]
+    },
+    {
+      "id": "symbol-table-reference",
+      "title": "Symbol Table Reference",
+      "summary": "API quick reference, core types, design patterns, and source files",
+      "path": "docs/reference/symbol-table.md",
+      "category": "reference",
+      "keywords": ["symbol table", "API", "reference", "types", "design patterns", "source files"]
     }
   ]
 }

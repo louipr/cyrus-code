@@ -19,28 +19,28 @@ mermaid.initialize({
     // Background and text
     background: '#1e1e1e',
     primaryTextColor: '#ffffff',
-    secondaryTextColor: '#e0e0e0',
-    tertiaryTextColor: '#cccccc',
+    secondaryTextColor: '#ffffff',
+    tertiaryTextColor: '#ffffff',
 
-    // C4 System colors (blue for main system)
-    primaryColor: '#1168bd',
-    primaryBorderColor: '#0b4884',
+    // C4 System colors (darker blue for better contrast with white text)
+    primaryColor: '#0d47a1',
+    primaryBorderColor: '#1565c0',
 
-    // C4 Container colors (slightly lighter blue)
-    secondaryColor: '#438dd5',
-    secondaryBorderColor: '#2e6da4',
+    // C4 Container/Component colors (darker blue)
+    secondaryColor: '#1565c0',
+    secondaryBorderColor: '#1976d2',
 
-    // C4 External system colors (gray)
-    tertiaryColor: '#666666',
-    tertiaryBorderColor: '#444444',
+    // C4 External system colors (darker gray)
+    tertiaryColor: '#424242',
+    tertiaryBorderColor: '#616161',
 
     // Lines and borders
-    lineColor: '#888888',
+    lineColor: '#90a4ae',
 
     // Notes and labels
-    noteBkgColor: '#2d2d2d',
-    noteTextColor: '#e0e0e0',
-    noteBorderColor: '#444444',
+    noteBkgColor: '#263238',
+    noteTextColor: '#eceff1',
+    noteBorderColor: '#546e7a',
   },
   // C4-specific configuration
   c4: {
@@ -48,13 +48,13 @@ mermaid.initialize({
     diagramMarginY: 30,
     c4ShapeMargin: 25,
     c4ShapePadding: 15,
-    width: 180,
+    width: 250,
     height: 65,
     boxMargin: 12,
-    useMaxWidth: true,
+    useMaxWidth: false,
     c4ShapeInRow: 3,
     nextLinePaddingX: 15,
-    c4BoundaryInRow: 2,
+    c4BoundaryInRow: 1,
     personFontSize: 14,
     personFontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     external_personFontSize: 13,
@@ -151,10 +151,11 @@ export function MermaidDiagram({ code, className }: MermaidDiagramProps) {
           max-width: 100%;
           height: auto;
           background: transparent;
-          /* Boost brightness and saturation for better visibility on dark bg */
-          filter: brightness(1.15) saturate(1.2);
+          /* Scale down wide diagrams to fit better in content area */
+          transform: scale(0.9);
+          transform-origin: top center;
         }
-        /* Force all text to be visible */
+        /* Force all text to be visible on dark backgrounds */
         .mermaid-diagram text,
         .mermaid-diagram tspan {
           fill: #ffffff !important;
@@ -163,15 +164,14 @@ export function MermaidDiagram({ code, className }: MermaidDiagramProps) {
         /* Title should stand out */
         .mermaid-diagram text[font-size="18px"],
         .mermaid-diagram text.title {
-          fill: #e8e8e8 !important;
+          fill: #ffffff !important;
           font-weight: 600 !important;
         }
-        /* Relationship text - visible gray */
-        .mermaid-diagram text[font-size="10px"],
-        .mermaid-diagram text[font-size="11px"],
-        .mermaid-diagram text[font-size="12px"],
-        .mermaid-diagram text[font-size="13px"] {
-          fill: #c0c0c0 !important;
+        /* Relationship labels - bright for visibility */
+        .mermaid-diagram .edgeLabel text,
+        .mermaid-diagram .messageText {
+          fill: #e0e0e0 !important;
+          font-weight: 500 !important;
         }
       `}</style>
       <div dangerouslySetInnerHTML={{ __html: svg }} />

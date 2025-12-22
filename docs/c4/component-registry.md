@@ -14,7 +14,7 @@ flowchart TD
     end
 
     service -->|"resolve"| version
-    service -->|"wrap"| st["Symbol Table<br/>(SymbolStore)"]
+    service -->|"wrap"| st["Symbol Table<br/>(SymbolTableService)"]
     version -->|"use"| semver["SemVer Utils"]
 
     api["API Facade"] -->|"call"| service
@@ -40,7 +40,7 @@ flowchart TD
 
 | Decision | Rationale |
 |----------|-----------|
-| Wrap SymbolStore | Registry adds version resolution, query logic on top of raw store |
+| Wrap SymbolTableService | Registry adds version resolution, query logic on top of raw store |
 | npm-style constraints | Familiar to JavaScript developers, well-defined semantics |
 | Highest match wins | `findBestMatch` returns newest compatible version (like npm) |
 | Caret default | `^1.2.3` allows minor updates, balances stability and updates |

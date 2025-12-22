@@ -518,33 +518,34 @@ class CommandInvoker {
 
 ### Observer
 
-**Where**: Status Tracker notifications
+**Where**: Connection change notifications
 
-**Why**: Components react to symbol status changes.
+**Why**: Components react to connection changes for revalidation.
 
 ```typescript
-interface StatusObserver {
-  onStatusChange(symbolId: string, oldStatus: SymbolStatus, newStatus: SymbolStatus): void;
+interface ConnectionObserver {
+  onConnectionChange(fromSymbol: string, toSymbol: string, action: 'connect' | 'disconnect'): void;
 }
 
-class StatusTracker {
-  private observers: StatusObserver[] = [];
+class ConnectionManager {
+  private observers: ConnectionObserver[] = [];
 
-  subscribe(observer: StatusObserver): void {
+  subscribe(observer: ConnectionObserver): void {
     this.observers.push(observer);
   }
 
-  updateStatus(symbolId: string, newStatus: SymbolStatus): void {
-    const oldStatus = this.getStatus(symbolId);
-    this.setStatus(symbolId, newStatus);
-    this.observers.forEach(o => o.onStatusChange(symbolId, oldStatus, newStatus));
+  connect(connection: Connection): void {
+    this.store.insert(connection);
+    this.observers.forEach(o =>
+      o.onConnectionChange(connection.fromSymbolId, connection.toSymbolId, 'connect')
+    );
   }
 }
 
-class DeadCodeMonitor implements StatusObserver {
-  onStatusChange(symbolId: string, oldStatus: SymbolStatus, newStatus: SymbolStatus): void {
-    if (newStatus === 'declared' && oldStatus === 'referenced') {
-      console.warn(`Symbol ${symbolId} became unreachable`);
+class ValidationMonitor implements ConnectionObserver {
+  onConnectionChange(fromSymbol: string, toSymbol: string, action: string): void {
+    if (action === 'connect') {
+      this.validator.revalidate(fromSymbol, toSymbol);
     }
   }
 }
@@ -583,7 +584,7 @@ class WiringService implements ConnectionMediator {
   }
 
   notifyChange(symbolId: string): void {
-    const connections = this.symbolTable.getConnections(symbolId);
+    const connections = this.symbolTable.getConnectionManager().getConnections(symbolId);
     connections.forEach(conn => {
       this.validator.revalidate(conn);
     });
@@ -711,14 +712,14 @@ High-level modules depend on abstractions:
 class CodeSynthesizer {
   constructor(
     private backend: LanguageBackend,       // Abstraction
-    private symbolTable: SymbolStore,       // Abstraction
+    private symbolTable: SymbolTableService,       // Abstraction
   ) {}
 }
 
 // Low-level: Concrete implementations
 const synthesizer = new CodeSynthesizer(
   new TypeScriptBackend(),
-  new SqliteSymbolStore(),
+  new SqliteSymbolTableService(),
 );
 ```
 

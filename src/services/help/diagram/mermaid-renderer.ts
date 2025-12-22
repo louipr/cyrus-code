@@ -181,7 +181,6 @@ export class MermaidRenderer implements DiagramRenderer {
       .replace(/</g, '~')
       .replace(/>/g, '~')
       .replace(/\|/g, ' or ')
-      .replace(/\[\]/g, ' Array')
       .replace(/\{[^{}]*\}/g, 'object') // Inline objects that slip through
       .replace(/;/g, ','); // Semicolons in types
   }

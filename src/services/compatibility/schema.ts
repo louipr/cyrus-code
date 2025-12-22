@@ -1,7 +1,7 @@
 /**
- * Validator Service Schema
+ * Compatibility Service Schema
  *
- * Type definitions specific to the validation service.
+ * Type definitions for port compatibility checking.
  * Extends the core schema with compatibility-related types.
  */
 
@@ -11,19 +11,19 @@ import type {
   PortDefinition,
   ValidationResult,
   ValidationError,
-} from '../symbol-table/schema.js';
+} from '../symbol-table/index.js';
 
 // ============================================================================
 // Service Interfaces
 // ============================================================================
 
 /**
- * Validator service public API contract.
+ * Compatibility service public API contract.
  *
- * Validates connections between component ports.
+ * Checks port compatibility for connections between components.
  * Provides compatibility checking, required port validation, and cardinality enforcement.
  */
-export interface IValidatorService {
+export interface ICompatibilityService {
   /** Check if two ports can be connected */
   checkPortCompatibility(from: PortRef, to: PortRef): CompatibilityResult;
 
