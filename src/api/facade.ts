@@ -16,12 +16,12 @@ import {
 } from '../services/component-registry/index.js';
 import { WiringService, type ConnectionRequest } from '../services/wiring/index.js';
 import {
-  SynthesizerService,
+  CodeGenerationService,
   type GenerationOptions,
   type GenerationResult,
   type GenerationBatchResult,
   type PreviewResult,
-} from '../services/synthesizer/index.js';
+} from '../services/code-generation/index.js';
 import type {
   IApiFacade,
   ComponentSymbolDTO,
@@ -69,12 +69,12 @@ import type {
 export class ApiFacade implements IApiFacade {
   private registry: ComponentRegistryService;
   private wiringService: WiringService;
-  private synthesizerService: SynthesizerService;
+  private codeGenerationService: CodeGenerationService;
 
   constructor(db: DatabaseType) {
     this.registry = new ComponentRegistryService(db);
     this.wiringService = new WiringService(this.registry.getStore());
-    this.synthesizerService = new SynthesizerService(this.registry.getStore());
+    this.codeGenerationService = new CodeGenerationService(this.registry.getStore());
   }
 
   // ==========================================================================
@@ -1000,7 +1000,7 @@ export class ApiFacade implements IApiFacade {
   generateSymbol(request: GenerateRequest): ApiResponse<GenerationResultDTO> {
     try {
       const options = this.dtoToGenerationOptions(request.options);
-      const result = this.synthesizerService.generateSymbol(request.symbolId, options);
+      const result = this.codeGenerationService.generateSymbol(request.symbolId, options);
       return {
         success: true,
         data: this.generationResultToDto(result),
@@ -1022,7 +1022,7 @@ export class ApiFacade implements IApiFacade {
   generateMultiple(request: GenerateBatchRequest): ApiResponse<GenerationBatchResultDTO> {
     try {
       const options = this.dtoToGenerationOptions(request.options);
-      const result = this.synthesizerService.generateMultiple(request.symbolIds, options);
+      const result = this.codeGenerationService.generateMultiple(request.symbolIds, options);
       return {
         success: true,
         data: this.generationBatchResultToDto(result),
@@ -1044,7 +1044,7 @@ export class ApiFacade implements IApiFacade {
   generateAll(options: GenerationOptionsDTO): ApiResponse<GenerationBatchResultDTO> {
     try {
       const genOptions = this.dtoToGenerationOptions(options);
-      const result = this.synthesizerService.generateAll(genOptions);
+      const result = this.codeGenerationService.generateAll(genOptions);
       return {
         success: true,
         data: this.generationBatchResultToDto(result),
@@ -1065,7 +1065,7 @@ export class ApiFacade implements IApiFacade {
    */
   previewGeneration(request: PreviewRequest): ApiResponse<PreviewResultDTO> {
     try {
-      const preview = this.synthesizerService.previewSymbol(request.symbolId, request.outputDir);
+      const preview = this.codeGenerationService.previewSymbol(request.symbolId, request.outputDir);
       if (!preview) {
         return {
           success: false,
@@ -1095,7 +1095,7 @@ export class ApiFacade implements IApiFacade {
    */
   listGeneratableSymbols(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.synthesizerService.listGeneratableSymbols();
+      const symbols = this.codeGenerationService.listGeneratableSymbols();
       return {
         success: true,
         data: symbols.map((s) => this.symbolToDto(s)),
@@ -1118,7 +1118,7 @@ export class ApiFacade implements IApiFacade {
     try {
       return {
         success: true,
-        data: this.synthesizerService.canGenerate(symbolId),
+        data: this.codeGenerationService.canGenerate(symbolId),
       };
     } catch (error) {
       return {
@@ -1138,7 +1138,7 @@ export class ApiFacade implements IApiFacade {
     try {
       return {
         success: true,
-        data: this.synthesizerService.hasUserImplementation(symbolId, outputDir),
+        data: this.codeGenerationService.hasUserImplementation(symbolId, outputDir),
       };
     } catch (error) {
       return {

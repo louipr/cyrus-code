@@ -89,7 +89,7 @@ interface CyrusAPI {
     findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
     findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
-  synthesizer: {
+  codeGeneration: {
     generate: (request: GenerateRequest) => Promise<ApiResponse<GenerationResultDTO>>;
     generateMultiple: (request: GenerateBatchRequest) => Promise<ApiResponse<GenerationBatchResultDTO>>;
     generateAll: (options: GenerationOptionsDTO) => Promise<ApiResponse<GenerationBatchResultDTO>>;
@@ -199,7 +199,7 @@ function createMockApi(): CyrusAPI {
       findCompatiblePorts: () => mockResponse([]),
       findUnconnectedRequired: () => mockResponse([]),
     },
-    synthesizer: {
+    codeGeneration: {
       generate: () => mockError('Not connected to backend'),
       generateMultiple: () => mockError('Not connected to backend'),
       generateAll: () => mockError('Not connected to backend'),

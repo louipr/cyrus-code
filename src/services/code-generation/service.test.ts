@@ -1,5 +1,5 @@
 /**
- * Synthesizer Service Tests
+ * Code Generation Service Tests
  */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -9,13 +9,13 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { initMemoryDatabase, type DatabaseType } from '../../repositories/persistence.js';
 import { SymbolTableService, type ComponentSymbol } from '../symbol-table/index.js';
-import { SynthesizerService, createSynthesizerService } from './index.js';
-import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './backends/typescript.js';
-import { getGeneratedPaths, fileExists } from './generation-gap.js';
+import { CodeGenerationService, createCodeGenerationService } from './index.js';
+import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './symbol-transformer.js';
+import { getGeneratedPaths, fileExists } from './file-writer.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
 // =============================================================================
-// Test Fixtures (synthesizer-specific)
+// Test Fixtures (codegen-specific)
 // =============================================================================
 
 /** Create a synthesizable L1 component with default ports */
@@ -161,17 +161,17 @@ describe('Generation Gap', () => {
 // Synthesizer Service Tests
 // =============================================================================
 
-describe('SynthesizerService', () => {
+describe('CodeGenerationService', () => {
   let db: DatabaseType;
   let store: SymbolTableService;
-  let service: SynthesizerService;
+  let service: CodeGenerationService;
   let tempDir: string;
 
   beforeEach(() => {
     db = initMemoryDatabase();
     store = new SymbolTableService(db);
-    service = createSynthesizerService(store);
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-test-'));
+    service = createCodeGenerationService(store);
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-test-'));
 
     // Register core types
     store.register(createTypeSymbol('core/string@1.0.0'));
@@ -389,14 +389,14 @@ describe('SynthesizerService', () => {
 describe('Generated Code Content', () => {
   let db: DatabaseType;
   let store: SymbolTableService;
-  let service: SynthesizerService;
+  let service: CodeGenerationService;
   let tempDir: string;
 
   beforeEach(() => {
     db = initMemoryDatabase();
     store = new SymbolTableService(db);
-    service = createSynthesizerService(store);
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synthesizer-content-test-'));
+    service = createCodeGenerationService(store);
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-content-test-'));
 
     // Register core types
     store.register(createTypeSymbol('core/string@1.0.0'));

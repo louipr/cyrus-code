@@ -1,5 +1,5 @@
 /**
- * Synthesizer Service
+ * Code Generation Service
  *
  * Orchestrates code generation using the Generation Gap pattern.
  * Converts symbols to TypeScript code using ts-morph.
@@ -12,19 +12,20 @@ import type {
   GenerationBatchResult,
   PreviewResult,
   GeneratedComponent,
-  ISynthesizerService,
+  ICodeGenerationService,
 } from './schema.js';
 import { generationError, emptyBatchResult } from './schema.js';
-import { symbolToComponent, isGeneratable } from './backends/typescript.js';
-import { generateWithGap, previewGeneration, getGeneratedPaths, fileExists } from './generation-gap.js';
+import { symbolToComponent, isGeneratable } from './symbol-transformer.js';
+import { generateWithGap, previewGeneration } from './content-generator.js';
+import { getGeneratedPaths, fileExists } from './file-writer.js';
 
 /**
- * Code synthesis service.
+ * Code generation service.
  *
  * Provides high-level API for generating TypeScript code from
  * symbols in the symbol table using the Generation Gap pattern.
  */
-export class SynthesizerService implements ISynthesizerService {
+export class CodeGenerationService implements ICodeGenerationService {
   constructor(private store: SymbolTableService) {}
 
   // ===========================================================================
@@ -215,8 +216,8 @@ export class SynthesizerService implements ISynthesizerService {
 }
 
 /**
- * Create a new SynthesizerService.
+ * Create a new CodeGenerationService.
  */
-export function createSynthesizerService(store: SymbolTableService): SynthesizerService {
-  return new SynthesizerService(store);
+export function createCodeGenerationService(store: SymbolTableService): CodeGenerationService {
+  return new CodeGenerationService(store);
 }

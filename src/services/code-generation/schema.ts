@@ -1,8 +1,8 @@
 /**
- * Synthesizer Schema
+ * Code Generation Schema
  *
  * Types and configurations for code generation.
- * Implements the Generation Gap pattern from ADR-006.
+ * Implements the Generation Gap pattern for safe regeneration.
  */
 
 import type { ComponentSymbol, TypeReference } from '../symbol-table/index.js';
@@ -12,12 +12,12 @@ import type { ComponentSymbol, TypeReference } from '../symbol-table/index.js';
 // =============================================================================
 
 /**
- * Synthesizer service public API contract.
+ * Code generation service public API contract.
  *
  * Provides high-level API for generating TypeScript code from
  * symbols in the symbol table using the Generation Gap pattern.
  */
-export interface ISynthesizerService {
+export interface ICodeGenerationService {
   generateSymbol(symbolId: string, options: GenerationOptions): GenerationResult;
   generateMultiple(symbolIds: string[], options: GenerationOptions): GenerationBatchResult;
   generateAll(options: GenerationOptions): GenerationBatchResult;

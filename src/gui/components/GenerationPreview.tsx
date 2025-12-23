@@ -28,7 +28,7 @@ export function GenerationPreview({
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.synthesizer.preview({
+        const response = await apiClient.codeGeneration.preview({
           symbolId,
           outputDir,
         });

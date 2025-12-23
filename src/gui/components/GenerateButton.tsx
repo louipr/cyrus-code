@@ -29,7 +29,7 @@ export function GenerateButton({
 
   useEffect(() => {
     async function checkCanGenerate(): Promise<void> {
-      const response = await apiClient.synthesizer.canGenerate(component.id);
+      const response = await apiClient.codeGeneration.canGenerate(component.id);
       if (response.success && response.data) {
         setCanGenerate(true);
       } else {
@@ -48,7 +48,7 @@ export function GenerateButton({
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.synthesizer.preview({
+      const response = await apiClient.codeGeneration.preview({
         symbolId: component.id,
         outputDir,
       });
@@ -68,7 +68,7 @@ export function GenerateButton({
     setError(null);
     setResult(null);
     try {
-      const response = await apiClient.synthesizer.generate({
+      const response = await apiClient.codeGeneration.generate({
         symbolId: component.id,
         options: {
           outputDir,

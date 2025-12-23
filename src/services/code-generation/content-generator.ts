@@ -1,15 +1,10 @@
 /**
- * Generation Gap Pattern Implementation
+ * Content Generator
  *
- * Implements the two-file pattern from ADR-006:
- * - ComponentName.generated.ts - Auto-generated, always overwritten
- * - ComponentName.ts - User-owned, created once if missing
- *
- * This pattern allows safe regeneration while preserving user customizations.
+ * Application layer: Orchestrates code generation using the Generation Gap pattern.
+ * Generates .generated.ts (base class) and .ts (user implementation stub) content.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import type { GeneratedComponent, GenerationOptions, GenerationResult } from './schema.js';
 import { generationSuccess, generationError, DEFAULT_GENERATION_OPTIONS } from './schema.js';
 import {
@@ -22,55 +17,22 @@ import {
   createUserStub,
   formatSourceFile,
   generateContentHash,
-  namespaceToPath,
-} from './codegen.js';
-
-// =============================================================================
-// File Path Helpers
-// =============================================================================
-
-/**
- * Get the file paths for a generated component.
- */
-export function getGeneratedPaths(
-  component: GeneratedComponent,
-  outputDir: string
-): { generatedPath: string; implementationPath: string; directory: string } {
-  const namespacePath = namespaceToPath(component.namespace);
-  const directory = path.join(outputDir, namespacePath);
-  const generatedPath = path.join(directory, `${component.className}.generated.ts`);
-  const implementationPath = path.join(directory, `${component.className}.ts`);
-
-  return { generatedPath, implementationPath, directory };
-}
-
-/**
- * Check if a file exists.
- */
-export function fileExists(filePath: string): boolean {
-  try {
-    fs.accessSync(filePath, fs.constants.F_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Ensure a directory exists.
- */
-export function ensureDirectory(dirPath: string): void {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
+} from './typescript-ast.js';
+import {
+  getGeneratedPaths,
+  fileExists,
+  ensureDirectory,
+  writeGeneratedFile,
+  writeImplementationFile,
+  readFile,
+} from './file-writer.js';
 
 // =============================================================================
 // Code Generation
 // =============================================================================
 
 /**
- * Generate the base class file (.generated.ts).
+ * Generate the base class file (.generated.ts) content.
  */
 export function generateBaseClassContent(
   component: GeneratedComponent,
@@ -79,7 +41,7 @@ export function generateBaseClassContent(
   const project = createProject();
   const sourceFile = createSourceFile(project, `${component.className}.generated.ts`);
 
-  // Add header
+  // Add generated header
   addGeneratedHeader(sourceFile, component.symbolId, new Date());
 
   // Create abstract base class
@@ -95,7 +57,7 @@ export function generateBaseClassContent(
 }
 
 /**
- * Generate the user stub file (.ts).
+ * Generate the user implementation stub file (.ts) content.
  */
 export function generateUserStubContent(
   component: GeneratedComponent,
@@ -113,24 +75,6 @@ export function generateUserStubContent(
   );
 
   return formatSourceFile(sourceFile);
-}
-
-// =============================================================================
-// File Writing
-// =============================================================================
-
-/**
- * Write content to a file.
- */
-export function writeFile(filePath: string, content: string): void {
-  fs.writeFileSync(filePath, content, 'utf-8');
-}
-
-/**
- * Read content from a file.
- */
-export function readFile(filePath: string): string {
-  return fs.readFileSync(filePath, 'utf-8');
 }
 
 // =============================================================================
@@ -187,14 +131,14 @@ export function generateWithGap(
     }
 
     if (shouldWriteGenerated) {
-      writeFile(generatedPath, generatedContent);
+      writeGeneratedFile(generatedPath, generatedContent);
     }
 
     // Create user file only if it doesn't exist
     let userFileCreated = false;
     if (!fileExists(implementationPath)) {
       const userContent = generateUserStubContent(component, fullOptions);
-      writeFile(implementationPath, userContent);
+      writeImplementationFile(implementationPath, userContent);
       userFileCreated = true;
     } else if (!fullOptions.preserveUserFiles) {
       warnings.push('User file exists, preserved (set preserveUserFiles: false to overwrite)');
