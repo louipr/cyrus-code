@@ -255,32 +255,3 @@ export function formatSourceFile(sourceFile: SourceFile): string {
 // Type Resolution
 // =============================================================================
 
-/**
- * Resolve a type reference to a TypeScript type string.
- * For now, uses the symbol ID directly. In the future, this will
- * resolve to actual imported types.
- */
-export function resolveTypeString(typeSymbolId: string, nullable?: boolean): string {
-  // Extract the type name from the symbol ID
-  // Format: namespace/TypeName@version or just TypeName
-  const parts = typeSymbolId.split('/');
-  const lastPart = parts[parts.length - 1];
-  const typeName = lastPart?.split('@')[0] ?? typeSymbolId;
-
-  // Handle built-in types
-  const builtInTypes: Record<string, string> = {
-    'string': 'string',
-    'number': 'number',
-    'boolean': 'boolean',
-    'any': 'any',
-    'void': 'void',
-    'null': 'null',
-    'undefined': 'undefined',
-    'object': 'object',
-    'unknown': 'unknown',
-    'never': 'never',
-  };
-
-  const resolved = builtInTypes[typeName.toLowerCase()] ?? typeName;
-  return nullable ? `${resolved} | null` : resolved;
-}

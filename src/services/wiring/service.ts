@@ -207,14 +207,6 @@ export class WiringService implements IWiringService {
     );
   }
 
-  /**
-   * Get outgoing connections from a specific port.
-   */
-  getOutgoingConnections(symbolId: string, portName: string): Connection[] {
-    const connections = this.store.getConnectionManager().getConnections(symbolId);
-    return connections.filter((c) => c.fromPort === portName);
-  }
-
   // ==========================================================================
   // Validation
   // ==========================================================================

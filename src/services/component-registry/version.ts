@@ -146,20 +146,6 @@ export function satisfies(version: SemVer, range: VersionRange): boolean {
 }
 
 /**
- * Check if a version string satisfies a constraint string.
- */
-export function satisfiesConstraint(
-  versionStr: string,
-  constraintStr: string
-): boolean {
-  const version = parseSemVer(versionStr);
-  if (!version) return false;
-
-  const constraint = parseConstraint(constraintStr);
-  return satisfies(version, constraint);
-}
-
-/**
  * Find the best matching version from a list.
  * Returns the highest version that satisfies the constraint.
  */
@@ -211,18 +197,4 @@ export function isCompatible(a: SemVer, b: SemVer): boolean {
  */
 export function isNewer(a: SemVer, b: SemVer): boolean {
   return compareSemVer(a, b) > 0;
-}
-
-/**
- * Sort versions in descending order (newest first).
- */
-export function sortVersionsDesc(versions: SemVer[]): SemVer[] {
-  return [...versions].sort((a, b) => -compareSemVer(a, b));
-}
-
-/**
- * Sort versions in ascending order (oldest first).
- */
-export function sortVersionsAsc(versions: SemVer[]): SemVer[] {
-  return [...versions].sort((a, b) => compareSemVer(a, b));
 }
