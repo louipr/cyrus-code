@@ -6,7 +6,7 @@
  *
  * For internal types, import directly from submodules:
  *   - ./schema.js - All graph types and service interface
- *   - ./dependency-graph.js - Pure graph utilities
+ *   - ./algorithms.js - Pure graph algorithms
  */
 
 // Service (primary API)

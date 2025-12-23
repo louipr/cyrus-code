@@ -20,7 +20,7 @@ import {
   getGraphStats,
   getConnectedComponents,
   wouldCreateCycle,
-} from './dependency-graph.js';
+} from './algorithms.js';
 
 // ============================================================================
 // Dependency Graph Service

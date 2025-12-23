@@ -36,7 +36,7 @@ flowchart TD
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
 | **DependencyGraphService** | Graph orchestration | `buildGraph()`, `detectCycles()`, `getTopologicalOrder()`, `wouldCreateCycle()` | ✅ | `src/services/dependency-graph/service.ts` |
-| **Graph Algorithms** | Pure graph utilities | `topologicalSort()`, `getUpstreamDependencies()`, `getDownstreamDependencies()`, `getConnectedComponents()` | ✅ | `src/services/dependency-graph/dependency-graph.ts` |
+| **Graph Algorithms** | Pure graph algorithms | `topologicalSort()`, `getUpstreamDependencies()`, `getDownstreamDependencies()`, `getConnectedComponents()` | ✅ | `src/services/dependency-graph/algorithms.ts` |
 | **Schema** | Type definitions and interface | `DependencyGraph`, `GraphNode`, `GraphEdge`, `GraphStats`, `IDependencyGraphService` | ✅ | `src/services/dependency-graph/schema.ts` |
 
 > **Architecture**: Extracted from Wiring Service to enable reuse by future impact analysis, build ordering, and dead code detection features.
