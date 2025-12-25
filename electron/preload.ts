@@ -39,7 +39,7 @@ import type {
   HelpSearchResult,
   C4Hierarchy,
   DocumentHeading,
-} from '../src/services/help-content/schema.js';
+} from '../src/domain/help/index.js';
 
 // Type definitions for the exposed API
 export interface CyrusAPI {

@@ -12,8 +12,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import type { IHelpContentService } from './schema.js';
 import type {
-  IHelpContentService,
   HelpTopic,
   HelpCategory,
   HelpGroup,
@@ -21,7 +21,7 @@ import type {
   HelpOutputFormat,
   C4Hierarchy,
   DocumentHeading,
-} from './schema.js';
+} from '../../domain/help/index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
 import { HelpRepository } from '../../repositories/help-repository.js';

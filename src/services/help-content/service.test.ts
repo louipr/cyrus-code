@@ -214,7 +214,7 @@ describe('TypeScriptExtractor', () => {
   describe('extractExports', () => {
     it('should extract specific interface from schema.ts', () => {
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['HelpTopic']
       );
       assert.strictEqual(results.length, 1);
@@ -225,7 +225,7 @@ describe('TypeScriptExtractor', () => {
 
     it('should extract multiple exports', () => {
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['HelpTopic', 'HelpCategory']
       );
       assert.strictEqual(results.length, 2);
@@ -236,7 +236,7 @@ describe('TypeScriptExtractor', () => {
 
     it('should extract type alias', () => {
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['HelpOutputFormat']
       );
       assert.strictEqual(results.length, 1);
@@ -255,7 +255,7 @@ describe('TypeScriptExtractor', () => {
 
     it('should return error for missing export', () => {
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['NonExistentInterface']
       );
       assert.strictEqual(results.length, 1);
@@ -266,7 +266,7 @@ describe('TypeScriptExtractor', () => {
 
   describe('extractAllExports', () => {
     it('should extract all exports from a file', () => {
-      const results = extractor.extractAllExports('src/services/help-content/schema.ts');
+      const results = extractor.extractAllExports('src/domain/help/schema.ts');
       assert.ok(results.length >= 4, 'Should have multiple exports');
       const names = results.map((r) => r.name);
       assert.ok(names.includes('HelpTopic'));
@@ -284,7 +284,7 @@ describe('TypeScriptExtractor', () => {
   describe('JSDoc extraction', () => {
     it('should include JSDoc comments when present', () => {
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['HelpTopic']
       );
       assert.strictEqual(results.length, 1);
@@ -299,12 +299,12 @@ describe('TypeScriptExtractor', () => {
   describe('cache', () => {
     it('should clear cache', () => {
       // Extract once to populate cache
-      extractor.extractExports('src/services/help-content/schema.ts', ['HelpTopic']);
+      extractor.extractExports('src/domain/help/schema.ts', ['HelpTopic']);
       // Clear should not throw
       extractor.clearCache();
       // Should still work after clear
       const results = extractor.extractExports(
-        'src/services/help-content/schema.ts',
+        'src/domain/help/schema.ts',
         ['HelpTopic']
       );
       assert.strictEqual(results.length, 1);
@@ -322,31 +322,31 @@ describe('MarkdownPreprocessor', () => {
   describe('parseDirective', () => {
     it('should parse YAML-like syntax', () => {
       const directive = preprocessor.parseDirective(`
-source: src/services/help-content/schema.ts
+source: src/domain/help/schema.ts
 exports: [HelpTopic, HelpCategory]
 `);
-      assert.strictEqual(directive.source, 'src/services/help-content/schema.ts');
+      assert.strictEqual(directive.source, 'src/domain/help/schema.ts');
       assert.deepStrictEqual(directive.exports, ['HelpTopic', 'HelpCategory']);
       assert.strictEqual(directive.includeJsDoc, true);
     });
 
     it('should parse shorthand syntax', () => {
       const directive = preprocessor.parseDirective(
-        'src/services/help-content/schema.ts#HelpTopic'
+        'src/domain/help/schema.ts#HelpTopic'
       );
-      assert.strictEqual(directive.source, 'src/services/help-content/schema.ts');
+      assert.strictEqual(directive.source, 'src/domain/help/schema.ts');
       assert.deepStrictEqual(directive.exports, ['HelpTopic']);
     });
 
     it('should parse shorthand without export name', () => {
-      const directive = preprocessor.parseDirective('src/services/help-content/schema.ts');
-      assert.strictEqual(directive.source, 'src/services/help-content/schema.ts');
+      const directive = preprocessor.parseDirective('src/domain/help/schema.ts');
+      assert.strictEqual(directive.source, 'src/domain/help/schema.ts');
       assert.deepStrictEqual(directive.exports, []);
     });
 
     it('should parse include-jsdoc option', () => {
       const directive = preprocessor.parseDirective(`
-source: src/services/help-content/schema.ts
+source: src/domain/help/schema.ts
 include-jsdoc: false
 `);
       assert.strictEqual(directive.includeJsDoc, false);
@@ -359,7 +359,7 @@ include-jsdoc: false
 # Test
 
 \`\`\`typescript:include
-source: src/services/help-content/schema.ts
+source: src/domain/help/schema.ts
 exports: [HelpOutputFormat]
 \`\`\`
 
@@ -374,7 +374,7 @@ Some text after.
 
     it('should handle shorthand syntax', () => {
       const markdown = `
-\`\`\`typescript:include src/services/help-content/schema.ts#HelpCategory
+\`\`\`typescript:include src/domain/help/schema.ts#HelpCategory
 \`\`\`
 `;
       const result = preprocessor.process(markdown);
@@ -386,12 +386,12 @@ Some text after.
       const markdown = `
 ## Types
 
-\`\`\`typescript:include src/services/help-content/schema.ts#HelpTopic
+\`\`\`typescript:include src/domain/help/schema.ts#HelpTopic
 \`\`\`
 
 ## More Types
 
-\`\`\`typescript:include src/services/help-content/schema.ts#HelpCategory
+\`\`\`typescript:include src/domain/help/schema.ts#HelpCategory
 \`\`\`
 `;
       const result = preprocessor.process(markdown);

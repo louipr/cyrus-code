@@ -16,7 +16,7 @@ export type {
   HelpOutputFormat,
   C4Hierarchy,
   DocumentHeading,
-} from './schema.js';
+} from '../../domain/help/index.js';
 
 // Re-export utility that has no Node.js dependencies
 export { slugify } from '../../infrastructure/markdown/index.js';

@@ -7,14 +7,14 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {
+import type {
   HelpManifest,
   HelpTopic,
   HelpCategory,
   HelpGroup,
   C4Hierarchy,
   DocumentHeading,
-} from '../services/help-content/schema.js';
+} from '../domain/help/index.js';
 import { extractHeadings } from '../infrastructure/markdown/index.js';
 
 /**

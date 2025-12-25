@@ -4,7 +4,7 @@
  * Formats help content for terminal display.
  */
 
-import type { HelpTopic, HelpCategory } from './schema.js';
+import type { HelpTopic, HelpCategory } from '../../domain/help/index.js';
 
 /**
  * Help Formatter - formats help data for terminal output.

@@ -7,9 +7,11 @@
 // Service
 export { HelpContentService } from './service.js';
 
-// Types
+// Service interface
+export type { IHelpContentService } from './schema.js';
+
+// Domain types (re-export for convenience within service consumers)
 export type {
-  IHelpContentService,
   HelpTopic,
   HelpCategory,
   HelpGroup,
@@ -17,4 +19,4 @@ export type {
   HelpOutputFormat,
   C4Hierarchy,
   DocumentHeading,
-} from './schema.js';
+} from '../../domain/help/index.js';
