@@ -9,7 +9,19 @@ import type { ComponentSymbol, PortDefinition } from '../../domain/symbol/index.
 import { formatSemVer } from '../../domain/symbol/index.js';
 import type { GeneratedComponent, GeneratedPort } from './typescript/schema.js';
 import { typeRefToTypeScript } from './typescript/type-mapper.js';
-import { sanitizeClassName } from './schema.js';
+
+/**
+ * Sanitize a symbol name to a valid TypeScript class name.
+ */
+function sanitizeClassName(name: string): string {
+  // Remove invalid characters, ensure starts with letter
+  let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '');
+  if (/^[0-9]/.test(sanitized)) {
+    sanitized = '_' + sanitized;
+  }
+  // PascalCase
+  return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+}
 
 /**
  * Check if a symbol can be code-generated.

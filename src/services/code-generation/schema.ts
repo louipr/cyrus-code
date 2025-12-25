@@ -198,16 +198,3 @@ export function emptyBatchResult(): GenerationBatchResult {
     results: [],
   };
 }
-
-/**
- * Sanitize a symbol name to a valid TypeScript class name.
- */
-export function sanitizeClassName(name: string): string {
-  // Remove invalid characters, ensure starts with letter
-  let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '');
-  if (/^[0-9]/.test(sanitized)) {
-    sanitized = '_' + sanitized;
-  }
-  // PascalCase
-  return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
-}

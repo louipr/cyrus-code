@@ -5,15 +5,39 @@
  * Provides cycle detection, topological sorting, and graph traversal.
  */
 
-import type { ComponentSymbol, Connection } from '../../domain/symbol/index.js';
+import type { ComponentSymbol, Connection, PortDefinition } from '../../domain/symbol/index.js';
 import {
   type DependencyGraph,
   type GraphNode,
   type GraphEdge,
   type GraphStats,
   createEmptyGraph,
-  categorizePorts,
 } from './schema.js';
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Extract input/output port names from a list of port definitions.
+ */
+function categorizePorts(
+  ports: PortDefinition[]
+): { inputs: string[]; outputs: string[] } {
+  const inputs: string[] = [];
+  const outputs: string[] = [];
+
+  for (const port of ports) {
+    if (port.direction === 'in' || port.direction === 'inout') {
+      inputs.push(port.name);
+    }
+    if (port.direction === 'out' || port.direction === 'inout') {
+      outputs.push(port.name);
+    }
+  }
+
+  return { inputs, outputs };
+}
 
 // ============================================================================
 // Graph Building

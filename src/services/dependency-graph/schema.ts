@@ -6,7 +6,6 @@
  */
 
 import { z } from 'zod';
-import type { PortDefinition } from '../../domain/symbol/index.js';
 
 // ============================================================================
 // Graph Nodes
@@ -132,27 +131,6 @@ export function createEmptyGraph(): DependencyGraph {
     topologicalOrder: [],
     cycles: [],
   };
-}
-
-/**
- * Extract input/output port names from a list of port definitions.
- */
-export function categorizePorts(
-  ports: PortDefinition[]
-): { inputs: string[]; outputs: string[] } {
-  const inputs: string[] = [];
-  const outputs: string[] = [];
-
-  for (const port of ports) {
-    if (port.direction === 'in' || port.direction === 'inout') {
-      inputs.push(port.name);
-    }
-    if (port.direction === 'out' || port.direction === 'inout') {
-      outputs.push(port.name);
-    }
-  }
-
-  return { inputs, outputs };
 }
 
 // ============================================================================
