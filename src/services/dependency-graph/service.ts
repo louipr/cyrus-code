@@ -7,8 +7,7 @@
 
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
-import type { DependencyGraph, DependencyGraphDTO, GraphStats, IDependencyGraphService } from './schema.js';
-import { graphToDTO } from './schema.js';
+import type { DependencyGraph, GraphStats, IDependencyGraphService } from './schema.js';
 import {
   buildDependencyGraph,
   detectCycles,
@@ -75,13 +74,6 @@ export class DependencyGraphService implements IDependencyGraphService {
     );
 
     return buildDependencyGraph(symbols, connections);
-  }
-
-  /**
-   * Get the dependency graph as a serializable DTO.
-   */
-  getGraphDTO(): DependencyGraphDTO {
-    return graphToDTO(this.buildGraph());
   }
 
   // ==========================================================================

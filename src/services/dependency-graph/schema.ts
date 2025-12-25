@@ -69,17 +69,6 @@ export interface DependencyGraph {
   cycles: string[][];
 }
 
-/**
- * Serializable version of DependencyGraph for API responses.
- */
-export const DependencyGraphDTOSchema = z.object({
-  nodes: z.array(GraphNodeSchema),
-  edges: z.array(GraphEdgeSchema),
-  topologicalOrder: z.array(z.string()).nullable(),
-  cycles: z.array(z.array(z.string())),
-});
-export type DependencyGraphDTO = z.infer<typeof DependencyGraphDTOSchema>;
-
 // ============================================================================
 // Graph Statistics
 // ============================================================================
@@ -110,18 +99,6 @@ export type GraphStats = z.infer<typeof GraphStatsSchema>;
 // ============================================================================
 
 /**
- * Convert a DependencyGraph to a serializable DTO.
- */
-export function graphToDTO(graph: DependencyGraph): DependencyGraphDTO {
-  return {
-    nodes: Array.from(graph.nodes.values()),
-    edges: Array.from(graph.edges.values()).flat(),
-    topologicalOrder: graph.topologicalOrder,
-    cycles: graph.cycles,
-  };
-}
-
-/**
  * Create an empty dependency graph.
  */
 export function createEmptyGraph(): DependencyGraph {
@@ -147,7 +124,6 @@ export interface IDependencyGraphService {
   // Graph Building
   buildGraph(): DependencyGraph;
   buildSubgraph(symbolId: string): DependencyGraph;
-  getGraphDTO(): DependencyGraphDTO;
 
   // Cycle Detection
   detectCycles(): string[][];

@@ -60,7 +60,7 @@ flowchart TD
 
 | Category | Methods |
 |----------|---------|
-| **Graph Building** | `buildGraph()`, `buildSubgraph()`, `getGraphDTO()` |
+| **Graph Building** | `buildGraph()`, `buildSubgraph()` |
 | **Cycle Analysis** | `detectCycles()`, `wouldCreateCycle()` |
 | **Ordering** | `getTopologicalOrder()` |
 | **Traversal** | `getUpstream()`, `getDownstream()`, `getDirect()` |
@@ -81,7 +81,6 @@ exports: [IDependencyGraphService]
 | `GraphNode` | `symbolId`, `name`, `namespace`, `level`, `inputs[]`, `outputs[]` | Component node in graph |
 | `GraphEdge` | `connectionId`, `fromSymbol`, `fromPort`, `toSymbol`, `toPort` | Connection between components |
 | `GraphStats` | `nodeCount`, `edgeCount`, `rootCount`, `leafCount`, `maxDepth`, `hasCycles`, `componentCount` | Graph statistics |
-| `DependencyGraphDTO` | Serializable version with arrays | For API responses |
 
 ### Algorithms
 
