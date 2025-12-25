@@ -2,7 +2,7 @@
  * Wiring Service Schema
  *
  * Type definitions specific to the wiring service.
- * Defines dependency graphs, connection results, and wiring operations.
+ * Defines connection requests, results, and validation options.
  */
 
 import { z } from 'zod';
@@ -157,31 +157,6 @@ export const DEFAULT_VALIDATION_OPTIONS: ValidationOptions = {
   typeMode: 'compatible',
   checkCardinality: true,
 };
-
-// ============================================================================
-// Graph Statistics
-// ============================================================================
-
-/**
- * Statistics about the dependency graph.
- */
-export const GraphStatsSchema = z.object({
-  /** Total number of components */
-  nodeCount: z.number().int().nonnegative(),
-  /** Total number of connections */
-  edgeCount: z.number().int().nonnegative(),
-  /** Number of root nodes (no incoming connections) */
-  rootCount: z.number().int().nonnegative(),
-  /** Number of leaf nodes (no outgoing connections) */
-  leafCount: z.number().int().nonnegative(),
-  /** Maximum depth of the graph */
-  maxDepth: z.number().int().nonnegative(),
-  /** Whether the graph has cycles */
-  hasCycles: z.boolean(),
-  /** Number of disconnected components */
-  componentCount: z.number().int().nonnegative(),
-});
-export type GraphStats = z.infer<typeof GraphStatsSchema>;
 
 // ============================================================================
 // Helper Functions
