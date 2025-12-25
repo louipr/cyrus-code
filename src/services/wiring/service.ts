@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 import type { Connection, ValidationResult } from '../../domain/symbol/index.js';
 import { createValidationResult } from '../../domain/symbol/index.js';
-import { checkPortCompatibility } from '../compatibility/index.js';
+import { checkPortCompatibility } from '../../domain/compatibility/index.js';
 import type { DependencyGraphService } from '../dependency-graph/index.js';
 import {
   type IWiringService,
