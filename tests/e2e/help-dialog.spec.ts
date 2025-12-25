@@ -62,11 +62,10 @@ test.describe('Help Dialog', () => {
     { group: 'c4-overview', topic: 'c4-context', name: 'C4 Context Diagram', file: 'c4-context-diagram' },
     { group: 'c4-overview', topic: 'c4-container', name: 'C4 Container Diagram', file: 'c4-container-diagram' },
     { group: 'symbol-table', topic: 'c4-component', name: 'C4 Component Diagram', file: 'c4-component-diagram' },
-    { group: 'synthesizer', topic: 'c4-component-synthesizer', name: 'C4 L3 Synthesizer', file: 'c4-l3-synthesizer-diagram' },
     { group: 'help-service', topic: 'c4-component-help', name: 'C4 L3 Help', file: 'c4-l3-help-diagram' },
     { group: 'wiring', topic: 'c4-component-wiring', name: 'C4 L3 Wiring', file: 'c4-l3-wiring-diagram' },
-    { group: 'validator', topic: 'c4-component-validator', name: 'C4 L3 Validator', file: 'c4-l3-validator-diagram' },
-    { group: 'registry', topic: 'c4-component-registry', name: 'C4 L3 Registry', file: 'c4-l3-registry-diagram' },
+    { group: 'compatibility', topic: 'c4-component-compatibility', name: 'C4 L3 Compatibility', file: 'c4-l3-compatibility-diagram' },
+    { group: 'dependency-graph', topic: 'c4-component-dependency-graph', name: 'C4 L3 Dependency Graph', file: 'c4-l3-dependency-graph-diagram' },
     { group: 'facade', topic: 'c4-component-facade', name: 'C4 L3 Facade', file: 'c4-l3-facade-diagram' },
     { group: 'c4-overview', topic: 'c4-dynamic', name: 'C4 Dynamic', file: 'c4-dynamic-diagram' },
   ];
@@ -216,30 +215,6 @@ test.describe('Help Dialog', () => {
       return rect.top >= 0 && rect.top <= window.innerHeight;
     });
     expect(isInViewport).toBe(true);
-
-    // Close dialog
-    await page.keyboard.press('Escape');
-  });
-
-  // Test that Symbol Table Reference is accessible from sidebar
-  test('Symbol Table Reference is accessible from Reference category', async () => {
-    const { page } = context;
-
-    // Open help dialog
-    await page.click(selectors.helpButton);
-    await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Click on Symbol Table Reference topic in Reference category
-    const refTopic = page.locator('[data-testid="help-topic-symbol-table-reference"]');
-    await refTopic.click();
-
-    // Verify content loaded - should have API Quick Reference heading
-    await expect(page.locator('h2:has-text("API Quick Reference")')).toBeVisible({ timeout: 5000 });
-
-    // Verify key sections exist
-    await expect(page.locator('h2:has-text("Core Types")')).toBeVisible();
-    await expect(page.locator('h2:has-text("Design")')).toBeVisible();
-    await expect(page.locator('h2:has-text("Source Files")')).toBeVisible();
 
     // Close dialog
     await page.keyboard.press('Escape');

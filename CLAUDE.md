@@ -131,7 +131,7 @@ npm run build:gui      # Build frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 241 unit tests (auto-rebuilds native module)
+npm test               # Run 173 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run 17 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check

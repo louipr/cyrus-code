@@ -7,8 +7,8 @@
       "c4-component",
       "c4-component-help",
       "c4-component-wiring",
-      "c4-component-validator",
-      "c4-component-registry",
+      "c4-component-compatibility",
+      "c4-component-dependency-graph",
       "c4-component-facade"
     ],
     "Dynamic": ["c4-dynamic"]
@@ -52,13 +52,13 @@
       "category": "architecture"
     },
     {
-      "id": "validator",
-      "label": "C4 Validator",
+      "id": "compatibility",
+      "label": "C4 Compatibility",
       "category": "architecture"
     },
     {
-      "id": "registry",
-      "label": "C4 Registry",
+      "id": "dependency-graph",
+      "label": "C4 Dependency Graph",
       "category": "architecture"
     },
     {
@@ -166,22 +166,22 @@
       "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort", "code", "API"]
     },
     {
-      "id": "c4-component-validator",
-      "title": "Validator",
-      "summary": "Interface Validator internal structure - compatibility checking rules",
-      "path": "docs/c4/component-validator.md",
+      "id": "c4-component-compatibility",
+      "title": "Compatibility",
+      "summary": "Port compatibility checking - domain layer pure functions",
+      "path": "docs/c4/component-compatibility.md",
       "category": "architecture",
-      "group": "validator",
-      "keywords": ["C4", "component", "validator", "compatibility", "type checking", "code", "API"]
+      "group": "compatibility",
+      "keywords": ["C4", "component", "compatibility", "port", "type checking", "domain"]
     },
     {
-      "id": "c4-component-registry",
-      "title": "Registry",
-      "summary": "Component Registry internal structure - version resolution",
-      "path": "docs/c4/component-registry.md",
+      "id": "c4-component-dependency-graph",
+      "title": "Dependency Graph",
+      "summary": "Graph algorithms - cycle detection, topological sorting",
+      "path": "docs/c4/component-dependency-graph.md",
       "category": "architecture",
-      "group": "registry",
-      "keywords": ["C4", "component", "registry", "version", "semver", "code", "API"]
+      "group": "dependency-graph",
+      "keywords": ["C4", "component", "dependency", "graph", "cycle", "topological", "algorithm"]
     },
     {
       "id": "c4-component-facade",
@@ -225,14 +225,6 @@
       "path": "docs/spec/symbol-table-schema.md",
       "category": "reference",
       "keywords": ["schema", "type", "symbol", "component", "port", "specification"]
-    },
-    {
-      "id": "symbol-table-reference",
-      "title": "Symbol Table Reference",
-      "summary": "API quick reference, core types, design patterns, and source files",
-      "path": "docs/reference/symbol-table.md",
-      "category": "reference",
-      "keywords": ["symbol table", "API", "reference", "types", "design patterns", "source files"]
     }
   ]
 }

@@ -455,7 +455,7 @@ When refactoring a service:
 
 - [ ] **Phase 6: Verify**
   - [ ] `npm run build` passes
-  - [ ] `npm test` passes (241 unit tests)
+  - [ ] `npm test` passes (173 unit tests)
   - [ ] `npm run test:e2e` passes (17 E2E tests)
   - [ ] No TypeScript errors
   - [ ] Manual smoke test

@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 285 unit tests
+npm test               # Run ~173 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -68,8 +68,8 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.3 | Implement SQLite persistence | `src/repositories/persistence.ts` | ✅ |
 | 1.4 | Implement Symbol Store | `src/services/symbol-table/store.ts` | ✅ |
 | 1.5 | Implement Symbol Repository | `src/repositories/symbol-repository.ts` | ✅ |
-| 1.6 | Implement Component Registry | `src/services/component-registry/index.ts` | ✅ |
-| 1.7 | Implement Version Resolver | `src/services/component-registry/version.ts` | ✅ |
+| 1.6 | Implement Component Registry | Consolidated into symbol-table service | ✅ |
+| 1.7 | Implement Version Resolver | `src/services/symbol-table/version-resolver.ts` | ✅ |
 | 1.8 | Create API Facade | `src/api/facade.ts` | ✅ |
 | 1.9 | Create API DTOs | `src/api/types.ts` | ✅ |
 | 1.10 | Basic CLI (register, list, get, validate) | `src/cli/` | ✅ |
@@ -593,7 +593,7 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 285 unit tests pass
+- ~173 unit tests pass
 - 16 E2E tests pass
 - GUI type-check passes
 

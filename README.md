@@ -56,7 +56,7 @@ L0: Primitive               [JwtPayload, Role enum]
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
 - [x] Slice 2 Backend: Validator Service, Wiring Service, API + CLI
 - [x] Slice 3 Backend: Code Synthesizer, Generation Gap pattern, TypeScript backend
-- [x] 241 unit tests + 17 E2E tests passing
+- [x] 173 unit tests + 17 E2E tests passing
 - [x] Electron desktop app with React frontend
 - [x] CLI commands: `wire`, `graph` with full wiring support
 
@@ -111,7 +111,7 @@ npm install
 npm run build:all
 
 # Run tests
-npm test           # 241 unit tests
+npm test           # 173 unit tests
 npm run test:e2e   # 17 E2E tests (4 spec files)
 
 # Launch desktop app

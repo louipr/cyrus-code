@@ -524,12 +524,14 @@ class CommandInvoker {
 
 **Why**: Components react to connection changes for revalidation.
 
+> **Note**: This is an illustrative example. ConnectionManager was removed in 2024-12; WiringService now handles connections directly via repository.
+
 ```typescript
 interface ConnectionObserver {
   onConnectionChange(fromSymbol: string, toSymbol: string, action: 'connect' | 'disconnect'): void;
 }
 
-class ConnectionManager {
+class WiringService {
   private observers: ConnectionObserver[] = [];
 
   subscribe(observer: ConnectionObserver): void {
@@ -569,8 +571,7 @@ interface ConnectionMediator {
 class WiringService implements ConnectionMediator {
   constructor(
     private repo: ISymbolRepository,
-    private connectionMgr: ConnectionManager,
-    private validator: InterfaceValidator,
+    private graphService: DependencyGraphService,
   ) {}
 
   connect(source: PortReference, target: PortReference): ValidationResult {

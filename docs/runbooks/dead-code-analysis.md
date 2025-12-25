@@ -274,26 +274,28 @@ grep -r "\.someWrapper()\.actualMethod" src/
 ### Example - Facade Anti-Pattern (FIXED)
 
 ```typescript
-// ❌ OLD ANTI-PATTERN (facade getters)
+// ❌ OLD ANTI-PATTERN (facade getters exposing internals)
 class SymbolTableService {
-  getConnectionManager(): ConnectionManager {  // ✗ Exposes internals
+  getConnectionManager(): ConnectionManager {  // ✗ Exposes internals - DELETED
     return this.connectionMgr;
   }
 }
 const result = symbolTable.getConnectionManager().findConnections(id);
 
-// ✅ NEW PATTERN (dependency injection)
+// ✅ NEW PATTERN (services call repository directly)
 class WiringService {
   constructor(
-    private repo: ISymbolRepository,
-    private connectionMgr: ConnectionManager  // Injected directly
+    private repo: ISymbolRepository,           // Inject repository
+    private graphService: DependencyGraphService
   ) {}
 
-  connect() {
-    const connections = this.connectionMgr.findConnections(id);  // Direct access
+  connect(request: ConnectionRequest) {
+    this.repo.insertConnection(connection);    // Call repo directly
   }
 }
 ```
+
+> **Note**: ConnectionManager was removed (2024-12) as a redundant wrapper. WiringService now calls `repo.insertConnection()` directly.
 
 ### What This Finds
 
@@ -360,10 +362,9 @@ export interface GenerationPreviewDTO { ... }
 ### Anti-Pattern Detection
 
 ```typescript
-// ❌ ANTI-PATTERN: Public getters exposing internal services (REMOVED)
+// ❌ ANTI-PATTERN: Public getters exposing internal services (REMOVED 2024-12)
 class SymbolTableService {
   private queryService: SymbolQueryService;
-  private connectionMgr: ConnectionManager;
 
   getQueryService(): SymbolQueryService {  // ✗ Exposes internals - DELETED
     return this.queryService;
@@ -373,6 +374,8 @@ class SymbolTableService {
 // ❌ OLD USAGE: Bypasses encapsulation (NO LONGER SUPPORTED)
 const result = symbolTable.getQueryService().findByTag('tag');
 ```
+
+> **Outcome**: These getter methods were deleted. Services now inject dependencies via constructor.
 
 ### Analysis Questions
 
@@ -386,13 +389,14 @@ const result = symbolTable.getQueryService().findByTag('tag');
 // Services inject dependencies directly (Clean Architecture)
 class WiringService {
   constructor(
-    private repo: ISymbolRepository,
-    private queryService: SymbolQueryService,  // Inject what you need
-    private connectionMgr: ConnectionManager
+    private repo: ISymbolRepository,         // Repository for persistence
+    private graphService: DependencyGraphService  // Service for graph operations
   ) {}
 
-  someMethod() {
-    const result = this.queryService.findByTag('tag');  // Direct access
+  connect(request: ConnectionRequest) {
+    // Use injected dependencies directly
+    if (this.graphService.wouldCreateCycle(...)) { ... }
+    this.repo.insertConnection(connection);  // Direct repository access
   }
 }
 
