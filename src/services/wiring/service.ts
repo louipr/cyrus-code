@@ -11,14 +11,15 @@ import type { ConnectionManager } from '../symbol-table/connection-manager.js';
 import type { Connection, ValidationResult } from '../../domain/symbol/index.js';
 import { createValidationResult } from '../../domain/symbol/index.js';
 import { checkPortCompatibility } from '../compatibility/compatibility.js';
-import type { ValidationOptions } from '../compatibility/schema.js';
-import { DEFAULT_VALIDATION_OPTIONS, ValidationErrorCode } from '../compatibility/schema.js';
 import type { DependencyGraphService } from '../dependency-graph/index.js';
 import {
   type IWiringService,
   type ConnectionRequest,
   type WiringResult,
+  type ValidationOptions,
   WiringErrorCode,
+  ValidationErrorCode,
+  DEFAULT_VALIDATION_OPTIONS,
   wiringSuccess,
   wiringError,
 } from './schema.js';

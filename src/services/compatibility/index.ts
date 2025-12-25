@@ -3,10 +3,6 @@
  *
  * Pure functions for port compatibility checking.
  * No stateful service - all operations are pure functions.
- *
- * For internal types, import directly from submodules:
- *   - ./schema.js - All validation types and error codes
- *   - ./compatibility.js - Compatibility checking utilities
  */
 
 // Pure functions (primary API)
@@ -17,7 +13,7 @@ export {
 } from './compatibility.js';
 
 // Types
-export type { ValidationOptions, CompatibilityResult } from './schema.js';
+export type { CompatibilityResult, TypeCompatibilityMode } from './schema.js';
 
-// Constants
-export { ValidationErrorCode, DEFAULT_VALIDATION_OPTIONS } from './schema.js';
+// Helpers
+export { compatible, incompatible } from './schema.js';

@@ -26,38 +26,6 @@ export const CompatibilityResultSchema = z.object({
 export type CompatibilityResult = z.infer<typeof CompatibilityResultSchema>;
 
 // ============================================================================
-// Validation Error Codes
-// ============================================================================
-
-export const ValidationErrorCode = {
-  // Direction errors
-  DIRECTION_MISMATCH: 'DIRECTION_MISMATCH',
-  INVALID_DIRECTION_PAIR: 'INVALID_DIRECTION_PAIR',
-
-  // Type errors
-  TYPE_MISMATCH: 'TYPE_MISMATCH',
-  TYPE_NOT_FOUND: 'TYPE_NOT_FOUND',
-  GENERIC_MISMATCH: 'GENERIC_MISMATCH',
-  NULLABLE_MISMATCH: 'NULLABLE_MISMATCH',
-
-  // Cardinality errors
-  CARDINALITY_EXCEEDED: 'CARDINALITY_EXCEEDED',
-  REQUIRED_PORT_UNCONNECTED: 'REQUIRED_PORT_UNCONNECTED',
-
-  // Symbol errors
-  SYMBOL_NOT_FOUND: 'SYMBOL_NOT_FOUND',
-  PORT_NOT_FOUND: 'PORT_NOT_FOUND',
-  SELF_CONNECTION: 'SELF_CONNECTION',
-
-  // Connection errors
-  DUPLICATE_CONNECTION: 'DUPLICATE_CONNECTION',
-  CONNECTION_NOT_FOUND: 'CONNECTION_NOT_FOUND',
-} as const;
-
-export type ValidationErrorCode =
-  (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
-
-// ============================================================================
 // Type Compatibility Mode
 // ============================================================================
 
@@ -73,20 +41,6 @@ export const TypeCompatibilityMode = {
 
 export type TypeCompatibilityMode =
   (typeof TypeCompatibilityMode)[keyof typeof TypeCompatibilityMode];
-
-// ============================================================================
-// Validation Options
-// ============================================================================
-
-export const ValidationOptionsSchema = z.object({
-  /** Type compatibility mode */
-  typeMode: z
-    .enum(['strict', 'compatible'])
-    .default('compatible'),
-  /** Whether to check cardinality constraints */
-  checkCardinality: z.boolean().default(true),
-});
-export type ValidationOptions = z.infer<typeof ValidationOptionsSchema>;
 
 // ============================================================================
 // Helper Functions
@@ -108,11 +62,3 @@ export function incompatible(
 ): CompatibilityResult {
   return { compatible: false, reason, suggestions, score: 0 };
 }
-
-/**
- * Default validation options.
- */
-export const DEFAULT_VALIDATION_OPTIONS: ValidationOptions = {
-  typeMode: 'compatible',
-  checkCardinality: true,
-};
