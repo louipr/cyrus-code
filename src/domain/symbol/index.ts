@@ -80,13 +80,3 @@ export {
   bumpVersion,
 } from './version.js';
 
-// ============================================================================
-// Pure Functions (Transformation)
-// ============================================================================
-
-export {
-  transformSymbol,
-  isGeneratable,
-  type TransformedComponent,
-  type TransformedPort,
-} from './transformer.js';

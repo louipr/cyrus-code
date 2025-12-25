@@ -8,7 +8,6 @@
 import { createHash } from 'node:crypto';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
-import { transformSymbol, isGeneratable } from '../../domain/symbol/index.js';
 import type {
   GenerationOptions,
   GenerationResult,
@@ -17,10 +16,10 @@ import type {
   ICodeGenerationService,
 } from './schema.js';
 import { generationError, emptyBatchResult, generationSuccess, DEFAULT_GENERATION_OPTIONS } from './schema.js';
+import { isGeneratable, symbolToGeneratedComponent } from './transformer.js';
 
 // TypeScript Backend
 import {
-  toGeneratedComponent,
   createProject,
   createSourceFile,
   addGeneratedHeader,
@@ -87,8 +86,7 @@ export class CodeGenerationService implements ICodeGenerationService {
     }
 
     // Convert to GeneratedComponent
-    const transformed = transformSymbol(symbol);
-    const component = toGeneratedComponent(transformed);
+    const component = symbolToGeneratedComponent(symbol);
 
     // Generate with gap pattern
     return this.generateWithGap(component, options);
@@ -154,8 +152,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       return null;
     }
 
-    const transformed = transformSymbol(symbol);
-    const component = toGeneratedComponent(transformed);
+    const component = symbolToGeneratedComponent(symbol);
     const preview = this.previewGeneration(component, outputDir);
 
     const result: PreviewResult = {
@@ -202,8 +199,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       return false;
     }
 
-    const transformed = transformSymbol(symbol);
-    const component = toGeneratedComponent(transformed);
+    const component = symbolToGeneratedComponent(symbol);
     const paths = getGeneratedPaths(component.className, component.namespace, outputDir);
     return fileExists(paths.implementationPath);
   }

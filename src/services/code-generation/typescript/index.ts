@@ -2,11 +2,7 @@
  * TypeScript Backend
  *
  * Language-specific code generation for TypeScript.
- * Implements backend interface defined in ADR-004.
  */
-
-// Adapter (domain → backend)
-export { toGeneratedComponent } from './adapter.js';
 
 // Type mapping
 export { typeRefToTypeScript } from './type-mapper.js';

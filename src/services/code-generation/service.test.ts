@@ -11,9 +11,8 @@ import { initMemoryDatabase, type DatabaseType } from '../../repositories/persis
 import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from '../symbol-table/index.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
-import { transformSymbol, isGeneratable } from '../../domain/symbol/index.js';
 import { CodeGenerationService, createCodeGenerationService } from './index.js';
-import { toGeneratedComponent } from './typescript/index.js';
+import { isGeneratable, symbolToGeneratedComponent } from './transformer.js';
 import { getGeneratedPaths, fileExists } from '../../infrastructure/file-system/index.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
@@ -66,7 +65,7 @@ describe('Generation Gap', () => {
   describe('getGeneratedPaths', () => {
     it('should generate correct paths', () => {
       const symbol = createTestSymbol();
-      const component = toGeneratedComponent(transformSymbol(symbol));
+      const component = symbolToGeneratedComponent(symbol);
       const paths = getGeneratedPaths(component.className, component.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/test/MyComponent.generated.ts');
@@ -76,7 +75,7 @@ describe('Generation Gap', () => {
 
     it('should handle empty namespace', () => {
       const symbol = createTestSymbol({ namespace: '' });
-      const component = toGeneratedComponent(transformSymbol(symbol));
+      const component = symbolToGeneratedComponent(symbol);
       const paths = getGeneratedPaths(component.className, component.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/MyComponent.generated.ts');
