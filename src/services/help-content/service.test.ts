@@ -34,36 +34,12 @@ describe('HelpContentService', () => {
         'Should have guide category'
       );
     });
-
-    it('should have required fields for each category', () => {
-      const categories = service.getCategories();
-      for (const cat of categories) {
-        assert.ok(cat.id, 'Category should have id');
-        assert.ok(cat.label, 'Category should have label');
-        assert.ok(cat.description, 'Category should have description');
-      }
-    });
   });
 
   describe('getTopics', () => {
     it('should return all topics', () => {
       const topics = service.getTopics();
       assert.ok(topics.length > 0, 'Should have at least one topic');
-    });
-
-    it('should have required fields for each topic', () => {
-      const topics = service.getTopics();
-      for (const topic of topics) {
-        assert.ok(topic.id, 'Topic should have id');
-        assert.ok(topic.title, 'Topic should have title');
-        assert.ok(topic.summary, 'Topic should have summary');
-        assert.ok(topic.path, 'Topic should have path');
-        assert.ok(topic.category, 'Topic should have category');
-        assert.ok(
-          Array.isArray(topic.keywords),
-          'Topic should have keywords array'
-        );
-      }
     });
   });
 

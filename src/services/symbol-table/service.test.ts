@@ -198,6 +198,17 @@ describe('SymbolTableService', () => {
       const byDesc = query.search('Token');
       assert.strictEqual(byDesc.length, 2);
     });
+
+    it('should find unreachable symbols', () => {
+      store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
+      store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
+
+      const unreachable = queryService.findUnreachable();
+      assert.strictEqual(unreachable.length, 1);
+      const first = unreachable[0];
+      assert.ok(first);
+      assert.strictEqual(first.id, 'a@1.0.0');
+    });
   });
 
   describe('getVersions', () => {
@@ -426,19 +437,6 @@ describe('SymbolTableService', () => {
 
       const cycles = checkCircularContainment(repo);
       assert.ok(cycles.length > 0);
-    });
-  });
-
-  describe('QueryService', () => {
-    it('should find unreachable symbols', () => {
-      store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
-      store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
-
-      const unreachable = queryService.findUnreachable();
-      assert.strictEqual(unreachable.length, 1);
-      const first = unreachable[0];
-      assert.ok(first);
-      assert.strictEqual(first.id, 'a@1.0.0');
     });
   });
 });

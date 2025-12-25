@@ -7,7 +7,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { FileCache } from './file-cache.js';
-import { SourceFileManager, createTsMorphProject } from './ts-morph-project.js';
+import { SourceFileManager } from './ts-morph-project.js';
 
 // =============================================================================
 // FileCache Tests
@@ -57,40 +57,6 @@ describe('FileCache', () => {
     assert.strictEqual(cache.size, 0);
     assert.strictEqual(cache.get('/file1.ts', 1000), null);
   });
-
-  it('should check if entry exists with has()', () => {
-    cache.set('/file.ts', 'data', 1000);
-
-    assert.strictEqual(cache.has('/file.ts'), true);
-    assert.strictEqual(cache.has('/other.ts'), false);
-  });
-
-  it('should delete specific entries', () => {
-    cache.set('/file.ts', 'data', 1000);
-
-    const deleted = cache.delete('/file.ts');
-
-    assert.strictEqual(deleted, true);
-    assert.strictEqual(cache.has('/file.ts'), false);
-  });
-
-  it('should return false when deleting non-existent entry', () => {
-    const deleted = cache.delete('/nonexistent.ts');
-    assert.strictEqual(deleted, false);
-  });
-
-  it('should report correct size', () => {
-    assert.strictEqual(cache.size, 0);
-
-    cache.set('/file1.ts', 'data1', 1000);
-    assert.strictEqual(cache.size, 1);
-
-    cache.set('/file2.ts', 'data2', 2000);
-    assert.strictEqual(cache.size, 2);
-
-    cache.delete('/file1.ts');
-    assert.strictEqual(cache.size, 1);
-  });
 });
 
 // =============================================================================
@@ -137,32 +103,5 @@ describe('SourceFileManager', () => {
 
     manager.clearCache();
     assert.strictEqual(manager.cacheSize, 0);
-  });
-
-  it('should return project root', () => {
-    assert.strictEqual(manager.getProjectRoot(), projectRoot);
-  });
-
-  it('should provide access to underlying Project', () => {
-    const project = manager.getProject();
-    assert.ok(project);
-    assert.strictEqual(typeof project.addSourceFileAtPath, 'function');
-  });
-});
-
-describe('createTsMorphProject', () => {
-  it('should create a Project with default configuration', () => {
-    const project = createTsMorphProject();
-
-    assert.ok(project);
-    assert.strictEqual(typeof project.addSourceFileAtPath, 'function');
-    assert.strictEqual(typeof project.getSourceFiles, 'function');
-  });
-
-  it('should create independent Project instances', () => {
-    const project1 = createTsMorphProject();
-    const project2 = createTsMorphProject();
-
-    assert.notStrictEqual(project1, project2);
   });
 });

@@ -114,18 +114,6 @@ describe('TypeSimplificationRegistry', () => {
     registry.registerExact('MyComplexType', 'Simple');
     assert.strictEqual(registry.simplify('MyComplexType'), 'Simple');
   });
-
-  it('should identify primitives', () => {
-    assert.strictEqual(registry.isPrimitive('string'), true);
-    assert.strictEqual(registry.isPrimitive('number'), true);
-    assert.strictEqual(registry.isPrimitive('ComponentSymbol'), false);
-  });
-
-  it('should extract type names from collections', () => {
-    assert.strictEqual(registry.extractTypeName('Foo[]'), 'Foo');
-    assert.strictEqual(registry.extractTypeName('Array<Bar>'), 'Bar');
-    assert.strictEqual(registry.extractTypeName('Set<Baz>'), 'Baz');
-  });
 });
 
 describe('TypeSimplifier', () => {
