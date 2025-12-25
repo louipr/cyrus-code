@@ -5,7 +5,6 @@
  * Extends the core schema with compatibility-related types.
  */
 
-import { z } from 'zod';
 // ============================================================================
 // Compatibility Result
 // ============================================================================
@@ -13,17 +12,16 @@ import { z } from 'zod';
 /**
  * Result of checking if two ports are compatible for connection.
  */
-export const CompatibilityResultSchema = z.object({
+export interface CompatibilityResult {
   /** Whether the ports are compatible */
-  compatible: z.boolean(),
+  compatible: boolean;
   /** Reason for incompatibility (if not compatible) */
-  reason: z.string().optional(),
+  reason?: string;
   /** Suggestions for making ports compatible */
-  suggestions: z.array(z.string()).optional(),
+  suggestions?: string[];
   /** Compatibility score (0-100) for partial compatibility */
-  score: z.number().min(0).max(100).optional(),
-});
-export type CompatibilityResult = z.infer<typeof CompatibilityResultSchema>;
+  score?: number;
+}
 
 // ============================================================================
 // Type Compatibility Mode
@@ -60,5 +58,9 @@ export function incompatible(
   reason: string,
   suggestions?: string[]
 ): CompatibilityResult {
-  return { compatible: false, reason, suggestions, score: 0 };
+  const result: CompatibilityResult = { compatible: false, reason, score: 0 };
+  if (suggestions) {
+    result.suggestions = suggestions;
+  }
+  return result;
 }

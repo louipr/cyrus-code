@@ -5,7 +5,7 @@
  * Defines graph structures, statistics, and service interface.
  */
 
-import { z } from 'zod';
+import type { AbstractionLevel } from '../../domain/symbol/index.js';
 
 // ============================================================================
 // Graph Nodes
@@ -14,21 +14,20 @@ import { z } from 'zod';
 /**
  * A node in the dependency graph representing a component.
  */
-export const GraphNodeSchema = z.object({
+export interface GraphNode {
   /** Symbol ID of the component */
-  symbolId: z.string().min(1),
+  symbolId: string;
   /** Component name for display */
-  name: z.string().min(1),
+  name: string;
   /** Namespace */
-  namespace: z.string(),
+  namespace: string;
   /** Abstraction level */
-  level: z.enum(['L0', 'L1', 'L2', 'L3', 'L4']),
+  level: AbstractionLevel;
   /** Input ports (ports with direction 'in' or 'inout') */
-  inputs: z.array(z.string()),
+  inputs: string[];
   /** Output ports (ports with direction 'out' or 'inout') */
-  outputs: z.array(z.string()),
-});
-export type GraphNode = z.infer<typeof GraphNodeSchema>;
+  outputs: string[];
+}
 
 // ============================================================================
 // Graph Edges
@@ -37,19 +36,18 @@ export type GraphNode = z.infer<typeof GraphNodeSchema>;
 /**
  * An edge in the dependency graph representing a connection.
  */
-export const GraphEdgeSchema = z.object({
+export interface GraphEdge {
   /** Connection ID */
-  connectionId: z.string().min(1),
+  connectionId: string;
   /** Source symbol ID */
-  fromSymbol: z.string().min(1),
+  fromSymbol: string;
   /** Source port name */
-  fromPort: z.string().min(1),
+  fromPort: string;
   /** Target symbol ID */
-  toSymbol: z.string().min(1),
+  toSymbol: string;
   /** Target port name */
-  toPort: z.string().min(1),
-});
-export type GraphEdge = z.infer<typeof GraphEdgeSchema>;
+  toPort: string;
+}
 
 // ============================================================================
 // Dependency Graph
@@ -76,23 +74,22 @@ export interface DependencyGraph {
 /**
  * Statistics about the dependency graph.
  */
-export const GraphStatsSchema = z.object({
+export interface GraphStats {
   /** Total number of components */
-  nodeCount: z.number().int().nonnegative(),
+  nodeCount: number;
   /** Total number of connections */
-  edgeCount: z.number().int().nonnegative(),
+  edgeCount: number;
   /** Number of root nodes (no incoming connections) */
-  rootCount: z.number().int().nonnegative(),
+  rootCount: number;
   /** Number of leaf nodes (no outgoing connections) */
-  leafCount: z.number().int().nonnegative(),
+  leafCount: number;
   /** Maximum depth of the graph */
-  maxDepth: z.number().int().nonnegative(),
+  maxDepth: number;
   /** Whether the graph has cycles */
-  hasCycles: z.boolean(),
+  hasCycles: boolean;
   /** Number of disconnected components */
-  componentCount: z.number().int().nonnegative(),
-});
-export type GraphStats = z.infer<typeof GraphStatsSchema>;
+  componentCount: number;
+}
 
 // ============================================================================
 // Helper Functions

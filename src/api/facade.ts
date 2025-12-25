@@ -599,8 +599,10 @@ export class ApiFacade implements IApiFacade {
         fromPort: request.fromPort,
         toSymbolId: request.toSymbolId,
         toPort: request.toPort,
-        transform: request.transform,
       };
+      if (request.transform) {
+        connectionRequest.transform = request.transform;
+      }
 
       const result = this.wiringService.connect(connectionRequest);
       return {
@@ -659,8 +661,10 @@ export class ApiFacade implements IApiFacade {
         fromPort: request.fromPort,
         toSymbolId: request.toSymbolId,
         toPort: request.toPort,
-        transform: request.transform,
       };
+      if (request.transform) {
+        connectionRequest.transform = request.transform;
+      }
 
       const result = this.wiringService.validateConnection(connectionRequest);
       return {

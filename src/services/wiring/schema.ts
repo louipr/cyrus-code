@@ -5,7 +5,6 @@
  * Defines connection requests, results, and validation options.
  */
 
-import { z } from 'zod';
 import type {
   Connection,
   ValidationResult,
@@ -48,15 +47,14 @@ export interface IWiringService {
 /**
  * Request to create a connection between two ports.
  */
-export const ConnectionRequestSchema = z.object({
-  fromSymbolId: z.string().min(1),
-  fromPort: z.string().min(1),
-  toSymbolId: z.string().min(1),
-  toPort: z.string().min(1),
+export interface ConnectionRequest {
+  fromSymbolId: string;
+  fromPort: string;
+  toSymbolId: string;
+  toPort: string;
   /** Optional transformation function ID */
-  transform: z.string().optional(),
-});
-export type ConnectionRequest = z.infer<typeof ConnectionRequestSchema>;
+  transform?: string;
+}
 
 // ============================================================================
 // Wiring Result
@@ -65,17 +63,16 @@ export type ConnectionRequest = z.infer<typeof ConnectionRequestSchema>;
 /**
  * Result of a wiring operation.
  */
-export const WiringResultSchema = z.object({
+export interface WiringResult {
   /** Whether the operation succeeded */
-  success: z.boolean(),
+  success: boolean;
   /** Error message if failed */
-  error: z.string().optional(),
+  error?: string;
   /** Error code if failed */
-  errorCode: z.string().optional(),
+  errorCode?: string;
   /** The created/affected connection ID */
-  connectionId: z.string().optional(),
-});
-export type WiringResult = z.infer<typeof WiringResultSchema>;
+  connectionId?: string;
+}
 
 // ============================================================================
 // Wiring Error Codes
@@ -140,15 +137,12 @@ export type ValidationErrorCode =
 // Validation Options
 // ============================================================================
 
-export const ValidationOptionsSchema = z.object({
+export interface ValidationOptions {
   /** Type compatibility mode */
-  typeMode: z
-    .enum(['strict', 'compatible'])
-    .default('compatible'),
+  typeMode: 'strict' | 'compatible';
   /** Whether to check cardinality constraints */
-  checkCardinality: z.boolean().default(true),
-});
-export type ValidationOptions = z.infer<typeof ValidationOptionsSchema>;
+  checkCardinality: boolean;
+}
 
 /**
  * Default validation options.
@@ -166,7 +160,11 @@ export const DEFAULT_VALIDATION_OPTIONS: ValidationOptions = {
  * Create a successful wiring result.
  */
 export function wiringSuccess(connectionId?: string): WiringResult {
-  return { success: true, connectionId };
+  const result: WiringResult = { success: true };
+  if (connectionId) {
+    result.connectionId = connectionId;
+  }
+  return result;
 }
 
 /**
@@ -176,5 +174,9 @@ export function wiringError(
   error: string,
   errorCode?: WiringErrorCode
 ): WiringResult {
-  return { success: false, error, errorCode };
+  const result: WiringResult = { success: false, error };
+  if (errorCode) {
+    result.errorCode = errorCode;
+  }
+  return result;
 }
