@@ -1,14 +1,12 @@
 /**
- * Symbol Table Service Layer Types
+ * Symbol Table Service Schema
  *
- * Application-specific types for the symbol table service.
- * Core domain types are imported from src/domain/symbol.
- *
- * @see src/domain/symbol - Domain model definitions
+ * Service interface and query types for the symbol table service.
+ * Domain types should be imported directly from src/domain/symbol.
  */
 
 // ============================================================================
-// Domain Imports
+// Domain Imports (used by service interface)
 // ============================================================================
 
 import type {
@@ -18,59 +16,6 @@ import type {
   Language,
   SymbolStatus,
   SymbolOrigin,
-  SemVer,
-  ValidationResult,
-} from '../../domain/symbol/index.js';
-
-// Re-export domain types for convenience (consumers can import from here or domain directly)
-export type {
-  AbstractionLevel,
-  ComponentKind,
-  Language,
-  SymbolStatus,
-  SymbolOrigin,
-  ComponentSymbol,
-  Connection,
-  PortDefinition,
-  PortDirection,
-  TypeReference,
-  SemVer,
-  VersionRange,
-  SourceLocation,
-  ValidationError,
-  ValidationResult,
-  ExecutionInfo,
-  StatusInfo,
-  GenerationMetadata,
-} from '../../domain/symbol/index.js';
-
-export {
-  AbstractionLevelSchema,
-  ComponentKindSchema,
-  LanguageSchema,
-  SymbolStatusSchema,
-  SymbolOriginSchema,
-  ComponentSymbolSchema,
-  ConnectionSchema,
-  PortDefinitionSchema,
-  PortDirectionSchema,
-  TypeReferenceSchema,
-  SemVerSchema,
-  VersionRangeSchema,
-  SourceLocationSchema,
-  ValidationErrorSchema,
-  ValidationResultSchema,
-  ExecutionInfoSchema,
-  StatusInfoSchema,
-  GenerationMetadataSchema,
-  KIND_TO_LEVEL,
-  parseSymbolId,
-  buildSymbolId,
-  formatSemVer,
-  parseSemVer,
-  compareSemVer,
-  createValidationResult,
-  validateKindLevel,
 } from '../../domain/symbol/index.js';
 
 // ============================================================================
@@ -95,7 +40,7 @@ export interface ISymbolTableService {
   import(symbols: ComponentSymbol[]): void;
   export(): ComponentSymbol[];
 
-  // Convenience Methods (from component-registry)
+  // Query and Resolution
   registerWithAutoId(
     component: Omit<ComponentSymbol, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
   ): ComponentSymbol;
@@ -107,7 +52,7 @@ export interface ISymbolTableService {
   query(filters: ComponentQuery): ComponentSymbol[];
 }
 // =============================================================================
-// Component Query Types (from component-registry)
+// Query Types
 // =============================================================================
 
 /**

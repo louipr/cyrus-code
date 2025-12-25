@@ -16,7 +16,7 @@ import {
   ComponentSymbolSchema,
   type SemVer,
   type ComponentSymbol,
-} from './schema.js';
+} from '../../domain/symbol/index.js';
 
 describe('Symbol ID', () => {
   it('should parse and build valid symbol IDs', () => {

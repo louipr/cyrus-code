@@ -5,7 +5,7 @@
  * Single Responsibility: Version resolution.
  */
 
-import type { ComponentSymbol } from './schema.js';
+import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 export class VersionResolver {

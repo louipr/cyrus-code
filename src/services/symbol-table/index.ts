@@ -2,10 +2,9 @@
  * Symbol Table Service
  *
  * Central registry for tracking all components, types, and interfaces.
- * Provides the low-level CRUD operations and persistence layer.
+ * Provides CRUD operations and persistence layer.
  *
- * Services are exported separately for dependency injection.
- * Domain types are re-exported from src/domain/symbol for convenience.
+ * Domain types should be imported directly from src/domain/symbol.
  */
 
 // =============================================================================

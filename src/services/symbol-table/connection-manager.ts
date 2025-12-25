@@ -5,7 +5,7 @@
  * Single Responsibility: Port wiring operations.
  */
 
-import type { Connection } from './schema.js';
+import type { Connection } from '../../domain/symbol/index.js';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 export class ConnectionManager {

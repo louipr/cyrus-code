@@ -16,7 +16,7 @@ import { SymbolQueryService } from './query-service.js';
 import { ConnectionManager } from './connection-manager.js';
 import { VersionResolver } from './version-resolver.js';
 import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
-import type { Connection } from './schema.js';
+import type { Connection } from '../../domain/symbol/index.js';
 import { createSymbol } from '../test-fixtures.js';
 
 describe('SymbolTableService', () => {
