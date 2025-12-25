@@ -31,7 +31,7 @@ describe('SymbolTableService', () => {
     repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
     queryService = new SymbolQueryService(repo);
-    connectionMgr = new ConnectionManager(repo, (id) => repo.find(id));
+    connectionMgr = new ConnectionManager(repo);
     versionResolver = new VersionResolver(repo);
   });
 

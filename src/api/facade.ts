@@ -96,7 +96,7 @@ export class ApiFacade implements IApiFacade {
     // Create symbol table services
     this.symbolTable = new SymbolTableService(db);
     this.queryService = new SymbolQueryService(this.repo);
-    this.connectionMgr = new ConnectionManager(this.repo, (id) => this.repo.find(id));
+    this.connectionMgr = new ConnectionManager(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
 
     // Create domain services with dependency injection

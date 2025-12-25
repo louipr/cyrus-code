@@ -5,27 +5,24 @@
  * Single Responsibility: Port wiring operations.
  */
 
-import type { ComponentSymbol, Connection } from './schema.js';
+import type { Connection } from './schema.js';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 export class ConnectionManager {
-  constructor(
-    private repo: ISymbolRepository,
-    private getSymbol: (id: string) => ComponentSymbol | undefined
-  ) {}
+  constructor(private repo: ISymbolRepository) {}
 
   /**
    * Create a connection between ports.
    */
   connect(connection: Connection): void {
     // Validate source symbol exists
-    const fromSymbol = this.getSymbol(connection.fromSymbolId);
+    const fromSymbol = this.repo.find(connection.fromSymbolId);
     if (!fromSymbol) {
       throw new Error(`Source symbol '${connection.fromSymbolId}' not found`);
     }
 
     // Validate target symbol exists
-    const toSymbol = this.getSymbol(connection.toSymbolId);
+    const toSymbol = this.repo.find(connection.toSymbolId);
     if (!toSymbol) {
       throw new Error(`Target symbol '${connection.toSymbolId}' not found`);
     }

@@ -32,7 +32,7 @@ describe('WiringService', () => {
     const db = initMemoryDatabase();
     repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
-    connectionMgr = new ConnectionManager(repo, (id) => repo.find(id));
+    connectionMgr = new ConnectionManager(repo);
     const graphService = new DependencyGraphService(repo, connectionMgr);
     wiring = new WiringService(repo, connectionMgr, graphService);
   });

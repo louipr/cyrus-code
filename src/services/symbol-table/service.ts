@@ -31,7 +31,7 @@ export class SymbolTableService implements ISymbolTableService {
     this.queryService = new SymbolQueryService(this.repo);
 
     // Initialize composed services with dependencies
-    this.connectionMgr = new ConnectionManager(this.repo, (id) => this.get(id));
+    this.connectionMgr = new ConnectionManager(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
   }
 
