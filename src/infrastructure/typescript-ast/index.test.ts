@@ -72,7 +72,7 @@ describe('SourceFileManager', () => {
   });
 
   it('should parse and return source files', () => {
-    const sourceFile = manager.getSourceFile('src/services/typescript-ast-tools/schema.ts');
+    const sourceFile = manager.getSourceFile('src/infrastructure/typescript-ast/schema.ts');
 
     assert.notStrictEqual(sourceFile, null);
     assert.ok(sourceFile?.getFilePath().endsWith('schema.ts'));
@@ -84,7 +84,7 @@ describe('SourceFileManager', () => {
   });
 
   it('should cache source files', () => {
-    const filePath = 'src/services/typescript-ast-tools/schema.ts';
+    const filePath = 'src/infrastructure/typescript-ast/schema.ts';
 
     // First call - parses the file
     const sourceFile1 = manager.getSourceFile(filePath);
@@ -98,7 +98,7 @@ describe('SourceFileManager', () => {
   });
 
   it('should clear cache', () => {
-    manager.getSourceFile('src/services/typescript-ast-tools/schema.ts');
+    manager.getSourceFile('src/infrastructure/typescript-ast/schema.ts');
     assert.strictEqual(manager.cacheSize, 1);
 
     manager.clearCache();

@@ -7,7 +7,7 @@
  */
 
 import { SourceFile, Node, SyntaxKind, VariableDeclarationKind } from 'ts-morph';
-import { SourceFileManager } from '../typescript-ast-tools/index.js';
+import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Extracted code snippet with metadata.

@@ -24,7 +24,7 @@ import type {
 } from './schema.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
-import { HelpRepository } from './repository.js';
+import { HelpRepository } from '../../repositories/help-repository.js';
 import { HelpFormatter } from './formatter.js';
 
 /**

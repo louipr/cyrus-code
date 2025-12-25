@@ -8,7 +8,7 @@
 import { MethodSignature, PropertySignature } from 'ts-morph';
 import { RelationshipInfo, RelationshipType } from '../../../domain/diagram/schema.js';
 import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
-import { SourceFileManager } from '../../../services/typescript-ast-tools/index.js';
+import { SourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
 
 /**
  * Context for relationship inference.

@@ -15,7 +15,7 @@ import {
 } from 'ts-morph';
 import { ClassInfo, AttributeInfo, MethodInfo, Visibility, Stereotype } from '../../../domain/diagram/schema.js';
 import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
-import { SourceFileManager } from '../../../services/typescript-ast-tools/index.js';
+import { SourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
 
 /**
  * Extracts type, class, and enum information for C4-4 diagrams.

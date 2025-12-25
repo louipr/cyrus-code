@@ -8,7 +8,7 @@
 import { InterfaceDeclaration, MethodSignature } from 'ts-morph';
 import { ClassInfo, MethodInfo, ParameterInfo } from '../../../domain/diagram/schema.js';
 import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
-import { SourceFileManager } from '../../../services/typescript-ast-tools/index.js';
+import { SourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
 
 /**
  * Extracts interface information for C4-4 diagrams.
