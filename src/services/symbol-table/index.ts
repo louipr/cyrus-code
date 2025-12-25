@@ -25,4 +25,4 @@ export {
 // Service Interfaces
 // =============================================================================
 
-export type { ISymbolTableService, ComponentQuery, ResolveOptions, BumpType } from './schema.js';
+export type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';

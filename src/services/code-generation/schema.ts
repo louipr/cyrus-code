@@ -138,60 +138,6 @@ export interface PreviewResult {
 }
 
 // =============================================================================
-// Code Generation Types
-// =============================================================================
-
-/**
- * Generated file metadata tracked in symbol table.
- */
-export interface GenerationMetadata {
-  /** Template/backend that generated this */
-  templateId: string;
-
-  /** When the file was generated */
-  generatedAt: Date;
-
-  /** Content hash for change detection */
-  contentHash: string;
-
-  /** Path to .generated.ts file */
-  generatedPath: string;
-
-  /** Path to user .ts file (if exists) */
-  implementationPath?: string;
-}
-
-// NOTE: GeneratedPort and GeneratedComponent have been moved to the backend layer.
-// Import from: src/backends/typescript/schema.ts
-
-// =============================================================================
-// Error Codes
-// =============================================================================
-
-/**
- * Generation error codes.
- */
-export enum GenerationErrorCode {
-  /** Symbol not found in store */
-  SYMBOL_NOT_FOUND = 'SYMBOL_NOT_FOUND',
-
-  /** Symbol is not generatable (e.g., L0 primitive) */
-  NOT_GENERATABLE = 'NOT_GENERATABLE',
-
-  /** Invalid output directory */
-  INVALID_OUTPUT_DIR = 'INVALID_OUTPUT_DIR',
-
-  /** File write failed */
-  WRITE_FAILED = 'WRITE_FAILED',
-
-  /** Type resolution failed */
-  TYPE_RESOLUTION_FAILED = 'TYPE_RESOLUTION_FAILED',
-
-  /** Internal generation error */
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-}
-
-// =============================================================================
 // Helper Functions
 // =============================================================================
 

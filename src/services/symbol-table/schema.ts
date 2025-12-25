@@ -88,7 +88,3 @@ export interface ResolveOptions {
   preferLatest?: boolean;
 }
 
-/**
- * SemVer bump type for version increments.
- */
-export type BumpType = 'major' | 'minor' | 'patch';

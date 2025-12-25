@@ -9,7 +9,7 @@ import type { DatabaseType } from '../../repositories/persistence.js';
 import { SymbolRepository, type ISymbolRepository } from '../../repositories/symbol-repository.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch } from '../../domain/symbol/index.js';
-import type { ISymbolTableService, ComponentQuery, ResolveOptions, BumpType } from './schema.js';
+import type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
 import { SymbolQueryService } from './query-service.js';
 import { ConnectionManager } from './connection-manager.js';
 import { VersionResolver } from './version-resolver.js';

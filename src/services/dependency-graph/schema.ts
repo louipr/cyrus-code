@@ -123,31 +123,6 @@ export function graphToDTO(graph: DependencyGraph): DependencyGraphDTO {
 }
 
 /**
- * Convert a DTO to a DependencyGraph.
- */
-export function dtoToGraph(dto: DependencyGraphDTO): DependencyGraph {
-  const nodes = new Map<string, GraphNode>();
-  const edges = new Map<string, GraphEdge[]>();
-
-  for (const node of dto.nodes) {
-    nodes.set(node.symbolId, node);
-  }
-
-  for (const edge of dto.edges) {
-    const existing = edges.get(edge.fromSymbol) ?? [];
-    existing.push(edge);
-    edges.set(edge.fromSymbol, existing);
-  }
-
-  return {
-    nodes,
-    edges,
-    topologicalOrder: dto.topologicalOrder,
-    cycles: dto.cycles,
-  };
-}
-
-/**
  * Create an empty dependency graph.
  */
 export function createEmptyGraph(): DependencyGraph {
