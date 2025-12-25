@@ -121,10 +121,10 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 2.1 | Implement Compatibility Service | `src/services/compatibility/index.ts` | ✅ |
-| 2.2 | Compatibility Service schema types | `src/services/compatibility/schema.ts` | ✅ |
-| 2.3 | Port compatibility checking | `src/services/compatibility/compatibility.ts` | ✅ |
-| 2.4 | Unit tests for Compatibility Service | `src/services/compatibility/service.test.ts` | ✅ (29 tests) |
+| 2.1 | Implement Compatibility Rules | `src/domain/compatibility/checkers.ts` | ✅ |
+| 2.2 | Compatibility schema types | `src/domain/compatibility/schema.ts` | ✅ |
+| 2.3 | Port compatibility checking | `src/domain/compatibility/checkers.ts` | ✅ |
+| 2.4 | Unit tests for Compatibility | (moved to wiring tests) | ✅ |
 | 2.5 | Implement Wiring Service | `src/services/wiring/index.ts` | ✅ |
 | 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
 | 2.7 | Dependency Graph Service (extracted from wiring) | `src/services/dependency-graph/` | ✅ |
@@ -421,153 +421,141 @@ All tasks in this slice are deferred pending future implementation needs.
 
 ## Project Structure
 
-### Current (Slice 3 + Help Complete)
+### Current Architecture (Clean Architecture)
+
+> **See also**: [Clean Architecture Guide](architecture/clean-architecture-guide.md) for design patterns and layer responsibilities.
 
 ```
 cyrus-code/
-├── electron/                          # Electron Main Process ✅
+├── electron/                          # Electron Main Process
 │   ├── main.ts                        # App entry point, window creation
 │   ├── preload.ts                     # Context bridge for IPC
 │   ├── ipc-handlers.ts                # IPC handlers → ApiFacade
-│   └── menu.ts                        # Application menu with Help ✅
+│   └── menu.ts                        # Application menu with Help
+│
 ├── src/
-│   ├── api/                           # API Layer ✅
-│   │   ├── facade.ts                  # Backend API interface
-│   │   ├── types.ts                   # DTOs for IPC/HTTP
-│   │   └── index.ts                   # Re-exports
-│   ├── cli/                           # CLI Commands ✅
+│   ├── domain/                        # Layer 1: Pure Business Logic (no deps)
+│   │   ├── symbol/                    # Core entity: ComponentSymbol
+│   │   │   ├── schema.ts              # Entity types, PortDefinition
+│   │   │   ├── version.ts             # SemVer utilities
+│   │   │   └── index.ts
+│   │   ├── compatibility/             # Business rules (pure functions)
+│   │   │   ├── checkers.ts            # checkPortCompatibility()
+│   │   │   ├── schema.ts              # CompatibilityResult type
+│   │   │   └── index.ts
+│   │   ├── diagram/                   # Diagram types
+│   │   │   ├── schema.ts              # DiagramConfig, C4Diagram
+│   │   │   ├── class-diagram-builder.ts
+│   │   │   └── index.ts
+│   │   └── help/                      # Help types
+│   │       ├── schema.ts              # HelpTopic, C4Hierarchy
+│   │       └── index.ts
+│   │
+│   ├── repositories/                  # Layer 2: Data Persistence
+│   │   ├── persistence.ts             # SQLite database setup
+│   │   ├── symbol-repository.ts       # Symbol + Connection CRUD
+│   │   ├── help-repository.ts         # Help topic data access
+│   │   └── index.ts
+│   │
+│   ├── infrastructure/                # Layer 3: External Adapters
+│   │   ├── file-system/               # File I/O (node:fs wrapper)
+│   │   │   ├── file-writer.ts
+│   │   │   ├── path-resolver.ts
+│   │   │   └── index.ts
+│   │   ├── typescript-ast/            # ts-morph wrapper
+│   │   │   ├── ts-morph-project.ts
+│   │   │   ├── file-cache.ts
+│   │   │   └── index.ts
+│   │   └── markdown/                  # Markdown processing
+│   │       ├── headings.ts
+│   │       └── index.ts
+│   │
+│   ├── services/                      # Layer 4: Application Logic
+│   │   ├── symbol-table/              # Symbol management
+│   │   │   ├── service.ts             # SymbolTableService
+│   │   │   ├── query-service.ts       # SymbolQueryService
+│   │   │   ├── version-resolver.ts    # VersionResolver
+│   │   │   ├── symbol-validator.ts    # SymbolValidator
+│   │   │   ├── schema.ts              # Service interfaces
+│   │   │   └── index.ts
+│   │   ├── wiring/                    # Connection handling
+│   │   │   ├── service.ts             # WiringService
+│   │   │   ├── schema.ts              # WiringResult, ConnectionRequest
+│   │   │   └── index.ts
+│   │   ├── dependency-graph/          # Graph algorithms
+│   │   │   ├── service.ts             # DependencyGraphService
+│   │   │   ├── algorithms.ts          # Cycle detection, topological sort
+│   │   │   ├── schema.ts              # GraphNode, GraphEdge
+│   │   │   └── index.ts
+│   │   ├── code-generation/           # Code generation
+│   │   │   ├── service.ts             # CodeGenerationService
+│   │   │   ├── transformer.ts         # Symbol → GeneratedComponent
+│   │   │   ├── schema.ts              # GeneratedComponent, GenerationResult
+│   │   │   ├── typescript/            # TypeScript backend (co-located)
+│   │   │   │   ├── ast-builder.ts
+│   │   │   │   ├── class-generator.ts
+│   │   │   │   ├── type-mapper.ts
+│   │   │   │   └── index.ts
+│   │   │   └── index.ts
+│   │   ├── diagram-generator/         # C4 diagram generation
+│   │   │   ├── generator.ts           # C4DiagramGenerator
+│   │   │   ├── diagram-renderer.ts
+│   │   │   ├── typescript/            # TypeScript extraction
+│   │   │   │   ├── interface-extractor.ts
+│   │   │   │   ├── type-extractor.ts
+│   │   │   │   └── index.ts
+│   │   │   └── index.ts
+│   │   └── help-content/              # Help formatting
+│   │       ├── service.ts             # HelpContentService
+│   │       ├── formatter.ts
+│   │       ├── terminal-renderer.ts
+│   │       ├── preprocessor.ts
+│   │       └── index.ts
+│   │
+│   ├── api/                           # Layer 5: Unified Facade
+│   │   ├── facade.ts                  # ApiFacade - single entry point
+│   │   ├── types.ts                   # API DTOs
+│   │   └── index.ts
+│   │
+│   ├── cli/                           # Layer 6: CLI Interface
 │   │   ├── index.ts                   # CLI entry point
-│   │   ├── cli.test.ts                # CLI integration tests
 │   │   └── commands/                  # Command implementations
-│   │       ├── register.ts            # Register component
-│   │       ├── list.ts                # List/query components
-│   │       ├── get.ts                 # Get component details
-│   │       ├── validate.ts            # Validate registry
-│   │       ├── wire.ts                # Wire ports ✅ (Slice 2)
-│   │       ├── graph.ts               # Dependency graph ✅ (Slice 2)
-│   │       ├── generate.ts            # Code generation ✅ (Slice 3)
-│   │       └── help.ts                # Help command ✅
-│   ├── gui/                           # React Frontend ✅
-│   │   ├── index.html                 # HTML entry point
-│   │   ├── main.tsx                   # React entry point
+│   │       ├── register.ts, list.ts, get.ts, validate.ts
+│   │       ├── wire.ts, graph.ts, generate.ts, help.ts
+│   │       └── ...
+│   │
+│   ├── gui/                           # Layer 6: GUI Interface
 │   │   ├── App.tsx                    # Main app component
-│   │   ├── api-client.ts              # IPC wrapper (migration-ready)
+│   │   ├── api-client.ts              # IPC wrapper
 │   │   └── components/                # React components
-│   │       ├── SearchBar.tsx          # Search input
-│   │       ├── ComponentList.tsx      # Filterable component list
-│   │       ├── ComponentDetail.tsx    # Detail panel with ports
-│   │       ├── DependencyGraph.tsx    # Graph visualization
-│   │       ├── GraphStats.tsx         # Graph statistics panel
-│   │       ├── ValidationOverlay.tsx  # Real-time validation
-│   │       ├── Canvas.tsx             # Visual wiring canvas
-│   │       ├── CanvasNode.tsx         # Draggable node
-│   │       ├── PortHandle.tsx         # Clickable port indicator
-│   │       ├── PortWire.tsx           # Connection lines
-│   │       ├── PendingWire.tsx        # Wire being drawn
-│   │       ├── PortTooltip.tsx        # Port hover info
-│   │       ├── GenerateButton.tsx     # Code generation trigger
-│   │       ├── GenerationPreview.tsx  # Preview modal
-│   │       ├── GenerationResult.tsx   # Generation results
-│   │       ├── ExportDialog.tsx       # Export to directory dialog
-│   │       ├── FileTree.tsx           # File tree in export dialog
-│   │       ├── HelpDialog.tsx         # Help topic browser ✅
-│   │       ├── AboutDialog.tsx        # Version info dialog ✅
-│   │       ├── MermaidDiagram.tsx     # C4 diagram renderer ✅
-│   │       └── C4NavigationBar.tsx    # C4 level navigation ✅
-│   ├── repositories/                  # Data Access Layer ✅
-│   │   ├── persistence.ts             # SQLite database
-│   │   ├── symbol-repository.ts       # Symbol CRUD
-│   │   └── index.ts                   # Re-exports
-│   └── services/                      # Business Logic ✅
-│       ├── registry/                  # Component Registry ✅
-│       │   ├── index.ts               # Registry service
-│       │   └── version.ts             # SemVer utilities
-│       ├── symbol-table/              # Symbol Table ✅
-│       │   ├── schema.ts              # Zod schemas & types
-│       │   ├── store.ts               # Store service
-│       │   ├── schema.test.ts         # Schema tests (55 tests)
-│       │   ├── store.test.ts          # Store tests
-│       │   └── index.ts               # Re-exports
-│       ├── compatibility/             # Compatibility Service ✅ (Slice 2)
-│       │   ├── index.ts               # CompatibilityService
-│       │   ├── schema.ts              # Validation types
-│       │   ├── compatibility.ts       # Port compatibility rules
-│       │   └── service.test.ts        # Compatibility tests (29 tests)
-│       ├── wiring/                    # Wiring Service ✅ (Slice 2)
-│       │   ├── index.ts               # WiringService
-│       │   ├── schema.ts              # Graph types, wiring results
-│       │   ├── graph.ts               # Dependency graph builder
-│       │   └── index.test.ts          # Wiring tests (22 tests)
-│       ├── code-generation/               # Code CodeGeneration ✅ (Slice 3)
-│       │   ├── index.ts               # CodeGenerationService
-│       │   ├── schema.ts              # Generation types
-│       │   ├── codegen.ts             # ts-morph utilities
-│       │   ├── generation-gap.ts      # Two-file pattern
-│       │   ├── backends/              # Language backends
-│       │   │   └── typescript.ts      # TypeScript generator
-│       │   └── index.test.ts          # CodeGeneration tests (51 tests)
-│       ├── help/                      # Help System ✅
-│       │   ├── index.ts               # HelpService
-│       │   ├── schema.ts              # Help types
-│       │   ├── renderer.ts            # Terminal markdown renderer
-│       │   ├── preprocessor.ts        # Markdown preprocessor
-│       │   ├── extractor.ts           # TypeScript code extraction
-│       │   ├── index.test.ts          # Help tests (28 tests)
-│       │   └── diagram-generator/     # C4 Code Diagram Generator ✅
-│       │       ├── index.ts           # C4DiagramGenerator facade
-│       │       ├── schema.ts          # ClassInfo, DiagramConfig types
-│       │       ├── extractor/         # AST extraction
-│       │       ├── builder/           # Diagram construction
-│       │       ├── simplifier/        # Type simplification
-│       │       ├── renderer/          # Output formats
-│       │       └── index.test.ts      # Tests (24 tests)
-│       └── source-tools/              # Source Code Utilities ✅
-│           ├── index.ts               # Barrel exports
-│           ├── schema.ts              # Type definitions
-│           ├── file-cache.ts          # FileCache<T> class
-│           ├── ts-morph-project.ts    # SourceFileManager
-│           └── index.test.ts          # Tests (24 tests)
-├── tests/                             # E2E Tests ✅
-│   └── e2e/
-│       ├── helpers/
-│       │   ├── app.ts                 # Electron launch helper
-│       │   ├── selectors.ts           # Centralized data-testid selectors
-│       │   ├── fixtures.ts            # Test data seeding and cleanup
-│       │   └── actions.ts             # Reusable test actions
-│       ├── canvas-wiring.spec.ts      # Canvas wiring E2E tests
-│       ├── code-generation.spec.ts    # Code generation E2E tests
-│       ├── dependency-graph.spec.ts   # Graph view E2E tests
-│       └── help-dialog.spec.ts        # Help dialog E2E tests ✅
+│   │
+│   └── testing/                       # Test Utilities
+│       ├── fixtures.ts                # Shared test helpers
+│       └── index.ts
+│
+├── tests/e2e/                         # Playwright E2E Tests
 ├── docs/                              # Documentation
-├── vite.config.ts                     # Vite config for GUI
-├── playwright.config.ts               # Playwright config (workers: 1)
-├── tsconfig.json                      # Base TypeScript config
-├── tsconfig.gui.json                  # GUI type-checking (React/DOM)
+│   ├── architecture/                  # Architecture guides
+│   ├── adr/                           # Architecture Decision Records
+│   ├── c4/                            # C4 diagrams
+│   └── spec/                          # Canonical type specifications
 └── package.json
 ```
 
-### Target (Full Implementation)
+### Layer Dependency Rules
 
 ```
-cyrus-code/
-├── electron/                          # Electron Main Process ✅
-├── src/
-│   ├── api/                           # API Layer ✅
-│   ├── cli/                           # CLI Commands ✅
-│   ├── gui/                           # GUI Components ✅
-│   ├── repositories/                  # Data Access Layer ✅
-│   ├── services/
-│   │   ├── component-registry/        # Component Registry ✅
-│   │   ├── symbol-table/              # Symbol Table ✅
-│   │   ├── compatibility/             # Compatibility Service ✅ (Slice 2)
-│   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
-│   │   ├── code-generation/               # Code CodeGeneration ✅ (Slice 3)
-│   │   ├── help/                      # Help System + Diagram Generator ✅
-│   │   └── source-tools/              # Source Code Utilities ✅
-├── tests/
-│   └── e2e/                           # Playwright E2E Tests ✅
-├── docs/
-└── playwright.config.ts               # ✅
+┌──────────────────────────────────────────────────────────────┐
+│  CLI / GUI                                                   │  → can import: api, services, domain
+├──────────────────────────────────────────────────────────────┤
+│  API Facade                                                  │  → can import: services, repositories, domain
+├──────────────────────────────────────────────────────────────┤
+│  Services                                                    │  → can import: domain, repositories, infrastructure
+├──────────────────────────────────────────────────────────────┤
+│  Repositories / Infrastructure                               │  → can import: domain only
+├──────────────────────────────────────────────────────────────┤
+│  Domain                                                      │  → no external imports (pure)
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---

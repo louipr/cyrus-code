@@ -1,40 +1,39 @@
-# C4 Component Diagram - Compatibility Service
+# C4 Component Diagram - Compatibility (Domain Layer)
 
 ## Overview
 
-Internal structure of the Compatibility Service container, showing its components and their relationships.
+Port compatibility checking is a **domain concern** containing pure business rules. Located in `src/domain/compatibility/` - no service class, just pure functions.
+
+> **Architecture Note**: Compatibility was moved from services/ to domain/ (2024-12) because it contains pure business rules with no state, no I/O, and no service dependencies.
 
 ## Component Diagram
 
 ```mermaid
 flowchart TD
-    subgraph compatibility ["Compatibility Service"]
-        service["CompatibilityService<br/><small>TypeScript</small>"]
-        compat["Compatibility Checker<br/><small>TypeScript</small>"]
-        schema["Schema<br/><small>TypeScript</small>"]
+    subgraph domain ["Domain Layer"]
+        subgraph compatibility ["Compatibility Rules"]
+            checkers["Compatibility Checkers<br/><small>Pure Functions</small>"]
+            schema["Schema<br/><small>Types Only</small>"]
+        end
     end
 
-    service -->|"check"| compat
-    service -->|"lookup"| st["Symbol Table"]
-    compat -->|"use types"| schema
+    checkers -->|"use types"| schema
 
-    wiring["Wiring"] -->|"delegate"| service
-    api["API Facade"] -->|"call"| service
+    wiring["Wiring Service"] -->|"imports"| checkers
 
-    classDef component fill:#1168bd,color:#fff
-    classDef external fill:#999,color:#fff
+    classDef domain fill:#2e7d32,color:#fff
+    classDef service fill:#1168bd,color:#fff
 
-    class service,compat,schema component
-    class st,wiring,api external
+    class checkers,schema domain
+    class wiring service
 ```
 
 ## Components
 
-| Component | Responsibility | Key Operations | Status | Notes |
-|-----------|----------------|----------------|--------|-------|
-| **CompatibilityService** | Port compatibility checking, required port validation | `checkPortCompatibility()`, `validateConnection()`, `validateAllConnections()` | ✅ | `src/services/compatibility/index.ts` |
-| **Compatibility Checker** | Direction and type compatibility rules | `checkDirectionCompatibility()`, `checkTypeCompatibility()`, `checkPortCompatibility()` | ✅ | `src/services/compatibility/compatibility.ts` |
-| **Schema** | Type definitions, error codes | `CompatibilityResult`, `ValidationOptions`, `ValidationErrorCode` | ✅ | `src/services/compatibility/schema.ts` |
+| Component | Responsibility | Key Operations | Location |
+|-----------|----------------|----------------|----------|
+| **Compatibility Checkers** | Pure functions for port compatibility | `checkPortCompatibility()`, `checkDirectionCompatibility()`, `checkTypeCompatibility()` | `src/domain/compatibility/checkers.ts` |
+| **Schema** | Type definitions | `CompatibilityResult`, `TypeCompatibilityMode` | `src/domain/compatibility/schema.ts` |
 
 > **Design Patterns**: See [ADR-003: Interface Definition System](../adr/003-interface-definition-system.md) for interface concepts.
 
@@ -55,38 +54,24 @@ flowchart TD
 
 ### Quick Reference
 
-| Category | Methods |
+| Function | Purpose |
 |----------|---------|
-| **Port Validation** | `checkPortCompatibility()`, `validateConnection()` |
-| **Batch Validation** | `validateAllConnections()` |
-| **Required Ports** | `checkRequiredPorts()` |
+| `checkPortCompatibility()` | Check if two ports can be connected |
+| `checkDirectionCompatibility()` | Validate port direction flow |
+| `checkTypeCompatibility()` | Validate type compatibility |
 
-### CompatibilityService API
+### Types (from `src/domain/compatibility/schema.ts`)
 
-```typescript:include
-source: src/services/compatibility/schema.ts
-exports: [ICompatibilityService]
-```
+```typescript
+// Compatibility check result
+interface CompatibilityResult {
+  compatible: boolean;
+  score: number;        // 0-100, higher = better match
+  reason?: string;      // Explanation if incompatible
+}
 
-### Compatibility Result
-
-```typescript:include
-source: src/services/compatibility/schema.ts
-exports: [CompatibilityResult, PortRef]
-```
-
-### Validation Options
-
-```typescript:include
-source: src/services/compatibility/schema.ts
-exports: [ValidationOptions, TypeCompatibilityMode, DEFAULT_VALIDATION_OPTIONS]
-```
-
-### Error Codes
-
-```typescript:include
-source: src/services/compatibility/schema.ts
-exports: [ValidationErrorCode]
+// Type matching strictness
+type TypeCompatibilityMode = 'strict' | 'compatible' | 'structural';
 ```
 
 ### Compatibility Rules
@@ -134,9 +119,7 @@ When finding compatible ports, scores indicate match quality:
 | Nullability widening (T -> T|null) | 95 |
 | Both widening | 85 |
 
-### Algorithms
-
-#### Check Port Compatibility
+### Algorithm: Check Port Compatibility
 
 ```
 function checkPortCompatibility(fromPort, toPort, typeMode):
@@ -155,53 +138,9 @@ function checkPortCompatibility(fromPort, toPort, typeMode):
     return compatible(score)
 ```
 
-#### Check Type Compatibility
-
-```
-function checkTypeCompatibility(fromType, toType, mode):
-    if mode == 'strict':
-        return checkStrictTypeMatch(fromType, toType)
-
-    // Compatible mode
-    if fromType.symbolId != toType.symbolId:
-        // Check builtin widening rules
-        if not isBuiltinCompatible(fromType.symbolId, toType.symbolId):
-            return incompatible("Type mismatch")
-
-    // Nullable check: non-null -> nullable OK, nullable -> non-null NOT OK
-    if fromType.nullable and not toType.nullable:
-        return incompatible("Nullable cannot flow to non-nullable")
-
-    // Check generics recursively
-    if not checkGenericsCompatibility(fromType.generics, toType.generics, mode):
-        return incompatible("Generic parameter mismatch")
-
-    return compatible(calculateScore(fromType, toType))
-```
-
-#### Validate All Connections
-
-```
-function validateAllConnections():
-    result = createValidationResult()
-
-    // Validate each connection (using injected ConnectionManager)
-    for each connection in connectionMgr.findAllConnections():
-        connResult = validateConnection(connection)
-        result.errors.push(...connResult.errors)
-        result.warnings.push(...connResult.warnings)
-
-    // Check required ports for all symbols (using injected Repository)
-    if options.checkRequired:
-        for each symbol in repo.list():
-            requiredErrors = checkRequiredPorts(symbol.id, symbol.ports)
-            result.errors.push(...requiredErrors)
-
-    result.valid = result.errors.length == 0
-    return result
-```
-
 ### Notes
 
-- **Source Files**: `src/services/compatibility/index.ts`, `src/services/compatibility/compatibility.ts`, `src/services/compatibility/schema.ts`
+- **Source Files**: `src/domain/compatibility/checkers.ts`, `src/domain/compatibility/schema.ts`
+- **Layer**: Domain (pure functions, no dependencies)
+- **Consumers**: WiringService imports `checkPortCompatibility()` for connection validation
 - **Design Patterns**: See [ADR-003: Interface Definition System](../adr/003-interface-definition-system.md) for interface concepts.

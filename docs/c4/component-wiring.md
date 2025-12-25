@@ -8,23 +8,29 @@ Internal structure of the Wiring container, showing its components and their rel
 
 ```mermaid
 flowchart TD
-    subgraph wiring ["Wiring"]
+    subgraph wiring ["Wiring Service"]
         service["WiringService<br/><small>TypeScript</small>"]
         schema["Schema<br/><small>TypeScript</small>"]
     end
 
+    subgraph domain ["Domain Layer"]
+        compat["Compatibility Rules<br/><small>Pure Functions</small>"]
+    end
+
     service -->|"analyze cycles"| graph["Dependency Graph"]
-    service -->|"validate"| compat["Compatibility"]
-    service -->|"query"| st["Symbol Table"]
+    service -->|"imports"| compat
+    service -->|"query"| repo["Symbol Repository"]
     service -->|"use types"| schema
 
     api["API Facade"] -->|"call"| service
 
     classDef component fill:#0d47a1,color:#fff
+    classDef domainStyle fill:#2e7d32,color:#fff
     classDef external fill:#37474f,color:#fff
 
     class service,schema component
-    class graph,compat,st,api external
+    class compat domainStyle
+    class graph,repo,api external
 ```
 
 ## Components
