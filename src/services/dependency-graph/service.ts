@@ -6,8 +6,7 @@
  */
 
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
-import type { ConnectionManager } from '../symbol-table/connection-manager.js';
-import type { ComponentSymbol, Connection } from '../../domain/symbol/index.js';
+import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import type { DependencyGraph, DependencyGraphDTO, GraphStats, IDependencyGraphService } from './schema.js';
 import { graphToDTO } from './schema.js';
 import {
@@ -39,13 +38,7 @@ import {
  * - Graph analysis (roots, leaves, components, stats)
  */
 export class DependencyGraphService implements IDependencyGraphService {
-  private repo: ISymbolRepository;
-  private connectionMgr: ConnectionManager;
-
-  constructor(repo: ISymbolRepository, connectionMgr: ConnectionManager) {
-    this.repo = repo;
-    this.connectionMgr = connectionMgr;
-  }
+  constructor(private repo: ISymbolRepository) {}
 
   // ==========================================================================
   // Graph Building
@@ -56,7 +49,7 @@ export class DependencyGraphService implements IDependencyGraphService {
    */
   buildGraph(): DependencyGraph {
     const symbols = this.repo.list();
-    const connections = this.connectionMgr.findAllConnections();
+    const connections = this.repo.findAllConnections();
     return buildDependencyGraph(symbols, connections);
   }
 
@@ -77,7 +70,7 @@ export class DependencyGraphService implements IDependencyGraphService {
       .map((id) => this.repo.find(id))
       .filter((s): s is ComponentSymbol => s !== undefined);
 
-    const connections = this.connectionMgr.findAllConnections().filter(
+    const connections = this.repo.findAllConnections().filter(
       (c) => connectedIds.has(c.fromSymbolId) && connectedIds.has(c.toSymbolId)
     );
 

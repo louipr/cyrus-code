@@ -33,7 +33,7 @@ describe('WiringService', () => {
     repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
     connectionMgr = new ConnectionManager(repo);
-    const graphService = new DependencyGraphService(repo, connectionMgr);
+    const graphService = new DependencyGraphService(repo);
     wiring = new WiringService(repo, connectionMgr, graphService);
   });
 

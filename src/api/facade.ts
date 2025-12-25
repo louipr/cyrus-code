@@ -100,7 +100,7 @@ export class ApiFacade implements IApiFacade {
     this.versionResolver = new VersionResolver(this.repo);
 
     // Create domain services with dependency injection
-    this.graphService = new DependencyGraphService(this.repo, this.connectionMgr);
+    this.graphService = new DependencyGraphService(this.repo);
     this.wiringService = new WiringService(
       this.repo,
       this.connectionMgr,
