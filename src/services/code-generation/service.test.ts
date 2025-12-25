@@ -12,7 +12,7 @@ import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from '../symbol-table/index.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { CodeGenerationService, createCodeGenerationService } from './index.js';
-import { isGeneratable, symbolToGeneratedComponent } from './transformer.js';
+import { symbolToGeneratedComponent } from './transformer.js';
 import { getGeneratedPaths, fileExists } from '../../infrastructure/file-system/index.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
@@ -35,31 +35,10 @@ function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSy
 }
 
 // =============================================================================
-// Domain Function Tests
-// =============================================================================
-// NOTE: typeRefToTypeScript and toGeneratedComponent tests moved to
-// typescript/adapter.test.ts for better separation of concerns.
-
-describe('isGeneratable', () => {
-  it('should return true for L1 symbols', () => {
-    const symbol = createTestSymbol({ level: 'L1' });
-    assert.strictEqual(isGeneratable(symbol), true);
-  });
-
-  it('should return false for L0 symbols', () => {
-    const symbol = createTypeSymbol('core/string@1.0.0');
-    assert.strictEqual(isGeneratable(symbol), false);
-  });
-
-  it('should return false for L2 symbols', () => {
-    const symbol = createTestSymbol({ level: 'L2', kind: 'module' });
-    assert.strictEqual(isGeneratable(symbol), false);
-  });
-});
-
-// =============================================================================
 // Generation Gap Tests
 // =============================================================================
+// NOTE: isGeneratable, typeRefToTypeScript, and symbolToGeneratedComponent
+// tests are in transformer.test.ts for better separation of concerns.
 
 describe('Generation Gap', () => {
   describe('getGeneratedPaths', () => {
