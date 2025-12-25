@@ -10,7 +10,7 @@ export {
   checkPortCompatibility,
   checkDirectionCompatibility,
   checkTypeCompatibility,
-} from './compatibility.js';
+} from './checkers.js';
 
 // Types
 export type { CompatibilityResult, TypeCompatibilityMode } from './schema.js';
