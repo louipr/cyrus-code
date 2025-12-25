@@ -11,14 +11,13 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { MermaidDiagram } from './MermaidDiagram';
-// Import from types.ts to avoid bundling Node.js dependencies (ts-morph, fs)
 import type {
   HelpTopic,
   HelpCategory,
   HelpGroup,
   DocumentHeading,
-} from '../../services/help-content/types';
-import { slugify } from '../../services/help-content/types';
+} from '../../domain/help/index';
+import { slugify } from '../../infrastructure/markdown/index';
 
 /**
  * Heading node with children for hierarchical sidebar display.
