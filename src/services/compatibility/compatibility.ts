@@ -9,7 +9,7 @@ import type {
   PortDefinition,
   PortDirection,
   TypeReference,
-} from '../symbol-table/index.js';
+} from '../../domain/symbol/index.js';
 import {
   type CompatibilityResult,
   type TypeCompatibilityMode,
@@ -93,25 +93,17 @@ export function checkDirectionCompatibility(
  * Modes:
  * - strict: Exact match required (symbolId + generics + nullable)
  * - compatible: Allow widening (non-null to nullable, subtypes)
- * - structural: Duck typing (same shape = compatible)
  */
 export function checkTypeCompatibility(
   fromType: TypeReference,
   toType: TypeReference,
   mode: TypeCompatibilityMode = 'compatible'
 ): CompatibilityResult {
-  // Strict mode: exact match
   if (mode === 'strict') {
     return checkStrictTypeMatch(fromType, toType);
   }
 
-  // Compatible mode: allow widening
-  if (mode === 'compatible') {
-    return checkCompatibleTypes(fromType, toType);
-  }
-
-  // Structural mode: just check shape
-  // For now, treat as compatible mode (would need type introspection for true structural)
+  // Default: compatible mode - allow widening
   return checkCompatibleTypes(fromType, toType);
 }
 

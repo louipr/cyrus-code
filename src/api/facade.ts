@@ -9,11 +9,19 @@
  */
 
 import { type DatabaseType, initDatabase, initMemoryDatabase, closeDatabase } from '../repositories/persistence.js';
+import { SymbolRepository, type ISymbolRepository } from '../repositories/symbol-repository.js';
 import {
-  ComponentRegistryService,
+  SymbolTableService,
+  SymbolQueryService,
+  ConnectionManager,
+  VersionResolver,
+  validateSymbolTable,
+  validateSymbolById,
+  checkCircularContainment,
   type ComponentQuery,
   type ResolveOptions,
-} from '../services/component-registry/index.js';
+} from '../services/symbol-table/index.js';
+import { DependencyGraphService } from '../services/dependency-graph/index.js';
 import { WiringService, type ConnectionRequest } from '../services/wiring/index.js';
 import {
   CodeGenerationService,
@@ -60,21 +68,45 @@ import type {
   Connection,
   ValidationResult,
   PortDefinition,
-} from '../services/symbol-table/index.js';
+} from '../domain/symbol/index.js';
 
 // ============================================================================
 // Facade Class
 // ============================================================================
 
 export class ApiFacade implements IApiFacade {
-  private registry: ComponentRegistryService;
+  // Core repository
+  private repo: ISymbolRepository;
+
+  // Symbol table services
+  private symbolTable: SymbolTableService;
+  private queryService: SymbolQueryService;
+  private connectionMgr: ConnectionManager;
+  private versionResolver: VersionResolver;
+
+  // Domain services
   private wiringService: WiringService;
+  private graphService: DependencyGraphService;
   private codeGenerationService: CodeGenerationService;
 
   constructor(db: DatabaseType) {
-    this.registry = new ComponentRegistryService(db);
-    this.wiringService = new WiringService(this.registry.getStore());
-    this.codeGenerationService = new CodeGenerationService(this.registry.getStore());
+    // Create repository (foundation)
+    this.repo = new SymbolRepository(db);
+
+    // Create symbol table services
+    this.symbolTable = new SymbolTableService(db);
+    this.queryService = new SymbolQueryService(this.repo);
+    this.connectionMgr = new ConnectionManager(this.repo, (id) => this.repo.find(id));
+    this.versionResolver = new VersionResolver(this.repo);
+
+    // Create domain services with dependency injection
+    this.graphService = new DependencyGraphService(this.repo, this.connectionMgr);
+    this.wiringService = new WiringService(
+      this.repo,
+      this.connectionMgr,
+      this.graphService
+    );
+    this.codeGenerationService = new CodeGenerationService(this.repo);
   }
 
   // ==========================================================================
@@ -114,7 +146,7 @@ export class ApiFacade implements IApiFacade {
   registerSymbol(request: RegisterSymbolRequest): ApiResponse<ComponentSymbolDTO> {
     try {
       const symbol = this.dtoToSymbol(request.symbol as ComponentSymbolDTO);
-      const registered = this.registry.register(symbol);
+      const registered = this.symbolTable.registerWithAutoId(symbol);
       return {
         success: true,
         data: this.symbolToDto(registered),
@@ -134,7 +166,7 @@ export class ApiFacade implements IApiFacade {
    * Get a symbol by ID.
    */
   getSymbol(id: string): ApiResponse<ComponentSymbolDTO> {
-    const symbol = this.registry.getStore().get(id);
+    const symbol = this.symbolTable.get(id);
     if (!symbol) {
       return {
         success: false,
@@ -156,8 +188,8 @@ export class ApiFacade implements IApiFacade {
   updateSymbol(request: UpdateSymbolRequest): ApiResponse<ComponentSymbolDTO> {
     try {
       const updates = this.dtoToSymbolPartial(request.updates);
-      this.registry.getStore().update(request.id, updates);
-      const updated = this.registry.getStore().get(request.id)!;
+      this.symbolTable.update(request.id, updates);
+      const updated = this.symbolTable.get(request.id)!;
       return {
         success: true,
         data: this.symbolToDto(updated),
@@ -178,7 +210,7 @@ export class ApiFacade implements IApiFacade {
    */
   removeSymbol(id: string): ApiResponse<void> {
     try {
-      this.registry.getStore().remove(id);
+      this.symbolTable.remove(id);
       return { success: true };
     } catch (error) {
       return {
@@ -210,7 +242,7 @@ export class ApiFacade implements IApiFacade {
       if (query?.tag) componentQuery.tag = query.tag;
       if (query?.search) componentQuery.search = query.search;
 
-      let results = this.registry.query(componentQuery);
+      let results = this.symbolTable.query(componentQuery);
 
       // Apply pagination
       const total = results.length;
@@ -244,7 +276,7 @@ export class ApiFacade implements IApiFacade {
    */
   searchSymbols(query: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const results = this.registry.getStore().getQueryService().search(query);
+      const results = this.queryService.search(query);
       return {
         success: true,
         data: results.map((s) => this.symbolToDto(s)),
@@ -269,7 +301,7 @@ export class ApiFacade implements IApiFacade {
     constraint?: string
   ): ApiResponse<ComponentSymbolDTO> {
     const options: ResolveOptions = constraint ? { constraint } : {};
-    const symbol = this.registry.resolve(namespace, name, options);
+    const symbol = this.symbolTable.resolve(namespace, name, options);
 
     if (!symbol) {
       return {
@@ -294,7 +326,7 @@ export class ApiFacade implements IApiFacade {
     namespace: string,
     name: string
   ): ApiResponse<ComponentSymbolDTO[]> {
-    const versions = this.registry.getStore().getVersionResolver().getVersions(namespace, name);
+    const versions = this.versionResolver.getVersions(namespace, name);
     return {
       success: true,
       data: versions.map((s: ComponentSymbol) => this.symbolToDto(s)),
@@ -306,11 +338,11 @@ export class ApiFacade implements IApiFacade {
   // ==========================================================================
 
   /**
-   * Get symbols contained by a parent.
+   * Find symbols contained by a parent.
    */
-  getContains(id: string): ApiResponse<ComponentSymbolDTO[]> {
+  findContains(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const children = this.registry.getStore().getQueryService().getContains(id);
+      const children = this.queryService.findContains(id);
       return {
         success: true,
         data: children.map((s) => this.symbolToDto(s)),
@@ -327,11 +359,11 @@ export class ApiFacade implements IApiFacade {
   }
 
   /**
-   * Get the parent symbol.
+   * Find the parent symbol.
    */
-  getContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null> {
+  findContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null> {
     try {
-      const parent = this.registry.getStore().getQueryService().getContainedBy(id);
+      const parent = this.queryService.findContainedBy(id);
       return {
         success: true,
         data: parent ? this.symbolToDto(parent) : null,
@@ -352,7 +384,7 @@ export class ApiFacade implements IApiFacade {
    */
   getDependents(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const dependents = this.registry.getStore().getQueryService().getDependents(id);
+      const dependents = this.queryService.getDependents(id);
       return {
         success: true,
         data: dependents.map((s) => this.symbolToDto(s)),
@@ -373,7 +405,7 @@ export class ApiFacade implements IApiFacade {
    */
   getDependencies(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const dependencies = this.registry.getStore().getQueryService().getDependencies(id);
+      const dependencies = this.queryService.getDependencies(id);
       return {
         success: true,
         data: dependencies.map((s) => this.symbolToDto(s)),
@@ -408,7 +440,7 @@ export class ApiFacade implements IApiFacade {
         createdAt: new Date(),
       };
 
-      this.registry.getStore().getConnectionManager().connect(connection);
+      this.connectionMgr.connect(connection);
       return {
         success: true,
         data: this.connectionToDto(connection),
@@ -429,7 +461,7 @@ export class ApiFacade implements IApiFacade {
    */
   removeConnection(connectionId: string): ApiResponse<void> {
     try {
-      this.registry.getStore().getConnectionManager().disconnect(connectionId);
+      this.connectionMgr.disconnect(connectionId);
       return { success: true };
     } catch (error) {
       return {
@@ -447,7 +479,7 @@ export class ApiFacade implements IApiFacade {
    */
   getConnections(symbolId: string): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.registry.getStore().getConnectionManager().getConnections(symbolId);
+      const connections = this.connectionMgr.findConnections(symbolId);
       return {
         success: true,
         data: connections.map((c: Connection) => this.connectionToDto(c)),
@@ -468,7 +500,7 @@ export class ApiFacade implements IApiFacade {
    */
   getAllConnections(): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.registry.getStore().getConnectionManager().getAllConnections();
+      const connections = this.connectionMgr.findAllConnections();
       return {
         success: true,
         data: connections.map((c: Connection) => this.connectionToDto(c)),
@@ -493,7 +525,7 @@ export class ApiFacade implements IApiFacade {
    */
   validate(): ApiResponse<ValidationResultDTO> {
     try {
-      const result = this.registry.getStore().getValidator().validate();
+      const result = validateSymbolTable(this.repo);
       return {
         success: true,
         data: this.validationResultToDto(result),
@@ -514,7 +546,7 @@ export class ApiFacade implements IApiFacade {
    */
   validateSymbol(id: string): ApiResponse<ValidationResultDTO> {
     try {
-      const result = this.registry.getStore().getValidator().validateSymbol(id);
+      const result = validateSymbolById(id, this.repo);
       return {
         success: true,
         data: this.validationResultToDto(result),
@@ -535,7 +567,7 @@ export class ApiFacade implements IApiFacade {
    */
   checkCircular(): ApiResponse<string[][]> {
     try {
-      const cycles = this.registry.getStore().getValidator().checkCircular();
+      const cycles = checkCircularContainment(this.repo);
       return {
         success: true,
         data: cycles,
@@ -661,7 +693,7 @@ export class ApiFacade implements IApiFacade {
       // We need to fetch the full symbol for kind
       const nodes: GraphNodeDTO[] = [];
       for (const node of graph.nodes.values()) {
-        const symbol = this.registry.getStore().get(node.symbolId);
+        const symbol = this.symbolTable.get(node.symbolId);
         nodes.push({
           id: node.symbolId,
           name: node.name,
@@ -841,7 +873,7 @@ export class ApiFacade implements IApiFacade {
    */
   updateStatus(request: UpdateStatusRequest): ApiResponse<void> {
     try {
-      const symbol = this.registry.getStore().get(request.id);
+      const symbol = this.symbolTable.get(request.id);
       if (!symbol) {
         return {
           success: false,
@@ -884,7 +916,7 @@ export class ApiFacade implements IApiFacade {
         };
       }
 
-      this.registry.getStore().update(request.id, {
+      this.symbolTable.update(request.id, {
         status: request.status,
         statusInfo,
       });
@@ -906,7 +938,7 @@ export class ApiFacade implements IApiFacade {
    */
   findUnreachable(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.registry.getStore().getQueryService().findUnreachable();
+      const symbols = this.queryService.findUnreachable();
       return {
         success: true,
         data: symbols.map((s) => this.symbolToDto(s)),
@@ -927,7 +959,7 @@ export class ApiFacade implements IApiFacade {
    */
   findUntested(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.registry.getStore().getQueryService().findUntested();
+      const symbols = this.queryService.findUntested();
       return {
         success: true,
         data: symbols.map((s) => this.symbolToDto(s)),
@@ -953,7 +985,7 @@ export class ApiFacade implements IApiFacade {
   importSymbols(symbols: ComponentSymbolDTO[]): ApiResponse<number> {
     try {
       const domainSymbols = symbols.map((s) => this.dtoToSymbol(s));
-      this.registry.getStore().import(domainSymbols);
+      this.symbolTable.import(domainSymbols);
       return {
         success: true,
         data: symbols.length,
@@ -974,7 +1006,7 @@ export class ApiFacade implements IApiFacade {
    */
   exportSymbols(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.registry.getStore().export();
+      const symbols = this.symbolTable.export();
       return {
         success: true,
         data: symbols.map((s) => this.symbolToDto(s)),

@@ -8,10 +8,13 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { initMemoryDatabase, type DatabaseType } from '../../repositories/persistence.js';
-import { SymbolTableService, type ComponentSymbol } from '../symbol-table/index.js';
+import { SymbolRepository } from '../../repositories/symbol-repository.js';
+import { SymbolTableService } from '../symbol-table/index.js';
+import type { ComponentSymbol } from '../../domain/symbol/index.js';
+import { transformSymbol, isGeneratable } from '../../domain/symbol/index.js';
 import { CodeGenerationService, createCodeGenerationService } from './index.js';
-import { symbolToComponent, typeRefToTypeScript, isGeneratable } from './symbol-transformer.js';
-import { getGeneratedPaths, fileExists } from './file-writer.js';
+import { toGeneratedComponent } from './typescript/index.js';
+import { getGeneratedPaths, fileExists } from '../../infrastructure/file-system/index.js';
 import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
 
 // =============================================================================
@@ -33,90 +36,25 @@ function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSy
 }
 
 // =============================================================================
-// TypeScript Backend Tests
+// Domain Function Tests
 // =============================================================================
+// NOTE: typeRefToTypeScript and toGeneratedComponent tests moved to
+// typescript/adapter.test.ts for better separation of concerns.
 
-describe('TypeScript Backend', () => {
-  describe('typeRefToTypeScript', () => {
-    it('should map string type', () => {
-      assert.strictEqual(
-        typeRefToTypeScript({ symbolId: 'core/string@1.0.0' }),
-        'string'
-      );
-    });
-
-    it('should map number type', () => {
-      assert.strictEqual(
-        typeRefToTypeScript({ symbolId: 'core/number@1.0.0' }),
-        'number'
-      );
-    });
-
-    it('should map boolean type', () => {
-      assert.strictEqual(
-        typeRefToTypeScript({ symbolId: 'core/boolean@1.0.0' }),
-        'boolean'
-      );
-    });
-
-    it('should handle nullable types', () => {
-      assert.strictEqual(
-        typeRefToTypeScript({ symbolId: 'core/string@1.0.0', nullable: true }),
-        'string | null'
-      );
-    });
-
-    it('should handle generic types', () => {
-      const type = typeRefToTypeScript({
-        symbolId: 'core/array@1.0.0',
-        generics: [{ symbolId: 'core/string@1.0.0' }],
-      });
-      assert.strictEqual(type, 'Array<string>');
-    });
-
-    it('should handle unknown types', () => {
-      const type = typeRefToTypeScript({ symbolId: 'custom/MyType@1.0.0' });
-      assert.strictEqual(type, 'MyType');
-    });
+describe('isGeneratable', () => {
+  it('should return true for L1 symbols', () => {
+    const symbol = createTestSymbol({ level: 'L1' });
+    assert.strictEqual(isGeneratable(symbol), true);
   });
 
-  describe('symbolToComponent', () => {
-    it('should convert symbol to component', () => {
-      const symbol = createTestSymbol();
-      const component = symbolToComponent(symbol);
-
-      assert.strictEqual(component.className, 'MyComponent');
-      assert.strictEqual(component.baseClassName, 'MyComponent_Base');
-      assert.strictEqual(component.namespace, 'test');
-      assert.strictEqual(component.symbolId, 'test/MyComponent@1.0.0');
-      assert.strictEqual(component.inputPorts.length, 1);
-      assert.strictEqual(component.outputPorts.length, 1);
-    });
-
-    it('should map port types correctly', () => {
-      const symbol = createTestSymbol();
-      const component = symbolToComponent(symbol);
-
-      assert.strictEqual(component.inputPorts[0]?.typeString, 'string');
-      assert.strictEqual(component.outputPorts[0]?.typeString, 'number');
-    });
+  it('should return false for L0 symbols', () => {
+    const symbol = createTypeSymbol('core/string@1.0.0');
+    assert.strictEqual(isGeneratable(symbol), false);
   });
 
-  describe('isGeneratable', () => {
-    it('should return true for L1 symbols', () => {
-      const symbol = createTestSymbol({ level: 'L1' });
-      assert.strictEqual(isGeneratable(symbol), true);
-    });
-
-    it('should return false for L0 symbols', () => {
-      const symbol = createTypeSymbol('core/string@1.0.0');
-      assert.strictEqual(isGeneratable(symbol), false);
-    });
-
-    it('should return false for L2 symbols', () => {
-      const symbol = createTestSymbol({ level: 'L2', kind: 'module' });
-      assert.strictEqual(isGeneratable(symbol), false);
-    });
+  it('should return false for L2 symbols', () => {
+    const symbol = createTestSymbol({ level: 'L2', kind: 'module' });
+    assert.strictEqual(isGeneratable(symbol), false);
   });
 });
 
@@ -128,8 +66,8 @@ describe('Generation Gap', () => {
   describe('getGeneratedPaths', () => {
     it('should generate correct paths', () => {
       const symbol = createTestSymbol();
-      const component = symbolToComponent(symbol);
-      const paths = getGeneratedPaths(component, '/output');
+      const component = toGeneratedComponent(transformSymbol(symbol));
+      const paths = getGeneratedPaths(component.className, component.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/test/MyComponent.generated.ts');
       assert.strictEqual(paths.implementationPath, '/output/test/MyComponent.ts');
@@ -138,8 +76,8 @@ describe('Generation Gap', () => {
 
     it('should handle empty namespace', () => {
       const symbol = createTestSymbol({ namespace: '' });
-      const component = symbolToComponent(symbol);
-      const paths = getGeneratedPaths(component, '/output');
+      const component = toGeneratedComponent(transformSymbol(symbol));
+      const paths = getGeneratedPaths(component.className, component.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/MyComponent.generated.ts');
       assert.strictEqual(paths.implementationPath, '/output/MyComponent.ts');
@@ -169,8 +107,9 @@ describe('CodeGenerationService', () => {
 
   beforeEach(() => {
     db = initMemoryDatabase();
+    const repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
-    service = createCodeGenerationService(store);
+    service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-test-'));
 
     // Register core types
@@ -394,8 +333,9 @@ describe('Generated Code Content', () => {
 
   beforeEach(() => {
     db = initMemoryDatabase();
+    const repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
-    service = createCodeGenerationService(store);
+    service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-content-test-'));
 
     // Register core types

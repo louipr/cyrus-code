@@ -6,11 +6,11 @@
  */
 
 import type { ComponentSymbol, Connection } from './schema.js';
-import type { SymbolRepository } from '../../repositories/symbol-repository.js';
+import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 export class ConnectionManager {
   constructor(
-    private repo: SymbolRepository,
+    private repo: ISymbolRepository,
     private getSymbol: (id: string) => ComponentSymbol | undefined
   ) {}
 
@@ -70,16 +70,16 @@ export class ConnectionManager {
   }
 
   /**
-   * Get all connections for a symbol.
+   * Find all connections for a symbol.
    */
-  getConnections(symbolId: string): Connection[] {
-    return this.repo.getConnectionsBySymbol(symbolId);
+  findConnections(symbolId: string): Connection[] {
+    return this.repo.findConnectionsBySymbol(symbolId);
   }
 
   /**
-   * Get all connections.
+   * Find all connections.
    */
-  getAllConnections(): Connection[] {
-    return this.repo.getAllConnections();
+  findAllConnections(): Connection[] {
+    return this.repo.findAllConnections();
   }
 }

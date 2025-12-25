@@ -6,12 +6,14 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { Connection, ValidationResult, SymbolTableService } from '../symbol-table/index.js';
-import { createValidationResult } from '../symbol-table/index.js';
-import { CompatibilityService } from '../compatibility/index.js';
+import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
+import type { ConnectionManager } from '../symbol-table/connection-manager.js';
+import type { Connection, ValidationResult } from '../../domain/symbol/index.js';
+import { createValidationResult } from '../../domain/symbol/index.js';
+import { checkPortCompatibility } from '../compatibility/compatibility.js';
 import type { ValidationOptions } from '../compatibility/schema.js';
 import { DEFAULT_VALIDATION_OPTIONS, ValidationErrorCode } from '../compatibility/schema.js';
-import { DependencyGraphService } from '../dependency-graph/index.js';
+import type { DependencyGraphService } from '../dependency-graph/index.js';
 import {
   type IWiringService,
   type ConnectionRequest,
@@ -22,18 +24,20 @@ import {
 } from './schema.js';
 
 export class WiringService implements IWiringService {
-  private store: SymbolTableService;
-  private compatibility: CompatibilityService;
+  private repo: ISymbolRepository;
+  private connectionMgr: ConnectionManager;
   private graphService: DependencyGraphService;
   private options: ValidationOptions;
 
   constructor(
-    store: SymbolTableService,
+    repo: ISymbolRepository,
+    connectionMgr: ConnectionManager,
+    graphService: DependencyGraphService,
     options: Partial<ValidationOptions> = {}
   ) {
-    this.store = store;
-    this.compatibility = new CompatibilityService(store, options);
-    this.graphService = new DependencyGraphService(store);
+    this.repo = repo;
+    this.connectionMgr = connectionMgr;
+    this.graphService = graphService;
     this.options = { ...DEFAULT_VALIDATION_OPTIONS, ...options };
   }
 
@@ -64,7 +68,7 @@ export class WiringService implements IWiringService {
     }
 
     // Get source symbol
-    const fromSymbol = this.store.get(fromSymbolId);
+    const fromSymbol = this.repo.find(fromSymbolId);
     if (!fromSymbol) {
       return wiringError(
         `Source symbol '${fromSymbolId}' not found`,
@@ -73,7 +77,7 @@ export class WiringService implements IWiringService {
     }
 
     // Get target symbol
-    const toSymbol = this.store.get(toSymbolId);
+    const toSymbol = this.repo.find(toSymbolId);
     if (!toSymbol) {
       return wiringError(
         `Target symbol '${toSymbolId}' not found`,
@@ -100,7 +104,7 @@ export class WiringService implements IWiringService {
     }
 
     // Check for duplicate connection (before compatibility to get correct error)
-    const existingConnections = this.store.getConnectionManager().getConnections(fromSymbolId);
+    const existingConnections = this.connectionMgr.findConnections(fromSymbolId);
     const duplicate = existingConnections.find(
       (c) =>
         c.fromPort === fromPort &&
@@ -114,11 +118,8 @@ export class WiringService implements IWiringService {
       );
     }
 
-    // Check port compatibility using validator
-    const compatibility = this.compatibility.checkPortCompatibility(
-      { symbolId: fromSymbolId, portName: fromPort },
-      { symbolId: toSymbolId, portName: toPort }
-    );
+    // Check port compatibility using pure function (already have ports from lookup above)
+    const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
 
     if (!compatibility.compatible) {
       return wiringError(
@@ -159,7 +160,7 @@ export class WiringService implements IWiringService {
     };
 
     try {
-      this.store.getConnectionManager().connect(connection);
+      this.connectionMgr.connect(connection);
       return wiringSuccess(connectionId);
     } catch (error) {
       return wiringError(
@@ -173,7 +174,7 @@ export class WiringService implements IWiringService {
    */
   disconnect(connectionId: string): WiringResult {
     try {
-      this.store.getConnectionManager().disconnect(connectionId);
+      this.connectionMgr.disconnect(connectionId);
       return wiringSuccess(connectionId);
     } catch (error) {
       return wiringError(
@@ -184,24 +185,17 @@ export class WiringService implements IWiringService {
   }
 
   /**
-   * Get all connections for a symbol.
+   * Find all connections.
    */
-  getConnections(symbolId: string): Connection[] {
-    return this.store.getConnectionManager().getConnections(symbolId);
-  }
-
-  /**
-   * Get all connections.
-   */
-  getAllConnections(): Connection[] {
-    return this.store.getConnectionManager().getAllConnections();
+  findAllConnections(): Connection[] {
+    return this.connectionMgr.findAllConnections();
   }
 
   /**
    * Get incoming connections to a specific port.
    */
   getIncomingConnections(symbolId: string, portName: string): Connection[] {
-    const allConnections = this.store.getConnectionManager().getAllConnections();
+    const allConnections = this.connectionMgr.findAllConnections();
     return allConnections.filter(
       (c) => c.toSymbolId === symbolId && c.toPort === portName
     );
@@ -230,11 +224,57 @@ export class WiringService implements IWiringService {
       return result;
     }
 
-    // Check port compatibility
-    const compatibility = this.compatibility.checkPortCompatibility(
-      { symbolId: fromSymbolId, portName: fromPort },
-      { symbolId: toSymbolId, portName: toPort }
-    );
+    // Look up symbols and ports
+    const fromSymbol = this.repo.find(fromSymbolId);
+    if (!fromSymbol) {
+      result.errors.push({
+        code: ValidationErrorCode.SYMBOL_NOT_FOUND,
+        message: `Source symbol '${fromSymbolId}' not found`,
+        symbolIds: [fromSymbolId],
+        severity: 'error',
+      });
+      result.valid = false;
+      return result;
+    }
+
+    const toSymbol = this.repo.find(toSymbolId);
+    if (!toSymbol) {
+      result.errors.push({
+        code: ValidationErrorCode.SYMBOL_NOT_FOUND,
+        message: `Target symbol '${toSymbolId}' not found`,
+        symbolIds: [toSymbolId],
+        severity: 'error',
+      });
+      result.valid = false;
+      return result;
+    }
+
+    const sourcePort = fromSymbol.ports.find(p => p.name === fromPort);
+    if (!sourcePort) {
+      result.errors.push({
+        code: ValidationErrorCode.PORT_NOT_FOUND,
+        message: `Port '${fromPort}' not found on symbol '${fromSymbolId}'`,
+        symbolIds: [fromSymbolId],
+        severity: 'error',
+      });
+      result.valid = false;
+      return result;
+    }
+
+    const targetPort = toSymbol.ports.find(p => p.name === toPort);
+    if (!targetPort) {
+      result.errors.push({
+        code: ValidationErrorCode.PORT_NOT_FOUND,
+        message: `Port '${toPort}' not found on symbol '${toSymbolId}'`,
+        symbolIds: [toSymbolId],
+        severity: 'error',
+      });
+      result.valid = false;
+      return result;
+    }
+
+    // Check port compatibility using pure function
+    const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
 
     if (!compatibility.compatible) {
       result.errors.push({
@@ -267,10 +307,17 @@ export class WiringService implements IWiringService {
    */
   findCompatiblePorts(
     fromSymbolId: string,
-    fromPort: string
+    fromPortName: string
   ): Array<{ symbolId: string; portName: string; score: number }> {
+    // Look up source symbol and port
+    const fromSymbol = this.repo.find(fromSymbolId);
+    if (!fromSymbol) return [];
+
+    const sourcePort = fromSymbol.ports.find(p => p.name === fromPortName);
+    if (!sourcePort) return [];
+
     const results: Array<{ symbolId: string; portName: string; score: number }> = [];
-    const allSymbols = this.store.list();
+    const allSymbols = this.repo.list();
 
     for (const symbol of allSymbols) {
       // Skip self
@@ -279,18 +326,16 @@ export class WiringService implements IWiringService {
       // Check if connection would create cycle
       if (this.graphService.wouldCreateCycle(fromSymbolId, symbol.id)) continue;
 
-      // Find compatible ports on this symbol
-      const compatible = this.compatibility.findCompatiblePorts(
-        { symbolId: fromSymbolId, portName: fromPort },
-        symbol.id
-      );
-
-      for (const match of compatible) {
-        results.push({
-          symbolId: symbol.id,
-          portName: match.port.name,
-          score: match.compatibility.score ?? 0,
-        });
+      // Check compatibility with each port using pure function
+      for (const targetPort of symbol.ports) {
+        const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
+        if (compatibility.compatible) {
+          results.push({
+            symbolId: symbol.id,
+            portName: targetPort.name,
+            score: compatibility.score ?? 0,
+          });
+        }
       }
     }
 
@@ -316,8 +361,8 @@ export class WiringService implements IWiringService {
       portDirection: string;
     }> = [];
 
-    const allSymbols = this.store.list();
-    const allConnections = this.store.getConnectionManager().getAllConnections();
+    const allSymbols = this.repo.list();
+    const allConnections = this.connectionMgr.findAllConnections();
 
     for (const symbol of allSymbols) {
       for (const port of symbol.ports) {
@@ -342,43 +387,4 @@ export class WiringService implements IWiringService {
     return unconnected;
   }
 
-  /**
-   * Check if a specific symbol has all required ports connected.
-   */
-  hasAllRequiredPortsConnected(symbolId: string): boolean {
-    const symbol = this.store.get(symbolId);
-    if (!symbol) return false;
-
-    const incomingConnections = this.store.getConnectionManager().getAllConnections().filter(
-      (c) => c.toSymbolId === symbolId
-    );
-
-    for (const port of symbol.ports) {
-      if (!port.required) continue;
-
-      if (port.direction === 'in' || port.direction === 'inout') {
-        const hasIncoming = incomingConnections.some(
-          (c) => c.toPort === port.name
-        );
-        if (!hasIncoming) return false;
-      }
-    }
-
-    return true;
-  }
-}
-
-/**
- * Factory function for creating WiringService instances.
- * Preferred over direct instantiation for dependency injection support.
- *
- * @param store - SymbolStore instance for symbol and connection management
- * @param options - Optional validation options
- * @returns WiringService instance
- */
-export function createWiringService(
-  store: SymbolTableService,
-  options?: Partial<ValidationOptions>
-): WiringService {
-  return new WiringService(store, options);
 }

@@ -66,7 +66,7 @@ npm run test:e2e -- --grep "help"
 | L1 Context | `docs/c4/1-context.md` | C4 Overview |
 | L2 Container | `docs/c4/2-container.md` | C4 Overview |
 | L3 Component (Symbol Table) | `docs/c4/symbol-table.md` | Symbol Table |
-| L3 Component (Synthesizer) | `docs/c4/3-component-synthesizer.md` | Synthesizer |
+| L3 Component (Code Generation) | `docs/c4/component-code-generation.md` | Code Generation |
 | L3 Component (Help) | `docs/c4/3-component-help.md` | Help Service |
 | L3 Component (Wiring) | `docs/c4/3-component-wiring.md` | Wiring Service |
 | L3 Component (Validator) | `docs/c4/3-component-validator.md` | Validator |

@@ -36,7 +36,7 @@ import type {
   HelpSearchResult,
   C4Hierarchy,
   DocumentHeading,
-} from '../services/help/content/types';
+} from '../services/help-content/types';
 
 /**
  * Type definition for the cyrus API exposed via preload script.
@@ -60,8 +60,8 @@ interface CyrusAPI {
     remove: (id: string) => Promise<ApiResponse<void>>;
   };
   relationships: {
-    getContains: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
-    getContainedBy: (id: string) => Promise<ApiResponse<ComponentSymbolDTO | null>>;
+    findContains: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    findContainedBy: (id: string) => Promise<ApiResponse<ComponentSymbolDTO | null>>;
     getDependents: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     getDependencies: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
@@ -162,8 +162,8 @@ function createMockApi(): CyrusAPI {
       remove: () => mockResponse(undefined),
     },
     relationships: {
-      getContains: () => mockResponse([]),
-      getContainedBy: () => mockResponse(null),
+      findContains: () => mockResponse([]),
+      findContainedBy: () => mockResponse(null),
       getDependents: () => mockResponse([]),
       getDependencies: () => mockResponse([]),
     },

@@ -5,7 +5,7 @@
  * Used by validator, wiring, and symbol-table tests.
  */
 
-import type { ComponentSymbol, PortDefinition } from './symbol-table/index.js';
+import type { ComponentSymbol, PortDefinition } from '../domain/symbol/index.js';
 
 /**
  * Create a valid ComponentSymbol with optional overrides.

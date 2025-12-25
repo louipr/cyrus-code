@@ -12,7 +12,7 @@
  */
 
 import { parseArgs } from 'node:util';
-import { HelpService } from '../../services/help/index.js';
+import { HelpContentService } from '../../services/help-content/index.js';
 
 export async function helpCommand(
   _positionals: string[],
@@ -30,7 +30,7 @@ export async function helpCommand(
     strict: false,
   });
 
-  const helpService = new HelpService();
+  const helpService = new HelpContentService();
 
   // Get topic from positionals (skip "help" command itself)
   const topicId = positionals.length > 1 ? positionals[1] : undefined;

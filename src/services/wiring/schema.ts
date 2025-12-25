@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type {
   Connection,
   ValidationResult,
-} from '../symbol-table/index.js';
+} from '../../domain/symbol/index.js';
 
 // ============================================================================
 // Service Interfaces
@@ -28,8 +28,7 @@ export interface IWiringService {
   // Connection operations
   connect(request: ConnectionRequest): WiringResult;
   disconnect(connectionId: string): WiringResult;
-  getConnections(symbolId: string): Connection[];
-  getAllConnections(): Connection[];
+  findAllConnections(): Connection[];
 
   // Graph service accessor
   getGraphService(): DependencyGraphService;
@@ -40,7 +39,6 @@ export interface IWiringService {
 
   // Required port analysis
   findUnconnectedRequiredPorts(): Array<{ symbolId: string; portName: string; portDirection: string }>;
-  hasAllRequiredPortsConnected(symbolId: string): boolean;
 }
 
 // ============================================================================

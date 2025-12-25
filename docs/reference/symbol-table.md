@@ -8,10 +8,10 @@ Implementation reference for the Symbol Table container. For architecture diagra
 |----------|---------|
 | **CRUD** | `register()`, `get()`, `update()`, `remove()` |
 | **Query** | `findByNamespace()`, `findByLevel()`, `findByKind()`, `search()`, `list()` |
-| **Relations** | `getContains()`, `getContainedBy()`, `getDependents()`, `getDependencies()` |
+| **Relations** | `findContains()`, `findContainedBy()`, `getDependents()`, `getDependencies()` |
 | **Versions** | `getVersions()`, `getLatest()` |
 | **Status** | `findUnreachable()`, `findUntested()` (via QueryService) |
-| **Connections** | `connect()`, `disconnect()`, `getConnections()`, `getAllConnections()` |
+| **Connections** | `connect()`, `disconnect()`, `findConnections()`, `findAllConnections()` |
 | **Validation** | `validate()`, `validateSymbol()`, `checkCircular()` |
 | **Bulk** | `import()`, `export()` |
 
@@ -32,11 +32,11 @@ Implementation reference for the Symbol Table container. For architecture diagra
 
 | Decision | Pattern | Rationale |
 |----------|---------|-----------|
-| Facade with composed services | **Facade + Composition** | `SymbolStore` delegates to focused service classes |
+| Domain-driven design with separate layers | **Clean Architecture** | Domain types in `src/domain/symbol/`, services in `src/services/` |
+| Peer services with dependency injection | **Dependency Inversion (DIP)** | Services inject `ISymbolRepository`, not depend on facades |
 | Single responsibility services | **Single Responsibility (SRP)** | Each service has one reason to change |
 | In-memory cache with SQLite persistence | **Repository** | Fast queries via cache, durability via database |
 | Separate Query Engine | **Query Object** | Isolate complex query logic from CRUD operations |
-| Dependency injection via constructor | **Dependency Inversion (DIP)** | Services receive dependencies, not create them |
 
 > **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) for complete pattern documentation.
 
@@ -46,11 +46,17 @@ Implementation reference for the Symbol Table container. For architecture diagra
 
 | File | Responsibility |
 |------|----------------|
-| `src/services/symbol-table/index.ts` | Public API exports |
-| `src/services/symbol-table/schema.ts` | Zod schemas, type definitions |
-| `src/services/symbol-table/store.ts` | `SymbolStore` facade - CRUD + delegation |
-| `src/services/symbol-table/query-service.ts` | `SymbolQueryService` query operations |
-| `src/services/symbol-table/connection-manager.ts` | `ConnectionManager` port wiring |
-| `src/services/symbol-table/version-resolver.ts` | `VersionResolver` SemVer compatibility |
-| `src/services/symbol-table/symbol-validator.ts` | `SymbolValidator` integrity checks |
-| `src/repositories/symbol-repository.ts` | `SymbolRepository` SQLite persistence |
+| **Domain Layer** | |
+| `src/domain/symbol/schema.ts` | Pure domain types: `ComponentSymbol`, `Connection`, `PortDefinition` (Zod schemas) |
+| `src/domain/symbol/version.ts` | Pure SemVer functions: `parseConstraint()`, `findBestMatch()`, `bumpVersion()` |
+| `src/domain/symbol/index.ts` | Domain exports (no service dependencies) |
+| **Service Layer** | |
+| `src/services/symbol-table/index.ts` | Public API exports (services + re-exported domain types) |
+| `src/services/symbol-table/schema.ts` | Service-layer types: `ComponentQuery`, `ResolveOptions`, `ISymbolTableService` |
+| `src/services/symbol-table/service.ts` | `SymbolTableService` - CRUD operations only |
+| `src/services/symbol-table/query-service.ts` | `SymbolQueryService` - Query operations |
+| `src/services/symbol-table/connection-manager.ts` | `ConnectionManager` - Port wiring |
+| `src/services/symbol-table/version-resolver.ts` | `VersionResolver` - SemVer compatibility |
+| `src/services/symbol-table/symbol-validator.ts` | `SymbolValidator` - Integrity checks |
+| **Repository Layer** | |
+| `src/repositories/symbol-repository.ts` | `SymbolRepository` - SQLite persistence + caching |

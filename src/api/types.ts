@@ -16,7 +16,7 @@ import type {
   SymbolStatus,
   SymbolOrigin,
   PortDirection,
-} from '../services/symbol-table/index.js';
+} from '../domain/symbol/index.js';
 
 // ============================================================================
 // DTO Types (JSON-serializable versions)
@@ -381,8 +381,8 @@ export interface IApiFacade {
   getSymbolVersions(namespace: string, name: string): ApiResponse<ComponentSymbolDTO[]>;
 
   // Relationships
-  getContains(id: string): ApiResponse<ComponentSymbolDTO[]>;
-  getContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null>;
+  findContains(id: string): ApiResponse<ComponentSymbolDTO[]>;
+  findContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null>;
   getDependents(id: string): ApiResponse<ComponentSymbolDTO[]>;
   getDependencies(id: string): ApiResponse<ComponentSymbolDTO[]>;
 

@@ -10,8 +10,9 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
-import { SymbolTableService } from '../symbol-table/index.js';
-import { CompatibilityService } from '../compatibility/index.js';
+import { SymbolRepository } from '../../repositories/symbol-repository.js';
+import { SymbolTableService, ConnectionManager } from '../symbol-table/index.js';
+import { DependencyGraphService } from '../dependency-graph/index.js';
 import { WiringService } from './index.js';
 import { WiringErrorCode } from './schema.js';
 import {
@@ -23,12 +24,17 @@ import {
 
 describe('WiringService', () => {
   let store: SymbolTableService;
+  let repo: SymbolRepository;
+  let connectionMgr: ConnectionManager;
   let wiring: WiringService;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
+    repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
-    wiring = new WiringService(store);
+    connectionMgr = new ConnectionManager(repo, (id) => repo.find(id));
+    const graphService = new DependencyGraphService(repo, connectionMgr);
+    wiring = new WiringService(repo, connectionMgr, graphService);
   });
 
   afterEach(() => {
@@ -246,7 +252,7 @@ describe('WiringService', () => {
       assert.strictEqual(disconnectResult.success, true);
 
       // Verify connection is gone
-      const connections = wiring.getAllConnections();
+      const connections = wiring.findAllConnections();
       assert.strictEqual(connections.length, 0);
     });
   });
@@ -625,28 +631,6 @@ describe('WiringService', () => {
       assert.strictEqual(unconnected.length, 1);
       assert.strictEqual(unconnected[0]?.portName, 'required');
     });
-
-    it('should report all required ports connected when they are', () => {
-      const producer = createService('test/Producer@1.0.0', [
-        createPort({ name: 'out', direction: 'out' }),
-      ]);
-      const consumer = createService('test/Consumer@1.0.0', [
-        createPort({ name: 'required', direction: 'in', required: true }),
-      ]);
-
-      store.register(producer);
-      store.register(consumer);
-
-      wiring.connect({
-        fromSymbolId: 'test/Producer@1.0.0',
-        fromPort: 'out',
-        toSymbolId: 'test/Consumer@1.0.0',
-        toPort: 'required',
-      });
-
-      const hasAll = wiring.hasAllRequiredPortsConnected('test/Consumer@1.0.0');
-      assert.strictEqual(hasAll, true);
-    });
   });
 
   describe('Validation', () => {
@@ -665,17 +649,20 @@ describe('WiringService', () => {
       store.register(producer);
       store.register(consumer);
 
-      wiring.connect({
+      const result = wiring.connect({
         fromSymbolId: 'test/Producer@1.0.0',
         fromPort: 'out',
         toSymbolId: 'test/Consumer@1.0.0',
         toPort: 'in',
       });
 
-      // Validate connections using CompatibilityService directly
-      const compatibility = new CompatibilityService(store);
-      const result = compatibility.validateAllConnections();
-      assert.strictEqual(result.valid, true);
+      // Connection succeeded means it passed validation
+      assert.strictEqual(result.success, true);
+      assert.ok(result.connectionId);
+
+      // Verify connection was actually created
+      const connections = wiring.findAllConnections();
+      assert.strictEqual(connections.length, 1);
     });
 
     it('should validate potential connection before creating', () => {

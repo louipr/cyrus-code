@@ -4,6 +4,8 @@
 
 Accepted
 
+> **Note**: This ADR contains **illustrative code examples** to demonstrate design patterns. Class names and APIs may differ from current implementation. For actual code organization, see project source files.
+
 ## Context
 
 ### Problem
@@ -566,25 +568,26 @@ interface ConnectionMediator {
 
 class WiringService implements ConnectionMediator {
   constructor(
-    private symbolTable: SymbolTable,
+    private repo: ISymbolRepository,
+    private connectionMgr: ConnectionManager,
     private validator: InterfaceValidator,
   ) {}
 
   connect(source: PortReference, target: PortReference): ValidationResult {
-    const sourcePort = this.symbolTable.getPort(source);
-    const targetPort = this.symbolTable.getPort(target);
+    const sourceSymbol = this.repo.find(source.symbolId);
+    const targetSymbol = this.repo.find(target.symbolId);
 
     const compatibility = this.validator.checkCompatibility(sourcePort, targetPort);
     if (!compatibility.compatible) {
       return { valid: false, errors: compatibility.errors };
     }
 
-    this.symbolTable.addConnection({ source, target });
+    this.connectionMgr.connect({ source, target });
     return { valid: true };
   }
 
   notifyChange(symbolId: string): void {
-    const connections = this.symbolTable.getConnectionManager().getConnections(symbolId);
+    const connections = this.connectionMgr.findConnections(symbolId);
     connections.forEach(conn => {
       this.validator.revalidate(conn);
     });

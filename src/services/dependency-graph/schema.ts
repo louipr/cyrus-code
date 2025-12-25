@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { PortDefinition } from '../symbol-table/index.js';
+import type { PortDefinition } from '../../domain/symbol/index.js';
 
 // ============================================================================
 // Graph Nodes

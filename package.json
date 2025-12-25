@@ -17,7 +17,7 @@
     "dev:gui": "vite",
     "electron": "npm run build:all && electron-rebuild -f -w better-sqlite3 && unset ELECTRON_RUN_AS_NODE && electron .",
     "electron:dev": "concurrently \"tsc --watch\" \"vite build --watch\" \"sleep 3 && unset ELECTRON_RUN_AS_NODE && electron .\"",
-    "test": "npm rebuild better-sqlite3 && tsc && node --test $(find dist/src -name '*.test.js')",
+    "test": "npm rebuild better-sqlite3 && tsc && node --test --test-timeout=30000 $(find dist/src -name '*.test.js')",
     "test:gui": "tsc -p tsconfig.gui.json --noEmit",
     "test:e2e": "npm run build:all && electron-rebuild -f -w better-sqlite3 && playwright test",
     "test:e2e:l4": "npm run test:e2e -- --grep '@l4'",

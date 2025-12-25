@@ -39,7 +39,7 @@ import type {
   HelpSearchResult,
   C4Hierarchy,
   DocumentHeading,
-} from '../src/services/help/content/schema.js';
+} from '../src/services/help-content/schema.js';
 
 // Type definitions for the exposed API
 export interface CyrusAPI {
@@ -55,8 +55,8 @@ export interface CyrusAPI {
   };
   // Relationship operations
   relationships: {
-    getContains: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
-    getContainedBy: (id: string) => Promise<ApiResponse<ComponentSymbolDTO | null>>;
+    findContains: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
+    findContainedBy: (id: string) => Promise<ApiResponse<ComponentSymbolDTO | null>>;
     getDependents: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     getDependencies: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
@@ -135,8 +135,8 @@ const cyrusAPI: CyrusAPI = {
     remove: (id) => ipcRenderer.invoke('symbols:remove', id),
   },
   relationships: {
-    getContains: (id) => ipcRenderer.invoke('relationships:getContains', id),
-    getContainedBy: (id) => ipcRenderer.invoke('relationships:getContainedBy', id),
+    findContains: (id) => ipcRenderer.invoke('relationships:findContains', id),
+    findContainedBy: (id) => ipcRenderer.invoke('relationships:findContainedBy', id),
     getDependents: (id) => ipcRenderer.invoke('relationships:getDependents', id),
     getDependencies: (id) => ipcRenderer.invoke('relationships:getDependencies', id),
   },

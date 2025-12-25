@@ -10,7 +10,7 @@
  */
 
 // Service (primary API)
-export { DependencyGraphService, createDependencyGraphService } from './service.js';
+export { DependencyGraphService } from './service.js';
 
 // Commonly used types
 export type {

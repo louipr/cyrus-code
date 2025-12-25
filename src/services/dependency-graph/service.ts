@@ -5,7 +5,9 @@
  * Provides high-level orchestration of graph algorithms.
  */
 
-import type { ComponentSymbol, Connection, SymbolTableService } from '../symbol-table/index.js';
+import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
+import type { ConnectionManager } from '../symbol-table/connection-manager.js';
+import type { ComponentSymbol, Connection } from '../../domain/symbol/index.js';
 import type { DependencyGraph, DependencyGraphDTO, GraphStats, IDependencyGraphService } from './schema.js';
 import { graphToDTO } from './schema.js';
 import {
@@ -37,10 +39,12 @@ import {
  * - Graph analysis (roots, leaves, components, stats)
  */
 export class DependencyGraphService implements IDependencyGraphService {
-  private store: SymbolTableService;
+  private repo: ISymbolRepository;
+  private connectionMgr: ConnectionManager;
 
-  constructor(store: SymbolTableService) {
-    this.store = store;
+  constructor(repo: ISymbolRepository, connectionMgr: ConnectionManager) {
+    this.repo = repo;
+    this.connectionMgr = connectionMgr;
   }
 
   // ==========================================================================
@@ -51,8 +55,8 @@ export class DependencyGraphService implements IDependencyGraphService {
    * Build a dependency graph from all symbols and connections.
    */
   buildGraph(): DependencyGraph {
-    const symbols = this.store.list();
-    const connections = this.store.getConnectionManager().getAllConnections();
+    const symbols = this.repo.list();
+    const connections = this.connectionMgr.findAllConnections();
     return buildDependencyGraph(symbols, connections);
   }
 
@@ -70,10 +74,10 @@ export class DependencyGraphService implements IDependencyGraphService {
 
     // Filter nodes and edges
     const symbols = Array.from(connectedIds)
-      .map((id) => this.store.get(id))
+      .map((id) => this.repo.find(id))
       .filter((s): s is ComponentSymbol => s !== undefined);
 
-    const connections = this.store.getConnectionManager().getAllConnections().filter(
+    const connections = this.connectionMgr.findAllConnections().filter(
       (c) => connectedIds.has(c.fromSymbolId) && connectedIds.has(c.toSymbolId)
     );
 
@@ -183,17 +187,4 @@ export class DependencyGraphService implements IDependencyGraphService {
     const graph = this.buildGraph();
     return getGraphStats(graph);
   }
-}
-
-/**
- * Factory function for creating DependencyGraphService instances.
- * Preferred over direct instantiation for dependency injection support.
- *
- * @param store - SymbolTableService instance for symbol and connection access
- * @returns DependencyGraphService instance
- */
-export function createDependencyGraphService(
-  store: SymbolTableService
-): DependencyGraphService {
-  return new DependencyGraphService(store);
 }

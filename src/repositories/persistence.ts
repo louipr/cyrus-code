@@ -364,10 +364,10 @@ export interface PreparedStatements {
 
   // Connections
   insertConnection: Statement;
-  getConnection: Statement;
+  findConnection: Statement;
   deleteConnection: Statement;
-  getConnectionsBySymbol: Statement;
-  getAllConnections: Statement;
+  findConnectionsBySymbol: Statement;
+  findAllConnections: Statement;
 
   // Status info
   insertStatusReferencedBy: Statement;
@@ -380,7 +380,6 @@ export interface PreparedStatements {
 
   insertExecutionInfo: Statement;
   getExecutionInfo: Statement;
-  updateExecutionInfo: Statement;
   deleteExecutionInfo: Statement;
 
   insertExecutionContext: Statement;
@@ -520,15 +519,15 @@ export function createPreparedStatements(
       VALUES (@id, @from_symbol_id, @from_port, @to_symbol_id, @to_port, @transform, @created_at)
     `),
 
-    getConnection: database.prepare('SELECT * FROM connections WHERE id = ?'),
+    findConnection: database.prepare('SELECT * FROM connections WHERE id = ?'),
 
     deleteConnection: database.prepare('DELETE FROM connections WHERE id = ?'),
 
-    getConnectionsBySymbol: database.prepare(
+    findConnectionsBySymbol: database.prepare(
       'SELECT * FROM connections WHERE from_symbol_id = ? OR to_symbol_id = ?'
     ),
 
-    getAllConnections: database.prepare('SELECT * FROM connections'),
+    findAllConnections: database.prepare('SELECT * FROM connections'),
 
     // Status info - referenced by
     insertStatusReferencedBy: database.prepare(
@@ -565,10 +564,6 @@ export function createPreparedStatements(
     getExecutionInfo: database.prepare(
       'SELECT * FROM execution_info WHERE symbol_id = ?'
     ),
-
-    updateExecutionInfo: database.prepare(`
-      UPDATE execution_info SET last_seen = @last_seen, count = @count WHERE symbol_id = @symbol_id
-    `),
 
     deleteExecutionInfo: database.prepare(
       'DELETE FROM execution_info WHERE symbol_id = ?'

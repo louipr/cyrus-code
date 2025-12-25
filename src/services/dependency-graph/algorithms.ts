@@ -5,7 +5,7 @@
  * Provides cycle detection, topological sorting, and graph traversal.
  */
 
-import type { ComponentSymbol, Connection } from '../symbol-table/index.js';
+import type { ComponentSymbol, Connection } from '../../domain/symbol/index.js';
 import {
   type DependencyGraph,
   type GraphNode,

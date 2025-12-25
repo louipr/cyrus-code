@@ -10,16 +10,29 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
+import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from './service.js';
+import { SymbolQueryService } from './query-service.js';
+import { ConnectionManager } from './connection-manager.js';
+import { VersionResolver } from './version-resolver.js';
+import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
 import type { Connection } from './schema.js';
 import { createSymbol } from '../test-fixtures.js';
 
 describe('SymbolTableService', () => {
   let store: SymbolTableService;
+  let queryService: SymbolQueryService;
+  let connectionMgr: ConnectionManager;
+  let versionResolver: VersionResolver;
+  let repo: SymbolRepository;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
+    repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
+    queryService = new SymbolQueryService(repo);
+    connectionMgr = new ConnectionManager(repo, (id) => repo.find(id));
+    versionResolver = new VersionResolver(repo);
   });
 
   afterEach(() => {
@@ -152,7 +165,7 @@ describe('SymbolTableService', () => {
       store.register(createSymbol({ id: 'auth/jwt/C@1.0.0', namespace: 'auth/jwt', level: 'L0', kind: 'type', tags: ['core'] }));
       store.register(createSymbol({ id: 'core/D@1.0.0', namespace: 'core', level: 'L1', kind: 'service', tags: ['core'] }));
 
-      const query = store.getQueryService();
+      const query = queryService;
 
       // findByNamespace (includes nested)
       assert.strictEqual(query.findByNamespace('auth').length, 3);
@@ -175,7 +188,7 @@ describe('SymbolTableService', () => {
       store.register(createSymbol({ id: 'auth/JwtService@1.0.0', name: 'JwtService', description: 'Token handling' }));
       store.register(createSymbol({ id: 'auth/AuthService@1.0.0', name: 'AuthService', description: 'Handles JWT tokens' }));
 
-      const query = store.getQueryService();
+      const query = queryService;
 
       // Search by name
       const byName = query.search('Jwt');
@@ -214,7 +227,7 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const versions = store.getVersionResolver().getVersions('test', 'Svc');
+      const versions = versionResolver.getVersions('test', 'Svc');
       assert.strictEqual(versions.length, 3);
       const v0 = versions[0];
       const v1 = versions[1];
@@ -247,13 +260,13 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const latest = store.getVersionResolver().getLatest('test', 'Svc');
+      const latest = versionResolver.getLatest('test', 'Svc');
       assert.ok(latest);
       assert.strictEqual(latest.version.major, 2);
     });
 
     it('should return undefined for non-existent symbol', () => {
-      const latest = store.getVersionResolver().getLatest('nonexistent', 'Symbol');
+      const latest = versionResolver.getLatest('nonexistent', 'Symbol');
       assert.strictEqual(latest, undefined);
     });
   });
@@ -312,9 +325,9 @@ describe('SymbolTableService', () => {
         createdAt: new Date(),
       };
 
-      store.getConnectionManager().connect(connection);
+      connectionMgr.connect(connection);
 
-      const connections = store.getConnectionManager().getConnections('a@1.0.0');
+      const connections = connectionMgr.findConnections('a@1.0.0');
       assert.strictEqual(connections.length, 1);
       const firstConn = connections[0];
       assert.ok(firstConn);
@@ -334,7 +347,7 @@ describe('SymbolTableService', () => {
         createdAt: new Date(),
       };
 
-      assert.throws(() => store.getConnectionManager().connect(connection), /not found/);
+      assert.throws(() => connectionMgr.connect(connection), /not found/);
     });
   });
 
@@ -363,7 +376,7 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const result = store.getValidator().validate();
+      const result = validateSymbolTable(repo);
       assert.strictEqual(result.valid, true);
       assert.strictEqual(result.errors.length, 0);
     });
@@ -385,7 +398,7 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const result = store.getValidator().validate();
+      const result = validateSymbolTable(repo);
       assert.strictEqual(result.valid, false);
       assert.ok(result.errors.some((e) => e.code === 'INVALID_TYPE_REFERENCE'));
     });
@@ -411,7 +424,7 @@ describe('SymbolTableService', () => {
       store.update('a@1.0.0', { contains: ['b@1.0.0'] });
       store.update('b@1.0.0', { contains: ['a@1.0.0'] });
 
-      const cycles = store.getValidator().checkCircular();
+      const cycles = checkCircularContainment(repo);
       assert.ok(cycles.length > 0);
     });
   });
@@ -421,7 +434,7 @@ describe('SymbolTableService', () => {
       store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
       store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
 
-      const unreachable = store.getQueryService().findUnreachable();
+      const unreachable = queryService.findUnreachable();
       assert.strictEqual(unreachable.length, 1);
       const first = unreachable[0];
       assert.ok(first);

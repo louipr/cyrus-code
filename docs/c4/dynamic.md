@@ -128,18 +128,18 @@ C4Dynamic
     Container(cli, "CLI", "Node.js", "Command interface")
     Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
     Container(wiring, "Wiring", "TypeScript", "Validates first")
-    Container(codeSynthesizer, "Code Synthesizer", "ts-morph", "AST generation")
+    Container(codeGen, "Code Generation", "ts-morph", "AST generation")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Component graph")
     System_Ext(fileSystem, "File System", "Output directory")
 
     Rel(developer, cli, "1. cyrus-code generate ./out")
-    Rel(cli, apiFacade, "2. Route to synthesizer")
+    Rel(cli, apiFacade, "2. Route to code generation")
     Rel(apiFacade, wiring, "3. Validate connections first")
     Rel(wiring, apiFacade, "4. Validation passed")
-    Rel(apiFacade, codeSynthesizer, "5. Generate from graph")
-    Rel(codeSynthesizer, symbolTable, "6. Read component graph")
-    Rel(codeSynthesizer, codeSynthesizer, "7. Build AST")
-    Rel(codeSynthesizer, fileSystem, "8. Write source files")
+    Rel(apiFacade, codeGen, "5. Generate from graph")
+    Rel(codeGen, symbolTable, "6. Read component graph")
+    Rel(codeGen, codeGen, "7. Build AST")
+    Rel(codeGen, fileSystem, "8. Write source files")
     Rel(cli, developer, "9. Report generated files")
 ```
 
@@ -149,8 +149,8 @@ C4Dynamic
 2. CLI routes request to API Facade
 3. API Facade first validates all connections via Wiring
 4. If validation passes, proceed to generation
-5. API Facade delegates to Code Synthesizer
-6. Code Synthesizer reads the full component graph from Symbol Table
+5. API Facade delegates to Code Generation service
+6. Code Generation reads the full component graph from Symbol Table
 7. AST is built for each component with connections wired
 8. Generated files written to output directory
 9. CLI reports what was generated

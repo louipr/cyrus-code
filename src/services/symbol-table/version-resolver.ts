@@ -6,10 +6,10 @@
  */
 
 import type { ComponentSymbol } from './schema.js';
-import type { SymbolRepository } from '../../repositories/symbol-repository.js';
+import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 export class VersionResolver {
-  constructor(private repo: SymbolRepository) {}
+  constructor(private repo: ISymbolRepository) {}
 
   /**
    * Get all versions of a symbol (by namespace and name).

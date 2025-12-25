@@ -62,12 +62,13 @@ Inspired by HDL signals:
 | **Full Lifecycle** | Design → Develop → Test → Deploy → Operate → Evolve | [ADR-007](docs/adr/007-full-lifecycle-architecture.md) |
 | **Design Patterns** | GoF patterns mapped to architecture components | [ADR-008](docs/adr/008-design-patterns.md) |
 | **GUI Framework** | Electron + React with migration-ready architecture | [ADR-009](docs/adr/009-electron-gui-framework.md) |
+| **Service Refactoring** | Clean Architecture patterns for service layer design | [ADR-011](docs/adr/011-service-layer-refactoring.md) |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `docs/adr/` | Architecture decision records (001-010) |
+| `docs/adr/` | Architecture decision records (001-011) |
 | `docs/spec/symbol-table-schema.md` | Canonical type definitions |
 | `docs/c4/` | C4 architecture diagrams (L1 Context, L2 Container, 7 L3 Component, Dynamic) |
 | `docs/runbooks/` | Developer setup and manual verification guides |

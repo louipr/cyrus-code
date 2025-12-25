@@ -17,8 +17,8 @@ import type {
   HelpCategory,
   HelpGroup,
   DocumentHeading,
-} from '../../services/help/content/types';
-import { slugify } from '../../services/help/content/types';
+} from '../../services/help-content/types';
+import { slugify } from '../../services/help-content/types';
 
 /**
  * Heading node with children for hierarchical sidebar display.

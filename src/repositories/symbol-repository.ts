@@ -20,7 +20,7 @@ import {
   type SymbolOrigin,
   type PortDirection,
   type ExecutionInfo,
-} from '../services/symbol-table/schema.js';
+} from '../domain/symbol/index.js';
 import {
   type PreparedStatements,
   type SymbolRow,
@@ -33,10 +33,49 @@ import {
 } from './persistence.js';
 
 // ============================================================================
+// Repository Interface
+// ============================================================================
+
+/**
+ * Symbol Repository Interface
+ *
+ * Data access contract for ComponentSymbol persistence.
+ * Provides CRUD operations and specialized queries for symbols and connections.
+ */
+export interface ISymbolRepository {
+  // Symbol CRUD
+  insert(symbol: ComponentSymbol): void;
+  find(id: string): ComponentSymbol | undefined;
+  update(id: string, symbol: ComponentSymbol): void;
+  delete(id: string): boolean;
+  list(): ComponentSymbol[];
+
+  // Symbol Queries
+  findByNamespace(namespace: string): ComponentSymbol[];
+  findByLevel(level: AbstractionLevel): ComponentSymbol[];
+  findByKind(kind: ComponentKind): ComponentSymbol[];
+  findByTag(tag: string): ComponentSymbol[];
+  findByStatus(status: SymbolStatus): ComponentSymbol[];
+  findByOrigin(origin: SymbolOrigin): ComponentSymbol[];
+  search(query: string): ComponentSymbol[];
+
+  // Containment Queries
+  findContains(id: string): string[];
+  findContainedBy(id: string): string | undefined;
+
+  // Connection CRUD
+  insertConnection(connection: Connection): void;
+  findConnection(id: string): Connection | undefined;
+  deleteConnection(id: string): boolean;
+  findConnectionsBySymbol(symbolId: string): Connection[];
+  findAllConnections(): Connection[];
+}
+
+// ============================================================================
 // Repository Class
 // ============================================================================
 
-export class SymbolRepository {
+export class SymbolRepository implements ISymbolRepository {
   private db: DatabaseType;
   private stmts: PreparedStatements;
 
@@ -116,9 +155,9 @@ export class SymbolRepository {
   }
 
   /**
-   * Get a symbol by ID.
+   * Find a symbol by ID.
    */
-  get(id: string): ComponentSymbol | undefined {
+  find(id: string): ComponentSymbol | undefined {
     const row = this.stmts.getSymbol.get(id) as SymbolRow | undefined;
     if (!row) return undefined;
 
@@ -304,9 +343,9 @@ export class SymbolRepository {
   }
 
   /**
-   * Get children of a symbol (containment).
+   * Find children of a symbol (containment).
    */
-  getContains(id: string): string[] {
+  findContains(id: string): string[] {
     const rows = this.stmts.getContainsByParent.all(id) as Array<{
       child_id: string;
     }>;
@@ -314,9 +353,9 @@ export class SymbolRepository {
   }
 
   /**
-   * Get parent of a symbol (containment).
+   * Find parent of a symbol (containment).
    */
-  getContainedBy(id: string): string | undefined {
+  findContainedBy(id: string): string | undefined {
     const rows = this.stmts.getContainsByChild.all(id) as Array<{
       parent_id: string;
     }>;
@@ -343,10 +382,10 @@ export class SymbolRepository {
   }
 
   /**
-   * Get a connection by ID.
+   * Find a connection by ID.
    */
-  getConnection(id: string): Connection | undefined {
-    const row = this.stmts.getConnection.get(id) as ConnectionRow | undefined;
+  findConnection(id: string): Connection | undefined {
+    const row = this.stmts.findConnection.get(id) as ConnectionRow | undefined;
     if (!row) return undefined;
     return this.rowToConnection(row);
   }
@@ -360,10 +399,10 @@ export class SymbolRepository {
   }
 
   /**
-   * Get all connections for a symbol.
+   * Find all connections for a symbol.
    */
-  getConnectionsBySymbol(symbolId: string): Connection[] {
-    const rows = this.stmts.getConnectionsBySymbol.all(
+  findConnectionsBySymbol(symbolId: string): Connection[] {
+    const rows = this.stmts.findConnectionsBySymbol.all(
       symbolId,
       symbolId
     ) as ConnectionRow[];
@@ -371,10 +410,10 @@ export class SymbolRepository {
   }
 
   /**
-   * Get all connections.
+   * Find all connections.
    */
-  getAllConnections(): Connection[] {
-    const rows = this.stmts.getAllConnections.all() as ConnectionRow[];
+  findAllConnections(): Connection[] {
+    const rows = this.stmts.findAllConnections.all() as ConnectionRow[];
     return rows.map((row) => this.rowToConnection(row));
   }
 
@@ -539,7 +578,7 @@ export class SymbolRepository {
     }
 
     // Contains
-    const contains = this.getContains(row.id);
+    const contains = this.findContains(row.id);
     if (contains.length > 0) {
       symbol.contains = contains;
     }

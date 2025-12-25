@@ -185,15 +185,15 @@ function checkTypeCompatibility(fromType, toType, mode):
 function validateAllConnections():
     result = createValidationResult()
 
-    // Validate each connection
-    for each connection in store.getConnectionManager().getAllConnections():
+    // Validate each connection (using injected ConnectionManager)
+    for each connection in connectionMgr.findAllConnections():
         connResult = validateConnection(connection)
         result.errors.push(...connResult.errors)
         result.warnings.push(...connResult.warnings)
 
-    // Check required ports for all symbols
+    // Check required ports for all symbols (using injected Repository)
     if options.checkRequired:
-        for each symbol in store.list():
+        for each symbol in repo.list():
             requiredErrors = checkRequiredPorts(symbol.id, symbol.ports)
             result.errors.push(...requiredErrors)
 

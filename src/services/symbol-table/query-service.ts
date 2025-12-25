@@ -2,7 +2,7 @@
  * Symbol Query Service
  *
  * Provides query and search operations for symbols.
- * Extracted from SymbolStore for single-responsibility.
+ * Focused service for single-responsibility principle.
  */
 
 import type {
@@ -12,7 +12,7 @@ import type {
   SymbolStatus,
   SymbolOrigin,
 } from './schema.js';
-import type { SymbolRepository } from '../../repositories/symbol-repository.js';
+import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 // ============================================================================
 // Query Service
@@ -29,9 +29,9 @@ import type { SymbolRepository } from '../../repositories/symbol-repository.js';
  * - Status-based queries (unreachable, untested)
  */
 export class SymbolQueryService {
-  private repo: SymbolRepository;
+  private repo: ISymbolRepository;
 
-  constructor(repo: SymbolRepository) {
+  constructor(repo: ISymbolRepository) {
     this.repo = repo;
   }
 
@@ -97,22 +97,22 @@ export class SymbolQueryService {
   // ==========================================================================
 
   /**
-   * Get symbols contained by a parent symbol.
+   * Find symbols contained by a parent symbol.
    */
-  getContains(id: string): ComponentSymbol[] {
-    const childIds = this.repo.getContains(id);
+  findContains(id: string): ComponentSymbol[] {
+    const childIds = this.repo.findContains(id);
     return childIds
-      .map((childId) => this.repo.get(childId))
+      .map((childId) => this.repo.find(childId))
       .filter((s): s is ComponentSymbol => s !== undefined);
   }
 
   /**
-   * Get the parent symbol that contains this symbol.
+   * Find the parent symbol that contains this symbol.
    */
-  getContainedBy(id: string): ComponentSymbol | undefined {
-    const parentId = this.repo.getContainedBy(id);
+  findContainedBy(id: string): ComponentSymbol | undefined {
+    const parentId = this.repo.findContainedBy(id);
     if (!parentId) return undefined;
-    return this.repo.get(parentId);
+    return this.repo.find(parentId);
   }
 
   // ==========================================================================
@@ -139,7 +139,7 @@ export class SymbolQueryService {
    * (Symbols referenced by this symbol's ports)
    */
   getDependencies(id: string): ComponentSymbol[] {
-    const symbol = this.repo.get(id);
+    const symbol = this.repo.find(id);
     if (!symbol) return [];
 
     const depIds = new Set<string>();
@@ -154,7 +154,7 @@ export class SymbolQueryService {
     }
 
     return Array.from(depIds)
-      .map((depId) => this.repo.get(depId))
+      .map((depId) => this.repo.find(depId))
       .filter((s): s is ComponentSymbol => s !== undefined);
   }
 
@@ -177,19 +177,5 @@ export class SymbolQueryService {
     return all.filter(
       (s) => s.status !== 'tested' && s.status !== 'executed'
     );
-  }
-
-  /**
-   * Find generated symbols.
-   */
-  findGenerated(): ComponentSymbol[] {
-    return this.repo.findByOrigin('generated');
-  }
-
-  /**
-   * Find manually created symbols.
-   */
-  findManual(): ComponentSymbol[] {
-    return this.repo.findByOrigin('manual');
   }
 }

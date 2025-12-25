@@ -20,7 +20,7 @@ import type {
   GenerationOptionsDTO,
   RegisterSymbolRequest,
 } from '../src/api/types.js';
-import { HelpService } from '../src/services/help/index.js';
+import { HelpContentService } from '../src/services/help-content/index.js';
 
 export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
@@ -68,12 +68,12 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // Relationship Operations
   // ==========================================================================
 
-  ipcMain.handle('relationships:getContains', async (_event, id: string) => {
-    return facade.getContains(id);
+  ipcMain.handle('relationships:findContains', async (_event, id: string) => {
+    return facade.findContains(id);
   });
 
-  ipcMain.handle('relationships:getContainedBy', async (_event, id: string) => {
-    return facade.getContainedBy(id);
+  ipcMain.handle('relationships:findContainedBy', async (_event, id: string) => {
+    return facade.findContainedBy(id);
   });
 
   ipcMain.handle('relationships:getDependents', async (_event, id: string) => {
@@ -243,7 +243,7 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   const helpProjectRoot = app.isPackaged
     ? path.join(app.getAppPath(), '..')
     : process.cwd();
-  const helpService = new HelpService(helpProjectRoot);
+  const helpService = new HelpContentService(helpProjectRoot);
 
   ipcMain.handle('help:getCategories', async () => {
     try {

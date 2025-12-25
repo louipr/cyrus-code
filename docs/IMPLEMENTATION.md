@@ -48,7 +48,7 @@ npm run electron:dev   # Dev mode with hot reload
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
 | 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
-| 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
+| 3: Generation | Code CodeGeneration | Preview, Export | ✅ Complete |
 | Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
@@ -171,15 +171,15 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 3.1 | Implement Code Synthesizer | `src/services/synthesizer/index.ts` | ✅ |
-| 3.2 | Implement Codegen utilities | `src/services/synthesizer/codegen.ts` | ✅ |
-| 3.3 | Implement Generation Gap | `src/services/synthesizer/generation-gap.ts` | ✅ |
-| 3.4 | TypeScript backend | `src/services/synthesizer/backends/typescript.ts` | ✅ |
-| 3.5 | Synthesizer schema types | `src/services/synthesizer/schema.ts` | ✅ |
+| 3.1 | Implement Code CodeGeneration | `src/services/code-generation/index.ts` | ✅ |
+| 3.2 | Implement Codegen utilities | `src/services/code-generation/codegen.ts` | ✅ |
+| 3.3 | Implement Generation Gap | `src/services/code-generation/generation-gap.ts` | ✅ |
+| 3.4 | TypeScript backend | `src/services/code-generation/backends/typescript.ts` | ✅ |
+| 3.5 | CodeGeneration schema types | `src/services/code-generation/schema.ts` | ✅ |
 | 3.6 | Extend API Facade | `src/api/facade.ts` | ✅ |
 | 3.7 | CLI: generate | `src/cli/commands/generate.ts` | ✅ |
-| 3.8 | IPC handlers for synthesizer | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
-| 3.9 | Unit tests for Synthesizer | `src/services/synthesizer/index.test.ts` | ✅ (51 tests) |
+| 3.8 | IPC handlers for code-generation | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
+| 3.9 | Unit tests for CodeGeneration | `src/services/code-generation/index.test.ts` | ✅ (51 tests) |
 
 ### GUI Tasks
 
@@ -287,7 +287,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.16 | Add relationship labels and cross-refs to L1 | `docs/c4/1-context.md` | ✅ |
 | D.17 | Aggressive C4 cleanup - remove redundant sections | `docs/c4/*.md` | ✅ |
 | D.18 | Add consistent C4 Navigation across all levels | `docs/c4/*.md` | ✅ |
-| D.19 | Add L3 Component diagram for Code Synthesizer | `docs/c4/3-component-synthesizer.md` | ✅ |
+| D.19 | Add L3 Component diagram for Code CodeGeneration | `docs/c4/3-component-code-generation.md` | ✅ |
 | D.20 | Add L3 Component diagrams for remaining containers | `docs/c4/3-component-{help,wiring,validator,registry,facade}.md` | ✅ |
 
 ### C4 DRY Cleanup (Phase 7)
@@ -315,7 +315,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] No redundant Legend sections (standard C4 notation removed from all levels)
 - [x] Consistent C4 Navigation blockquote across L1, L2, L3
 - [x] Aggressive cleanup: L1 (-35% lines), L2 (-19% lines)
-- [x] L3 Component diagrams for all core containers (Symbol Table, Synthesizer, Help, Wiring, Validator, Registry, Facade)
+- [x] L3 Component diagrams for all core containers (Symbol Table, CodeGeneration, Help, Wiring, Validator, Registry, Facade)
 - [x] C4NavigationBar component in GUI (DRY: navigation moved from markdown to GUI)
 - [x] Status legend as collapsible GUI element (DRY: removed from 9 markdown files)
 
@@ -498,14 +498,14 @@ cyrus-code/
 │       │   ├── schema.ts              # Graph types, wiring results
 │       │   ├── graph.ts               # Dependency graph builder
 │       │   └── index.test.ts          # Wiring tests (22 tests)
-│       ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
-│       │   ├── index.ts               # SynthesizerService
+│       ├── code-generation/               # Code CodeGeneration ✅ (Slice 3)
+│       │   ├── index.ts               # CodeGenerationService
 │       │   ├── schema.ts              # Generation types
 │       │   ├── codegen.ts             # ts-morph utilities
 │       │   ├── generation-gap.ts      # Two-file pattern
 │       │   ├── backends/              # Language backends
 │       │   │   └── typescript.ts      # TypeScript generator
-│       │   └── index.test.ts          # Synthesizer tests (51 tests)
+│       │   └── index.test.ts          # CodeGeneration tests (51 tests)
 │       ├── help/                      # Help System ✅
 │       │   ├── index.ts               # HelpService
 │       │   ├── schema.ts              # Help types
@@ -561,7 +561,7 @@ cyrus-code/
 │   │   ├── symbol-table/              # Symbol Table ✅
 │   │   ├── compatibility/             # Compatibility Service ✅ (Slice 2)
 │   │   ├── wiring/                    # Wiring Service ✅ (Slice 2)
-│   │   ├── synthesizer/               # Code Synthesizer ✅ (Slice 3)
+│   │   ├── code-generation/               # Code CodeGeneration ✅ (Slice 3)
 │   │   ├── help/                      # Help System + Diagram Generator ✅
 │   │   └── source-tools/              # Source Code Utilities ✅
 ├── tests/

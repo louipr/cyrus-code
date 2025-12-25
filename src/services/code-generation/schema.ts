@@ -5,7 +5,7 @@
  * Implements the Generation Gap pattern for safe regeneration.
  */
 
-import type { ComponentSymbol, TypeReference } from '../symbol-table/index.js';
+import type { ComponentSymbol } from '../../domain/symbol/index.js';
 
 // =============================================================================
 // Service Interfaces
@@ -25,18 +25,6 @@ export interface ICodeGenerationService {
   listGeneratableSymbols(): ComponentSymbol[];
   canGenerate(symbolId: string): boolean;
 }
-
-/**
- * TypeScript backend API contract.
- *
- * Converts symbols to TypeScript-specific representations
- * and maps abstract types to TypeScript types.
- */
-export type TypeScriptBackend = {
-  symbolToComponent: (symbol: ComponentSymbol) => GeneratedComponent;
-  typeRefToTypeScript: (typeRef: TypeReference) => string;
-  isGeneratable: (symbol: ComponentSymbol) => boolean;
-};
 
 // =============================================================================
 // Generation Options
@@ -173,60 +161,8 @@ export interface GenerationMetadata {
   implementationPath?: string;
 }
 
-/**
- * Port representation for code generation.
- */
-export interface GeneratedPort {
-  /** Port name */
-  name: string;
-
-  /** Port direction */
-  direction: 'in' | 'out' | 'inout';
-
-  /** TypeScript type string */
-  typeString: string;
-
-  /** Whether port is required */
-  required: boolean;
-
-  /** Whether port accepts multiple connections */
-  multiple: boolean;
-
-  /** Port description for JSDoc */
-  description: string;
-}
-
-/**
- * Component representation for code generation.
- */
-export interface GeneratedComponent {
-  /** Class name (sanitized from symbol name) */
-  className: string;
-
-  /** Base class name (className + '_Base') */
-  baseClassName: string;
-
-  /** Namespace for imports */
-  namespace: string;
-
-  /** Full symbol ID */
-  symbolId: string;
-
-  /** Version string */
-  version: string;
-
-  /** Component description for JSDoc */
-  description: string;
-
-  /** Input ports (direction: 'in' or 'inout') */
-  inputPorts: GeneratedPort[];
-
-  /** Output ports (direction: 'out' or 'inout') */
-  outputPorts: GeneratedPort[];
-
-  /** Original symbol for reference */
-  symbol: ComponentSymbol;
-}
+// NOTE: GeneratedPort and GeneratedComponent have been moved to the backend layer.
+// Import from: src/backends/typescript/schema.ts
 
 // =============================================================================
 // Error Codes

@@ -6,64 +6,6 @@
  */
 
 import { z } from 'zod';
-import type {
-  Connection,
-  PortDefinition,
-  ValidationResult,
-  ValidationError,
-} from '../symbol-table/index.js';
-
-// ============================================================================
-// Service Interfaces
-// ============================================================================
-
-/**
- * Compatibility service public API contract.
- *
- * Checks port compatibility for connections between components.
- * Provides compatibility checking, required port validation, and cardinality enforcement.
- */
-export interface ICompatibilityService {
-  /** Check if two ports can be connected */
-  checkPortCompatibility(from: PortRef, to: PortRef): CompatibilityResult;
-
-  /** Check direction compatibility only */
-  checkDirectionCompatibility(
-    fromPort: PortDefinition,
-    toPort: PortDefinition
-  ): CompatibilityResult;
-
-  /** Check type compatibility only */
-  checkTypeCompatibility(
-    fromPort: PortDefinition,
-    toPort: PortDefinition
-  ): CompatibilityResult;
-
-  /** Validate a single connection */
-  validateConnection(connection: Connection): ValidationResult;
-
-  /** Validate all connections for a symbol */
-  validateSymbolConnections(symbolId: string): ValidationResult;
-
-  /** Validate all connections in the system */
-  validateAllConnections(): ValidationResult;
-
-  /** Check that all required input ports have connections */
-  checkRequiredPorts(
-    symbolId: string,
-    ports: PortDefinition[]
-  ): ValidationError[];
-
-  /** Check cardinality constraints on all ports */
-  checkCardinality(symbolId: string): ValidationError[];
-
-  /** Find compatible ports on a target symbol for a given source port */
-  findCompatiblePorts(
-    from: PortRef,
-    targetSymbolId: string
-  ): Array<{ port: PortDefinition; compatibility: CompatibilityResult }>;
-}
-
 // ============================================================================
 // Compatibility Result
 // ============================================================================
@@ -140,8 +82,6 @@ export const TypeCompatibilityMode = {
   STRICT: 'strict',
   /** Allow compatible types (e.g., string -> string?, subtype -> supertype) */
   COMPATIBLE: 'compatible',
-  /** Allow any structural match (duck typing) */
-  STRUCTURAL: 'structural',
 } as const;
 
 export type TypeCompatibilityMode =
@@ -154,7 +94,7 @@ export type TypeCompatibilityMode =
 export const ValidationOptionsSchema = z.object({
   /** Type compatibility mode */
   typeMode: z
-    .enum(['strict', 'compatible', 'structural'])
+    .enum(['strict', 'compatible'])
     .default('compatible'),
   /** Whether to check required ports have connections */
   checkRequired: z.boolean().default(true),

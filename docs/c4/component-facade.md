@@ -18,7 +18,7 @@ flowchart TD
 
     api -->|"symbols"| registry["Component Registry"]
     api -->|"wiring"| wiring["Wiring"]
-    api -->|"generate"| synth["Code Synthesizer"]
+    api -->|"generate"| codegen["Code Generation"]
 
     api -->|"convert"| types
 
@@ -26,7 +26,7 @@ flowchart TD
     classDef external fill:#999,color:#fff
 
     class api,types component
-    class cli,gui,registry,wiring,synth external
+    class cli,gui,registry,wiring,codegen external
 ```
 
 ## Components
@@ -45,7 +45,7 @@ flowchart TD
 | Single facade class | Simplified API surface, one import for all operations |
 | DTO conversion | Transport-agnostic: works with Electron IPC, HTTP, CLI |
 | ApiResponse wrapper | Consistent error handling across all operations |
-| Service composition | Facade holds Registry, Wiring, Synthesizer - routes appropriately |
+| Service composition | Facade holds Registry, Wiring, Code Generation - routes appropriately |
 | Factory methods | `create()` and `createInMemory()` for different contexts |
 | Transport-agnostic | Same facade used by CLI (direct) and GUI (via IPC) |
 
@@ -60,7 +60,7 @@ flowchart TD
 | **Symbol CRUD** | Component Registry |
 | **Symbol Queries** | Component Registry |
 | **Wiring** | Wiring Service |
-| **Generation** | Synthesizer Service |
+| **Generation** | Code Generation Service |
 
 ### ApiFacade API
 
@@ -104,7 +104,7 @@ The facade routes operations to internal services:
 | **Wiring** | Wiring Service | `wireConnection`, `unwireConnection`, `validateConnectionRequest`, `getDependencyGraph`, `detectCycles`, `getTopologicalOrder`, `getGraphStats`, `findCompatiblePorts`, `findUnconnectedRequired` |
 | **Status** | Component Registry | `updateStatus`, `findUnreachable`, `findUntested` |
 | **Bulk** | Component Registry | `importSymbols`, `exportSymbols` |
-| **Generation** | Synthesizer Service | `generateSymbol`, `generateMultiple`, `generateAll`, `previewGeneration`, `listGeneratableSymbols`, `canGenerateSymbol`, `hasUserImplementation` |
+| **Generation** | Code Generation Service | `generateSymbol`, `generateMultiple`, `generateAll`, `previewGeneration`, `listGeneratableSymbols`, `canGenerateSymbol`, `hasUserImplementation` |
 
 ### IPC Channel Mapping
 

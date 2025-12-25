@@ -73,16 +73,14 @@ classDiagram
 
     class SymbolTableService {
         -repo: SymbolRepository
-        -queryService: SymbolQueryService
-        -connectionMgr: ConnectionManager
-        -versionResolver: VersionResolver
-        -validator: SymbolValidator
         +register()
         +get()
-        +getQueryService()
-        +getConnectionManager()
-        +getVersionResolver()
-        +getValidator()
+        +update()
+        +remove()
+        +list()
+        +registerWithAutoId()
+        +resolve()
+        +query()
     }
 
     class SymbolQueryService {

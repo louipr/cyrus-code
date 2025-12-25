@@ -192,18 +192,17 @@ classDiagram
         +get()
         +update()
         +remove()
-        +connect()
-        +validate()
-        +getQueryService()
+        +list()
+        +query()
     }
 
     class SymbolTableService {
         -repo: SymbolRepository
-        -queryService: SymbolQueryService
         +register()
         +get()
-        +connect()
-        +validate()
+        +update()
+        +remove()
+        +list()
     }
 
     class SymbolQueryService {
