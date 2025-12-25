@@ -88,6 +88,32 @@ export function checkDirectionCompatibility(
 // ============================================================================
 
 /**
+ * Built-in type widening rules.
+ * Defines which types can be safely widened to other types.
+ */
+const WIDENING_RULES: Record<string, string[]> = {
+  'builtin/int8@1.0.0': [
+    'builtin/int16@1.0.0',
+    'builtin/int32@1.0.0',
+    'builtin/int64@1.0.0',
+    'builtin/float32@1.0.0',
+    'builtin/float64@1.0.0',
+  ],
+  'builtin/int16@1.0.0': [
+    'builtin/int32@1.0.0',
+    'builtin/int64@1.0.0',
+    'builtin/float32@1.0.0',
+    'builtin/float64@1.0.0',
+  ],
+  'builtin/int32@1.0.0': [
+    'builtin/int64@1.0.0',
+    'builtin/float64@1.0.0',
+  ],
+  'builtin/int64@1.0.0': ['builtin/float64@1.0.0'],
+  'builtin/float32@1.0.0': ['builtin/float64@1.0.0'],
+};
+
+/**
  * Check if two types are compatible.
  *
  * Modes:
@@ -261,29 +287,6 @@ function checkBuiltinTypeCompatibility(
   fromTypeId: string,
   toTypeId: string
 ): CompatibilityResult {
-  // Define compatible type pairs (from -> to widening)
-  const WIDENING_RULES: Record<string, string[]> = {
-    'builtin/int8@1.0.0': [
-      'builtin/int16@1.0.0',
-      'builtin/int32@1.0.0',
-      'builtin/int64@1.0.0',
-      'builtin/float32@1.0.0',
-      'builtin/float64@1.0.0',
-    ],
-    'builtin/int16@1.0.0': [
-      'builtin/int32@1.0.0',
-      'builtin/int64@1.0.0',
-      'builtin/float32@1.0.0',
-      'builtin/float64@1.0.0',
-    ],
-    'builtin/int32@1.0.0': [
-      'builtin/int64@1.0.0',
-      'builtin/float64@1.0.0',
-    ],
-    'builtin/int64@1.0.0': ['builtin/float64@1.0.0'],
-    'builtin/float32@1.0.0': ['builtin/float64@1.0.0'],
-  };
-
   const allowedWidening = WIDENING_RULES[fromTypeId];
   if (allowedWidening?.includes(toTypeId)) {
     return compatible(90); // Score 90 for widening conversions

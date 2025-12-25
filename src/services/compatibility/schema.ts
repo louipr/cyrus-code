@@ -26,19 +26,6 @@ export const CompatibilityResultSchema = z.object({
 export type CompatibilityResult = z.infer<typeof CompatibilityResultSchema>;
 
 // ============================================================================
-// Port Reference
-// ============================================================================
-
-/**
- * Reference to a specific port on a symbol.
- */
-export const PortRefSchema = z.object({
-  symbolId: z.string().min(1),
-  portName: z.string().min(1),
-});
-export type PortRef = z.infer<typeof PortRefSchema>;
-
-// ============================================================================
 // Validation Error Codes
 // ============================================================================
 
@@ -96,12 +83,8 @@ export const ValidationOptionsSchema = z.object({
   typeMode: z
     .enum(['strict', 'compatible'])
     .default('compatible'),
-  /** Whether to check required ports have connections */
-  checkRequired: z.boolean().default(true),
   /** Whether to check cardinality constraints */
   checkCardinality: z.boolean().default(true),
-  /** Whether to allow nullable to non-nullable connections */
-  allowNullableToNonNullable: z.boolean().default(false),
 });
 export type ValidationOptions = z.infer<typeof ValidationOptionsSchema>;
 
@@ -131,7 +114,5 @@ export function incompatible(
  */
 export const DEFAULT_VALIDATION_OPTIONS: ValidationOptions = {
   typeMode: 'compatible',
-  checkRequired: true,
   checkCardinality: true,
-  allowNullableToNonNullable: false,
 };
