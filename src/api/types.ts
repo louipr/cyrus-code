@@ -162,12 +162,6 @@ export interface SymbolQuery {
   offset?: number | undefined;
 }
 
-export interface ConnectionQuery {
-  symbolId?: string | undefined;
-  fromSymbolId?: string | undefined;
-  toSymbolId?: string | undefined;
-}
-
 // ============================================================================
 // API Response Types
 // ============================================================================

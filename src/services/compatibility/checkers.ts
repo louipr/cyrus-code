@@ -10,12 +10,32 @@ import type {
   PortDirection,
   TypeReference,
 } from '../../domain/symbol/index.js';
-import {
-  type CompatibilityResult,
-  type TypeCompatibilityMode,
-  compatible,
-  incompatible,
-} from './schema.js';
+import type { CompatibilityResult, TypeCompatibilityMode } from './schema.js';
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Create a successful compatibility result.
+ */
+function compatible(score = 100): CompatibilityResult {
+  return { compatible: true, score };
+}
+
+/**
+ * Create a failed compatibility result.
+ */
+function incompatible(
+  reason: string,
+  suggestions?: string[]
+): CompatibilityResult {
+  const result: CompatibilityResult = { compatible: false, reason, score: 0 };
+  if (suggestions) {
+    result.suggestions = suggestions;
+  }
+  return result;
+}
 
 // ============================================================================
 // Direction Compatibility

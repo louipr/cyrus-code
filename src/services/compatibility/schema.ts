@@ -39,28 +39,3 @@ export const TypeCompatibilityMode = {
 
 export type TypeCompatibilityMode =
   (typeof TypeCompatibilityMode)[keyof typeof TypeCompatibilityMode];
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Create a successful compatibility result.
- */
-export function compatible(score = 100): CompatibilityResult {
-  return { compatible: true, score };
-}
-
-/**
- * Create a failed compatibility result.
- */
-export function incompatible(
-  reason: string,
-  suggestions?: string[]
-): CompatibilityResult {
-  const result: CompatibilityResult = { compatible: false, reason, score: 0 };
-  if (suggestions) {
-    result.suggestions = suggestions;
-  }
-  return result;
-}
