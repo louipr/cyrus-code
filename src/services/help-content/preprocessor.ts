@@ -31,7 +31,8 @@
  */
 
 import { TypeScriptExtractor, ExtractedCode } from './typescript-extractor.js';
-import { C4DiagramGenerator, DiagramConfig } from '../diagram-generator/index.js';
+import { C4DiagramGenerator } from '../diagram-generator/index.js';
+import type { DiagramConfig } from '../../domain/diagram/schema.js';
 
 /**
  * Parsed typescript:include directive.

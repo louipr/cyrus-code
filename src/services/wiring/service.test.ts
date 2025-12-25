@@ -11,12 +11,11 @@ import {
   closeDatabase,
 } from '../../repositories/persistence.js';
 import { SymbolRepository } from '../../repositories/symbol-repository.js';
-import { SymbolTableService, ConnectionManager } from '../symbol-table/index.js';
+import { SymbolTableService } from '../symbol-table/index.js';
 import { DependencyGraphService } from '../dependency-graph/index.js';
 import { WiringService } from './index.js';
 import { WiringErrorCode } from './schema.js';
 import {
-  createSymbol,
   createTypeSymbol,
   createPort,
   createService,
@@ -25,16 +24,14 @@ import {
 describe('WiringService', () => {
   let store: SymbolTableService;
   let repo: SymbolRepository;
-  let connectionMgr: ConnectionManager;
   let wiring: WiringService;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
     repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
-    connectionMgr = new ConnectionManager(repo);
     const graphService = new DependencyGraphService(repo);
-    wiring = new WiringService(repo, connectionMgr, graphService);
+    wiring = new WiringService(repo, graphService);
   });
 
   afterEach(() => {

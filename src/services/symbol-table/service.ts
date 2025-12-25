@@ -11,7 +11,6 @@ import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch } from '../../domain/symbol/index.js';
 import type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
 import { SymbolQueryService } from './query-service.js';
-import { ConnectionManager } from './connection-manager.js';
 import { VersionResolver } from './version-resolver.js';
 
 // =============================================================================
@@ -21,17 +20,11 @@ import { VersionResolver } from './version-resolver.js';
 export class SymbolTableService implements ISymbolTableService {
   private repo: ISymbolRepository;
   private queryService: SymbolQueryService;
-
-  // Composed services
-  private connectionMgr: ConnectionManager;
   private versionResolver: VersionResolver;
 
   constructor(database: DatabaseType) {
     this.repo = new SymbolRepository(database);
     this.queryService = new SymbolQueryService(this.repo);
-
-    // Initialize composed services with dependencies
-    this.connectionMgr = new ConnectionManager(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
   }
 

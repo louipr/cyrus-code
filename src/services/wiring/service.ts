@@ -7,7 +7,6 @@
 
 import { randomUUID } from 'node:crypto';
 import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
-import type { ConnectionManager } from '../symbol-table/index.js';
 import type { Connection, ValidationResult } from '../../domain/symbol/index.js';
 import { createValidationResult } from '../../domain/symbol/index.js';
 import { checkPortCompatibility } from '../compatibility/index.js';
@@ -20,24 +19,52 @@ import {
   WiringErrorCode,
   ValidationErrorCode,
   DEFAULT_VALIDATION_OPTIONS,
-  wiringSuccess,
-  wiringError,
 } from './schema.js';
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Create a successful wiring result.
+ */
+function wiringSuccess(connectionId?: string): WiringResult {
+  const result: WiringResult = { success: true };
+  if (connectionId) {
+    result.connectionId = connectionId;
+  }
+  return result;
+}
+
+/**
+ * Create a failed wiring result.
+ */
+function wiringError(
+  error: string,
+  errorCode?: WiringErrorCode
+): WiringResult {
+  const result: WiringResult = { success: false, error };
+  if (errorCode) {
+    result.errorCode = errorCode;
+  }
+  return result;
+}
+
+// ============================================================================
+// Wiring Service
+// ============================================================================
 
 export class WiringService implements IWiringService {
   private repo: ISymbolRepository;
-  private connectionMgr: ConnectionManager;
   private graphService: DependencyGraphService;
   private options: ValidationOptions;
 
   constructor(
     repo: ISymbolRepository,
-    connectionMgr: ConnectionManager,
     graphService: DependencyGraphService,
     options: Partial<ValidationOptions> = {}
   ) {
     this.repo = repo;
-    this.connectionMgr = connectionMgr;
     this.graphService = graphService;
     this.options = { ...DEFAULT_VALIDATION_OPTIONS, ...options };
   }
@@ -104,8 +131,8 @@ export class WiringService implements IWiringService {
       );
     }
 
-    // Check for duplicate connection (before compatibility to get correct error)
-    const existingConnections = this.connectionMgr.findConnections(fromSymbolId);
+    // Check for duplicate connection
+    const existingConnections = this.repo.findConnectionsBySymbol(fromSymbolId);
     const duplicate = existingConnections.find(
       (c) =>
         c.fromPort === fromPort &&
@@ -119,7 +146,7 @@ export class WiringService implements IWiringService {
       );
     }
 
-    // Check port compatibility using pure function (already have ports from lookup above)
+    // Check port compatibility
     const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
 
     if (!compatibility.compatible) {
@@ -160,43 +187,36 @@ export class WiringService implements IWiringService {
       createdAt: new Date(),
     };
 
-    try {
-      this.connectionMgr.connect(connection);
-      return wiringSuccess(connectionId);
-    } catch (error) {
-      return wiringError(
-        error instanceof Error ? error.message : 'Failed to create connection'
-      );
-    }
+    this.repo.insertConnection(connection);
+    return wiringSuccess(connectionId);
   }
 
   /**
    * Remove a connection by ID.
    */
   disconnect(connectionId: string): WiringResult {
-    try {
-      this.connectionMgr.disconnect(connectionId);
-      return wiringSuccess(connectionId);
-    } catch (error) {
+    const deleted = this.repo.deleteConnection(connectionId);
+    if (!deleted) {
       return wiringError(
-        error instanceof Error ? error.message : 'Failed to remove connection',
+        `Connection '${connectionId}' not found`,
         WiringErrorCode.CONNECTION_NOT_FOUND
       );
     }
+    return wiringSuccess(connectionId);
   }
 
   /**
    * Find all connections.
    */
   findAllConnections(): Connection[] {
-    return this.connectionMgr.findAllConnections();
+    return this.repo.findAllConnections();
   }
 
   /**
    * Get incoming connections to a specific port.
    */
   getIncomingConnections(symbolId: string, portName: string): Connection[] {
-    const allConnections = this.connectionMgr.findAllConnections();
+    const allConnections = this.repo.findAllConnections();
     return allConnections.filter(
       (c) => c.toSymbolId === symbolId && c.toPort === portName
     );
@@ -274,7 +294,7 @@ export class WiringService implements IWiringService {
       return result;
     }
 
-    // Check port compatibility using pure function
+    // Check port compatibility
     const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
 
     if (!compatibility.compatible) {
@@ -327,7 +347,7 @@ export class WiringService implements IWiringService {
       // Check if connection would create cycle
       if (this.graphService.wouldCreateCycle(fromSymbolId, symbol.id)) continue;
 
-      // Check compatibility with each port using pure function
+      // Check compatibility with each port
       for (const targetPort of symbol.ports) {
         const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
         if (compatibility.compatible) {
@@ -363,7 +383,7 @@ export class WiringService implements IWiringService {
     }> = [];
 
     const allSymbols = this.repo.list();
-    const allConnections = this.connectionMgr.findAllConnections();
+    const allConnections = this.repo.findAllConnections();
 
     for (const symbol of allSymbols) {
       for (const port of symbol.ports) {
@@ -387,5 +407,4 @@ export class WiringService implements IWiringService {
 
     return unconnected;
   }
-
 }

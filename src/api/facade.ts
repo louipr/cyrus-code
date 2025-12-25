@@ -13,7 +13,6 @@ import { SymbolRepository, type ISymbolRepository } from '../repositories/symbol
 import {
   SymbolTableService,
   SymbolQueryService,
-  ConnectionManager,
   VersionResolver,
   validateSymbolTable,
   validateSymbolById,
@@ -81,7 +80,6 @@ export class ApiFacade implements IApiFacade {
   // Symbol table services
   private symbolTable: SymbolTableService;
   private queryService: SymbolQueryService;
-  private connectionMgr: ConnectionManager;
   private versionResolver: VersionResolver;
 
   // Domain services
@@ -96,16 +94,11 @@ export class ApiFacade implements IApiFacade {
     // Create symbol table services
     this.symbolTable = new SymbolTableService(db);
     this.queryService = new SymbolQueryService(this.repo);
-    this.connectionMgr = new ConnectionManager(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
 
     // Create domain services with dependency injection
     this.graphService = new DependencyGraphService(this.repo);
-    this.wiringService = new WiringService(
-      this.repo,
-      this.connectionMgr,
-      this.graphService
-    );
+    this.wiringService = new WiringService(this.repo, this.graphService);
     this.codeGenerationService = new CodeGenerationService(this.repo);
   }
 
@@ -427,6 +420,7 @@ export class ApiFacade implements IApiFacade {
 
   /**
    * Create a connection between ports.
+   * Note: For validated connections with compatibility checks, use wireConnection() instead.
    */
   createConnection(request: CreateConnectionRequest): ApiResponse<ConnectionDTO> {
     try {
@@ -440,7 +434,7 @@ export class ApiFacade implements IApiFacade {
         createdAt: new Date(),
       };
 
-      this.connectionMgr.connect(connection);
+      this.repo.insertConnection(connection);
       return {
         success: true,
         data: this.connectionToDto(connection),
@@ -460,18 +454,17 @@ export class ApiFacade implements IApiFacade {
    * Remove a connection.
    */
   removeConnection(connectionId: string): ApiResponse<void> {
-    try {
-      this.connectionMgr.disconnect(connectionId);
-      return { success: true };
-    } catch (error) {
+    const deleted = this.repo.deleteConnection(connectionId);
+    if (!deleted) {
       return {
         success: false,
         error: {
-          code: 'DISCONNECT_FAILED',
-          message: error instanceof Error ? error.message : String(error),
+          code: 'NOT_FOUND',
+          message: `Connection '${connectionId}' not found`,
         },
       };
     }
+    return { success: true };
   }
 
   /**
@@ -479,7 +472,7 @@ export class ApiFacade implements IApiFacade {
    */
   getConnections(symbolId: string): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.connectionMgr.findConnections(symbolId);
+      const connections = this.repo.findConnectionsBySymbol(symbolId);
       return {
         success: true,
         data: connections.map((c: Connection) => this.connectionToDto(c)),
@@ -500,7 +493,7 @@ export class ApiFacade implements IApiFacade {
    */
   getAllConnections(): ApiResponse<ConnectionDTO[]> {
     try {
-      const connections = this.connectionMgr.findAllConnections();
+      const connections = this.repo.findAllConnections();
       return {
         success: true,
         data: connections.map((c: Connection) => this.connectionToDto(c)),

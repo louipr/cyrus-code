@@ -151,32 +151,3 @@ export const DEFAULT_VALIDATION_OPTIONS: ValidationOptions = {
   typeMode: 'compatible',
   checkCardinality: true,
 };
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Create a successful wiring result.
- */
-export function wiringSuccess(connectionId?: string): WiringResult {
-  const result: WiringResult = { success: true };
-  if (connectionId) {
-    result.connectionId = connectionId;
-  }
-  return result;
-}
-
-/**
- * Create a failed wiring result.
- */
-export function wiringError(
-  error: string,
-  errorCode?: WiringErrorCode
-): WiringResult {
-  const result: WiringResult = { success: false, error };
-  if (errorCode) {
-    result.errorCode = errorCode;
-  }
-  return result;
-}

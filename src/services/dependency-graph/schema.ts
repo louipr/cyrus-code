@@ -92,22 +92,6 @@ export interface GraphStats {
 }
 
 // ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Create an empty dependency graph.
- */
-export function createEmptyGraph(): DependencyGraph {
-  return {
-    nodes: new Map(),
-    edges: new Map(),
-    topologicalOrder: [],
-    cycles: [],
-  };
-}
-
-// ============================================================================
 // Service Interface
 // ============================================================================
 

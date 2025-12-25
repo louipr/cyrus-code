@@ -15,8 +15,70 @@ import type {
   PreviewResult,
   ICodeGenerationService,
 } from './schema.js';
-import { generationError, emptyBatchResult, generationSuccess, DEFAULT_GENERATION_OPTIONS } from './schema.js';
+import { DEFAULT_GENERATION_OPTIONS } from './schema.js';
 import { isGeneratable, symbolToGeneratedComponent } from './transformer.js';
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Create a successful generation result.
+ */
+function generationSuccess(
+  symbolId: string,
+  generatedPath: string,
+  implementationPath: string,
+  contentHash: string,
+  userFileCreated: boolean,
+  warnings: string[] = []
+): GenerationResult {
+  return {
+    success: true,
+    symbolId,
+    generatedPath,
+    implementationPath,
+    contentHash,
+    generatedAt: new Date(),
+    userFileCreated,
+    warnings,
+  };
+}
+
+/**
+ * Create a failed generation result.
+ */
+function generationError(
+  symbolId: string,
+  error: string,
+  generatedPath: string = '',
+  implementationPath: string = ''
+): GenerationResult {
+  return {
+    success: false,
+    symbolId,
+    generatedPath,
+    implementationPath,
+    contentHash: '',
+    generatedAt: new Date(),
+    userFileCreated: false,
+    warnings: [],
+    error,
+  };
+}
+
+/**
+ * Create an empty batch result.
+ */
+function emptyBatchResult(): GenerationBatchResult {
+  return {
+    total: 0,
+    succeeded: 0,
+    failed: 0,
+    skipped: 0,
+    results: [],
+  };
+}
 
 // TypeScript Backend
 import {

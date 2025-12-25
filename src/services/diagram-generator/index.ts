@@ -3,15 +3,9 @@
  *
  * Generates C4 Level 4 (Code) diagrams with UML class notation.
  *
- * For internal types, import directly from submodules:
- *   - ./schema.js - All diagram types (ClassInfo, MethodInfo, etc.)
- *   - ./class-diagram-builder.js - ClassDiagramBuilder
- *   - ./mermaid-renderer.js - MermaidRenderer
- *   - ./type-simplifier.js - TypeSimplifier utilities
+ * Domain types (DiagramConfig, DiagramResult, C4Diagram) should be
+ * imported directly from domain/diagram/schema.js.
  */
 
 // Generator (primary API)
 export { C4DiagramGenerator } from './generator.js';
-
-// Commonly used types
-export type { DiagramResult, DiagramConfig, C4Diagram } from '../../domain/diagram/schema.js';

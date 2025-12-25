@@ -6,17 +6,28 @@
  */
 
 import type { ComponentSymbol, Connection, PortDefinition } from '../../domain/symbol/index.js';
-import {
-  type DependencyGraph,
-  type GraphNode,
-  type GraphEdge,
-  type GraphStats,
-  createEmptyGraph,
+import type {
+  DependencyGraph,
+  GraphNode,
+  GraphEdge,
+  GraphStats,
 } from './schema.js';
 
 // ============================================================================
 // Internal Helpers
 // ============================================================================
+
+/**
+ * Create an empty dependency graph.
+ */
+function createEmptyGraph(): DependencyGraph {
+  return {
+    nodes: new Map(),
+    edges: new Map(),
+    topologicalOrder: [],
+    cycles: [],
+  };
+}
 
 /**
  * Extract input/output port names from a list of port definitions.

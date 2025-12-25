@@ -13,7 +13,6 @@ import {
 import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from './service.js';
 import { SymbolQueryService } from './query-service.js';
-import { ConnectionManager } from './connection-manager.js';
 import { VersionResolver } from './version-resolver.js';
 import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
 import type { Connection } from '../../domain/symbol/index.js';
@@ -22,7 +21,6 @@ import { createSymbol } from '../test-fixtures.js';
 describe('SymbolTableService', () => {
   let store: SymbolTableService;
   let queryService: SymbolQueryService;
-  let connectionMgr: ConnectionManager;
   let versionResolver: VersionResolver;
   let repo: SymbolRepository;
 
@@ -31,7 +29,6 @@ describe('SymbolTableService', () => {
     repo = new SymbolRepository(db);
     store = new SymbolTableService(db);
     queryService = new SymbolQueryService(repo);
-    connectionMgr = new ConnectionManager(repo);
     versionResolver = new VersionResolver(repo);
   });
 
@@ -282,7 +279,7 @@ describe('SymbolTableService', () => {
     });
   });
 
-  describe('connections', () => {
+  describe('connections (via repository)', () => {
     it('should create and retrieve connections', () => {
       // Create type symbol for ports
       store.register(
@@ -336,29 +333,13 @@ describe('SymbolTableService', () => {
         createdAt: new Date(),
       };
 
-      connectionMgr.connect(connection);
+      repo.insertConnection(connection);
 
-      const connections = connectionMgr.findConnections('a@1.0.0');
+      const connections = repo.findConnectionsBySymbol('a@1.0.0');
       assert.strictEqual(connections.length, 1);
       const firstConn = connections[0];
       assert.ok(firstConn);
       assert.strictEqual(firstConn.id, 'conn-1');
-    });
-
-    it('should reject connection to non-existent port', () => {
-      store.register(createSymbol({ id: 'a@1.0.0' }));
-      store.register(createSymbol({ id: 'b@1.0.0' }));
-
-      const connection: Connection = {
-        id: 'conn-1',
-        fromSymbolId: 'a@1.0.0',
-        fromPort: 'nonexistent',
-        toSymbolId: 'b@1.0.0',
-        toPort: 'input',
-        createdAt: new Date(),
-      };
-
-      assert.throws(() => connectionMgr.connect(connection), /not found/);
     });
   });
 

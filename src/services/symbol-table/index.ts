@@ -13,7 +13,6 @@
 
 export { SymbolTableService } from './service.js';
 export { SymbolQueryService } from './query-service.js';
-export { ConnectionManager } from './connection-manager.js';
 export { VersionResolver } from './version-resolver.js';
 export {
   validateSymbolTable,
