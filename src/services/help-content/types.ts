@@ -19,4 +19,4 @@ export type {
 } from './schema.js';
 
 // Re-export utility that has no Node.js dependencies
-export { slugify } from './headings.js';
+export { slugify } from '../../infrastructure/markdown/index.js';

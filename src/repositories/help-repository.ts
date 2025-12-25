@@ -15,7 +15,7 @@ import {
   C4Hierarchy,
   DocumentHeading,
 } from '../services/help-content/schema.js';
-import { extractHeadings } from '../services/help-content/headings.js';
+import { extractHeadings } from '../infrastructure/markdown/index.js';
 
 /**
  * Help Repository - loads and provides access to help data.
