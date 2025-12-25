@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { symbolToGeneratedComponent, isGeneratable } from './transformer.js';
-import { createSymbol, createPort } from '../test-fixtures.js';
+import { createSymbol, createPort } from '../../testing/fixtures.js';
 
 // =============================================================================
 // isGeneratable Tests

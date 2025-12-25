@@ -16,7 +16,7 @@ import { SymbolQueryService } from './query-service.js';
 import { VersionResolver } from './version-resolver.js';
 import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
 import type { Connection } from '../../domain/symbol/index.js';
-import { createSymbol } from '../test-fixtures.js';
+import { createSymbol } from '../../testing/fixtures.js';
 
 describe('SymbolTableService', () => {
   let store: SymbolTableService;

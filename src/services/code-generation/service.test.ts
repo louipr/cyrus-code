@@ -14,7 +14,7 @@ import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { CodeGenerationService, createCodeGenerationService } from './index.js';
 import { symbolToGeneratedComponent } from './transformer.js';
 import { getGeneratedPaths, fileExists } from '../../infrastructure/file-system/index.js';
-import { createSymbol, createTypeSymbol, createPort } from '../test-fixtures.js';
+import { createSymbol, createTypeSymbol, createPort } from '../../testing/fixtures.js';
 
 // =============================================================================
 // Test Fixtures (codegen-specific)

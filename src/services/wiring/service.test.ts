@@ -19,7 +19,7 @@ import {
   createTypeSymbol,
   createPort,
   createService,
-} from '../test-fixtures.js';
+} from '../../testing/fixtures.js';
 
 describe('WiringService', () => {
   let store: SymbolTableService;
