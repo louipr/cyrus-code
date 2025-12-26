@@ -14,8 +14,7 @@ import type {
 // Service Interfaces
 // ============================================================================
 
-// Forward declaration for DependencyGraphService
-import type { DependencyGraphService } from '../dependency-graph/index.js';
+import type { IDependencyGraphService } from '../dependency-graph/index.js';
 
 /**
  * Wiring service public API contract.
@@ -30,7 +29,7 @@ export interface IWiringService {
   findAllConnections(): Connection[];
 
   // Graph service accessor
-  getGraphService(): DependencyGraphService;
+  getGraphService(): IDependencyGraphService;
 
   // Validation
   validateConnection(request: ConnectionRequest): ValidationResult;

@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { Connection, ValidationResult, ISymbolRepository } from '../../domain/symbol/index.js';
 import { createValidationResult } from '../../domain/symbol/index.js';
 import { checkPortCompatibility } from '../../domain/compatibility/index.js';
-import type { DependencyGraphService } from '../dependency-graph/index.js';
+import type { IDependencyGraphService } from '../dependency-graph/index.js';
 import {
   type IWiringService,
   type ConnectionRequest,
@@ -19,6 +19,11 @@ import {
   ValidationErrorCode,
   DEFAULT_VALIDATION_OPTIONS,
 } from './schema.js';
+import {
+  validateConnectionRequest,
+  type ConnectionValidation,
+  type ConnectionValidationErrorCode,
+} from './validators.js';
 
 // ============================================================================
 // Internal Helpers
@@ -49,18 +54,60 @@ function wiringError(
   return result;
 }
 
+/**
+ * Map validation error code to wiring error code.
+ */
+function toWiringErrorCode(code: ConnectionValidationErrorCode): WiringErrorCode {
+  switch (code) {
+    case 'SELF_CONNECTION':
+      return WiringErrorCode.SELF_CONNECTION;
+    case 'SOURCE_SYMBOL_NOT_FOUND':
+      return WiringErrorCode.SOURCE_SYMBOL_NOT_FOUND;
+    case 'TARGET_SYMBOL_NOT_FOUND':
+      return WiringErrorCode.TARGET_SYMBOL_NOT_FOUND;
+    case 'SOURCE_PORT_NOT_FOUND':
+      return WiringErrorCode.SOURCE_PORT_NOT_FOUND;
+    case 'TARGET_PORT_NOT_FOUND':
+      return WiringErrorCode.TARGET_PORT_NOT_FOUND;
+    case 'INCOMPATIBLE_PORTS':
+      return WiringErrorCode.INCOMPATIBLE_PORTS;
+    case 'WOULD_CREATE_CYCLE':
+      return WiringErrorCode.WOULD_CREATE_CYCLE;
+  }
+}
+
+/**
+ * Map validation error code to validation result error code.
+ */
+function toValidationErrorCode(code: ConnectionValidationErrorCode): string {
+  switch (code) {
+    case 'SELF_CONNECTION':
+      return ValidationErrorCode.SELF_CONNECTION;
+    case 'SOURCE_SYMBOL_NOT_FOUND':
+    case 'TARGET_SYMBOL_NOT_FOUND':
+      return ValidationErrorCode.SYMBOL_NOT_FOUND;
+    case 'SOURCE_PORT_NOT_FOUND':
+    case 'TARGET_PORT_NOT_FOUND':
+      return ValidationErrorCode.PORT_NOT_FOUND;
+    case 'INCOMPATIBLE_PORTS':
+      return ValidationErrorCode.TYPE_MISMATCH;
+    case 'WOULD_CREATE_CYCLE':
+      return 'CIRCULAR_DEPENDENCY';
+  }
+}
+
 // ============================================================================
 // Wiring Service
 // ============================================================================
 
 export class WiringService implements IWiringService {
   private repo: ISymbolRepository;
-  private graphService: DependencyGraphService;
+  private graphService: IDependencyGraphService;
   private options: ValidationOptions;
 
   constructor(
     repo: ISymbolRepository,
-    graphService: DependencyGraphService,
+    graphService: IDependencyGraphService,
     options: Partial<ValidationOptions> = {}
   ) {
     this.repo = repo;
@@ -71,7 +118,7 @@ export class WiringService implements IWiringService {
   /**
    * Get the graph service for direct graph operations.
    */
-  getGraphService(): DependencyGraphService {
+  getGraphService(): IDependencyGraphService {
     return this.graphService;
   }
 
@@ -86,51 +133,18 @@ export class WiringService implements IWiringService {
   connect(request: ConnectionRequest): WiringResult {
     const { fromSymbolId, fromPort, toSymbolId, toPort, transform } = request;
 
-    // Check for self-connection
-    if (fromSymbolId === toSymbolId) {
-      return wiringError(
-        'Cannot connect a component to itself',
-        WiringErrorCode.SELF_CONNECTION
-      );
+    // Run core validation
+    const validation = validateConnectionRequest(request, {
+      repo: this.repo,
+      graphService: this.graphService,
+      options: this.options,
+    });
+
+    if (!validation.valid) {
+      return wiringError(validation.message, toWiringErrorCode(validation.errorCode));
     }
 
-    // Get source symbol
-    const fromSymbol = this.repo.find(fromSymbolId);
-    if (!fromSymbol) {
-      return wiringError(
-        `Source symbol '${fromSymbolId}' not found`,
-        WiringErrorCode.SOURCE_SYMBOL_NOT_FOUND
-      );
-    }
-
-    // Get target symbol
-    const toSymbol = this.repo.find(toSymbolId);
-    if (!toSymbol) {
-      return wiringError(
-        `Target symbol '${toSymbolId}' not found`,
-        WiringErrorCode.TARGET_SYMBOL_NOT_FOUND
-      );
-    }
-
-    // Get source port
-    const sourcePort = fromSymbol.ports.find((p) => p.name === fromPort);
-    if (!sourcePort) {
-      return wiringError(
-        `Port '${fromPort}' not found on symbol '${fromSymbolId}'`,
-        WiringErrorCode.SOURCE_PORT_NOT_FOUND
-      );
-    }
-
-    // Get target port
-    const targetPort = toSymbol.ports.find((p) => p.name === toPort);
-    if (!targetPort) {
-      return wiringError(
-        `Port '${toPort}' not found on symbol '${toSymbolId}'`,
-        WiringErrorCode.TARGET_PORT_NOT_FOUND
-      );
-    }
-
-    // Check for duplicate connection
+    // Check for duplicate connection (requires connection state)
     const existingConnections = this.repo.findConnectionsBySymbol(fromSymbolId);
     const duplicate = existingConnections.find(
       (c) =>
@@ -145,18 +159,8 @@ export class WiringService implements IWiringService {
       );
     }
 
-    // Check port compatibility
-    const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
-
-    if (!compatibility.compatible) {
-      return wiringError(
-        compatibility.reason ?? 'Ports are not compatible',
-        WiringErrorCode.INCOMPATIBLE_PORTS
-      );
-    }
-
-    // Check cardinality on target port
-    if (!targetPort.multiple && this.options.checkCardinality) {
+    // Check cardinality on target port (requires connection state)
+    if (!validation.targetPort.multiple && this.options.checkCardinality) {
       const incomingConnections = this.getIncomingConnections(toSymbolId, toPort);
       if (incomingConnections.length > 0) {
         return wiringError(
@@ -164,14 +168,6 @@ export class WiringService implements IWiringService {
           WiringErrorCode.TARGET_PORT_FULL
         );
       }
-    }
-
-    // Check if connection would create a cycle
-    if (this.graphService.wouldCreateCycle(fromSymbolId, toSymbolId)) {
-      return wiringError(
-        'Connection would create a circular dependency',
-        WiringErrorCode.WOULD_CREATE_CYCLE
-      );
     }
 
     // Create the connection
@@ -230,93 +226,22 @@ export class WiringService implements IWiringService {
    */
   validateConnection(request: ConnectionRequest): ValidationResult {
     const result = createValidationResult();
-    const { fromSymbolId, fromPort, toSymbolId, toPort } = request;
 
-    // Check for self-connection
-    if (fromSymbolId === toSymbolId) {
+    // Run core validation
+    const validation = validateConnectionRequest(request, {
+      repo: this.repo,
+      graphService: this.graphService,
+      options: this.options,
+    });
+
+    if (!validation.valid) {
       result.errors.push({
-        code: ValidationErrorCode.SELF_CONNECTION,
-        message: 'Cannot connect a component to itself',
-        symbolIds: [fromSymbolId],
+        code: toValidationErrorCode(validation.errorCode),
+        message: validation.message,
+        symbolIds: validation.symbolIds,
         severity: 'error',
       });
       result.valid = false;
-      return result;
-    }
-
-    // Look up symbols and ports
-    const fromSymbol = this.repo.find(fromSymbolId);
-    if (!fromSymbol) {
-      result.errors.push({
-        code: ValidationErrorCode.SYMBOL_NOT_FOUND,
-        message: `Source symbol '${fromSymbolId}' not found`,
-        symbolIds: [fromSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
-    }
-
-    const toSymbol = this.repo.find(toSymbolId);
-    if (!toSymbol) {
-      result.errors.push({
-        code: ValidationErrorCode.SYMBOL_NOT_FOUND,
-        message: `Target symbol '${toSymbolId}' not found`,
-        symbolIds: [toSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
-    }
-
-    const sourcePort = fromSymbol.ports.find(p => p.name === fromPort);
-    if (!sourcePort) {
-      result.errors.push({
-        code: ValidationErrorCode.PORT_NOT_FOUND,
-        message: `Port '${fromPort}' not found on symbol '${fromSymbolId}'`,
-        symbolIds: [fromSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
-    }
-
-    const targetPort = toSymbol.ports.find(p => p.name === toPort);
-    if (!targetPort) {
-      result.errors.push({
-        code: ValidationErrorCode.PORT_NOT_FOUND,
-        message: `Port '${toPort}' not found on symbol '${toSymbolId}'`,
-        symbolIds: [toSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
-    }
-
-    // Check port compatibility
-    const compatibility = checkPortCompatibility(sourcePort, targetPort, this.options.typeMode);
-
-    if (!compatibility.compatible) {
-      result.errors.push({
-        code: ValidationErrorCode.TYPE_MISMATCH,
-        message: compatibility.reason ?? 'Ports are not compatible',
-        symbolIds: [fromSymbolId, toSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
-    }
-
-    // Check if would create cycle
-    if (this.graphService.wouldCreateCycle(fromSymbolId, toSymbolId)) {
-      result.errors.push({
-        code: 'CIRCULAR_DEPENDENCY',
-        message: 'Connection would create a circular dependency',
-        symbolIds: [fromSymbolId, toSymbolId],
-        severity: 'error',
-      });
-      result.valid = false;
-      return result;
     }
 
     return result;

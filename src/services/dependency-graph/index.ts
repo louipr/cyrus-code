@@ -14,6 +14,7 @@ export { DependencyGraphService } from './service.js';
 
 // Commonly used types
 export type {
+  IDependencyGraphService,
   DependencyGraph,
   GraphNode,
   GraphEdge,
