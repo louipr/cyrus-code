@@ -5,31 +5,23 @@
 ```mermaid
 C4Component
     Container_Boundary(st, "Symbol Table") {
-        Component(store, "Symbol Store", "TypeScript", "Facade - CRUD + delegation")
-        Component(query, "Query Service", "TypeScript", "Symbol discovery")
-        Component(version, "Version Resolver", "TypeScript", "SemVer compat")
-        Component(status, "Status Tracker", "TypeScript", "Usage tracking")
+        Component(store, "Symbol Table Service", "TypeScript", "CRUD + queries + versioning")
+        Component(version, "Version Resolver", "TypeScript", "SemVer compat (internal)")
         Component(validator, "Symbol Validator", "TypeScript", "Integrity checks")
         Component(persist, "Symbol Repository", "TypeScript", "Database I/O")
     }
 
     ComponentDb_Ext(db, "SQLite", "SQLite", "Durable storage")
 
-    Rel(store, query, "queries")
     Rel(store, version, "resolves")
-    Rel(store, status, "tracks")
     Rel(store, validator, "validates")
     Rel(store, persist, "persists")
-    Rel(query, persist, "queries")
     Rel(version, persist, "reads")
-    Rel(status, persist, "updates")
     Rel(validator, persist, "reads")
     Rel(persist, db, "SQL")
 
     UpdateElementStyle(store, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
-    UpdateElementStyle(query, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
     UpdateElementStyle(version, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
-    UpdateElementStyle(status, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
     UpdateElementStyle(validator, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
     UpdateElementStyle(persist, $bgColor="#0d47a1", $fontColor="#ffffff", $borderColor="#1565c0")
     UpdateElementStyle(db, $bgColor="#37474f", $fontColor="#ffffff", $borderColor="#546e7a")
@@ -47,20 +39,8 @@ C4Component
 classDiagram
     direction TB
 
-    class IVersionResolver {
+    class ISymbolTableService {
         <<interface>>
-        +getVersions()
-        +getLatest()
-    }
-
-    class ISymbolValidator {
-        <<interface>>
-        +validate()
-        +validateSymbol()
-    }
-
-    class SymbolTableService {
-        -repo: SymbolRepository
         +register()
         +get()
         +update()
@@ -69,51 +49,52 @@ classDiagram
         +registerWithAutoId()
         +resolve()
         +query()
+        +search()
+        +findContains()
+        +findContainedBy()
+        +getDependents()
+        +getDependencies()
+        +findUnreachable()
+        +findUntested()
+        +getVersions()
     }
 
-    class SymbolQueryService {
-        -repo: SymbolRepository
-        +findByNamespace()
-        +findByLevel()
-        +search()
-        +findUnreachable()
+    class SymbolTableService {
+        -repo: ISymbolRepository
+        -versionResolver: VersionResolver
     }
 
     class VersionResolver {
-        -repo: SymbolRepository
+        -repo: ISymbolRepository
         +getVersions()
         +getLatest()
     }
 
     class SymbolValidator {
-        -repo: SymbolRepository
-        +validate()
-        +validateSymbol()
+        +validateSymbolTable()
+        +validateSymbolById()
+        +checkCircularContainment()
     }
 
     class SymbolRepository {
         -db: SQLite
         +insert()
-        +get()
+        +find()
         +findByNamespace()
+        +search()
         +insertConnection()
         +deleteConnection()
         +getConnections()
     }
 
-    IVersionResolver <|.. VersionResolver : implements
-    ISymbolValidator <|.. SymbolValidator : implements
+    ISymbolTableService <|.. SymbolTableService : implements
 
-    SymbolTableService "1" *-- "1" SymbolRepository : owns
-    SymbolTableService "1" *-- "1" SymbolQueryService : owns
     SymbolTableService "1" *-- "1" VersionResolver : owns
-    SymbolTableService "1" *-- "1" SymbolValidator : owns
-
-    SymbolQueryService "1" --> "1" SymbolRepository : queries
+    SymbolTableService "1" --> "1" SymbolRepository : uses
     VersionResolver "1" --> "1" SymbolRepository : reads
-    SymbolValidator "1" --> "1" SymbolRepository : reads
+    SymbolValidator ..> SymbolRepository : validates
 ```
 
-*Figure: C4-4 UML class diagram showing the Symbol Table implementation architecture with segregated interfaces (ISP) and composed services (SRP).*
+*Figure: C4-4 UML class diagram showing the Symbol Table implementation architecture. SymbolTableService provides unified CRUD, query, and version operations.*
 
-> **Design Note**: ConnectionManager was removed (2024-12) as duplicate validation layer. WiringService now calls SymbolRepository directly for connection operations.
+> **Design Note**: SymbolQueryService was merged into SymbolTableService (2024-12) to eliminate pass-through delegation. VersionResolver remains internal. ConnectionManager was removed as duplicate validation layer; WiringService calls SymbolRepository directly.

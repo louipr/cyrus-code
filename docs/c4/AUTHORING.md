@@ -146,8 +146,8 @@ class ISymbolTableService {
 }
 
 class SymbolTableService {
-    -repo: SymbolRepository
-    -queryService: SymbolQueryService
+    -repo: ISymbolRepository
+    -versionResolver: VersionResolver
     +register()
     +get()
 }
@@ -192,38 +192,36 @@ classDiagram
         +get()
         +update()
         +remove()
-        +list()
         +query()
+        +search()
     }
 
     class SymbolTableService {
-        -repo: SymbolRepository
+        -repo: ISymbolRepository
+        -versionResolver: VersionResolver
         +register()
         +get()
-        +update()
-        +remove()
-        +list()
+        +query()
+        +search()
     }
 
-    class SymbolQueryService {
-        -repo: SymbolRepository
-        +findByLevel()
-        +findByKind()
-        +search()
-        +getDependents()
+    class VersionResolver {
+        -repo: ISymbolRepository
+        +getVersions()
+        +getLatest()
     }
 
     class SymbolRepository {
         -db: SQLite
         +insert()
-        +findById()
+        +find()
         +findByNamespace()
     }
 
     ISymbolTableService <|.. SymbolTableService : implements
-    SymbolTableService "1" *-- "1" SymbolRepository : owns
-    SymbolTableService "1" *-- "1" SymbolQueryService : owns
-    SymbolQueryService "1" --> "1" SymbolRepository : queries
+    SymbolTableService "1" *-- "1" VersionResolver : owns
+    SymbolTableService "1" --> "1" SymbolRepository : uses
+    VersionResolver "1" --> "1" SymbolRepository : reads
 ```
 
 ---

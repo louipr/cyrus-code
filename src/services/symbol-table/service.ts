@@ -8,7 +8,6 @@
 import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
 import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch } from '../../domain/symbol/index.js';
 import type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
-import { SymbolQueryService } from './query-service.js';
 import { VersionResolver } from './version-resolver.js';
 
 // =============================================================================
@@ -17,7 +16,6 @@ import { VersionResolver } from './version-resolver.js';
 
 export class SymbolTableService implements ISymbolTableService {
   private repo: ISymbolRepository;
-  private queryService: SymbolQueryService;
   private versionResolver: VersionResolver;
 
   /**
@@ -26,7 +24,6 @@ export class SymbolTableService implements ISymbolTableService {
    */
   constructor(repo: ISymbolRepository) {
     this.repo = repo;
-    this.queryService = new SymbolQueryService(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
   }
 
@@ -184,52 +181,157 @@ export class SymbolTableService implements ISymbolTableService {
 
     // Apply filters in order of selectivity
     if (filters.namespace !== undefined) {
-      results = this.queryService.findByNamespace(filters.namespace);
+      results = this.repo.findByNamespace(filters.namespace);
     }
 
     if (filters.level !== undefined) {
-      const levelResults = this.queryService.findByLevel(filters.level);
+      const levelResults = this.repo.findByLevel(filters.level);
       results = results
         ? results.filter((r) => levelResults.some((l) => l.id === r.id))
         : levelResults;
     }
 
     if (filters.kind !== undefined) {
-      const kindResults = this.queryService.findByKind(filters.kind);
+      const kindResults = this.repo.findByKind(filters.kind);
       results = results
         ? results.filter((r) => kindResults.some((k) => k.id === r.id))
         : kindResults;
     }
 
     if (filters.status !== undefined) {
-      const statusResults = this.queryService.findByStatus(filters.status);
+      const statusResults = this.repo.findByStatus(filters.status);
       results = results
         ? results.filter((r) => statusResults.some((s) => s.id === r.id))
         : statusResults;
     }
 
     if (filters.origin !== undefined) {
-      const originResults = this.queryService.findByOrigin(filters.origin);
+      const originResults = this.repo.findByOrigin(filters.origin);
       results = results
         ? results.filter((r) => originResults.some((o) => o.id === r.id))
         : originResults;
     }
 
     if (filters.tag !== undefined) {
-      const tagResults = this.queryService.findByTag(filters.tag);
+      const tagResults = this.repo.findByTag(filters.tag);
       results = results
         ? results.filter((r) => tagResults.some((t) => t.id === r.id))
         : tagResults;
     }
 
     if (filters.search !== undefined) {
-      const searchResults = this.queryService.search(filters.search);
+      const searchResults = this.repo.search(filters.search);
       results = results
         ? results.filter((r) => searchResults.some((s) => s.id === r.id))
         : searchResults;
     }
 
     return results ?? this.list();
+  }
+
+  // ===========================================================================
+  // Text Search
+  // ===========================================================================
+
+  /**
+   * Search symbols by text.
+   */
+  search(query: string): ComponentSymbol[] {
+    return this.repo.search(query);
+  }
+
+  // ===========================================================================
+  // Relationship Queries
+  // ===========================================================================
+
+  /**
+   * Find symbols contained by a parent symbol.
+   */
+  findContains(id: string): ComponentSymbol[] {
+    const childIds = this.repo.findContains(id);
+    return childIds
+      .map((childId) => this.repo.find(childId))
+      .filter((s): s is ComponentSymbol => s !== undefined);
+  }
+
+  /**
+   * Find the parent symbol that contains this symbol.
+   */
+  findContainedBy(id: string): ComponentSymbol | undefined {
+    const parentId = this.repo.findContainedBy(id);
+    if (!parentId) return undefined;
+    return this.repo.find(parentId);
+  }
+
+  /**
+   * Find symbols that depend on the given symbol.
+   * (Symbols that have ports referencing this symbol's type)
+   */
+  getDependents(id: string): ComponentSymbol[] {
+    const allSymbols = this.repo.list();
+    return allSymbols.filter((symbol) =>
+      symbol.ports.some(
+        (port) =>
+          port.type.symbolId === id ||
+          port.type.generics?.some((g) => g.symbolId === id)
+      )
+    );
+  }
+
+  /**
+   * Find symbols that this symbol depends on.
+   * (Symbols referenced by this symbol's ports)
+   */
+  getDependencies(id: string): ComponentSymbol[] {
+    const symbol = this.repo.find(id);
+    if (!symbol) return [];
+
+    const depIds = new Set<string>();
+
+    for (const port of symbol.ports) {
+      depIds.add(port.type.symbolId);
+      if (port.type.generics) {
+        for (const generic of port.type.generics) {
+          depIds.add(generic.symbolId);
+        }
+      }
+    }
+
+    return Array.from(depIds)
+      .map((depId) => this.repo.find(depId))
+      .filter((s): s is ComponentSymbol => s !== undefined);
+  }
+
+  // ===========================================================================
+  // Status Queries
+  // ===========================================================================
+
+  /**
+   * Find unreachable symbols (status = 'declared').
+   */
+  findUnreachable(): ComponentSymbol[] {
+    return this.repo.findByStatus('declared');
+  }
+
+  /**
+   * Find untested symbols (status != 'tested' and status != 'executed').
+   */
+  findUntested(): ComponentSymbol[] {
+    const all = this.repo.list();
+    return all.filter(
+      (s) => s.status !== 'tested' && s.status !== 'executed'
+    );
+  }
+
+  // ===========================================================================
+  // Version Queries
+  // ===========================================================================
+
+  /**
+   * Get all versions of a symbol by namespace and name.
+   */
+  getVersions(namespace: string, name: string): ComponentSymbol[] {
+    return this.versionResolver.getVersions(namespace, name);
   }
 
   // ===========================================================================

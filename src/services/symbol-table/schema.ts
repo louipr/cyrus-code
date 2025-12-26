@@ -50,6 +50,22 @@ export interface ISymbolTableService {
     options?: ResolveOptions
   ): ComponentSymbol | undefined;
   query(filters: ComponentQuery): ComponentSymbol[];
+
+  // Text Search
+  search(query: string): ComponentSymbol[];
+
+  // Relationship Queries
+  findContains(id: string): ComponentSymbol[];
+  findContainedBy(id: string): ComponentSymbol | undefined;
+  getDependents(id: string): ComponentSymbol[];
+  getDependencies(id: string): ComponentSymbol[];
+
+  // Status Queries
+  findUnreachable(): ComponentSymbol[];
+  findUntested(): ComponentSymbol[];
+
+  // Version Queries
+  getVersions(namespace: string, name: string): ComponentSymbol[];
 }
 // =============================================================================
 // Query Types

@@ -472,9 +472,8 @@ cyrus-code/
 │   │
 │   ├── services/                      # Layer 4: Application Logic
 │   │   ├── symbol-table/              # Symbol management
-│   │   │   ├── service.ts             # SymbolTableService
-│   │   │   ├── query-service.ts       # SymbolQueryService
-│   │   │   ├── version-resolver.ts    # VersionResolver
+│   │   │   ├── service.ts             # SymbolTableService (CRUD + queries)
+│   │   │   ├── version-resolver.ts    # VersionResolver (internal)
 │   │   │   ├── symbol-validator.ts    # SymbolValidator
 │   │   │   ├── schema.ts              # Service interfaces
 │   │   │   └── index.ts

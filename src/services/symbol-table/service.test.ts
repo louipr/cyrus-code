@@ -12,24 +12,18 @@ import {
 } from '../../repositories/persistence.js';
 import { SymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from './service.js';
-import { SymbolQueryService } from './query-service.js';
-import { VersionResolver } from './version-resolver.js';
 import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
 import type { Connection } from '../../domain/symbol/index.js';
 import { createSymbol } from '../../testing/fixtures.js';
 
 describe('SymbolTableService', () => {
   let store: SymbolTableService;
-  let queryService: SymbolQueryService;
-  let versionResolver: VersionResolver;
   let repo: SymbolRepository;
 
   beforeEach(() => {
     const db = initMemoryDatabase();
     repo = new SymbolRepository(db);
     store = new SymbolTableService(repo);
-    queryService = new SymbolQueryService(repo);
-    versionResolver = new VersionResolver(repo);
   });
 
   afterEach(() => {
@@ -154,45 +148,41 @@ describe('SymbolTableService', () => {
     });
   });
 
-  describe('QueryService', () => {
-    it('should find symbols by namespace, level, kind, and tag', () => {
+  describe('query methods', () => {
+    it('should find symbols by namespace, level, kind, and tag via query()', () => {
       // Setup: Register symbols with various attributes
       store.register(createSymbol({ id: 'auth/A@1.0.0', namespace: 'auth', level: 'L1', kind: 'service', tags: ['auth', 'jwt'] }));
       store.register(createSymbol({ id: 'auth/B@1.0.0', namespace: 'auth', level: 'L1', kind: 'class', tags: ['auth'] }));
       store.register(createSymbol({ id: 'auth/jwt/C@1.0.0', namespace: 'auth/jwt', level: 'L0', kind: 'type', tags: ['core'] }));
       store.register(createSymbol({ id: 'core/D@1.0.0', namespace: 'core', level: 'L1', kind: 'service', tags: ['core'] }));
 
-      const query = queryService;
-
       // findByNamespace (includes nested)
-      assert.strictEqual(query.findByNamespace('auth').length, 3);
-      assert.strictEqual(query.findByNamespace('core').length, 1);
+      assert.strictEqual(store.query({ namespace: 'auth' }).length, 3);
+      assert.strictEqual(store.query({ namespace: 'core' }).length, 1);
 
       // findByLevel
-      assert.strictEqual(query.findByLevel('L1').length, 3);
-      assert.strictEqual(query.findByLevel('L0').length, 1);
+      assert.strictEqual(store.query({ level: 'L1' }).length, 3);
+      assert.strictEqual(store.query({ level: 'L0' }).length, 1);
 
       // findByKind
-      assert.strictEqual(query.findByKind('service').length, 2);
-      assert.strictEqual(query.findByKind('class').length, 1);
+      assert.strictEqual(store.query({ kind: 'service' }).length, 2);
+      assert.strictEqual(store.query({ kind: 'class' }).length, 1);
 
       // findByTag
-      assert.strictEqual(query.findByTag('auth').length, 2);
-      assert.strictEqual(query.findByTag('core').length, 2);
+      assert.strictEqual(store.query({ tag: 'auth' }).length, 2);
+      assert.strictEqual(store.query({ tag: 'core' }).length, 2);
     });
 
     it('should search by name and description', () => {
       store.register(createSymbol({ id: 'auth/JwtService@1.0.0', name: 'JwtService', description: 'Token handling' }));
       store.register(createSymbol({ id: 'auth/AuthService@1.0.0', name: 'AuthService', description: 'Handles JWT tokens' }));
 
-      const query = queryService;
-
       // Search by name
-      const byName = query.search('Jwt');
+      const byName = store.search('Jwt');
       assert.strictEqual(byName.length, 2); // Both match 'Jwt' (name or description)
 
       // Search by description only
-      const byDesc = query.search('Token');
+      const byDesc = store.search('Token');
       assert.strictEqual(byDesc.length, 2);
     });
 
@@ -200,7 +190,7 @@ describe('SymbolTableService', () => {
       store.register(createSymbol({ id: 'a@1.0.0', status: 'declared' }));
       store.register(createSymbol({ id: 'b@1.0.0', status: 'referenced' }));
 
-      const unreachable = queryService.findUnreachable();
+      const unreachable = store.findUnreachable();
       assert.strictEqual(unreachable.length, 1);
       const first = unreachable[0];
       assert.ok(first);
@@ -235,7 +225,7 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const versions = versionResolver.getVersions('test', 'Svc');
+      const versions = store.getVersions('test', 'Svc');
       assert.strictEqual(versions.length, 3);
       const v0 = versions[0];
       const v1 = versions[1];
@@ -249,8 +239,8 @@ describe('SymbolTableService', () => {
     });
   });
 
-  describe('getLatest', () => {
-    it('should get the latest version', () => {
+  describe('resolve (latest version)', () => {
+    it('should get the latest version by default', () => {
       store.register(
         createSymbol({
           id: 'test/Svc@1.0.0',
@@ -268,13 +258,13 @@ describe('SymbolTableService', () => {
         })
       );
 
-      const latest = versionResolver.getLatest('test', 'Svc');
+      const latest = store.resolve('test', 'Svc');
       assert.ok(latest);
       assert.strictEqual(latest.version.major, 2);
     });
 
     it('should return undefined for non-existent symbol', () => {
-      const latest = versionResolver.getLatest('nonexistent', 'Symbol');
+      const latest = store.resolve('nonexistent', 'Symbol');
       assert.strictEqual(latest, undefined);
     });
   });

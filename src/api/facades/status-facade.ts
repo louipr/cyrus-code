@@ -11,14 +11,11 @@ import type {
   ApiResponse,
   UpdateStatusRequest,
 } from '../types.js';
-import type { SymbolTableService, SymbolQueryService } from '../../services/symbol-table/index.js';
+import type { SymbolTableService } from '../../services/symbol-table/index.js';
 import { symbolToDto } from '../converters/index.js';
 
 export class StatusFacade implements IStatusFacade {
-  constructor(
-    private symbolTable: SymbolTableService,
-    private queryService: SymbolQueryService
-  ) {}
+  constructor(private symbolTable: SymbolTableService) {}
 
   update(request: UpdateStatusRequest): ApiResponse<void> {
     try {
@@ -83,7 +80,7 @@ export class StatusFacade implements IStatusFacade {
 
   findUnreachable(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.queryService.findUnreachable();
+      const symbols = this.symbolTable.findUnreachable();
       return {
         success: true,
         data: symbols.map((s) => symbolToDto(s)),
@@ -101,7 +98,7 @@ export class StatusFacade implements IStatusFacade {
 
   findUntested(): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const symbols = this.queryService.findUntested();
+      const symbols = this.symbolTable.findUntested();
       return {
         success: true,
         data: symbols.map((s) => symbolToDto(s)),

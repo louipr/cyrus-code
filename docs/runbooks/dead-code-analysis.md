@@ -362,20 +362,22 @@ export interface GenerationPreviewDTO { ... }
 ### Anti-Pattern Detection
 
 ```typescript
-// ❌ ANTI-PATTERN: Public getters exposing internal services (REMOVED 2024-12)
-class SymbolTableService {
-  private queryService: SymbolQueryService;
+// ❌ ANTI-PATTERN: Separate query service with pass-through delegation (REMOVED 2024-12)
+class SymbolQueryService {
+  constructor(private repo: ISymbolRepository) {}
 
-  getQueryService(): SymbolQueryService {  // ✗ Exposes internals - DELETED
-    return this.queryService;
-  }
+  findByNamespace(ns: string) { return this.repo.findByNamespace(ns); }  // ✗ Just delegation
+  search(query: string) { return this.repo.search(query); }              // ✗ No added value
 }
 
-// ❌ OLD USAGE: Bypasses encapsulation (NO LONGER SUPPORTED)
-const result = symbolTable.getQueryService().findByTag('tag');
+// ❌ ANTI-PATTERN: Exposing internal services via getters
+class SymbolTableService {
+  private queryService: SymbolQueryService;
+  getQueryService(): SymbolQueryService { return this.queryService; }  // ✗ Leaks internals
+}
 ```
 
-> **Outcome**: These getter methods were deleted. Services now inject dependencies via constructor.
+> **Outcome**: SymbolQueryService was merged into SymbolTableService. Query methods now live directly on the service, eliminating the pass-through wrapper.
 
 ### Analysis Questions
 

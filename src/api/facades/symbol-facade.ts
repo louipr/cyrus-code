@@ -16,20 +16,13 @@ import type {
 } from '../types.js';
 import type {
   SymbolTableService,
-  SymbolQueryService,
-  VersionResolver,
   ComponentQuery,
   ResolveOptions,
 } from '../../services/symbol-table/index.js';
-import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { symbolToDto, dtoToSymbol, dtoToSymbolPartial } from '../converters/index.js';
 
 export class SymbolFacade implements ISymbolFacade {
-  constructor(
-    private symbolTable: SymbolTableService,
-    private queryService: SymbolQueryService,
-    private versionResolver: VersionResolver
-  ) {}
+  constructor(private symbolTable: SymbolTableService) {}
 
   // ==========================================================================
   // CRUD
@@ -153,7 +146,7 @@ export class SymbolFacade implements ISymbolFacade {
 
   search(query: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const results = this.queryService.search(query);
+      const results = this.symbolTable.search(query);
       return {
         success: true,
         data: results.map((s) => symbolToDto(s)),
@@ -194,10 +187,10 @@ export class SymbolFacade implements ISymbolFacade {
   }
 
   getVersions(namespace: string, name: string): ApiResponse<ComponentSymbolDTO[]> {
-    const versions = this.versionResolver.getVersions(namespace, name);
+    const versions = this.symbolTable.getVersions(namespace, name);
     return {
       success: true,
-      data: versions.map((s: ComponentSymbol) => symbolToDto(s)),
+      data: versions.map((s) => symbolToDto(s)),
     };
   }
 
@@ -207,7 +200,7 @@ export class SymbolFacade implements ISymbolFacade {
 
   findContains(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const children = this.queryService.findContains(id);
+      const children = this.symbolTable.findContains(id);
       return {
         success: true,
         data: children.map((s) => symbolToDto(s)),
@@ -225,7 +218,7 @@ export class SymbolFacade implements ISymbolFacade {
 
   findContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null> {
     try {
-      const parent = this.queryService.findContainedBy(id);
+      const parent = this.symbolTable.findContainedBy(id);
       return {
         success: true,
         data: parent ? symbolToDto(parent) : null,
@@ -243,7 +236,7 @@ export class SymbolFacade implements ISymbolFacade {
 
   getDependents(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const dependents = this.queryService.getDependents(id);
+      const dependents = this.symbolTable.getDependents(id);
       return {
         success: true,
         data: dependents.map((s) => symbolToDto(s)),
@@ -261,7 +254,7 @@ export class SymbolFacade implements ISymbolFacade {
 
   getDependencies(id: string): ApiResponse<ComponentSymbolDTO[]> {
     try {
-      const dependencies = this.queryService.getDependencies(id);
+      const dependencies = this.symbolTable.getDependencies(id);
       return {
         success: true,
         data: dependencies.map((s) => symbolToDto(s)),
