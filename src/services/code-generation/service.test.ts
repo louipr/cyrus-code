@@ -86,7 +86,7 @@ describe('CodeGenerationService', () => {
   beforeEach(() => {
     db = initMemoryDatabase();
     const repo = new SymbolRepository(db);
-    store = new SymbolTableService(db);
+    store = new SymbolTableService(repo);
     service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-test-'));
 
@@ -312,7 +312,7 @@ describe('Generated Code Content', () => {
   beforeEach(() => {
     db = initMemoryDatabase();
     const repo = new SymbolRepository(db);
-    store = new SymbolTableService(db);
+    store = new SymbolTableService(repo);
     service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-content-test-'));
 

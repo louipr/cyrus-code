@@ -1,11 +1,11 @@
 /**
  * Help Content Service
  *
- * Provides access to help topics from the manifest-driven help system.
- * Loads topics from docs/help.json and renders markdown for terminal display.
+ * Orchestrates help content operations: search, rendering, formatting.
+ * Exposes repository directly for data access (categories, topics, groups).
  *
- * Orchestrates:
- * - HelpRepository: Data access (manifest, topics, categories)
+ * Collaborators:
+ * - HelpRepository: Data access (exposed via repository property)
  * - HelpFormatter: Terminal output formatting
  * - MarkdownPreprocessor: TypeScript code extraction
  */
@@ -15,32 +15,39 @@ import * as path from 'path';
 import type { IHelpContentService } from './schema.js';
 import type {
   HelpTopic,
-  HelpCategory,
-  HelpGroup,
   HelpSearchResult,
   HelpOutputFormat,
-  C4Hierarchy,
-  DocumentHeading,
+  IHelpRepository,
 } from '../../domain/help/index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
 import { HelpRepository } from '../../repositories/help-repository.js';
 import { HelpFormatter } from './formatter.js';
+import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
- * Help Content Service - orchestrates help content access and formatting.
+ * Help Content Service - orchestrates help content operations.
+ *
+ * Use repository property for data access (getCategories, getTopics, etc.).
+ * Service methods add value: search (scoring), content (preprocessing), formatting.
  */
 export class HelpContentService implements IHelpContentService {
-  private repository: HelpRepository;
+  readonly repository: IHelpRepository;
   private formatter: HelpFormatter;
   private preprocessor: MarkdownPreprocessor;
   private projectRoot: string;
 
-  constructor(projectRoot?: string) {
+  constructor(
+    projectRoot?: string,
+    repository?: IHelpRepository,
+    sourceFileManager?: ISourceFileManager
+  ) {
     this.projectRoot = projectRoot ?? this.findProjectRoot();
-    this.repository = new HelpRepository(this.projectRoot);
+    this.repository = repository ?? new HelpRepository(this.projectRoot);
     this.formatter = new HelpFormatter();
-    this.preprocessor = new MarkdownPreprocessor(this.projectRoot);
+    const sfm = sourceFileManager ?? new SourceFileManager(this.projectRoot);
+    this.preprocessor = new MarkdownPreprocessor(this.projectRoot, sfm);
   }
 
   /**
@@ -61,43 +68,7 @@ export class HelpContentService implements IHelpContentService {
   }
 
   // ==========================================================================
-  // Repository Delegation
-  // ==========================================================================
-
-  getCategories(): HelpCategory[] {
-    return this.repository.getCategories();
-  }
-
-  getGroups(): HelpGroup[] {
-    return this.repository.getGroups();
-  }
-
-  getTopics(): HelpTopic[] {
-    return this.repository.getTopics();
-  }
-
-  getC4Hierarchy(): C4Hierarchy | null {
-    return this.repository.getC4Hierarchy();
-  }
-
-  getByCategory(categoryId: string): HelpTopic[] {
-    return this.repository.getByCategory(categoryId);
-  }
-
-  getTopic(topicId: string): HelpTopic | undefined {
-    return this.repository.getTopic(topicId);
-  }
-
-  getRelatedTopics(topicId: string): HelpTopic[] {
-    return this.repository.getRelatedTopics(topicId);
-  }
-
-  getTopicSubsections(topicId: string): DocumentHeading[] {
-    return this.repository.getTopicSubsections(topicId);
-  }
-
-  // ==========================================================================
-  // Search (logic lives here, uses repository data)
+  // Search (adds value: scoring logic)
   // ==========================================================================
 
   /**
@@ -214,8 +185,14 @@ export class HelpContentService implements IHelpContentService {
  * Preferred over direct instantiation for dependency injection support.
  *
  * @param projectRoot - Optional project root path. Auto-detects if not provided.
+ * @param repository - Optional repository instance for DI/testing.
+ * @param sourceFileManager - Optional source file manager for DI/cache sharing.
  * @returns HelpContentService instance
  */
-export function createHelpContentService(projectRoot?: string): HelpContentService {
-  return new HelpContentService(projectRoot);
+export function createHelpContentService(
+  projectRoot?: string,
+  repository?: IHelpRepository,
+  sourceFileManager?: ISourceFileManager
+): HelpContentService {
+  return new HelpContentService(projectRoot, repository, sourceFileManager);
 }

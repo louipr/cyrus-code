@@ -36,10 +36,10 @@ export async function validateCommand(
   let result;
   if (symbolId) {
     console.log(`Validating: ${symbolId}`);
-    result = context.facade.validateSymbol(symbolId);
+    result = context.facade.validation.validateSymbol(symbolId);
   } else {
     console.log('Validating all components and connections...');
-    result = context.facade.validate();
+    result = context.facade.validation.validateAll();
   }
 
   if (!result.success) {
@@ -54,7 +54,7 @@ export async function validateCommand(
   }
 
   // Also check for circular containment
-  const circularResult = context.facade.checkCircular();
+  const circularResult = context.facade.validation.checkCircular();
   const cycles = circularResult.success ? circularResult.data ?? [] : [];
 
   if (opts.json) {

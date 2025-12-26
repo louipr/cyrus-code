@@ -28,6 +28,8 @@ import { ClassDiagramBuilder } from '../../domain/diagram/class-diagram-builder.
 import { MermaidRenderer } from './typescript/mermaid-renderer.js';
 import { DiagramRenderer, rendererRegistry } from './diagram-renderer.js';
 import { TypeSimplifier } from './typescript/type-simplifier.js';
+import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * C4-4 Code Diagram Generator.
@@ -37,18 +39,21 @@ import { TypeSimplifier } from './typescript/type-simplifier.js';
  */
 export class C4DiagramGenerator {
   private projectRoot: string;
+  private sourceFileManager: ISourceFileManager;
   private interfaceExtractor: InterfaceExtractor;
   private typeExtractor: TypeExtractor;
   private relationshipExtractor: RelationshipExtractor;
   private simplifier: TypeSimplifier;
   private defaultRenderer: DiagramRenderer;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, sourceFileManager?: ISourceFileManager) {
     this.projectRoot = projectRoot;
     this.simplifier = new TypeSimplifier();
-    this.interfaceExtractor = new InterfaceExtractor(projectRoot, this.simplifier);
-    this.typeExtractor = new TypeExtractor(projectRoot, this.simplifier);
-    this.relationshipExtractor = new RelationshipExtractor(projectRoot, this.simplifier);
+    // Use provided SourceFileManager or create one (shared by all extractors)
+    this.sourceFileManager = sourceFileManager ?? new SourceFileManager(projectRoot);
+    this.interfaceExtractor = new InterfaceExtractor(this.sourceFileManager, this.simplifier);
+    this.typeExtractor = new TypeExtractor(this.sourceFileManager, this.simplifier);
+    this.relationshipExtractor = new RelationshipExtractor(this.sourceFileManager, this.simplifier);
     this.defaultRenderer = new MermaidRenderer();
   }
 
@@ -128,9 +133,8 @@ export class C4DiagramGenerator {
    * Clear all caches.
    */
   clearCache(): void {
-    this.interfaceExtractor.clearCache();
-    this.typeExtractor.clearCache();
-    this.relationshipExtractor.clearCache();
+    // All extractors share the same SourceFileManager, so clear once
+    this.sourceFileManager.clearCache();
   }
 
   /**
@@ -150,8 +154,12 @@ export class C4DiagramGenerator {
  * Preferred over direct instantiation for dependency injection support.
  *
  * @param projectRoot - Path to the project root directory.
+ * @param sourceFileManager - Optional source file manager for DI/cache sharing.
  * @returns C4DiagramGenerator instance
  */
-export function createC4DiagramGenerator(projectRoot: string): C4DiagramGenerator {
-  return new C4DiagramGenerator(projectRoot);
+export function createC4DiagramGenerator(
+  projectRoot: string,
+  sourceFileManager?: ISourceFileManager
+): C4DiagramGenerator {
+  return new C4DiagramGenerator(projectRoot, sourceFileManager);
 }

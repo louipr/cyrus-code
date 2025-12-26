@@ -266,7 +266,7 @@ npm run electron:dev   # Dev mode with hot reload
 |----|------|---------|--------|
 | D.1 | Add implementation status markers | `docs/c4/2-container.md` | ✅ |
 | D.2 | Fix Level 1 Context diagram accuracy | `docs/c4/1-context.md` | ✅ |
-| D.3 | Update Level 3 Component status | `docs/c4/3-component-symbol-table.md` | ✅ |
+| D.3 | Update Level 3 Component status | `docs/c4/symbol-table.md` | ✅ |
 | D.4 | Mark Dynamic flows 4 & 5 as planned | `docs/c4/dynamic.md` | ✅ |
 | D.5 | Remove ⚠️ Partial status smell | All C4 docs | ✅ |
 
@@ -279,9 +279,9 @@ npm run electron:dev   # Dev mode with hot reload
 | D.8 | Add relationship labels to all L2 arrows | `docs/c4/2-container.md` | ✅ |
 | D.9 | Replace Technology Decisions with ADR reference | `docs/c4/2-container.md` | ✅ |
 | D.10 | Fix container table naming consistency | `docs/c4/2-container.md` | ✅ |
-| D.11 | Add technology annotations to L3 components | `docs/c4/3-component-symbol-table.md` | ✅ |
-| D.12 | Add relationship labels to all L3 arrows | `docs/c4/3-component-symbol-table.md` | ✅ |
-| D.13 | Use consistent naming for external containers | `docs/c4/3-component-symbol-table.md` | ✅ |
+| D.11 | Add technology annotations to L3 components | `docs/c4/symbol-table.md` | ✅ |
+| D.12 | Add relationship labels to all L3 arrows | `docs/c4/symbol-table.md` | ✅ |
+| D.13 | Use consistent naming for external containers | `docs/c4/symbol-table.md` | ✅ |
 | D.14 | Add error handling to dynamic.md flows | `docs/c4/dynamic.md` | ✅ |
 | D.15 | Move CLI Commands from L2 to README | `README.md` | ✅ |
 | D.16 | Add relationship labels and cross-refs to L1 | `docs/c4/1-context.md` | ✅ |

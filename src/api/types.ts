@@ -347,76 +347,92 @@ export interface PreviewRequest {
 }
 
 // ============================================================================
-// Service Interfaces
+// Sub-Facade Interfaces
 // ============================================================================
 
 /**
- * API Facade public contract.
- *
- * Unified interface for all backend operations.
- * Transport-agnostic - can be called from Electron IPC or HTTP endpoints.
- * All inputs/outputs use DTOs (plain objects) for JSON serialization.
- *
- * Note: Static factory methods (create, createInMemory) are class-only.
+ * Symbol operations: CRUD, queries, and relationships.
  */
-export interface IApiFacade {
-  close(): void;
+export interface ISymbolFacade {
+  // CRUD
+  register(request: RegisterSymbolRequest): ApiResponse<ComponentSymbolDTO>;
+  get(id: string): ApiResponse<ComponentSymbolDTO>;
+  update(request: UpdateSymbolRequest): ApiResponse<ComponentSymbolDTO>;
+  remove(id: string): ApiResponse<void>;
 
-  // Symbol CRUD
-  registerSymbol(request: RegisterSymbolRequest): ApiResponse<ComponentSymbolDTO>;
-  getSymbol(id: string): ApiResponse<ComponentSymbolDTO>;
-  updateSymbol(request: UpdateSymbolRequest): ApiResponse<ComponentSymbolDTO>;
-  removeSymbol(id: string): ApiResponse<void>;
-
-  // Symbol Queries
-  listSymbols(query?: SymbolQuery): ApiResponse<PaginatedResponse<ComponentSymbolDTO>>;
-  searchSymbols(query: string): ApiResponse<ComponentSymbolDTO[]>;
-  resolveSymbol(namespace: string, name: string, constraint?: string): ApiResponse<ComponentSymbolDTO>;
-  getSymbolVersions(namespace: string, name: string): ApiResponse<ComponentSymbolDTO[]>;
+  // Queries
+  list(query?: SymbolQuery): ApiResponse<PaginatedResponse<ComponentSymbolDTO>>;
+  search(query: string): ApiResponse<ComponentSymbolDTO[]>;
+  resolve(namespace: string, name: string, constraint?: string): ApiResponse<ComponentSymbolDTO>;
+  getVersions(namespace: string, name: string): ApiResponse<ComponentSymbolDTO[]>;
 
   // Relationships
   findContains(id: string): ApiResponse<ComponentSymbolDTO[]>;
   findContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null>;
   getDependents(id: string): ApiResponse<ComponentSymbolDTO[]>;
   getDependencies(id: string): ApiResponse<ComponentSymbolDTO[]>;
+}
 
-  // Connections
-  createConnection(request: CreateConnectionRequest): ApiResponse<ConnectionDTO>;
-  removeConnection(connectionId: string): ApiResponse<void>;
-  getConnections(symbolId: string): ApiResponse<ConnectionDTO[]>;
-  getAllConnections(): ApiResponse<ConnectionDTO[]>;
+/**
+ * Connection operations: create, remove, query.
+ */
+export interface IConnectionFacade {
+  create(request: CreateConnectionRequest): ApiResponse<ConnectionDTO>;
+  remove(connectionId: string): ApiResponse<void>;
+  getBySymbol(symbolId: string): ApiResponse<ConnectionDTO[]>;
+  getAll(): ApiResponse<ConnectionDTO[]>;
+}
 
-  // Validation
-  validate(): ApiResponse<ValidationResultDTO>;
-  validateSymbol(id: string): ApiResponse<ValidationResultDTO>;
-  checkCircular(): ApiResponse<string[][]>;
-
-  // Wiring (delegated to WiringService)
-  wireConnection(request: CreateConnectionRequest): ApiResponse<WiringResultDTO>;
-  unwireConnection(connectionId: string): ApiResponse<WiringResultDTO>;
-  validateConnectionRequest(request: CreateConnectionRequest): ApiResponse<ValidationResultDTO>;
-  getDependencyGraph(symbolId?: string): ApiResponse<DependencyGraphDTO>;
+/**
+ * Wiring operations: validated connections with graph operations.
+ */
+export interface IWiringFacade {
+  wire(request: CreateConnectionRequest): ApiResponse<WiringResultDTO>;
+  unwire(connectionId: string): ApiResponse<WiringResultDTO>;
+  validateConnection(request: CreateConnectionRequest): ApiResponse<ValidationResultDTO>;
+  getGraph(symbolId?: string): ApiResponse<DependencyGraphDTO>;
   detectCycles(): ApiResponse<string[][]>;
   getTopologicalOrder(): ApiResponse<string[] | null>;
-  getGraphStats(): ApiResponse<GraphStatsDTO>;
+  getStats(): ApiResponse<GraphStatsDTO>;
   findCompatiblePorts(symbolId: string, portName: string): ApiResponse<CompatiblePortDTO[]>;
   findUnconnectedRequired(): ApiResponse<UnconnectedPortDTO[]>;
+}
 
-  // Status (ADR-005)
-  updateStatus(request: UpdateStatusRequest): ApiResponse<void>;
+/**
+ * Validation operations.
+ */
+export interface IValidationFacade {
+  validateAll(): ApiResponse<ValidationResultDTO>;
+  validateSymbol(id: string): ApiResponse<ValidationResultDTO>;
+  checkCircular(): ApiResponse<string[][]>;
+}
+
+/**
+ * Status operations (ADR-005).
+ */
+export interface IStatusFacade {
+  update(request: UpdateStatusRequest): ApiResponse<void>;
   findUnreachable(): ApiResponse<ComponentSymbolDTO[]>;
   findUntested(): ApiResponse<ComponentSymbolDTO[]>;
+}
 
-  // Bulk Operations
-  importSymbols(symbols: ComponentSymbolDTO[]): ApiResponse<number>;
-  exportSymbols(): ApiResponse<ComponentSymbolDTO[]>;
+/**
+ * Bulk operations: import/export.
+ */
+export interface IBulkFacade {
+  import(symbols: ComponentSymbolDTO[]): ApiResponse<number>;
+  export(): ApiResponse<ComponentSymbolDTO[]>;
+}
 
-  // Code Generation (delegated to SynthesizerService)
-  generateSymbol(request: GenerateRequest): ApiResponse<GenerationResultDTO>;
+/**
+ * Code generation operations.
+ */
+export interface ICodeGenFacade {
+  generate(request: GenerateRequest): ApiResponse<GenerationResultDTO>;
   generateMultiple(request: GenerateBatchRequest): ApiResponse<GenerationBatchResultDTO>;
   generateAll(options: GenerationOptionsDTO): ApiResponse<GenerationBatchResultDTO>;
-  previewGeneration(request: PreviewRequest): ApiResponse<PreviewResultDTO>;
-  listGeneratableSymbols(): ApiResponse<ComponentSymbolDTO[]>;
-  canGenerateSymbol(symbolId: string): ApiResponse<boolean>;
+  preview(request: PreviewRequest): ApiResponse<PreviewResultDTO>;
+  listGeneratable(): ApiResponse<ComponentSymbolDTO[]>;
+  canGenerate(symbolId: string): ApiResponse<boolean>;
   hasUserImplementation(symbolId: string, outputDir: string): ApiResponse<boolean>;
 }

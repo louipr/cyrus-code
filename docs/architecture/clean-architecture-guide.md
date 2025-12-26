@@ -59,14 +59,18 @@ Clean Architecture, popularized by Robert C. Martin ("Uncle Bob"), organizes cod
 ### Import Direction
 
 ```
-src/cli/         → can import from: api/, services/, domain/, repositories/
+src/cli/         → can import from: api/, services/, domain/
 src/gui/         → can import from: api/, services/, domain/
-src/api/         → can import from: services/, domain/, repositories/
-src/services/    → can import from: domain/, repositories/, infrastructure/
-src/repositories/→ can import from: domain/
+src/api/         → can import from: services/, domain/, repositories/, infrastructure/
+src/services/    → can import from: domain/, repositories/, infrastructure/ (interfaces only)
+src/repositories/→ can import from: domain/, infrastructure/ (interfaces only)
 src/infrastructure/→ can import from: domain/
 src/domain/      → can import from: (nothing external - pure)
 ```
+
+**Note on infrastructure imports**: Services and repositories may import **interfaces** from
+infrastructure (e.g., `ISourceFileManager`), but should receive concrete implementations via
+dependency injection. Direct instantiation of infrastructure classes in services violates DIP.
 
 ---
 
@@ -420,6 +424,60 @@ export function getConnectionsLegacy() { ... }  // ❌ Delete this too
 
 **Fix**: Delete old code, update all callers.
 
+### 6. Direct Infrastructure Instantiation (DIP Violation)
+
+```typescript
+// BAD: Service creates infrastructure directly
+class InterfaceExtractor {
+  constructor(projectRoot: string) {
+    this.sourceFileManager = new SourceFileManager(projectRoot);  // ❌ Direct instantiation
+  }
+}
+```
+
+**Fix**: Accept interface via dependency injection:
+
+```typescript
+// GOOD: Service depends on interface, receives implementation
+class InterfaceExtractor {
+  constructor(private sourceFileManager: ISourceFileManager) {}  // ✓ DI
+}
+
+// Orchestrator creates and injects
+class C4DiagramGenerator {
+  constructor(projectRoot: string) {
+    const sourceFileManager = new SourceFileManager(projectRoot);
+    this.extractor = new InterfaceExtractor(sourceFileManager);
+  }
+}
+```
+
+### 7. Interface Defined in Wrong Layer
+
+```typescript
+// BAD: Interface defined in repository, imported by services
+// repositories/symbol-repository.ts
+export interface ISymbolRepository { ... }  // ❌ Wrong layer
+
+// services/wiring/service.ts
+import { ISymbolRepository } from '../../repositories/symbol-repository.js';  // ❌
+```
+
+**Fix**: Interfaces should be defined in the layer that USES them or in domain:
+
+```typescript
+// GOOD: Interface in domain (used by both services and repositories)
+// domain/symbol/repository.ts
+export interface ISymbolRepository { ... }  // ✓ Domain owns the contract
+
+// repositories/symbol-repository.ts
+import { ISymbolRepository } from '../domain/symbol/index.js';
+export class SymbolRepository implements ISymbolRepository { ... }  // ✓ Implements
+
+// services/wiring/service.ts
+import type { ISymbolRepository } from '../../domain/symbol/index.js';  // ✓ Uses
+```
+
 ---
 
 ## Related Documentation
@@ -442,4 +500,4 @@ export function getConnectionsLegacy() { ... }  // ❌ Delete this too
 
 ---
 
-*Last updated: 2024-12*
+*Last updated: 2025-12*

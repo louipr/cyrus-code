@@ -80,7 +80,7 @@ async function showGraph(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.getDependencyGraph(opts.symbol);
+  const result = context.facade.wiring.getGraph(opts.symbol);
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to get graph'}`);
@@ -137,7 +137,7 @@ async function showCycles(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.detectCycles();
+  const result = context.facade.wiring.detectCycles();
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Cycle detection failed'}`);
@@ -167,7 +167,7 @@ async function showOrder(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.getTopologicalOrder();
+  const result = context.facade.wiring.getTopologicalOrder();
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to compute order'}`);
@@ -204,7 +204,7 @@ async function showStats(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.getGraphStats();
+  const result = context.facade.wiring.getStats();
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to get stats'}`);
@@ -243,7 +243,7 @@ async function findCompatible(
     process.exit(1);
   }
 
-  const result = context.facade.findCompatiblePorts(symbolId, portName);
+  const result = context.facade.wiring.findCompatiblePorts(symbolId, portName);
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to find compatible ports'}`);
@@ -276,7 +276,7 @@ async function findRequired(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.findUnconnectedRequired();
+  const result = context.facade.wiring.findUnconnectedRequired();
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to find unconnected ports'}`);

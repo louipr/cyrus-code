@@ -13,6 +13,7 @@
 
 import { parseArgs } from 'node:util';
 import { HelpContentService } from '../../services/help-content/index.js';
+import { extractErrorMessage } from '../../infrastructure/errors.js';
 
 export async function helpCommand(
   _positionals: string[],
@@ -37,7 +38,7 @@ export async function helpCommand(
 
   // Handle --list: show all topics
   if (opts.list) {
-    const topics = helpService.getTopics();
+    const topics = helpService.repository.getTopics();
     console.log('\n\x1b[1m\x1b[36mAll Help Topics\x1b[0m\n');
     console.log(helpService.formatTopicList(topics));
     return;
@@ -60,9 +61,9 @@ export async function helpCommand(
 
   // Handle --category: filter by category
   if (typeof opts.category === 'string') {
-    const topics = helpService.getByCategory(opts.category);
+    const topics = helpService.repository.getByCategory(opts.category);
     if (topics.length === 0) {
-      const categories = helpService.getCategories();
+      const categories = helpService.repository.getCategories();
       console.log(`No topics in category "${opts.category}".`);
       console.log('\nAvailable categories:');
       for (const cat of categories) {
@@ -70,7 +71,7 @@ export async function helpCommand(
       }
       return;
     }
-    const category = helpService
+    const category = helpService.repository
       .getCategories()
       .find((c) => c.id === opts.category);
     console.log(
@@ -82,11 +83,11 @@ export async function helpCommand(
 
   // Handle specific topic
   if (topicId) {
-    const topic = helpService.getTopic(topicId);
+    const topic = helpService.repository.getTopic(topicId);
     if (!topic) {
       console.log(`Topic "${topicId}" not found.`);
       console.log('\nAvailable topics:');
-      const topics = helpService.getTopics();
+      const topics = helpService.repository.getTopics();
       for (const t of topics.slice(0, 10)) {
         console.log(`  ${t.id.padEnd(20)} ${t.title}`);
       }
@@ -107,7 +108,7 @@ export async function helpCommand(
       console.log(content);
 
       // Show related topics if any
-      const related = helpService.getRelatedTopics(topicId);
+      const related = helpService.repository.getRelatedTopics(topicId);
       if (related.length > 0) {
         console.log('\n\x1b[90mRelated topics:\x1b[0m');
         for (const r of related) {
@@ -116,7 +117,7 @@ export async function helpCommand(
       }
     } catch (error) {
       console.error(
-        `Error loading topic: ${error instanceof Error ? error.message : String(error)}`
+        `Error loading topic: ${extractErrorMessage(error)}`
       );
       process.exit(1);
     }

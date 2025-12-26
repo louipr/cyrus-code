@@ -40,7 +40,7 @@ export async function getCommand(
   }
 
   // Get the symbol
-  const result = context.facade.getSymbol(symbolId);
+  const result = context.facade.symbols.get(symbolId);
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Get failed'}`);
@@ -56,7 +56,7 @@ export async function getCommand(
   // Get connections if requested
   let connections = null;
   if (opts.connections) {
-    const connResult = context.facade.getConnections(symbolId);
+    const connResult = context.facade.connections.getBySymbol(symbolId);
     if (connResult.success) {
       connections = connResult.data;
     }

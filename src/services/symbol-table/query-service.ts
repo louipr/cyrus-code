@@ -11,8 +11,8 @@ import type {
   ComponentKind,
   SymbolStatus,
   SymbolOrigin,
+  ISymbolRepository,
 } from '../../domain/symbol/index.js';
-import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 // ============================================================================
 // Query Service

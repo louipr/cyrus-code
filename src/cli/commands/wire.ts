@@ -35,7 +35,7 @@ export async function wireCommand(
   // Handle disconnect
   const disconnectId = typeof opts.disconnect === 'string' ? opts.disconnect : undefined;
   if (disconnectId) {
-    const result = context.facade.unwireConnection(disconnectId);
+    const result = context.facade.wiring.unwire(disconnectId);
     if (!result.success) {
       console.error(`Error: ${result.error?.message ?? 'Disconnect failed'}`);
       process.exit(1);
@@ -71,7 +71,7 @@ export async function wireCommand(
     }
 
     const [fromId, fromPort, toId, toPort] = args;
-    const result = context.facade.validateConnectionRequest({
+    const result = context.facade.wiring.validateConnection({
       fromSymbolId: fromId,
       fromPort,
       toSymbolId: toId,
@@ -109,7 +109,7 @@ export async function wireCommand(
 
   const [fromId, fromPort, toId, toPort] = connectionArgs;
 
-  const result = context.facade.wireConnection({
+  const result = context.facade.wiring.wire({
     fromSymbolId: fromId,
     fromPort,
     toSymbolId: toId,

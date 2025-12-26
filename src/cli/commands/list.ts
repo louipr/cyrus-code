@@ -71,7 +71,7 @@ export async function listCommand(
   }
 
   // Execute query
-  const result = context.facade.listSymbols(query);
+  const result = context.facade.symbols.list(query);
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Query failed'}`);

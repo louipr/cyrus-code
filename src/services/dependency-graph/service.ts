@@ -5,8 +5,7 @@
  * Provides high-level orchestration of graph algorithms.
  */
 
-import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
-import type { ComponentSymbol } from '../../domain/symbol/index.js';
+import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
 import type { DependencyGraph, GraphStats, IDependencyGraphService } from './schema.js';
 import {
   buildDependencyGraph,

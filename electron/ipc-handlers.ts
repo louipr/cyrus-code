@@ -10,6 +10,7 @@
 
 import { ipcMain, dialog, BrowserWindow, app } from 'electron';
 import * as path from 'path';
+import { extractErrorMessage } from '../src/infrastructure/errors.js';
 import type { ApiFacade } from '../src/api/facade.js';
 import type {
   SymbolQuery,
@@ -28,40 +29,40 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('symbols:list', async (_event, query?: SymbolQuery) => {
-    return facade.listSymbols(query);
+    return facade.symbols.list(query);
   });
 
   ipcMain.handle('symbols:get', async (_event, id: string) => {
-    return facade.getSymbol(id);
+    return facade.symbols.get(id);
   });
 
   ipcMain.handle('symbols:search', async (_event, query: string) => {
-    return facade.searchSymbols(query);
+    return facade.symbols.search(query);
   });
 
   ipcMain.handle(
     'symbols:resolve',
     async (_event, namespace: string, name: string, constraint?: string) => {
-      return facade.resolveSymbol(namespace, name, constraint);
+      return facade.symbols.resolve(namespace, name, constraint);
     }
   );
 
   ipcMain.handle(
     'symbols:getVersions',
     async (_event, namespace: string, name: string) => {
-      return facade.getSymbolVersions(namespace, name);
+      return facade.symbols.getVersions(namespace, name);
     }
   );
 
   ipcMain.handle(
     'symbols:register',
     async (_event, request: RegisterSymbolRequest) => {
-      return facade.registerSymbol(request);
+      return facade.symbols.register(request);
     }
   );
 
   ipcMain.handle('symbols:remove', async (_event, id: string) => {
-    return facade.removeSymbol(id);
+    return facade.symbols.remove(id);
   });
 
   // ==========================================================================
@@ -69,19 +70,19 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('relationships:findContains', async (_event, id: string) => {
-    return facade.findContains(id);
+    return facade.symbols.findContains(id);
   });
 
   ipcMain.handle('relationships:findContainedBy', async (_event, id: string) => {
-    return facade.findContainedBy(id);
+    return facade.symbols.findContainedBy(id);
   });
 
   ipcMain.handle('relationships:getDependents', async (_event, id: string) => {
-    return facade.getDependents(id);
+    return facade.symbols.getDependents(id);
   });
 
   ipcMain.handle('relationships:getDependencies', async (_event, id: string) => {
-    return facade.getDependencies(id);
+    return facade.symbols.getDependencies(id);
   });
 
   // ==========================================================================
@@ -89,11 +90,11 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('connections:get', async (_event, symbolId: string) => {
-    return facade.getConnections(symbolId);
+    return facade.connections.getBySymbol(symbolId);
   });
 
   ipcMain.handle('connections:getAll', async () => {
-    return facade.getAllConnections();
+    return facade.connections.getAll();
   });
 
   // ==========================================================================
@@ -101,15 +102,15 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('validation:validate', async () => {
-    return facade.validate();
+    return facade.validation.validateAll();
   });
 
   ipcMain.handle('validation:validateSymbol', async (_event, id: string) => {
-    return facade.validateSymbol(id);
+    return facade.validation.validateSymbol(id);
   });
 
   ipcMain.handle('validation:checkCircular', async () => {
-    return facade.checkCircular();
+    return facade.validation.checkCircular();
   });
 
   // ==========================================================================
@@ -117,11 +118,11 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('status:findUnreachable', async () => {
-    return facade.findUnreachable();
+    return facade.status.findUnreachable();
   });
 
   ipcMain.handle('status:findUntested', async () => {
-    return facade.findUntested();
+    return facade.status.findUntested();
   });
 
   // ==========================================================================
@@ -131,46 +132,46 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   ipcMain.handle(
     'wiring:connect',
     async (_event, request: CreateConnectionRequest) => {
-      return facade.wireConnection(request);
+      return facade.wiring.wire(request);
     }
   );
 
   ipcMain.handle('wiring:disconnect', async (_event, connectionId: string) => {
-    return facade.unwireConnection(connectionId);
+    return facade.wiring.unwire(connectionId);
   });
 
   ipcMain.handle(
     'wiring:validateConnection',
     async (_event, request: CreateConnectionRequest) => {
-      return facade.validateConnectionRequest(request);
+      return facade.wiring.validateConnection(request);
     }
   );
 
   ipcMain.handle('wiring:getGraph', async (_event, symbolId?: string) => {
-    return facade.getDependencyGraph(symbolId);
+    return facade.wiring.getGraph(symbolId);
   });
 
   ipcMain.handle('wiring:detectCycles', async () => {
-    return facade.detectCycles();
+    return facade.wiring.detectCycles();
   });
 
   ipcMain.handle('wiring:getTopologicalOrder', async () => {
-    return facade.getTopologicalOrder();
+    return facade.wiring.getTopologicalOrder();
   });
 
   ipcMain.handle('wiring:getStats', async () => {
-    return facade.getGraphStats();
+    return facade.wiring.getStats();
   });
 
   ipcMain.handle(
     'wiring:findCompatiblePorts',
     async (_event, symbolId: string, portName: string) => {
-      return facade.findCompatiblePorts(symbolId, portName);
+      return facade.wiring.findCompatiblePorts(symbolId, portName);
     }
   );
 
   ipcMain.handle('wiring:findUnconnectedRequired', async () => {
-    return facade.findUnconnectedRequired();
+    return facade.wiring.findUnconnectedRequired();
   });
 
   // ==========================================================================
@@ -178,39 +179,39 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('synthesizer:generate', async (_event, request: GenerateRequest) => {
-    return facade.generateSymbol(request);
+    return facade.codeGen.generate(request);
   });
 
   ipcMain.handle(
     'synthesizer:generateMultiple',
     async (_event, request: GenerateBatchRequest) => {
-      return facade.generateMultiple(request);
+      return facade.codeGen.generateMultiple(request);
     }
   );
 
   ipcMain.handle(
     'synthesizer:generateAll',
     async (_event, options: GenerationOptionsDTO) => {
-      return facade.generateAll(options);
+      return facade.codeGen.generateAll(options);
     }
   );
 
   ipcMain.handle('synthesizer:preview', async (_event, request: PreviewRequest) => {
-    return facade.previewGeneration(request);
+    return facade.codeGen.preview(request);
   });
 
   ipcMain.handle('synthesizer:listGeneratable', async () => {
-    return facade.listGeneratableSymbols();
+    return facade.codeGen.listGeneratable();
   });
 
   ipcMain.handle('synthesizer:canGenerate', async (_event, symbolId: string) => {
-    return facade.canGenerateSymbol(symbolId);
+    return facade.codeGen.canGenerate(symbolId);
   });
 
   ipcMain.handle(
     'synthesizer:hasUserImplementation',
     async (_event, symbolId: string, outputDir: string) => {
-      return facade.hasUserImplementation(symbolId, outputDir);
+      return facade.codeGen.hasUserImplementation(symbolId, outputDir);
     }
   );
 
@@ -247,66 +248,66 @@ export function registerIpcHandlers(facade: ApiFacade): void {
 
   ipcMain.handle('help:getCategories', async () => {
     try {
-      return { success: true, data: helpService.getCategories() };
+      return { success: true, data: helpService.repository.getCategories() };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
 
   ipcMain.handle('help:getGroups', async () => {
     try {
-      return { success: true, data: helpService.getGroups() };
+      return { success: true, data: helpService.repository.getGroups() };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
 
   ipcMain.handle('help:getTopics', async () => {
     try {
-      return { success: true, data: helpService.getTopics() };
+      return { success: true, data: helpService.repository.getTopics() };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
 
   ipcMain.handle('help:getC4Hierarchy', async () => {
     try {
-      return { success: true, data: helpService.getC4Hierarchy() };
+      return { success: true, data: helpService.repository.getC4Hierarchy() };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
 
   ipcMain.handle('help:getByCategory', async (_event, categoryId: string) => {
     try {
-      return { success: true, data: helpService.getByCategory(categoryId) };
+      return { success: true, data: helpService.repository.getByCategory(categoryId) };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
 
   ipcMain.handle('help:getTopic', async (_event, topicId: string) => {
     try {
-      return { success: true, data: helpService.getTopic(topicId) };
+      return { success: true, data: helpService.repository.getTopic(topicId) };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
@@ -317,7 +318,7 @@ export function registerIpcHandlers(facade: ApiFacade): void {
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });
@@ -330,7 +331,7 @@ export function registerIpcHandlers(facade: ApiFacade): void {
       } catch (error) {
         return {
           success: false,
-          error: { message: error instanceof Error ? error.message : String(error) },
+          error: { message: extractErrorMessage(error) },
         };
       }
     }
@@ -338,11 +339,11 @@ export function registerIpcHandlers(facade: ApiFacade): void {
 
   ipcMain.handle('help:getTopicSubsections', async (_event, topicId: string) => {
     try {
-      return { success: true, data: helpService.getTopicSubsections(topicId) };
+      return { success: true, data: helpService.repository.getTopicSubsections(topicId) };
     } catch (error) {
       return {
         success: false,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: { message: extractErrorMessage(error) },
       };
     }
   });

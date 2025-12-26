@@ -48,20 +48,6 @@ export class FileCache<T> {
   }
 
   /**
-   * Check if a file is in the cache (may be stale).
-   */
-  has(absolutePath: string): boolean {
-    return this.cache.has(absolutePath);
-  }
-
-  /**
-   * Remove a specific entry from the cache.
-   */
-  delete(absolutePath: string): boolean {
-    return this.cache.delete(absolutePath);
-  }
-
-  /**
    * Clear all cached entries.
    */
   clear(): void {

@@ -14,13 +14,14 @@ import type {
   HelpGroup,
   C4Hierarchy,
   DocumentHeading,
+  IHelpRepository,
 } from '../domain/help/index.js';
 import { extractHeadings } from '../infrastructure/markdown/index.js';
 
 /**
  * Help Repository - loads and provides access to help data.
  */
-export class HelpRepository {
+export class HelpRepository implements IHelpRepository {
   private manifest: HelpManifest | null = null;
   private projectRoot: string;
 

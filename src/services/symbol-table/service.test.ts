@@ -27,7 +27,7 @@ describe('SymbolTableService', () => {
   beforeEach(() => {
     const db = initMemoryDatabase();
     repo = new SymbolRepository(db);
-    store = new SymbolTableService(db);
+    store = new SymbolTableService(repo);
     queryService = new SymbolQueryService(repo);
     versionResolver = new VersionResolver(repo);
   });

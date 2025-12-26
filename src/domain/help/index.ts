@@ -14,3 +14,9 @@ export type {
   HelpSearchResult,
   DocumentHeading,
 } from './schema.js';
+
+// ============================================================================
+// Repository Interface (Domain Contract)
+// ============================================================================
+
+export type { IHelpRepository } from './repository.js';

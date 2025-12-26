@@ -43,7 +43,6 @@ export const selectors = {
   helpDialog: '[data-testid="help-dialog"]',
   helpDialogModal: '[style*="position: fixed"]',
   helpSearchInput: 'input[placeholder="Search topics..."]',
-  helpTopicButton: (name: string) => `button:has-text("${name}")`,
   helpContent: '[data-testid="help-content"]',
 
   // Mermaid Diagram

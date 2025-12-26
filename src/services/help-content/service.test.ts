@@ -10,9 +10,11 @@ import { HelpContentService } from './index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { TypeScriptExtractor } from './typescript-extractor.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
+import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 // Tests run from project root via npm test
 const projectRoot = process.cwd();
+const sourceFileManager = new SourceFileManager(projectRoot);
 
 describe('HelpContentService', () => {
   let service: HelpContentService;
@@ -21,9 +23,9 @@ describe('HelpContentService', () => {
     service = new HelpContentService(projectRoot);
   });
 
-  describe('getCategories', () => {
+  describe('repository.getCategories', () => {
     it('should return all categories', () => {
-      const categories = service.getCategories();
+      const categories = service.repository.getCategories();
       assert.ok(categories.length > 0, 'Should have at least one category');
       assert.ok(
         categories.some((c) => c.id === 'concept'),
@@ -36,16 +38,16 @@ describe('HelpContentService', () => {
     });
   });
 
-  describe('getTopics', () => {
+  describe('repository.getTopics', () => {
     it('should return all topics', () => {
-      const topics = service.getTopics();
+      const topics = service.repository.getTopics();
       assert.ok(topics.length > 0, 'Should have at least one topic');
     });
   });
 
-  describe('getByCategory', () => {
+  describe('repository.getByCategory', () => {
     it('should filter topics by category', () => {
-      const concepts = service.getByCategory('concept');
+      const concepts = service.repository.getByCategory('concept');
       assert.ok(concepts.length > 0, 'Should have concept topics');
       for (const topic of concepts) {
         assert.strictEqual(topic.category, 'concept');
@@ -53,20 +55,20 @@ describe('HelpContentService', () => {
     });
 
     it('should return empty array for unknown category', () => {
-      const result = service.getByCategory('nonexistent');
+      const result = service.repository.getByCategory('nonexistent');
       assert.strictEqual(result.length, 0);
     });
   });
 
-  describe('getTopic', () => {
+  describe('repository.getTopic', () => {
     it('should find topic by ID', () => {
-      const topic = service.getTopic('levels');
+      const topic = service.repository.getTopic('levels');
       assert.ok(topic, 'Should find levels topic');
       assert.strictEqual(topic.id, 'levels');
     });
 
     it('should return undefined for unknown topic', () => {
-      const topic = service.getTopic('nonexistent');
+      const topic = service.repository.getTopic('nonexistent');
       assert.strictEqual(topic, undefined);
     });
   });
@@ -208,7 +210,7 @@ describe('TypeScriptExtractor', () => {
   let extractor: TypeScriptExtractor;
 
   beforeEach(() => {
-    extractor = new TypeScriptExtractor(projectRoot);
+    extractor = new TypeScriptExtractor(sourceFileManager);
   });
 
   describe('extractExports', () => {
@@ -316,7 +318,7 @@ describe('MarkdownPreprocessor', () => {
   let preprocessor: MarkdownPreprocessor;
 
   beforeEach(() => {
-    preprocessor = new MarkdownPreprocessor(projectRoot);
+    preprocessor = new MarkdownPreprocessor(projectRoot, sourceFileManager);
   });
 
   describe('parseDirective', () => {

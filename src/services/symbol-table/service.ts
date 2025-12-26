@@ -5,9 +5,7 @@
  * Composes focused services for each responsibility.
  */
 
-import type { DatabaseType } from '../../repositories/persistence.js';
-import { SymbolRepository, type ISymbolRepository } from '../../repositories/symbol-repository.js';
-import type { ComponentSymbol } from '../../domain/symbol/index.js';
+import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
 import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch } from '../../domain/symbol/index.js';
 import type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
 import { SymbolQueryService } from './query-service.js';
@@ -22,8 +20,12 @@ export class SymbolTableService implements ISymbolTableService {
   private queryService: SymbolQueryService;
   private versionResolver: VersionResolver;
 
-  constructor(database: DatabaseType) {
-    this.repo = new SymbolRepository(database);
+  /**
+   * Create a SymbolTableService with dependency injection.
+   * @param repo - The symbol repository to use for data access
+   */
+  constructor(repo: ISymbolRepository) {
+    this.repo = repo;
     this.queryService = new SymbolQueryService(this.repo);
     this.versionResolver = new VersionResolver(this.repo);
   }

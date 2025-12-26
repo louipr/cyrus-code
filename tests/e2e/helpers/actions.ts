@@ -130,14 +130,6 @@ export const helpActions = {
   },
 
   /**
-   * Select a topic by name from the sidebar (legacy - use navigateToTopic for groups).
-   */
-  async selectTopic(page: Page, topicName: string): Promise<void> {
-    await page.click(selectors.helpTopicButton(topicName));
-    await page.waitForTimeout(500); // Allow content to load
-  },
-
-  /**
    * Wait for mermaid diagram to fully render.
    */
   async waitForDiagram(page: Page, timeout = 10000): Promise<void> {

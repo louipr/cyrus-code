@@ -84,9 +84,8 @@ export function addOutputPortMethods(
       parameters: [{ name: 'data', type: port.typeString }],
       returnType: 'void',
       statements: [
-        `// Wiring: emit to connected ports`,
-        `// This will be implemented by the wiring runtime`,
-        `console.log('Emitting ${port.name}:', data);`,
+        `// Wiring runtime will route data to connected input ports`,
+        `void data; // Placeholder until wiring runtime is implemented`,
       ],
     });
 

@@ -5,9 +5,8 @@
  * Single Responsibility: Validation logic.
  */
 
-import type { ComponentSymbol, ValidationResult } from '../../domain/symbol/index.js';
+import type { ComponentSymbol, ValidationResult, ISymbolRepository } from '../../domain/symbol/index.js';
 import { createValidationResult } from '../../domain/symbol/index.js';
-import type { ISymbolRepository } from '../../repositories/symbol-repository.js';
 
 // ===========================================================================
 // Pure Validation Functions

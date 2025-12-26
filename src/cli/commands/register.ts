@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { extractErrorMessage } from '../../infrastructure/errors.js';
 import type { CliContext } from '../index.js';
 import type { ComponentSymbolDTO } from '../../api/types.js';
 
@@ -53,7 +54,7 @@ export async function registerCommand(
       console.error(error.message);
     } else {
       console.error(`Error reading file: ${filePath}`);
-      console.error(error instanceof Error ? error.message : String(error));
+      console.error(extractErrorMessage(error));
     }
     process.exit(1);
   }
@@ -78,7 +79,7 @@ export async function registerCommand(
     };
 
     // Register the symbol
-    const result = context.facade.registerSymbol({ symbol });
+    const result = context.facade.symbols.register({ symbol });
 
     if (!result.success) {
       errors.push(`${symbol.name}: ${result.error?.message ?? 'Registration failed'}`);

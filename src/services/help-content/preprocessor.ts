@@ -33,6 +33,7 @@
 import { TypeScriptExtractor, ExtractedCode } from './typescript-extractor.js';
 import { C4DiagramGenerator } from '../diagram-generator/index.js';
 import type { DiagramConfig } from '../../domain/diagram/schema.js';
+import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Parsed typescript:include directive.
@@ -70,10 +71,11 @@ export class MarkdownPreprocessor {
   private c4Generator: C4DiagramGenerator;
   private projectRoot: string;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, sourceFileManager: ISourceFileManager) {
     this.projectRoot = projectRoot;
-    this.extractor = new TypeScriptExtractor(projectRoot);
-    this.c4Generator = new C4DiagramGenerator(projectRoot);
+    this.extractor = new TypeScriptExtractor(sourceFileManager);
+    // Share the same sourceFileManager to avoid duplicate caches
+    this.c4Generator = new C4DiagramGenerator(projectRoot, sourceFileManager);
   }
 
   /**

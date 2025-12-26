@@ -29,7 +29,7 @@ describe('WiringService', () => {
   beforeEach(() => {
     const db = initMemoryDatabase();
     repo = new SymbolRepository(db);
-    store = new SymbolTableService(db);
+    store = new SymbolTableService(repo);
     const graphService = new DependencyGraphService(repo);
     wiring = new WiringService(repo, graphService);
   });

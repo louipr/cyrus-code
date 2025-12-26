@@ -20,6 +20,7 @@ import {
   type SymbolOrigin,
   type PortDirection,
   type ExecutionInfo,
+  type ISymbolRepository,
 } from '../domain/symbol/index.js';
 import {
   type PreparedStatements,
@@ -32,44 +33,6 @@ import {
   transaction,
 } from './persistence.js';
 
-// ============================================================================
-// Repository Interface
-// ============================================================================
-
-/**
- * Symbol Repository Interface
- *
- * Data access contract for ComponentSymbol persistence.
- * Provides CRUD operations and specialized queries for symbols and connections.
- */
-export interface ISymbolRepository {
-  // Symbol CRUD
-  insert(symbol: ComponentSymbol): void;
-  find(id: string): ComponentSymbol | undefined;
-  update(id: string, symbol: ComponentSymbol): void;
-  delete(id: string): boolean;
-  list(): ComponentSymbol[];
-
-  // Symbol Queries
-  findByNamespace(namespace: string): ComponentSymbol[];
-  findByLevel(level: AbstractionLevel): ComponentSymbol[];
-  findByKind(kind: ComponentKind): ComponentSymbol[];
-  findByTag(tag: string): ComponentSymbol[];
-  findByStatus(status: SymbolStatus): ComponentSymbol[];
-  findByOrigin(origin: SymbolOrigin): ComponentSymbol[];
-  search(query: string): ComponentSymbol[];
-
-  // Containment Queries
-  findContains(id: string): string[];
-  findContainedBy(id: string): string | undefined;
-
-  // Connection CRUD
-  insertConnection(connection: Connection): void;
-  findConnection(id: string): Connection | undefined;
-  deleteConnection(id: string): boolean;
-  findConnectionsBySymbol(symbolId: string): Connection[];
-  findAllConnections(): Connection[];
-}
 
 // ============================================================================
 // Repository Class

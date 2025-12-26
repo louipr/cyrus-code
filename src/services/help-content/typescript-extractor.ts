@@ -7,7 +7,7 @@
  */
 
 import { SourceFile, Node, SyntaxKind, VariableDeclarationKind } from 'ts-morph';
-import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Extracted code snippet with metadata.
@@ -30,11 +30,11 @@ export interface ExtractedCode {
  * source files. Caches parsed files for performance.
  */
 export class TypeScriptExtractor {
-  private sourceFileManager: SourceFileManager;
-
-  constructor(projectRoot: string) {
-    this.sourceFileManager = new SourceFileManager(projectRoot);
-  }
+  /**
+   * Create a TypeScriptExtractor with dependency injection.
+   * @param sourceFileManager - The source file manager for AST access
+   */
+  constructor(private sourceFileManager: ISourceFileManager) {}
 
   /**
    * Extract specific named exports from a file.

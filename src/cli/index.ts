@@ -13,6 +13,7 @@
 
 import { parseArgs } from 'node:util';
 import { ApiFacade } from '../api/facade.js';
+import { extractErrorMessage } from '../infrastructure/errors.js';
 import { registerCommand } from './commands/register.js';
 import { listCommand } from './commands/list.js';
 import { getCommand } from './commands/get.js';
@@ -151,7 +152,7 @@ async function main(): Promise<void> {
       `Error: Failed to initialize database at '${dbPath}'`
     );
     console.error(
-      error instanceof Error ? error.message : String(error)
+      extractErrorMessage(error)
     );
     process.exit(1);
   }

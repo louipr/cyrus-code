@@ -80,3 +80,9 @@ export {
   bumpVersion,
 } from './version.js';
 
+// ============================================================================
+// Repository Interface (Domain Contract)
+// ============================================================================
+
+export type { ISymbolRepository } from './repository.js';
+

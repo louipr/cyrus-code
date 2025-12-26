@@ -93,7 +93,7 @@ export async function generateCommand(
 }
 
 async function listGeneratable(context: CliContext, json: boolean): Promise<void> {
-  const result = context.facade.listGeneratableSymbols();
+  const result = context.facade.codeGen.listGeneratable();
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Failed to list symbols'}`);
@@ -127,7 +127,7 @@ async function previewGeneration(
   outputDir: string,
   json: boolean
 ): Promise<void> {
-  const result = context.facade.previewGeneration({ symbolId, outputDir });
+  const result = context.facade.codeGen.preview({ symbolId, outputDir });
 
   if (!result.success) {
     console.error(`Error: ${result.error?.message ?? 'Preview failed'}`);
@@ -167,7 +167,7 @@ async function generateSymbol(
   outputDir: string,
   options: { dryRun: boolean; includeComments: boolean; json: boolean }
 ): Promise<void> {
-  const result = context.facade.generateSymbol({
+  const result = context.facade.codeGen.generate({
     symbolId,
     options: {
       outputDir,
@@ -221,7 +221,7 @@ async function doGenerateAll(
   outputDir: string,
   options: { dryRun: boolean; includeComments: boolean; json: boolean }
 ): Promise<void> {
-  const result = context.facade.generateAll({
+  const result = context.facade.codeGen.generateAll({
     outputDir,
     dryRun: options.dryRun,
     includeComments: options.includeComments,

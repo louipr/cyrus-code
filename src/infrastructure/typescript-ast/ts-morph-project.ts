@@ -8,6 +8,7 @@
 
 import { Project, SourceFile } from 'ts-morph';
 import { FileCache, resolveFilePath, getFileMtime, fileExists } from './file-cache.js';
+import type { ISourceFileManager } from './schema.js';
 
 /**
  * Create a ts-morph Project with standard configuration.
@@ -37,7 +38,7 @@ export function createTsMorphProject(): Project {
  * - mtime-based cache invalidation
  * - SourceFile parsing and caching
  */
-export class SourceFileManager {
+export class SourceFileManager implements ISourceFileManager {
   private project: Project;
   private cache: FileCache<SourceFile>;
   private projectRoot: string;
