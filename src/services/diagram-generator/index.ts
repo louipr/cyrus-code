@@ -9,3 +9,4 @@
 
 // Generator (primary API)
 export { C4DiagramGenerator } from './generator.js';
+export { createC4DiagramGenerator } from './factory.js';

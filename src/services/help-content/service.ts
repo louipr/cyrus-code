@@ -5,13 +5,13 @@
  * Exposes repository directly for data access (categories, topics, groups).
  *
  * Collaborators:
- * - HelpRepository: Data access (exposed via repository property)
+ * - IHelpRepository: Data access (exposed via repository property)
  * - HelpFormatter: Terminal output formatting
  * - MarkdownPreprocessor: TypeScript code extraction
+ *
+ * Use createHelpContentService() from factory.ts for convenient instantiation.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import type { IHelpContentService } from './schema.js';
 import type {
   HelpTopic,
@@ -21,10 +21,8 @@ import type {
 } from '../../domain/help/index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
-import { HelpRepository } from '../../repositories/help-repository.js';
 import { HelpFormatter } from './formatter.js';
 import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
-import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Help Content Service - orchestrates help content operations.
@@ -36,35 +34,15 @@ export class HelpContentService implements IHelpContentService {
   readonly repository: IHelpRepository;
   private formatter: HelpFormatter;
   private preprocessor: MarkdownPreprocessor;
-  private projectRoot: string;
 
   constructor(
-    projectRoot?: string,
-    repository?: IHelpRepository,
-    sourceFileManager?: ISourceFileManager
+    projectRoot: string,
+    repository: IHelpRepository,
+    sourceFileManager: ISourceFileManager
   ) {
-    this.projectRoot = projectRoot ?? this.findProjectRoot();
-    this.repository = repository ?? new HelpRepository(this.projectRoot);
+    this.repository = repository;
     this.formatter = new HelpFormatter();
-    const sfm = sourceFileManager ?? new SourceFileManager(this.projectRoot);
-    this.preprocessor = new MarkdownPreprocessor(this.projectRoot, sfm);
-  }
-
-  /**
-   * Find the project root by looking for package.json or docs/help.json.
-   */
-  private findProjectRoot(): string {
-    let dir = process.cwd();
-    while (dir !== path.dirname(dir)) {
-      if (
-        fs.existsSync(path.join(dir, 'docs', 'help.json')) ||
-        fs.existsSync(path.join(dir, 'package.json'))
-      ) {
-        return dir;
-      }
-      dir = path.dirname(dir);
-    }
-    return process.cwd();
+    this.preprocessor = new MarkdownPreprocessor(projectRoot, sourceFileManager);
   }
 
   // ==========================================================================

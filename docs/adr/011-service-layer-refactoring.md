@@ -613,8 +613,8 @@ Benefits: Clean layers, multi-language ready, testable, maintainable
 ## Future Work
 
 1. Apply same refactoring to other services:
-   - `diagram-generator` (priority: high, similar to code-generation)
-   - `help-content` (priority: medium, simpler structure)
+   - ~~`diagram-generator` (priority: high, similar to code-generation)~~ ✅ DIP-compliant factory pattern added
+   - ~~`help-content` (priority: medium, simpler structure)~~ ✅ DIP-compliant factory pattern added
    - `wiring` (priority: low, already well-structured)
 
 2. Create Python backend:
@@ -632,6 +632,8 @@ Benefits: Clean layers, multi-language ready, testable, maintainable
 See actual implementation in:
 - `src/services/code-generation/typescript/` - TypeScript code generation backend (co-located with service)
 - `src/services/diagram-generator/typescript/` - TypeScript diagram extraction backend (co-located with service)
+- `src/services/diagram-generator/factory.ts` - DIP-compliant factory pattern
+- `src/services/help-content/factory.ts` - DIP-compliant factory pattern
 - `src/infrastructure/file-system/` - File I/O infrastructure
 - `src/domain/symbol/transformer.ts` - Pure domain transformations
 - `src/services/code-generation/service.ts` - Orchestration pattern

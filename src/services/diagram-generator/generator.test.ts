@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { C4DiagramGenerator } from './index.js';
+import { C4DiagramGenerator, createC4DiagramGenerator } from './index.js';
 import { TypeSimplificationRegistry } from './typescript/type-registry.js';
 import { TypeSimplifier } from './typescript/type-simplifier.js';
 import { ClassDiagramBuilder } from '../../domain/diagram/class-diagram-builder.js';
@@ -18,7 +18,7 @@ describe('C4DiagramGenerator', () => {
   let generator: C4DiagramGenerator;
 
   beforeEach(() => {
-    generator = new C4DiagramGenerator(projectRoot);
+    generator = createC4DiagramGenerator(projectRoot);
   });
 
   describe('generateForInterface', () => {

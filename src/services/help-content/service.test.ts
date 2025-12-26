@@ -6,7 +6,8 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { HelpContentService } from './index.js';
+import { createHelpContentService } from './index.js';
+import type { HelpContentService } from './index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { TypeScriptExtractor } from './typescript-extractor.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
@@ -20,7 +21,7 @@ describe('HelpContentService', () => {
   let service: HelpContentService;
 
   beforeEach(() => {
-    service = new HelpContentService(projectRoot);
+    service = createHelpContentService(projectRoot);
   });
 
   describe('repository.getCategories', () => {
@@ -438,10 +439,10 @@ exports: [Foo]
       // This tests that HelpService.getTopicContent uses the preprocessor
       // We'll create a mock scenario by checking that the preprocessor
       // doesn't break existing content
-      const service = new HelpContentService(projectRoot);
+      const integrationService = createHelpContentService(projectRoot);
 
       // Get content that doesn't have typescript:include
-      const content = service.getTopicContent('levels', 'raw');
+      const content = integrationService.getTopicContent('levels', 'raw');
       assert.ok(content.length > 0, 'Should return content');
       // Content should be unchanged since it has no typescript:include
       assert.ok(content.includes('#'), 'Should have markdown');

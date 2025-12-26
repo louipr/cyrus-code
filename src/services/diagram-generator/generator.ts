@@ -29,7 +29,6 @@ import { MermaidRenderer } from './typescript/mermaid-renderer.js';
 import { DiagramRenderer, rendererRegistry } from './diagram-renderer.js';
 import { TypeSimplifier } from './typescript/type-simplifier.js';
 import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
-import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * C4-4 Code Diagram Generator.
@@ -46,11 +45,10 @@ export class C4DiagramGenerator {
   private simplifier: TypeSimplifier;
   private defaultRenderer: DiagramRenderer;
 
-  constructor(projectRoot: string, sourceFileManager?: ISourceFileManager) {
+  constructor(projectRoot: string, sourceFileManager: ISourceFileManager) {
     this.projectRoot = projectRoot;
     this.simplifier = new TypeSimplifier();
-    // Use provided SourceFileManager or create one (shared by all extractors)
-    this.sourceFileManager = sourceFileManager ?? new SourceFileManager(projectRoot);
+    this.sourceFileManager = sourceFileManager;
     this.interfaceExtractor = new InterfaceExtractor(this.sourceFileManager, this.simplifier);
     this.typeExtractor = new TypeExtractor(this.sourceFileManager, this.simplifier);
     this.relationshipExtractor = new RelationshipExtractor(this.sourceFileManager, this.simplifier);
