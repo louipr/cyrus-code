@@ -7,7 +7,7 @@
  */
 
 import { parseArgs } from 'node:util';
-import type { CliContext } from '../index.js';
+import type { CliContext } from '../types.js';
 
 export async function validateCommand(
   context: CliContext,

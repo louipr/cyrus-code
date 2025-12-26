@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { extractErrorMessage } from '../../infrastructure/errors.js';
-import type { CliContext } from '../index.js';
+import type { CliContext } from '../types.js';
 import type { ComponentSymbolDTO } from '../../api/types.js';
 
 export async function registerCommand(

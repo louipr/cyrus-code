@@ -179,20 +179,3 @@ export class HelpContentService implements IHelpContentService {
     this.preprocessor.clearCache();
   }
 }
-
-/**
- * Factory function for creating HelpContentService instances.
- * Preferred over direct instantiation for dependency injection support.
- *
- * @param projectRoot - Optional project root path. Auto-detects if not provided.
- * @param repository - Optional repository instance for DI/testing.
- * @param sourceFileManager - Optional source file manager for DI/cache sharing.
- * @returns HelpContentService instance
- */
-export function createHelpContentService(
-  projectRoot?: string,
-  repository?: IHelpRepository,
-  sourceFileManager?: ISourceFileManager
-): HelpContentService {
-  return new HelpContentService(projectRoot, repository, sourceFileManager);
-}

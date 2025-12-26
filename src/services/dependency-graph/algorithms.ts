@@ -387,8 +387,9 @@ export function getLeafNodes(graph: DependencyGraph): string[] {
 
 /**
  * Calculate the maximum depth of the graph.
+ * Internal helper - not exported.
  */
-export function getMaxDepth(graph: DependencyGraph): number {
+function getMaxDepth(graph: DependencyGraph): number {
   if (graph.nodes.size === 0) return 0;
   if (graph.cycles.length > 0) return -1; // Undefined for cyclic graphs
 

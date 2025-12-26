@@ -15,7 +15,7 @@
  */
 
 import { parseArgs } from 'node:util';
-import type { CliContext } from '../index.js';
+import type { CliContext } from '../types.js';
 
 interface GraphOptions {
   json: boolean;

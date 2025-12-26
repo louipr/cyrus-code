@@ -148,18 +148,3 @@ export class C4DiagramGenerator {
     };
   }
 }
-
-/**
- * Factory function for creating C4DiagramGenerator instances.
- * Preferred over direct instantiation for dependency injection support.
- *
- * @param projectRoot - Path to the project root directory.
- * @param sourceFileManager - Optional source file manager for DI/cache sharing.
- * @returns C4DiagramGenerator instance
- */
-export function createC4DiagramGenerator(
-  projectRoot: string,
-  sourceFileManager?: ISourceFileManager
-): C4DiagramGenerator {
-  return new C4DiagramGenerator(projectRoot, sourceFileManager);
-}

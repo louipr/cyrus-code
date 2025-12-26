@@ -9,6 +9,60 @@ import type { ComponentSymbol, ValidationResult, ISymbolRepository } from '../..
 import { createValidationResult } from '../../domain/symbol/index.js';
 
 // ===========================================================================
+// Internal Helpers
+// ===========================================================================
+
+/**
+ * Validate symbol references (port types, containment).
+ * Internal helper - not exported.
+ */
+function validateSymbolReferences(
+  symbol: ComponentSymbol,
+  symbolMap: Map<string, ComponentSymbol>,
+  result: ValidationResult
+): void {
+  // Check port type references
+  for (const port of symbol.ports) {
+    if (!symbolMap.has(port.type.symbolId)) {
+      result.errors.push({
+        code: 'INVALID_TYPE_REFERENCE',
+        message: `Port '${port.name}' on symbol '${symbol.id}' references unknown type '${port.type.symbolId}'`,
+        symbolIds: [symbol.id],
+        severity: 'error',
+      });
+    }
+
+    // Check generic type references
+    if (port.type.generics) {
+      for (const generic of port.type.generics) {
+        if (!symbolMap.has(generic.symbolId)) {
+          result.errors.push({
+            code: 'INVALID_TYPE_REFERENCE',
+            message: `Generic type '${generic.symbolId}' in port '${port.name}' on symbol '${symbol.id}' not found`,
+            symbolIds: [symbol.id],
+            severity: 'error',
+          });
+        }
+      }
+    }
+  }
+
+  // Check containment references
+  if (symbol.contains) {
+    for (const childId of symbol.contains) {
+      if (!symbolMap.has(childId)) {
+        result.errors.push({
+          code: 'INVALID_CONTAINMENT_REFERENCE',
+          message: `Symbol '${symbol.id}' contains unknown symbol '${childId}'`,
+          symbolIds: [symbol.id, childId],
+          severity: 'error',
+        });
+      }
+    }
+  }
+}
+
+// ===========================================================================
 // Pure Validation Functions
 // ===========================================================================
 
@@ -129,63 +183,4 @@ export function checkCircularContainment(
   }
 
   return cycles;
-}
-
-/**
- * Validate symbol references (port types, containment).
- *
- * Helper function that mutates the result object to add errors.
- * Checks:
- * - Port type references exist
- * - Generic type references exist
- * - Containment references exist
- *
- * @param symbol - Symbol to validate
- * @param symbolMap - Map of all symbols by ID
- * @param result - ValidationResult to mutate (adds errors)
- */
-export function validateSymbolReferences(
-  symbol: ComponentSymbol,
-  symbolMap: Map<string, ComponentSymbol>,
-  result: ValidationResult
-): void {
-  // Check port type references
-  for (const port of symbol.ports) {
-    if (!symbolMap.has(port.type.symbolId)) {
-      result.errors.push({
-        code: 'INVALID_TYPE_REFERENCE',
-        message: `Port '${port.name}' on symbol '${symbol.id}' references unknown type '${port.type.symbolId}'`,
-        symbolIds: [symbol.id],
-        severity: 'error',
-      });
-    }
-
-    // Check generic type references
-    if (port.type.generics) {
-      for (const generic of port.type.generics) {
-        if (!symbolMap.has(generic.symbolId)) {
-          result.errors.push({
-            code: 'INVALID_TYPE_REFERENCE',
-            message: `Generic type '${generic.symbolId}' in port '${port.name}' on symbol '${symbol.id}' not found`,
-            symbolIds: [symbol.id],
-            severity: 'error',
-          });
-        }
-      }
-    }
-  }
-
-  // Check containment references
-  if (symbol.contains) {
-    for (const childId of symbol.contains) {
-      if (!symbolMap.has(childId)) {
-        result.errors.push({
-          code: 'INVALID_CONTAINMENT_REFERENCE',
-          message: `Symbol '${symbol.id}' contains unknown symbol '${childId}'`,
-          symbolIds: [symbol.id, childId],
-          severity: 'error',
-        });
-      }
-    }
-  }
 }

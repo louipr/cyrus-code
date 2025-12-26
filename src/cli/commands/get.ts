@@ -7,7 +7,7 @@
  */
 
 import { parseArgs } from 'node:util';
-import type { CliContext } from '../index.js';
+import type { CliContext } from '../types.js';
 import type { ComponentSymbolDTO, PortDefinitionDTO } from '../../api/types.js';
 
 export async function getCommand(

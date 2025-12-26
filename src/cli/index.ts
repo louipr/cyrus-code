@@ -22,13 +22,9 @@ import { wireCommand } from './commands/wire.js';
 import { graphCommand } from './commands/graph.js';
 import { generateCommand } from './commands/generate.js';
 import { helpCommand } from './commands/help.js';
+import type { CliContext } from './types.js';
 
 const DEFAULT_DB_PATH = '.cyrus-code/registry.db';
-
-interface CliContext {
-  facade: ApiFacade;
-  dbPath: string;
-}
 
 function printHelp(): void {
   console.log(`
@@ -197,4 +193,4 @@ main().catch((error) => {
   process.exit(1);
 });
 
-export type { CliContext };
+export type { CliContext } from './types.js';
