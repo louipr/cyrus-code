@@ -415,6 +415,9 @@ export function parseDrawioXml(xml: string): Diagram {
   const elements: DiagramElement[] = [];
   const relationships: DiagramRelationship[] = [];
 
+  // Track processed mxCell attribute strings to avoid duplicates
+  const processedCellAttrs = new Set<string>();
+
   // Parse objects (shapes with cyrus-* metadata)
   const objectRegex = /<object\s+([^>]+)>\s*<mxCell\s+([^>]+)(?:>\s*<mxGeometry\s+([^>]+))?/g;
   let match;
@@ -423,6 +426,9 @@ export function parseDrawioXml(xml: string): Diagram {
     const objAttrStr = match[1] ?? '';
     const cellAttrStr = match[2] ?? '';
     const geoAttrStr = match[3] ?? '';
+
+    // Mark this cell as processed to avoid duplicate parsing
+    processedCellAttrs.add(cellAttrStr);
 
     const objAttrs = parseAttributes(objAttrStr);
     const cellAttrs = parseAttributes(cellAttrStr);
@@ -463,10 +469,13 @@ export function parseDrawioXml(xml: string): Diagram {
     const cellAttrStr = match[1] ?? '';
     const geoAttrStr = match[2] ?? '';
 
+    // Skip if already processed as part of object
+    if (processedCellAttrs.has(cellAttrStr)) continue;
+
     const cellAttrs = parseAttributes(cellAttrStr);
     const geoAttrs = geoAttrStr ? parseAttributes(geoAttrStr) : {};
 
-    // Skip if already processed as part of object
+    // Skip if already processed by id
     if (elements.some((e) => e.id === cellAttrs.id)) continue;
     if (relationships.some((r) => r.id === cellAttrs.id)) continue;
 
