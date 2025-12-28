@@ -10,15 +10,10 @@ import type {
   ApiResponse,
   PaginatedResponse,
   ComponentSymbolDTO,
-  ConnectionDTO,
   ValidationResultDTO,
   SymbolQuery,
-  CreateConnectionRequest,
-  WiringResultDTO,
   DependencyGraphDTO,
   GraphStatsDTO,
-  CompatiblePortDTO,
-  UnconnectedPortDTO,
   GenerateRequest,
   GenerateBatchRequest,
   PreviewRequest,
@@ -64,9 +59,11 @@ interface CyrusAPI {
     getDependents: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     getDependencies: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
-  connections: {
-    get: (symbolId: string) => Promise<ApiResponse<ConnectionDTO[]>>;
-    getAll: () => Promise<ApiResponse<ConnectionDTO[]>>;
+  graph: {
+    build: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
+    detectCycles: () => Promise<ApiResponse<string[][]>>;
+    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
+    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
   };
   validation: {
     validate: () => Promise<ApiResponse<ValidationResultDTO>>;
@@ -76,17 +73,6 @@ interface CyrusAPI {
   status: {
     findUnreachable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     findUntested: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
-  };
-  wiring: {
-    connect: (request: CreateConnectionRequest) => Promise<ApiResponse<WiringResultDTO>>;
-    disconnect: (connectionId: string) => Promise<ApiResponse<WiringResultDTO>>;
-    validateConnection: (request: CreateConnectionRequest) => Promise<ApiResponse<ValidationResultDTO>>;
-    getGraph: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
-    detectCycles: () => Promise<ApiResponse<string[][]>>;
-    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
-    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
-    findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
-    findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
   codeGeneration: {
     generate: (request: GenerateRequest) => Promise<ApiResponse<GenerationResultDTO>>;
@@ -166,24 +152,8 @@ function createMockApi(): CyrusAPI {
       getDependents: () => mockResponse([]),
       getDependencies: () => mockResponse([]),
     },
-    connections: {
-      get: () => mockResponse([]),
-      getAll: () => mockResponse([]),
-    },
-    validation: {
-      validate: () => mockResponse({ valid: true, errors: [], warnings: [] }),
-      validateSymbol: () => mockResponse({ valid: true, errors: [], warnings: [] }),
-      checkCircular: () => mockResponse([]),
-    },
-    status: {
-      findUnreachable: () => mockResponse([]),
-      findUntested: () => mockResponse([]),
-    },
-    wiring: {
-      connect: () => mockResponse({ success: true, connectionId: 'mock-conn-1' }),
-      disconnect: () => mockResponse({ success: true }),
-      validateConnection: () => mockResponse({ valid: true, errors: [], warnings: [] }),
-      getGraph: () => mockResponse({ nodes: [], edges: [], topologicalOrder: [], cycles: [] }),
+    graph: {
+      build: () => mockResponse({ nodes: [], edges: [], topologicalOrder: [], cycles: [] }),
       detectCycles: () => mockResponse([]),
       getTopologicalOrder: () => mockResponse([]),
       getStats: () => mockResponse({
@@ -195,8 +165,15 @@ function createMockApi(): CyrusAPI {
         hasCycles: false,
         maxDepth: 0,
       }),
-      findCompatiblePorts: () => mockResponse([]),
-      findUnconnectedRequired: () => mockResponse([]),
+    },
+    validation: {
+      validate: () => mockResponse({ valid: true, errors: [], warnings: [] }),
+      validateSymbol: () => mockResponse({ valid: true, errors: [], warnings: [] }),
+      checkCircular: () => mockResponse([]),
+    },
+    status: {
+      findUnreachable: () => mockResponse([]),
+      findUntested: () => mockResponse([]),
     },
     codeGeneration: {
       generate: () => mockError('Not connected to backend'),

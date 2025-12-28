@@ -1,19 +1,17 @@
 /**
  * ValidationOverlay Component
  *
- * Displays validation warnings for unconnected required ports and cycles.
+ * Displays validation warnings for dependency cycles in the graph.
  */
 
 import React, { useEffect, useState } from 'react';
-import type { UnconnectedPortDTO } from '../../api/types';
 import { apiClient } from '../api-client';
 
 interface ValidationOverlayProps {
-  onPortClick?: (symbolId: string) => void;
+  onNodeClick?: (symbolId: string) => void;
 }
 
-export function ValidationOverlay({ onPortClick }: ValidationOverlayProps): React.ReactElement | null {
-  const [unconnectedPorts, setUnconnectedPorts] = useState<UnconnectedPortDTO[]>([]);
+export function ValidationOverlay({ onNodeClick }: ValidationOverlayProps): React.ReactElement | null {
   const [cycles, setCycles] = useState<string[][]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -22,14 +20,8 @@ export function ValidationOverlay({ onPortClick }: ValidationOverlayProps): Reac
     async function fetchValidation(): Promise<void> {
       setLoading(true);
       try {
-        const [portsResult, cyclesResult] = await Promise.all([
-          apiClient.wiring.findUnconnectedRequired(),
-          apiClient.wiring.detectCycles(),
-        ]);
+        const cyclesResult = await apiClient.graph.detectCycles();
 
-        if (portsResult.success && portsResult.data) {
-          setUnconnectedPorts(portsResult.data);
-        }
         if (cyclesResult.success && cyclesResult.data) {
           setCycles(cyclesResult.data);
         }
@@ -42,11 +34,11 @@ export function ValidationOverlay({ onPortClick }: ValidationOverlayProps): Reac
   }, []);
 
   // Don't show if no issues
-  if (!loading && unconnectedPorts.length === 0 && cycles.length === 0) {
+  if (!loading && cycles.length === 0) {
     return null;
   }
 
-  const totalIssues = unconnectedPorts.length + cycles.length;
+  const totalIssues = cycles.length;
 
   return (
     <div style={styles.container} data-testid="validation-overlay">
@@ -68,30 +60,6 @@ export function ValidationOverlay({ onPortClick }: ValidationOverlayProps): Reac
             <div style={styles.loading}>Checking...</div>
           ) : (
             <>
-              {unconnectedPorts.length > 0 && (
-                <section style={styles.section}>
-                  <h4 style={styles.sectionTitle}>Unconnected Required Ports</h4>
-                  {unconnectedPorts.map((port, index) => (
-                    <div
-                      key={`${port.symbolId}-${port.portName}-${index}`}
-                      style={styles.issue}
-                      onClick={() => onPortClick?.(port.symbolId)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && onPortClick?.(port.symbolId)}
-                    >
-                      <span style={styles.issueIcon}>⚠</span>
-                      <div style={styles.issueContent}>
-                        <div style={styles.issuePrimary}>{port.portName}</div>
-                        <div style={styles.issueSecondary}>
-                          {port.symbolId} ({port.portDirection})
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              )}
-
               {cycles.length > 0 && (
                 <section style={styles.section}>
                   <h4 style={styles.sectionTitle}>Dependency Cycles</h4>
@@ -103,10 +71,10 @@ export function ValidationOverlay({ onPortClick }: ValidationOverlayProps): Reac
                           <span key={nodeId}>
                             <span
                               style={styles.cycleNode}
-                              onClick={() => onPortClick?.(nodeId)}
+                              onClick={() => onNodeClick?.(nodeId)}
                               role="button"
                               tabIndex={0}
-                              onKeyDown={(e) => e.key === 'Enter' && onPortClick?.(nodeId)}
+                              onKeyDown={(e) => e.key === 'Enter' && onNodeClick?.(nodeId)}
                             >
                               {nodeId.split('/').pop()?.split('@')[0]}
                             </span>
@@ -193,34 +161,6 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     margin: '0 12px 8px',
-  },
-  issue: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '8px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-  },
-  issueIcon: {
-    color: '#cca700',
-    fontSize: '12px',
-    marginTop: '2px',
-  },
-  issueContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  issuePrimary: {
-    fontSize: '12px',
-    color: '#d4d4d4',
-    fontWeight: 500,
-  },
-  issueSecondary: {
-    fontSize: '10px',
-    color: '#808080',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   cycle: {
     display: 'flex',

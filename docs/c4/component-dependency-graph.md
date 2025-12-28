@@ -64,7 +64,7 @@ flowchart TD
 | **Cycle Analysis** | `detectCycles()`, `wouldCreateCycle()` |
 | **Ordering** | `getTopologicalOrder()` |
 | **Traversal** | `getUpstream()`, `getDownstream()`, `getDirect()` |
-| **Analysis** | `getRootNodes()`, `getLeafNodes()`, `getConnectedComponents()`, `getStats()` |
+| **Analysis** | `getRootNodes()`, `getLeafNodes()`, `getStats()` |
 
 ### DependencyGraphService API
 

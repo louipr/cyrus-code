@@ -12,17 +12,17 @@
  * Use createHelpContentService() from factory.ts for convenient instantiation.
  */
 
-import type { IHelpContentService } from './schema.js';
+import type { HelpContentService as IHelpContentService } from './schema.js';
 import type {
   HelpTopic,
   HelpSearchResult,
   HelpOutputFormat,
-  IHelpRepository,
+  HelpRepository,
 } from '../../domain/help/index.js';
 import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
 import { HelpFormatter } from './formatter.js';
-import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import type { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Help Content Service - orchestrates help content operations.
@@ -31,14 +31,14 @@ import type { ISourceFileManager } from '../../infrastructure/typescript-ast/ind
  * Service methods add value: search (scoring), content (preprocessing), formatting.
  */
 export class HelpContentService implements IHelpContentService {
-  readonly repository: IHelpRepository;
+  readonly repository: HelpRepository;
   private formatter: HelpFormatter;
   private preprocessor: MarkdownPreprocessor;
 
   constructor(
     projectRoot: string,
-    repository: IHelpRepository,
-    sourceFileManager: ISourceFileManager
+    repository: HelpRepository,
+    sourceFileManager: SourceFileManager
   ) {
     this.repository = repository;
     this.formatter = new HelpFormatter();

@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import type { ComponentSymbolDTO } from '../../api/types';
 import { apiClient } from '../api-client';
+import { extractErrorMessage } from '../../infrastructure/errors';
 
 interface ComponentListProps {
   searchQuery: string;
@@ -41,7 +42,7 @@ export function ComponentList({
           setError(result.error?.message ?? 'Failed to load components');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(extractErrorMessage(err));
       } finally {
         setLoading(false);
       }

@@ -13,24 +13,14 @@ import {
   Visibility,
 } from '../../../domain/diagram/schema.js';
 import {
-  DiagramRenderer,
   RenderOptions,
   applyRenderDefaults,
-  rendererRegistry,
 } from '../../../services/diagram-generator/diagram-renderer.js';
 
 /**
  * Mermaid classDiagram renderer.
  */
-export class MermaidRenderer implements DiagramRenderer {
-  getFormatName(): string {
-    return 'mermaid';
-  }
-
-  getFileExtension(): string {
-    return '.mmd';
-  }
-
+export class MermaidRenderer {
   render(diagram: C4Diagram, options?: RenderOptions): string {
     const opts = applyRenderDefaults(options);
     const lines: string[] = ['classDiagram'];
@@ -201,9 +191,6 @@ export class MermaidRenderer implements DiagramRenderer {
     return grouped;
   }
 }
-
-// Register the Mermaid renderer
-rendererRegistry.register(new MermaidRenderer());
 
 /**
  * Default Mermaid renderer instance.

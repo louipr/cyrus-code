@@ -69,7 +69,7 @@ ipcMain.handle('symbols:list', async (_event, query) => {
   return facade.listSymbols(query);  // ✓ LIVE
 });
 
-// ApiFacade
+// Architecture
 listSymbols(query) {
   return this.symbolTable.list();  // ✓ LIVE (reached from entry point)
 }
@@ -295,7 +295,7 @@ class WiringService {
 }
 ```
 
-> **Note**: ConnectionManager was removed (2024-12) as a redundant wrapper. WiringService now calls `repo.insertConnection()` directly.
+> **Note**: ConnectionManager was removed (2025-12) as a redundant wrapper. WiringService now calls `repo.insertConnection()` directly.
 
 ### What This Finds
 

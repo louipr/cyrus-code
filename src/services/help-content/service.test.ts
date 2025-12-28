@@ -76,8 +76,8 @@ describe('HelpContentService', () => {
 
   describe('search', () => {
     it('should find topics by keyword', () => {
-      const results = service.search('wiring');
-      assert.ok(results.length > 0, 'Should find wiring-related topics');
+      const results = service.search('symbol');
+      assert.ok(results.length > 0, 'Should find symbol-related topics');
     });
 
     it('should score title matches higher than keyword matches', () => {

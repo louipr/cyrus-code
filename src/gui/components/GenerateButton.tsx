@@ -37,7 +37,7 @@ export function GenerateButton({
       }
     }
 
-    checkCanGenerate();
+    checkCanGenerate().catch(() => setCanGenerate(false));
   }, [component.id]);
 
   if (!canGenerate) {

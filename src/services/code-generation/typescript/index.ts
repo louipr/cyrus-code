@@ -2,10 +2,11 @@
  * TypeScript Backend
  *
  * Language-specific code generation for TypeScript.
+ * Works directly with ComponentSymbol from domain layer.
  */
 
-// Type mapping
-export { typeRefToTypeScript } from './type-mapper.js';
+// Type mapping utilities
+export { symbolIdToTypeName, sanitizeClassName } from './type-mapper.js';
 
 // AST building
 export {
@@ -18,10 +19,8 @@ export {
 // Class generation
 export {
   createBaseClass,
-  addInputPortMethods,
-  addOutputPortMethods,
+  addDependencyInjection,
   createUserStub,
+  getClassName,
+  getBaseClassName,
 } from './class-generator.js';
-
-// Types
-export type { GeneratedComponent, GeneratedPort } from './schema.js';

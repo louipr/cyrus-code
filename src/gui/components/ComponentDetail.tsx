@@ -1,38 +1,19 @@
 /**
  * ComponentDetail Component
  *
- * Displays detailed information about a selected component.
+ * Displays detailed information about a selected component,
+ * including UML relationships (extends, implements, composes, aggregates, dependencies).
  */
 
-import React, { useEffect, useState } from 'react';
-import type { ComponentSymbolDTO, ConnectionDTO } from '../../api/types';
-import { apiClient } from '../api-client';
+import React from 'react';
+import type { ComponentSymbolDTO } from '../../api/types';
 
 interface ComponentDetailProps {
   component: ComponentSymbolDTO;
 }
 
 export function ComponentDetail({ component }: ComponentDetailProps): React.ReactElement {
-  const [connections, setConnections] = useState<ConnectionDTO[]>([]);
-  const [loadingConnections, setLoadingConnections] = useState(false);
-
   const version = `${component.version.major}.${component.version.minor}.${component.version.patch}`;
-
-  useEffect(() => {
-    async function fetchConnections(): Promise<void> {
-      setLoadingConnections(true);
-      try {
-        const result = await apiClient.connections.get(component.id);
-        if (result.success && result.data) {
-          setConnections(result.data);
-        }
-      } finally {
-        setLoadingConnections(false);
-      }
-    }
-
-    fetchConnections();
-  }, [component.id]);
 
   return (
     <div style={styles.container} data-testid="detail-panel">
@@ -77,27 +58,73 @@ export function ComponentDetail({ component }: ComponentDetailProps): React.Reac
         </Section>
       )}
 
-      {component.ports.length > 0 && (
-        <Section title={`Ports (${component.ports.length})`}>
-          {component.ports.map((port) => (
-            <div key={port.name} style={styles.port}>
-              <div style={styles.portHeader}>
-                <span style={styles.portDirection}>{port.direction}</span>
-                <span style={styles.portName}>{port.name}</span>
-                <span style={styles.portType}>{port.type.symbolId}</span>
-              </div>
-              <div style={styles.portMeta}>
-                {port.required ? 'required' : 'optional'}
-                {port.multiple && ', multiple'}
-              </div>
-              {port.description && (
-                <div style={styles.portDescription}>{port.description}</div>
-              )}
+      {/* UML Inheritance Relationships */}
+      {component.extends && (
+        <Section title="Extends">
+          <div style={styles.relationship}>
+            <span style={styles.relationshipIcon}>▷</span>
+            <span style={styles.relationshipTarget}>{component.extends}</span>
+          </div>
+        </Section>
+      )}
+
+      {component.implements && component.implements.length > 0 && (
+        <Section title="Implements">
+          {component.implements.map((impl) => (
+            <div key={impl} style={styles.relationship}>
+              <span style={styles.relationshipIcon}>◁</span>
+              <span style={styles.relationshipTarget}>{impl}</span>
             </div>
           ))}
         </Section>
       )}
 
+      {/* UML Composition */}
+      {component.composes && component.composes.length > 0 && (
+        <Section title="Composes">
+          {component.composes.map((comp) => (
+            <div key={comp.symbolId} style={styles.relationship}>
+              <span style={styles.relationshipIcon}>◆</span>
+              <span style={styles.relationshipTarget}>{comp.symbolId}</span>
+              <span style={styles.relationshipMeta}>
+                {comp.fieldName} [{comp.multiplicity}]
+              </span>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* UML Aggregation */}
+      {component.aggregates && component.aggregates.length > 0 && (
+        <Section title="Aggregates">
+          {component.aggregates.map((agg) => (
+            <div key={agg.symbolId} style={styles.relationship}>
+              <span style={styles.relationshipIcon}>◇</span>
+              <span style={styles.relationshipTarget}>{agg.symbolId}</span>
+              <span style={styles.relationshipMeta}>
+                {agg.fieldName} [{agg.multiplicity}]
+              </span>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* UML Dependencies */}
+      {component.dependencies && component.dependencies.length > 0 && (
+        <Section title="Dependencies">
+          {component.dependencies.map((dep) => (
+            <div key={dep.symbolId} style={styles.relationship}>
+              <span style={styles.relationshipIcon}>→</span>
+              <span style={styles.relationshipTarget}>{dep.symbolId}</span>
+              <span style={styles.relationshipMeta}>
+                {dep.name} ({dep.kind}){dep.optional ? ' optional' : ''}
+              </span>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* C4 Containment */}
       {component.contains && component.contains.length > 0 && (
         <Section title="Contains">
           <ul style={styles.list}>
@@ -107,25 +134,6 @@ export function ComponentDetail({ component }: ComponentDetailProps): React.Reac
               </li>
             ))}
           </ul>
-        </Section>
-      )}
-
-      {connections.length > 0 && (
-        <Section title="Connections">
-          {loadingConnections ? (
-            <p style={styles.loading}>Loading connections...</p>
-          ) : (
-            connections.map((conn) => (
-              <div key={conn.id} style={styles.connection}>
-                <div style={styles.connectionId}>{conn.id}</div>
-                <div style={styles.connectionRoute}>
-                  {conn.fromSymbolId}:{conn.fromPort}
-                  <span style={styles.arrow}> → </span>
-                  {conn.toSymbolId}:{conn.toPort}
-                </div>
-              </div>
-            ))
-          )}
         </Section>
       )}
 
@@ -250,45 +258,29 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
     color: '#d4d4d4',
   },
-  port: {
-    padding: '12px',
+  relationship: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
     backgroundColor: '#2d2d2d',
     borderRadius: '4px',
     marginBottom: '8px',
   },
-  portHeader: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-    marginBottom: '4px',
+  relationshipIcon: {
+    color: '#4ec9b0',
+    fontSize: '14px',
+    fontWeight: 'bold',
   },
-  portDirection: {
-    fontSize: '11px',
-    padding: '2px 6px',
-    borderRadius: '3px',
-    backgroundColor: '#094771',
-    color: '#ffffff',
-    textTransform: 'uppercase',
-  },
-  portName: {
-    fontWeight: 500,
-    color: '#dcdcaa',
-  },
-  portType: {
+  relationshipTarget: {
     fontSize: '13px',
     fontFamily: 'monospace',
-    color: '#4ec9b0',
+    color: '#9cdcfe',
+    flex: 1,
   },
-  portMeta: {
-    fontSize: '12px',
+  relationshipMeta: {
+    fontSize: '11px',
     color: '#808080',
-    marginLeft: '40px',
-  },
-  portDescription: {
-    fontSize: '13px',
-    color: '#808080',
-    marginTop: '8px',
-    marginLeft: '40px',
   },
   list: {
     margin: 0,
@@ -300,29 +292,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'monospace',
     color: '#9cdcfe',
     padding: '4px 0',
-  },
-  connection: {
-    padding: '8px 12px',
-    backgroundColor: '#2d2d2d',
-    borderRadius: '4px',
-    marginBottom: '8px',
-  },
-  connectionId: {
-    fontSize: '11px',
-    color: '#808080',
-    marginBottom: '4px',
-  },
-  connectionRoute: {
-    fontSize: '13px',
-    fontFamily: 'monospace',
-    color: '#d4d4d4',
-  },
-  arrow: {
-    color: '#4ec9b0',
-  },
-  loading: {
-    fontSize: '14px',
-    color: '#808080',
-    margin: 0,
   },
 };

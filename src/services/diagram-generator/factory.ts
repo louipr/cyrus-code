@@ -8,7 +8,7 @@
 import { C4DiagramGenerator } from './generator.js';
 import {
   SourceFileManager,
-  type ISourceFileManager,
+  type SourceFileManager as ISourceFileManager,
 } from '../../infrastructure/typescript-ast/index.js';
 
 /**

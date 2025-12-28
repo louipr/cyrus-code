@@ -28,7 +28,7 @@ import type {
  * Central registry for tracking all components, types, and interfaces.
  * Provides CRUD operations and convenience methods.
  */
-export interface ISymbolTableService {
+export interface SymbolTableService {
   // CRUD Operations
   register(symbol: ComponentSymbol): void;
   get(id: string): ComponentSymbol | undefined;
@@ -38,7 +38,6 @@ export interface ISymbolTableService {
 
   // Bulk Operations
   import(symbols: ComponentSymbol[]): void;
-  export(): ComponentSymbol[];
 
   // Query and Resolution
   registerWithAutoId(

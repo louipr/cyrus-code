@@ -8,6 +8,7 @@
 
 import { parseArgs } from 'node:util';
 import type { CliContext } from '../types.js';
+import { exitOnError } from '../output.js';
 
 export async function validateCommand(
   context: CliContext,
@@ -42,16 +43,9 @@ export async function validateCommand(
     result = context.facade.validation.validateAll();
   }
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Validation failed'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Validation failed');
 
   const validation = result.data;
-  if (!validation) {
-    console.error('Error: No validation result returned');
-    process.exit(1);
-  }
 
   // Also check for circular containment
   const circularResult = context.facade.validation.checkCircular();

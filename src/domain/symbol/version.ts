@@ -162,27 +162,3 @@ export function findBestMatch(
   return matching[0];
 }
 
-// ============================================================================
-// Version Operations
-// ============================================================================
-
-/**
- * Bump a version by type.
- */
-export function bumpVersion(
-  version: SemVer,
-  type: 'major' | 'minor' | 'patch'
-): SemVer {
-  switch (type) {
-    case 'major':
-      return { major: version.major + 1, minor: 0, patch: 0 };
-    case 'minor':
-      return { major: version.major, minor: version.minor + 1, patch: 0 };
-    case 'patch':
-      return {
-        major: version.major,
-        minor: version.minor,
-        patch: version.patch + 1,
-      };
-  }
-}

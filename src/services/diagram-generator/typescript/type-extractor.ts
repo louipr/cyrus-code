@@ -15,7 +15,7 @@ import {
 } from 'ts-morph';
 import { ClassInfo, AttributeInfo, MethodInfo, Visibility, Stereotype } from '../../../domain/diagram/schema.js';
 import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
-import type { ISourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
+import type { SourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
 
 /**
  * Extracts type, class, and enum information for C4-4 diagrams.
@@ -29,7 +29,7 @@ export class TypeExtractor {
    * @param simplifier - Optional type simplifier (uses default if not provided)
    */
   constructor(
-    private sourceFileManager: ISourceFileManager,
+    private sourceFileManager: SourceFileManager,
     simplifier?: TypeSimplifier
   ) {
     this.simplifier = simplifier ?? defaultSimplifier;

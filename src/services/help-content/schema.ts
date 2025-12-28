@@ -9,7 +9,7 @@ import type {
   HelpTopic,
   HelpOutputFormat,
   HelpSearchResult,
-  IHelpRepository,
+  HelpRepository,
 } from '../../domain/help/index.js';
 
 // =============================================================================
@@ -22,9 +22,9 @@ import type {
  * Provides orchestration for help content: search, rendering, formatting.
  * For direct data access (categories, topics, groups), use the repository property.
  */
-export interface IHelpContentService {
+export interface HelpContentService {
   /** Direct access to help data (categories, topics, groups, etc.) */
-  readonly repository: IHelpRepository;
+  readonly repository: HelpRepository;
 
   /** Search topics by query string (adds scoring logic) */
   search(query: string): HelpSearchResult[];

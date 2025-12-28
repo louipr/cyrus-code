@@ -329,7 +329,7 @@ sequenceDiagram
     participant Client as apiClient
     participant IPC as IPC (electronAPI)
     participant Handler as IPC Handler
-    participant API as ApiFacade
+    participant API as Architecture
     participant Service as Component Registry
 
     React->>Client: symbols.get(id)

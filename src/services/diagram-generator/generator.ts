@@ -26,9 +26,8 @@ import { TypeExtractor } from './typescript/type-extractor.js';
 import { RelationshipExtractor } from './typescript/relationship-extractor.js';
 import { ClassDiagramBuilder } from '../../domain/diagram/class-diagram-builder.js';
 import { MermaidRenderer } from './typescript/mermaid-renderer.js';
-import { DiagramRenderer, rendererRegistry } from './diagram-renderer.js';
 import { TypeSimplifier } from './typescript/type-simplifier.js';
-import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import type { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * C4-4 Code Diagram Generator.
@@ -38,21 +37,21 @@ import type { ISourceFileManager } from '../../infrastructure/typescript-ast/ind
  */
 export class C4DiagramGenerator {
   private projectRoot: string;
-  private sourceFileManager: ISourceFileManager;
+  private sourceFileManager: SourceFileManager;
   private interfaceExtractor: InterfaceExtractor;
   private typeExtractor: TypeExtractor;
   private relationshipExtractor: RelationshipExtractor;
   private simplifier: TypeSimplifier;
-  private defaultRenderer: DiagramRenderer;
+  private renderer: MermaidRenderer;
 
-  constructor(projectRoot: string, sourceFileManager: ISourceFileManager) {
+  constructor(projectRoot: string, sourceFileManager: SourceFileManager) {
     this.projectRoot = projectRoot;
     this.simplifier = new TypeSimplifier();
     this.sourceFileManager = sourceFileManager;
     this.interfaceExtractor = new InterfaceExtractor(this.sourceFileManager, this.simplifier);
     this.typeExtractor = new TypeExtractor(this.sourceFileManager, this.simplifier);
     this.relationshipExtractor = new RelationshipExtractor(this.sourceFileManager, this.simplifier);
-    this.defaultRenderer = new MermaidRenderer();
+    this.renderer = new MermaidRenderer();
   }
 
   /**
@@ -114,17 +113,16 @@ export class C4DiagramGenerator {
 
     // Build and render
     const diagram = builder.build();
-    const rendered = this.defaultRenderer.render(diagram);
+    const rendered = this.renderer.render(diagram);
 
     return { diagram, rendered, warnings };
   }
 
   /**
-   * Render an existing diagram with a specific renderer.
+   * Render an existing diagram.
    */
-  render(diagram: C4Diagram, format: string = 'mermaid'): string {
-    const renderer = rendererRegistry.get(format) ?? this.defaultRenderer;
-    return renderer.render(diagram);
+  render(diagram: C4Diagram): string {
+    return this.renderer.render(diagram);
   }
 
   /**

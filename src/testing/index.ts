@@ -7,6 +7,6 @@
 export {
   createSymbol,
   createTypeSymbol,
-  createPort,
+  createDependency,
   createService,
 } from './fixtures.js';

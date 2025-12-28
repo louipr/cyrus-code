@@ -7,21 +7,21 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type {
-  HelpManifest,
-  HelpTopic,
-  HelpCategory,
-  HelpGroup,
-  C4Hierarchy,
-  DocumentHeading,
-  IHelpRepository,
+import {
+  extractHeadings,
+  type HelpManifest,
+  type HelpTopic,
+  type HelpCategory,
+  type HelpGroup,
+  type C4Hierarchy,
+  type DocumentHeading,
+  type HelpRepository as IHelpRepository,
 } from '../domain/help/index.js';
-import { extractHeadings } from '../infrastructure/markdown/index.js';
 
 /**
  * Help Repository - loads and provides access to help data.
  */
-export class HelpRepository implements IHelpRepository {
+export class JsonHelpRepository implements IHelpRepository {
   private manifest: HelpManifest | null = null;
   private projectRoot: string;
 

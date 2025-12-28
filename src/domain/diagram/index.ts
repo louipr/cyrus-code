@@ -18,6 +18,7 @@ export type {
   DiagramConfig,
   C4Diagram,
   DiagramResult,
+  MethodSelector,
 } from './schema.js';
 
 // Default values
@@ -27,4 +28,4 @@ export { DEFAULT_CONFIG, applyDefaults } from './schema.js';
 export { ClassDiagramBuilder } from './class-diagram-builder.js';
 
 // Selection/Filtering
-export { MethodSelector, defaultMethodSelector } from './method-selector.js';
+export { defaultMethodSelector } from './method-selector.js';

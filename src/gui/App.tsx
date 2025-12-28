@@ -15,7 +15,7 @@ import { ValidationOverlay } from './components/ValidationOverlay';
 import { Canvas } from './components/Canvas';
 import { ExportDialog } from './components/ExportDialog';
 import { GenerateButton } from './components/GenerateButton';
-import { HelpDialog } from './components/HelpDialog';
+import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
@@ -188,7 +188,7 @@ export default function App(): React.ReactElement {
                 selectedSymbolId={selectedComponent?.id}
                 onNodeClick={handleGraphNodeClick}
               />
-              <ValidationOverlay onPortClick={handleGraphNodeClick} />
+              <ValidationOverlay onNodeClick={handleGraphNodeClick} />
             </section>
           </main>
         </>
@@ -203,7 +203,7 @@ export default function App(): React.ReactElement {
                 <ComponentDetail component={selectedComponent} />
               ) : (
                 <div style={styles.placeholder}>
-                  <p>Click a node to view details, or wire ports together</p>
+                  <p>Click a node to view details and relationships</p>
                 </div>
               )}
             </aside>
@@ -212,7 +212,7 @@ export default function App(): React.ReactElement {
                 selectedSymbolId={selectedComponent?.id}
                 onNodeClick={handleGraphNodeClick}
               />
-              <ValidationOverlay onPortClick={handleGraphNodeClick} />
+              <ValidationOverlay onNodeClick={handleGraphNodeClick} />
             </section>
           </main>
         </>

@@ -2,7 +2,7 @@
  * Symbol Domain Model Exports
  *
  * Public API for the symbol domain layer.
- * Services should import from this module to access domain types and utilities.
+ * Uses UML relationship types (not HDL ports/wiring).
  */
 
 // ============================================================================
@@ -16,10 +16,6 @@ export type {
   SymbolStatus,
   SymbolOrigin,
   ComponentSymbol,
-  Connection,
-  PortDefinition,
-  PortDirection,
-  TypeReference,
   SemVer,
   VersionRange,
   SourceLocation,
@@ -28,6 +24,11 @@ export type {
   ExecutionInfo,
   StatusInfo,
   GenerationMetadata,
+  // UML Relationship Types
+  DependencyKind,
+  DependencyRef,
+  CompositionRef,
+  AggregationRef,
 } from './schema.js';
 
 // ============================================================================
@@ -41,10 +42,6 @@ export {
   SymbolStatusSchema,
   SymbolOriginSchema,
   ComponentSymbolSchema,
-  ConnectionSchema,
-  PortDefinitionSchema,
-  PortDirectionSchema,
-  TypeReferenceSchema,
   SemVerSchema,
   VersionRangeSchema,
   SourceLocationSchema,
@@ -53,6 +50,11 @@ export {
   ExecutionInfoSchema,
   StatusInfoSchema,
   GenerationMetadataSchema,
+  // UML Relationship Schemas
+  DependencyKindSchema,
+  DependencyRefSchema,
+  CompositionRefSchema,
+  AggregationRefSchema,
   KIND_TO_LEVEL,
 } from './schema.js';
 
@@ -74,15 +76,23 @@ export {
 // Pure Functions (Version)
 // ============================================================================
 
+export { parseConstraint, findBestMatch } from './version.js';
+
+// ============================================================================
+// Built-in Types
+// ============================================================================
+
+export type { BuiltinTypeDefinition } from './builtins.js';
 export {
-  parseConstraint,
-  findBestMatch,
-  bumpVersion,
-} from './version.js';
+  BUILTIN_TYPES,
+  BUILTIN_TYPE_MAP,
+  BUILTIN_TYPE_IDS,
+  isBuiltinType,
+  getBuiltinTypescript,
+} from './builtins.js';
 
 // ============================================================================
 // Repository Interface (Domain Contract)
 // ============================================================================
 
-export type { ISymbolRepository } from './repository.js';
-
+export type { SymbolRepository } from './schema.js';

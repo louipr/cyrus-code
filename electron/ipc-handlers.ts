@@ -2,7 +2,7 @@
  * IPC Handlers
  *
  * Registers all IPC handlers that bridge the renderer process
- * to the backend ApiFacade.
+ * to the Architecture API.
  *
  * Pattern: Each handler simply delegates to the facade method,
  * making migration to REST API trivial (just add Express routes).
@@ -11,58 +11,60 @@
 import { ipcMain, dialog, BrowserWindow, app } from 'electron';
 import * as path from 'path';
 import { extractErrorMessage } from '../src/infrastructure/errors.js';
-import type { ApiFacade } from '../src/api/facade.js';
+import type { Architecture } from '../src/api/facade.js';
 import type {
   SymbolQuery,
-  CreateConnectionRequest,
   GenerateRequest,
   GenerateBatchRequest,
   PreviewRequest,
-  GenerationOptionsDTO,
   RegisterSymbolRequest,
 } from '../src/api/types.js';
+import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
+import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
+import { SqliteSymbolRepository } from '../src/repositories/symbol-repository.js';
+import { getDatabase } from '../src/repositories/persistence.js';
 
-export function registerIpcHandlers(facade: ApiFacade): void {
+export function registerIpcHandlers(facade: Architecture): void {
   // ==========================================================================
   // Symbol Operations
   // ==========================================================================
 
   ipcMain.handle('symbols:list', async (_event, query?: SymbolQuery) => {
-    return facade.symbols.list(query);
+    return facade.symbols.listSymbols(query);
   });
 
   ipcMain.handle('symbols:get', async (_event, id: string) => {
-    return facade.symbols.get(id);
+    return facade.symbols.getSymbol(id);
   });
 
   ipcMain.handle('symbols:search', async (_event, query: string) => {
-    return facade.symbols.search(query);
+    return facade.symbols.searchSymbols(query);
   });
 
   ipcMain.handle(
     'symbols:resolve',
     async (_event, namespace: string, name: string, constraint?: string) => {
-      return facade.symbols.resolve(namespace, name, constraint);
+      return facade.symbols.resolveSymbol(namespace, name, constraint);
     }
   );
 
   ipcMain.handle(
     'symbols:getVersions',
     async (_event, namespace: string, name: string) => {
-      return facade.symbols.getVersions(namespace, name);
+      return facade.symbols.getSymbolVersions(namespace, name);
     }
   );
 
   ipcMain.handle(
     'symbols:register',
     async (_event, request: RegisterSymbolRequest) => {
-      return facade.symbols.register(request);
+      return facade.symbols.registerSymbol(request);
     }
   );
 
   ipcMain.handle('symbols:remove', async (_event, id: string) => {
-    return facade.symbols.remove(id);
+    return facade.symbols.removeSymbol(id);
   });
 
   // ==========================================================================
@@ -86,15 +88,42 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   });
 
   // ==========================================================================
-  // Connection Operations
+  // Graph Operations
   // ==========================================================================
 
-  ipcMain.handle('connections:get', async (_event, symbolId: string) => {
-    return facade.connections.getBySymbol(symbolId);
+  const getGraphService = () => {
+    const repo = new SqliteSymbolRepository(getDatabase());
+    return new DependencyGraphService(repo);
+  };
+
+  ipcMain.handle('graph:build', async (_event, symbolId?: string) => {
+    const service = getGraphService();
+    const graph = symbolId ? service.buildSubgraph(symbolId) : service.buildGraph();
+    // Convert Maps to arrays for serialization
+    return {
+      success: true,
+      data: {
+        nodes: Array.from(graph.nodes.values()),
+        edges: Array.from(graph.edges.values()).flat(),
+        topologicalOrder: graph.topologicalOrder,
+        cycles: graph.cycles,
+      },
+    };
   });
 
-  ipcMain.handle('connections:getAll', async () => {
-    return facade.connections.getAll();
+  ipcMain.handle('graph:detectCycles', async () => {
+    const service = getGraphService();
+    return { success: true, data: service.detectCycles() };
+  });
+
+  ipcMain.handle('graph:getTopologicalOrder', async () => {
+    const service = getGraphService();
+    return { success: true, data: service.getTopologicalOrder() };
+  });
+
+  ipcMain.handle('graph:getStats', async () => {
+    const service = getGraphService();
+    return { success: true, data: service.getStats() };
   });
 
   // ==========================================================================
@@ -118,60 +147,11 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('status:findUnreachable', async () => {
-    return facade.status.findUnreachable();
+    return facade.symbols.findUnreachable();
   });
 
   ipcMain.handle('status:findUntested', async () => {
-    return facade.status.findUntested();
-  });
-
-  // ==========================================================================
-  // Wiring Operations
-  // ==========================================================================
-
-  ipcMain.handle(
-    'wiring:connect',
-    async (_event, request: CreateConnectionRequest) => {
-      return facade.wiring.wire(request);
-    }
-  );
-
-  ipcMain.handle('wiring:disconnect', async (_event, connectionId: string) => {
-    return facade.wiring.unwire(connectionId);
-  });
-
-  ipcMain.handle(
-    'wiring:validateConnection',
-    async (_event, request: CreateConnectionRequest) => {
-      return facade.wiring.validateConnection(request);
-    }
-  );
-
-  ipcMain.handle('wiring:getGraph', async (_event, symbolId?: string) => {
-    return facade.wiring.getGraph(symbolId);
-  });
-
-  ipcMain.handle('wiring:detectCycles', async () => {
-    return facade.wiring.detectCycles();
-  });
-
-  ipcMain.handle('wiring:getTopologicalOrder', async () => {
-    return facade.wiring.getTopologicalOrder();
-  });
-
-  ipcMain.handle('wiring:getStats', async () => {
-    return facade.wiring.getStats();
-  });
-
-  ipcMain.handle(
-    'wiring:findCompatiblePorts',
-    async (_event, symbolId: string, portName: string) => {
-      return facade.wiring.findCompatiblePorts(symbolId, portName);
-    }
-  );
-
-  ipcMain.handle('wiring:findUnconnectedRequired', async () => {
-    return facade.wiring.findUnconnectedRequired();
+    return facade.symbols.findUntested();
   });
 
   // ==========================================================================
@@ -179,39 +159,39 @@ export function registerIpcHandlers(facade: ApiFacade): void {
   // ==========================================================================
 
   ipcMain.handle('synthesizer:generate', async (_event, request: GenerateRequest) => {
-    return facade.codeGen.generate(request);
+    return facade.generation.generate(request);
   });
 
   ipcMain.handle(
     'synthesizer:generateMultiple',
     async (_event, request: GenerateBatchRequest) => {
-      return facade.codeGen.generateMultiple(request);
+      return facade.generation.generateMultiple(request);
     }
   );
 
   ipcMain.handle(
     'synthesizer:generateAll',
-    async (_event, options: GenerationOptionsDTO) => {
-      return facade.codeGen.generateAll(options);
+    async (_event, options: GenerationOptions) => {
+      return facade.generation.generateAll(options);
     }
   );
 
   ipcMain.handle('synthesizer:preview', async (_event, request: PreviewRequest) => {
-    return facade.codeGen.preview(request);
+    return facade.generation.preview(request);
   });
 
   ipcMain.handle('synthesizer:listGeneratable', async () => {
-    return facade.codeGen.listGeneratable();
+    return facade.generation.listGeneratable();
   });
 
   ipcMain.handle('synthesizer:canGenerate', async (_event, symbolId: string) => {
-    return facade.codeGen.canGenerate(symbolId);
+    return facade.generation.canGenerate(symbolId);
   });
 
   ipcMain.handle(
     'synthesizer:hasUserImplementation',
     async (_event, symbolId: string, outputDir: string) => {
-      return facade.codeGen.hasUserImplementation(symbolId, outputDir);
+      return facade.generation.hasUserImplementation(symbolId, outputDir);
     }
   );
 

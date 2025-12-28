@@ -1,7 +1,7 @@
 /**
  * Graph Command
  *
- * Analyze the dependency graph of connected components.
+ * Analyze the dependency graph of components based on UML relationships.
  *
  * Usage: cyrus-code graph [subcommand] [options]
  *
@@ -10,12 +10,11 @@
  *   cycles     Detect and show cycles
  *   order      Show topological execution order
  *   stats      Show graph statistics
- *   compatible Find compatible ports for a source port
- *   required   Find unconnected required ports
  */
 
 import { parseArgs } from 'node:util';
 import type { CliContext } from '../types.js';
+import { exitOnError } from '../output.js';
 
 interface GraphOptions {
   json: boolean;
@@ -63,12 +62,6 @@ export async function graphCommand(
     case 'stats':
       await showStats(context, opts);
       break;
-    case 'compatible':
-      await findCompatible(context, positionals.slice(1), opts);
-      break;
-    case 'required':
-      await findRequired(context, opts);
-      break;
     default:
       console.error(`Unknown subcommand: ${subcommand}`);
       console.error('Run "cyrus-code graph --help" for usage information.');
@@ -80,14 +73,13 @@ async function showGraph(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.wiring.getGraph(opts.symbol);
+  const result = opts.symbol
+    ? context.facade.graph.buildSubgraph(opts.symbol)
+    : context.facade.graph.buildGraph();
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to get graph'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Failed to get graph');
 
-  const graph = result.data!;
+  const graph = result.data;
 
   if (opts.json) {
     console.log(JSON.stringify(graph, null, 2));
@@ -109,12 +101,12 @@ async function showGraph(
     console.log(`       ${node.kind} - ${node.namespace}/${node.name}`);
   }
 
-  console.log(`\nEdges (${graph.edges.length}):`);
+  console.log(`\nRelationships (${graph.edges.length}):`);
   if (graph.edges.length === 0) {
-    console.log('  No connections.');
+    console.log('  No relationships.');
   } else {
     for (const edge of graph.edges) {
-      console.log(`  ${edge.from}:${edge.fromPort} → ${edge.to}:${edge.toPort}`);
+      console.log(`  ${edge.from} --[${edge.type}]--> ${edge.to}`);
     }
   }
 
@@ -137,14 +129,11 @@ async function showCycles(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.wiring.detectCycles();
+  const result = context.facade.graph.detectCycles();
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Cycle detection failed'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Failed to detect cycles');
 
-  const cycles = result.data!;
+  const cycles = result.data;
 
   if (opts.json) {
     console.log(JSON.stringify({ cycles, count: cycles.length }, null, 2));
@@ -167,15 +156,11 @@ async function showOrder(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.wiring.getTopologicalOrder();
+  const result = context.facade.graph.getTopologicalOrder();
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to compute order'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Failed to get topological order');
 
-  // result.data can be null (cycles exist) or string[] (valid order) or undefined (error)
-  const order = result.data ?? null;
+  const order = result.data;
 
   if (opts.json) {
     console.log(JSON.stringify({ order, hasCycles: order === null }, null, 2));
@@ -204,14 +189,11 @@ async function showStats(
   context: CliContext,
   opts: GraphOptions
 ): Promise<void> {
-  const result = context.facade.wiring.getStats();
+  const result = context.facade.graph.getStats();
 
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to get stats'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Failed to get graph stats');
 
-  const stats = result.data!;
+  const stats = result.data;
 
   if (opts.json) {
     console.log(JSON.stringify(stats, null, 2));
@@ -221,89 +203,12 @@ async function showStats(
   console.log('\nGraph Statistics:');
   console.log('=================\n');
   console.log(`  Components:           ${stats.nodeCount}`);
-  console.log(`  Connections:          ${stats.edgeCount}`);
+  console.log(`  Relationships:        ${stats.edgeCount}`);
   console.log(`  Root nodes:           ${stats.rootCount}`);
   console.log(`  Leaf nodes:           ${stats.leafCount}`);
   console.log(`  Connected components: ${stats.connectedComponentCount}`);
   console.log(`  Maximum depth:        ${stats.maxDepth}`);
   console.log(`  Has cycles:           ${stats.hasCycles ? '✗ Yes' : '✓ No'}`);
-}
-
-async function findCompatible(
-  context: CliContext,
-  positionals: string[],
-  opts: GraphOptions
-): Promise<void> {
-  const symbolId = positionals[0];
-  const portName = positionals[1];
-
-  if (!symbolId || !portName) {
-    console.error('Error: compatible requires symbol-id and port-name');
-    console.error('Usage: cyrus-code graph compatible <symbol-id> <port-name>');
-    process.exit(1);
-  }
-
-  const result = context.facade.wiring.findCompatiblePorts(symbolId, portName);
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to find compatible ports'}`);
-    process.exit(1);
-  }
-
-  const compatible = result.data!;
-
-  if (opts.json) {
-    console.log(JSON.stringify(compatible, null, 2));
-    return;
-  }
-
-  console.log(`\nCompatible ports for ${symbolId}:${portName}:`);
-  console.log('=' .repeat(50) + '\n');
-
-  if (compatible.length === 0) {
-    console.log('  No compatible ports found.');
-    return;
-  }
-
-  for (const match of compatible) {
-    const scoreBar = '█'.repeat(Math.round(match.score * 10));
-    console.log(`  ${match.symbolId}:${match.portName}`);
-    console.log(`    Score: ${scoreBar} (${(match.score * 100).toFixed(0)}%)`);
-  }
-}
-
-async function findRequired(
-  context: CliContext,
-  opts: GraphOptions
-): Promise<void> {
-  const result = context.facade.wiring.findUnconnectedRequired();
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to find unconnected ports'}`);
-    process.exit(1);
-  }
-
-  const unconnected = result.data!;
-
-  if (opts.json) {
-    console.log(JSON.stringify(unconnected, null, 2));
-    return;
-  }
-
-  console.log('\nUnconnected Required Ports:');
-  console.log('===========================\n');
-
-  if (unconnected.length === 0) {
-    console.log('✓ All required ports are connected.');
-    return;
-  }
-
-  console.log(`⚠ ${unconnected.length} required port(s) not connected:\n`);
-  for (const port of unconnected) {
-    console.log(`  ${port.symbolId}`);
-    console.log(`    Port: ${port.portName} (${port.portDirection})`);
-  }
-  process.exit(1);
 }
 
 function printHelp(): void {
@@ -318,8 +223,6 @@ SUBCOMMANDS:
   cycles       Detect and show cycles
   order        Show topological execution order
   stats        Show graph statistics
-  compatible   Find compatible ports for a source port
-  required     Find unconnected required ports
 
 OPTIONS:
   --symbol, -s <id>  Focus on a specific symbol's subgraph (show only)
@@ -341,12 +244,6 @@ EXAMPLES:
 
   # View statistics
   cyrus-code graph stats
-
-  # Find compatible ports for wiring
-  cyrus-code graph compatible auth/JwtService@1.0.0 output
-
-  # Find missing required connections
-  cyrus-code graph required
 
   # Output as JSON for scripting
   cyrus-code graph stats --json

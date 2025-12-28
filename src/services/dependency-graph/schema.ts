@@ -2,10 +2,10 @@
  * Dependency Graph Service Schema
  *
  * Type definitions for dependency graph analysis.
- * Defines graph structures, statistics, and service interface.
+ * Graphs are built from UML relationships (dependencies, extends, implements, etc.)
  */
 
-import type { AbstractionLevel } from '../../domain/symbol/index.js';
+import type { AbstractionLevel, ComponentKind } from '../../domain/symbol/index.js';
 
 // ============================================================================
 // Graph Nodes
@@ -16,17 +16,15 @@ import type { AbstractionLevel } from '../../domain/symbol/index.js';
  */
 export interface GraphNode {
   /** Symbol ID of the component */
-  symbolId: string;
+  id: string;
   /** Component name for display */
   name: string;
   /** Namespace */
   namespace: string;
   /** Abstraction level */
   level: AbstractionLevel;
-  /** Input ports (ports with direction 'in' or 'inout') */
-  inputs: string[];
-  /** Output ports (ports with direction 'out' or 'inout') */
-  outputs: string[];
+  /** Component kind */
+  kind: ComponentKind;
 }
 
 // ============================================================================
@@ -34,19 +32,22 @@ export interface GraphNode {
 // ============================================================================
 
 /**
- * An edge in the dependency graph representing a connection.
+ * Type of relationship between symbols.
+ */
+export type EdgeType = 'dependency' | 'extends' | 'implements' | 'composes' | 'aggregates' | 'contains';
+
+/**
+ * An edge in the dependency graph representing a relationship.
  */
 export interface GraphEdge {
-  /** Connection ID */
-  connectionId: string;
   /** Source symbol ID */
-  fromSymbol: string;
-  /** Source port name */
-  fromPort: string;
+  from: string;
   /** Target symbol ID */
-  toSymbol: string;
-  /** Target port name */
-  toPort: string;
+  to: string;
+  /** Type of relationship */
+  type: EdgeType;
+  /** Optional field name (for composes/aggregates) */
+  fieldName?: string;
 }
 
 // ============================================================================
@@ -77,18 +78,18 @@ export interface DependencyGraph {
 export interface GraphStats {
   /** Total number of components */
   nodeCount: number;
-  /** Total number of connections */
+  /** Total number of relationships */
   edgeCount: number;
-  /** Number of root nodes (no incoming connections) */
+  /** Number of root nodes (no incoming relationships) */
   rootCount: number;
-  /** Number of leaf nodes (no outgoing connections) */
+  /** Number of leaf nodes (no outgoing relationships) */
   leafCount: number;
   /** Maximum depth of the graph */
   maxDepth: number;
   /** Whether the graph has cycles */
   hasCycles: boolean;
   /** Number of disconnected components */
-  componentCount: number;
+  connectedComponentCount: number;
 }
 
 // ============================================================================
@@ -99,9 +100,9 @@ export interface GraphStats {
  * Dependency Graph Service public API contract.
  *
  * Provides graph building, analysis, and traversal operations.
- * All graph algorithms are pure functions operating on immutable data structures.
+ * Graphs are built from UML relationships stored on symbols.
  */
-export interface IDependencyGraphService {
+export interface DependencyGraphService {
   // Graph Building
   buildGraph(): DependencyGraph;
   buildSubgraph(symbolId: string): DependencyGraph;
@@ -121,6 +122,5 @@ export interface IDependencyGraphService {
   // Analysis
   getRootNodes(): string[];
   getLeafNodes(): string[];
-  getConnectedComponents(): string[][];
   getStats(): GraphStats;
 }

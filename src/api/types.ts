@@ -5,8 +5,8 @@
  * These are plain JSON-serializable objects that can be passed
  * between Electron main process and renderer via IPC.
  *
- * Note: Dates are serialized as ISO strings for JSON compatibility.
- * Note: Optional properties use `?: T | undefined` for exactOptionalPropertyTypes.
+ * Types without Date fields are re-exported directly from domain.
+ * Types with Date fields have wire-format versions (Date → string).
  */
 
 import type {
@@ -15,135 +15,70 @@ import type {
   Language,
   SymbolStatus,
   SymbolOrigin,
-  PortDirection,
+  ComponentSymbol,
+  ExecutionInfo,
+  StatusInfo,
+  GenerationMetadata,
 } from '../domain/symbol/index.js';
 
 // ============================================================================
-// DTO Types (JSON-serializable versions)
+// Re-exported Domain Types (no Date transformation needed)
 // ============================================================================
 
-export interface SemVerDTO {
-  major: number;
-  minor: number;
-  patch: number;
-  prerelease?: string | undefined;
-  build?: string | undefined;
-}
+export type {
+  SemVer as SemVerDTO,
+  VersionRange as VersionRangeDTO,
+  SourceLocation as SourceLocationDTO,
+  DependencyRef as DependencyRefDTO,
+  CompositionRef as CompositionRefDTO,
+  AggregationRef as AggregationRefDTO,
+  ValidationError as ValidationErrorDTO,
+  ValidationResult as ValidationResultDTO,
+} from '../domain/symbol/index.js';
 
-export interface VersionRangeDTO {
-  min?: SemVerDTO | undefined;
-  max?: SemVerDTO | undefined;
-  constraint?: string | undefined;
-}
+// ============================================================================
+// Wire-format Types (Date → string transformation)
+// ============================================================================
 
-export interface SourceLocationDTO {
-  filePath: string;
-  startLine: number;
-  endLine: number;
-  startColumn?: number | undefined;
-  endColumn?: number | undefined;
-  contentHash: string;
-}
+/**
+ * Wire-format version of ExecutionInfo.
+ * Dates are serialized as ISO strings.
+ */
+export type ExecutionInfoDTO = Omit<ExecutionInfo, 'firstSeen' | 'lastSeen'> & {
+  firstSeen: string;
+  lastSeen: string;
+};
 
-export interface TypeReferenceDTO {
-  symbolId: string;
-  version?: string | undefined;
-  generics?: TypeReferenceDTO[] | undefined;
-  nullable?: boolean | undefined;
-}
-
-export interface PortDefinitionDTO {
-  name: string;
-  direction: PortDirection;
-  type: TypeReferenceDTO;
-  required: boolean;
-  multiple: boolean;
-  description: string;
-  defaultValue?: unknown;
-}
-
-export interface ExecutionInfoDTO {
-  firstSeen: string; // ISO date string
-  lastSeen: string; // ISO date string
-  count: number;
-  contexts: Array<'test' | 'development' | 'production'>;
-}
-
-export interface StatusInfoDTO {
-  updatedAt: string; // ISO date string
-  source: 'registration' | 'static' | 'coverage' | 'runtime';
-  referencedBy?: string[] | undefined;
-  testedBy?: string[] | undefined;
+/**
+ * Wire-format version of StatusInfo.
+ * Dates are serialized as ISO strings.
+ */
+export type StatusInfoDTO = Omit<StatusInfo, 'updatedAt' | 'executionInfo'> & {
+  updatedAt: string;
   executionInfo?: ExecutionInfoDTO | undefined;
-}
+};
 
-export interface GenerationMetadataDTO {
-  templateId: string;
-  generatedAt: string; // ISO date string
-  contentHash: string;
-  generatedPath: string;
-  implementationPath?: string | undefined;
-}
+/**
+ * Wire-format version of GenerationMetadata.
+ * Dates are serialized as ISO strings.
+ */
+export type GenerationMetadataDTO = Omit<GenerationMetadata, 'generatedAt'> & {
+  generatedAt: string;
+};
 
-export interface ComponentSymbolDTO {
-  // Identity
-  id: string;
-  name: string;
-  namespace: string;
-
-  // Classification
-  level: AbstractionLevel;
-  kind: ComponentKind;
-  language: Language;
-
-  // Interface
-  ports: PortDefinitionDTO[];
-  contains?: string[] | undefined;
-
-  // Versioning
-  version: SemVerDTO;
-  compatibleWith?: VersionRangeDTO[] | undefined;
-
-  // Location
-  sourceLocation?: SourceLocationDTO | undefined;
-
-  // Metadata
-  tags: string[];
-  description: string;
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
-
-  // Usage Status (ADR-005)
-  status: SymbolStatus;
+/**
+ * Wire-format version of ComponentSymbol.
+ * Dates are serialized as ISO strings.
+ */
+export type ComponentSymbolDTO = Omit<
+  ComponentSymbol,
+  'createdAt' | 'updatedAt' | 'statusInfo' | 'generationMeta'
+> & {
+  createdAt: string;
+  updatedAt: string;
   statusInfo?: StatusInfoDTO | undefined;
-
-  // Origin Tracking (ADR-006)
-  origin: SymbolOrigin;
   generationMeta?: GenerationMetadataDTO | undefined;
-}
-
-export interface ConnectionDTO {
-  id: string;
-  fromSymbolId: string;
-  fromPort: string;
-  toSymbolId: string;
-  toPort: string;
-  transform?: string | undefined;
-  createdAt: string; // ISO date string
-}
-
-export interface ValidationErrorDTO {
-  code: string;
-  message: string;
-  symbolIds: string[];
-  severity: 'error' | 'warning';
-}
-
-export interface ValidationResultDTO {
-  valid: boolean;
-  errors: ValidationErrorDTO[];
-  warnings: ValidationErrorDTO[];
-}
+};
 
 // ============================================================================
 // Query Types
@@ -199,14 +134,6 @@ export interface UpdateSymbolRequest {
   >;
 }
 
-export interface CreateConnectionRequest {
-  fromSymbolId: string;
-  fromPort: string;
-  toSymbolId: string;
-  toPort: string;
-  transform?: string | undefined;
-}
-
 export interface UpdateStatusRequest {
   id: string;
   status: SymbolStatus;
@@ -214,120 +141,71 @@ export interface UpdateStatusRequest {
 }
 
 // ============================================================================
-// Wiring DTOs
+// Graph DTOs (re-exported from service - no Date transformation needed)
 // ============================================================================
 
-export interface GraphNodeDTO {
-  id: string;
-  name: string;
-  namespace: string;
-  level: AbstractionLevel;
-  kind: ComponentKind;
-}
+export type {
+  EdgeType,
+  GraphNode as GraphNodeDTO,
+  GraphEdge as GraphEdgeDTO,
+  GraphStats as GraphStatsDTO,
+} from '../services/dependency-graph/schema.js';
 
-export interface GraphEdgeDTO {
-  id: string;
-  from: string;
-  to: string;
-  fromPort: string;
-  toPort: string;
-}
+// Import for DependencyGraphDTO derivation
+import type {
+  GraphNode,
+  GraphEdge,
+} from '../services/dependency-graph/schema.js';
 
+/**
+ * Wire-format version of DependencyGraph.
+ * Maps are converted to arrays for JSON serialization.
+ */
 export interface DependencyGraphDTO {
-  nodes: GraphNodeDTO[];
-  edges: GraphEdgeDTO[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
   topologicalOrder: string[] | null;
   cycles: string[][];
-}
-
-export interface GraphStatsDTO {
-  nodeCount: number;
-  edgeCount: number;
-  rootCount: number;
-  leafCount: number;
-  connectedComponentCount: number;
-  hasCycles: boolean;
-  maxDepth: number;
-}
-
-export interface CompatiblePortDTO {
-  symbolId: string;
-  portName: string;
-  score: number;
-}
-
-export interface UnconnectedPortDTO {
-  symbolId: string;
-  portName: string;
-  portDirection: string;
-}
-
-export interface WiringResultDTO {
-  success: boolean;
-  connectionId?: string | undefined;
-  error?: string | undefined;
-  errorCode?: string | undefined;
 }
 
 // ============================================================================
 // Synthesizer DTOs (Code Generation)
 // ============================================================================
 
-/**
- * Options for code generation.
- */
-export interface GenerationOptionsDTO {
-  outputDir: string;
-  overwriteGenerated?: boolean | undefined;
-  preserveUserFiles?: boolean | undefined;
-  dryRun?: boolean | undefined;
-  includeComments?: boolean | undefined;
-}
+// Import service types
+import type {
+  GenerationOptions,
+  GenerationResult,
+  GenerationBatchResult,
+  PreviewResult,
+} from '../services/code-generation/schema.js';
+
+// Re-export types that don't require Date→string transformation
+export type { GenerationOptions as GenerationOptionsDTO };
+export type { PreviewResult as PreviewResultDTO };
 
 /**
- * Result of generating a single component.
+ * Wire-format version of GenerationResult.
+ * The serializer converts generatedAt: Date → string automatically.
  */
-export interface GenerationResultDTO {
-  success: boolean;
-  symbolId: string;
-  generatedPath: string;
-  implementationPath: string;
-  contentHash: string;
+export type GenerationResultDTO = Omit<GenerationResult, 'generatedAt'> & {
   generatedAt: string; // ISO date string
-  userFileCreated: boolean;
-  warnings: string[];
-  error?: string | undefined;
-}
+};
 
 /**
- * Result of batch generation.
+ * Wire-format version of GenerationBatchResult.
+ * Uses GenerationResultDTO for nested results.
  */
-export interface GenerationBatchResultDTO {
-  total: number;
-  succeeded: number;
-  failed: number;
-  skipped: number;
+export type GenerationBatchResultDTO = Omit<GenerationBatchResult, 'results'> & {
   results: GenerationResultDTO[];
-}
-
-/**
- * Preview of generated code without writing.
- */
-export interface PreviewResultDTO {
-  symbolId: string;
-  generatedContent: string;
-  userStubContent?: string | undefined;
-  generatedPath: string;
-  implementationPath: string;
-  userFileExists: boolean;
-}
+};
 
 /**
  * Request to generate code for a symbol.
  */
 export interface GenerateRequest {
   symbolId: string;
-  options: GenerationOptionsDTO;
+  options: GenerationOptions;
 }
 
 /**
@@ -335,7 +213,7 @@ export interface GenerateRequest {
  */
 export interface GenerateBatchRequest {
   symbolIds: string[];
-  options: GenerationOptionsDTO;
+  options: GenerationOptions;
 }
 
 /**
@@ -344,95 +222,4 @@ export interface GenerateBatchRequest {
 export interface PreviewRequest {
   symbolId: string;
   outputDir: string;
-}
-
-// ============================================================================
-// Sub-Facade Interfaces
-// ============================================================================
-
-/**
- * Symbol operations: CRUD, queries, and relationships.
- */
-export interface ISymbolFacade {
-  // CRUD
-  register(request: RegisterSymbolRequest): ApiResponse<ComponentSymbolDTO>;
-  get(id: string): ApiResponse<ComponentSymbolDTO>;
-  update(request: UpdateSymbolRequest): ApiResponse<ComponentSymbolDTO>;
-  remove(id: string): ApiResponse<void>;
-
-  // Queries
-  list(query?: SymbolQuery): ApiResponse<PaginatedResponse<ComponentSymbolDTO>>;
-  search(query: string): ApiResponse<ComponentSymbolDTO[]>;
-  resolve(namespace: string, name: string, constraint?: string): ApiResponse<ComponentSymbolDTO>;
-  getVersions(namespace: string, name: string): ApiResponse<ComponentSymbolDTO[]>;
-
-  // Relationships
-  findContains(id: string): ApiResponse<ComponentSymbolDTO[]>;
-  findContainedBy(id: string): ApiResponse<ComponentSymbolDTO | null>;
-  getDependents(id: string): ApiResponse<ComponentSymbolDTO[]>;
-  getDependencies(id: string): ApiResponse<ComponentSymbolDTO[]>;
-}
-
-/**
- * Connection operations: create, remove, query.
- */
-export interface IConnectionFacade {
-  create(request: CreateConnectionRequest): ApiResponse<ConnectionDTO>;
-  remove(connectionId: string): ApiResponse<void>;
-  getBySymbol(symbolId: string): ApiResponse<ConnectionDTO[]>;
-  getAll(): ApiResponse<ConnectionDTO[]>;
-}
-
-/**
- * Wiring operations: validated connections with graph operations.
- */
-export interface IWiringFacade {
-  wire(request: CreateConnectionRequest): ApiResponse<WiringResultDTO>;
-  unwire(connectionId: string): ApiResponse<WiringResultDTO>;
-  validateConnection(request: CreateConnectionRequest): ApiResponse<ValidationResultDTO>;
-  getGraph(symbolId?: string): ApiResponse<DependencyGraphDTO>;
-  detectCycles(): ApiResponse<string[][]>;
-  getTopologicalOrder(): ApiResponse<string[] | null>;
-  getStats(): ApiResponse<GraphStatsDTO>;
-  findCompatiblePorts(symbolId: string, portName: string): ApiResponse<CompatiblePortDTO[]>;
-  findUnconnectedRequired(): ApiResponse<UnconnectedPortDTO[]>;
-}
-
-/**
- * Validation operations.
- */
-export interface IValidationFacade {
-  validateAll(): ApiResponse<ValidationResultDTO>;
-  validateSymbol(id: string): ApiResponse<ValidationResultDTO>;
-  checkCircular(): ApiResponse<string[][]>;
-}
-
-/**
- * Status operations (ADR-005).
- */
-export interface IStatusFacade {
-  update(request: UpdateStatusRequest): ApiResponse<void>;
-  findUnreachable(): ApiResponse<ComponentSymbolDTO[]>;
-  findUntested(): ApiResponse<ComponentSymbolDTO[]>;
-}
-
-/**
- * Bulk operations: import/export.
- */
-export interface IBulkFacade {
-  import(symbols: ComponentSymbolDTO[]): ApiResponse<number>;
-  export(): ApiResponse<ComponentSymbolDTO[]>;
-}
-
-/**
- * Code generation operations.
- */
-export interface ICodeGenFacade {
-  generate(request: GenerateRequest): ApiResponse<GenerationResultDTO>;
-  generateMultiple(request: GenerateBatchRequest): ApiResponse<GenerationBatchResultDTO>;
-  generateAll(options: GenerationOptionsDTO): ApiResponse<GenerationBatchResultDTO>;
-  preview(request: PreviewRequest): ApiResponse<PreviewResultDTO>;
-  listGeneratable(): ApiResponse<ComponentSymbolDTO[]>;
-  canGenerate(symbolId: string): ApiResponse<boolean>;
-  hasUserImplementation(symbolId: string, outputDir: string): ApiResponse<boolean>;
 }

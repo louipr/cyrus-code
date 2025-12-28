@@ -1,11 +1,15 @@
 /**
  * Symbol Domain Model
  *
- * Core type definitions for cyrus-code component architecture.
- * This is pure domain logic with NO service dependencies.
+ * Core type definitions for cyrus-code UML-based architecture modeling.
+ * Uses UML relationship types (not HDL ports/wiring).
  *
- * Extracted from symbol-table service layer to follow Clean Architecture.
- * Services in src/services/ should import from this domain layer.
+ * UML Relationships modeled:
+ * - Generalization (extends)
+ * - Realization (implements)
+ * - Composition (composes)
+ * - Aggregation (aggregates)
+ * - Dependency (dependencies)
  *
  * @see docs/spec/symbol-table-schema.md
  */
@@ -52,13 +56,7 @@ export const KIND_TO_LEVEL: Record<ComponentKind, AbstractionLevel> = {
 // Languages
 // ============================================================================
 
-export const LanguageSchema = z.enum([
-  'typescript',
-  'javascript',
-  'python',
-  'go',
-  'rust',
-]);
+export const LanguageSchema = z.enum(['typescript']);
 export type Language = z.infer<typeof LanguageSchema>;
 
 // ============================================================================
@@ -141,42 +139,36 @@ export const SourceLocationSchema = z.object({
 export type SourceLocation = z.infer<typeof SourceLocationSchema>;
 
 // ============================================================================
-// Type References
+// UML Relationship Types
 // ============================================================================
 
-export const TypeReferenceSchema: z.ZodType<TypeReference> = z.lazy(() =>
-  z.object({
-    symbolId: z.string(),
-    version: z.string().optional(),
-    generics: z.array(TypeReferenceSchema).optional(),
-    nullable: z.boolean().optional(),
-  })
-);
+// Dependency injection (constructor/property/method)
+export const DependencyKindSchema = z.enum(['constructor', 'property', 'method']);
+export type DependencyKind = z.infer<typeof DependencyKindSchema>;
 
-export interface TypeReference {
-  symbolId: string;
-  version?: string | undefined;
-  generics?: TypeReference[] | undefined;
-  nullable?: boolean | undefined;
-}
-
-// ============================================================================
-// Port Definitions
-// ============================================================================
-
-export const PortDirectionSchema = z.enum(['in', 'out', 'inout']);
-export type PortDirection = z.infer<typeof PortDirectionSchema>;
-
-export const PortDefinitionSchema = z.object({
+export const DependencyRefSchema = z.object({
+  symbolId: z.string().min(1),
   name: z.string().min(1),
-  direction: PortDirectionSchema,
-  type: TypeReferenceSchema,
-  required: z.boolean(),
-  multiple: z.boolean(),
-  description: z.string(),
-  defaultValue: z.unknown().optional(),
+  kind: DependencyKindSchema,
+  optional: z.boolean(),
 });
-export type PortDefinition = z.infer<typeof PortDefinitionSchema>;
+export type DependencyRef = z.infer<typeof DependencyRefSchema>;
+
+// Composition reference (owns with lifecycle)
+export const CompositionRefSchema = z.object({
+  symbolId: z.string().min(1),
+  fieldName: z.string().min(1),
+  multiplicity: z.enum(['1', '*']).default('1'),
+});
+export type CompositionRef = z.infer<typeof CompositionRefSchema>;
+
+// Aggregation reference (has without lifecycle)
+export const AggregationRefSchema = z.object({
+  symbolId: z.string().min(1),
+  fieldName: z.string().min(1),
+  multiplicity: z.enum(['1', '*']).default('1'),
+});
+export type AggregationRef = z.infer<typeof AggregationRefSchema>;
 
 // ============================================================================
 // Core Component Symbol
@@ -193,8 +185,14 @@ export const ComponentSymbolSchema = z.object({
   kind: ComponentKindSchema,
   language: LanguageSchema,
 
-  // Interface
-  ports: z.array(PortDefinitionSchema),
+  // UML Structural Relationships
+  extends: z.string().optional(),                           // Generalization
+  implements: z.array(z.string()).optional(),               // Realization
+  composes: z.array(CompositionRefSchema).optional(),       // Composition
+  aggregates: z.array(AggregationRefSchema).optional(),     // Aggregation
+  dependencies: z.array(DependencyRefSchema).optional(),    // Dependency
+
+  // C4 Containment (higher levels contain lower)
   contains: z.array(z.string()).optional(),
 
   // Versioning
@@ -219,21 +217,6 @@ export const ComponentSymbolSchema = z.object({
   generationMeta: GenerationMetadataSchema.optional(),
 });
 export type ComponentSymbol = z.infer<typeof ComponentSymbolSchema>;
-
-// ============================================================================
-// Connections
-// ============================================================================
-
-export const ConnectionSchema = z.object({
-  id: z.string().min(1),
-  fromSymbolId: z.string().min(1),
-  fromPort: z.string().min(1),
-  toSymbolId: z.string().min(1),
-  toPort: z.string().min(1),
-  transform: z.string().optional(),
-  createdAt: z.date(),
-});
-export type Connection = z.infer<typeof ConnectionSchema>;
 
 // ============================================================================
 // Validation Results
@@ -384,4 +367,41 @@ export function validateKindLevel(
   level: AbstractionLevel
 ): boolean {
   return KIND_TO_LEVEL[kind] === level;
+}
+
+// ============================================================================
+// Repository Interface (Domain Contract)
+// ============================================================================
+
+/**
+ * Symbol Repository Interface
+ *
+ * Data access contract for ComponentSymbol persistence.
+ * Defined in domain layer so services depend on abstraction, not implementation.
+ */
+export interface SymbolRepository {
+  // Symbol CRUD
+  insert(symbol: ComponentSymbol): void;
+  find(id: string): ComponentSymbol | undefined;
+  update(id: string, symbol: ComponentSymbol): void;
+  delete(id: string): boolean;
+  list(): ComponentSymbol[];
+
+  // Symbol Queries
+  findByNamespace(namespace: string): ComponentSymbol[];
+  findByLevel(level: AbstractionLevel): ComponentSymbol[];
+  findByKind(kind: ComponentKind): ComponentSymbol[];
+  findByTag(tag: string): ComponentSymbol[];
+  findByStatus(status: SymbolStatus): ComponentSymbol[];
+  findByOrigin(origin: SymbolOrigin): ComponentSymbol[];
+  search(query: string): ComponentSymbol[];
+
+  // Containment Queries
+  findContains(id: string): string[];
+  findContainedBy(id: string): string | undefined;
+
+  // UML Relationship Queries
+  findExtends(id: string): ComponentSymbol | undefined;
+  findImplementors(interfaceId: string): ComponentSymbol[];
+  findDependents(id: string): ComponentSymbol[];
 }

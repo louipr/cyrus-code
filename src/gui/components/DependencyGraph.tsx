@@ -3,12 +3,14 @@
  *
  * Visualizes the component dependency graph as an SVG.
  * Supports pan/zoom and node selection.
+ * Displays UML relationship types with colored edges.
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { DependencyGraphDTO, GraphNodeDTO, GraphEdgeDTO } from '../../api/types';
 import { apiClient } from '../api-client';
-import { LEVEL_COLORS } from '../constants/colors';
+import { extractErrorMessage } from '../../infrastructure/errors';
+import { LEVEL_COLORS, EDGE_COLORS } from '../constants/colors';
 import { useCanvasTransform } from '../hooks/useCanvasTransform';
 
 interface DependencyGraphProps {
@@ -45,14 +47,14 @@ export function DependencyGraph({
       setLoading(true);
       setError(null);
       try {
-        const result = await apiClient.wiring.getGraph(selectedSymbolId);
+        const result = await apiClient.graph.build(selectedSymbolId);
         if (result.success && result.data) {
           setGraph(result.data);
         } else {
           setError(result.error?.message ?? 'Failed to load graph');
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
+        setError(extractErrorMessage(e));
       } finally {
         setLoading(false);
       }
@@ -134,9 +136,9 @@ export function DependencyGraph({
       >
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Render edges first (behind nodes) */}
-          {graph.edges.map((edge) => (
+          {graph.edges.map((edge, index) => (
             <EdgeLine
-              key={edge.id}
+              key={`${edge.from}-${edge.to}-${edge.type}-${index}`}
               edge={edge}
               positions={positions}
               isCycle={graph.cycles.some(cycle =>
@@ -165,12 +167,22 @@ export function DependencyGraph({
         </div>
       )}
 
-      {/* Legend */}
+      {/* Level legend */}
       <div style={styles.legend}>
         {Object.entries(LEVEL_COLORS).map(([level, color]) => (
           <div key={level} style={styles.legendItem}>
             <div style={{ ...styles.legendColor, backgroundColor: color }} />
             <span>{level}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Edge type legend */}
+      <div style={styles.edgeLegend}>
+        {Object.entries(EDGE_COLORS).map(([type, color]) => (
+          <div key={type} style={styles.legendItem}>
+            <div style={{ ...styles.legendLine, backgroundColor: color }} />
+            <span>{type}</span>
           </div>
         ))}
       </div>
@@ -257,21 +269,33 @@ function EdgeLine({ edge, positions, isCycle }: EdgeLineProps): React.ReactEleme
   // Bezier control points for smooth curve
   const midX = (x1 + x2) / 2;
 
+  const edgeColor = EDGE_COLORS[edge.type] || '#808080';
+
   return (
     <g data-testid="graph-edge">
       <path
         d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
         fill="none"
-        stroke={isCycle ? '#f14c4c' : '#4ec9b0'}
-        strokeWidth={isCycle ? 2 : 1}
-        strokeDasharray={isCycle ? '5,5' : 'none'}
+        stroke={isCycle ? '#f14c4c' : edgeColor}
+        strokeWidth={isCycle ? 2 : 1.5}
+        strokeDasharray={edge.type === 'implements' ? '5,3' : isCycle ? '5,5' : 'none'}
         opacity={0.8}
       />
       {/* Arrowhead */}
       <polygon
         points={`${x2},${y2} ${x2 - 8},${y2 - 4} ${x2 - 8},${y2 + 4}`}
-        fill={isCycle ? '#f14c4c' : '#4ec9b0'}
+        fill={isCycle ? '#f14c4c' : edgeColor}
       />
+      {/* Edge type label */}
+      <text
+        x={(x1 + x2) / 2}
+        y={(y1 + y2) / 2 - 8}
+        fill="#808080"
+        fontSize={9}
+        textAnchor="middle"
+      >
+        {edge.type}
+      </text>
     </g>
   );
 }
@@ -329,6 +353,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     color: '#d4d4d4',
   },
+  edgeLegend: {
+    position: 'absolute',
+    bottom: '12px',
+    right: '12px',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(37, 37, 38, 0.9)',
+    borderRadius: '4px',
+    fontSize: '11px',
+    color: '#d4d4d4',
+    maxWidth: '200px',
+  },
   legendItem: {
     display: 'flex',
     alignItems: 'center',
@@ -338,5 +376,10 @@ const styles: Record<string, React.CSSProperties> = {
     width: '12px',
     height: '12px',
     borderRadius: '2px',
+  },
+  legendLine: {
+    width: '16px',
+    height: '2px',
+    borderRadius: '1px',
   },
 };

@@ -95,15 +95,6 @@ flowchart TB
 | **Runtime Tracer** | TypeScript | Optional dev-time execution tracking | 🔮 |
 | **Import Detector** | ts-morph | Scan and import untracked manual code | 🔮 |
 
-### Lifecycle Services (ADR-007)
-
-| Container | Technology | Purpose | Status |
-|-----------|------------|---------|--------|
-| **Spec Manager** | TypeScript | Requirements, acceptance criteria, traceability | 🔮 |
-| **Test Generator** | ts-morph | Generate tests from port contracts | 🔮 |
-| **Impact Analyzer** | TypeScript | Change propagation, regression selection | 🔮 |
-| **Release Manager** | TypeScript | Composition snapshots, deployment | 🔮 |
-
 ### Storage
 
 | Container | Technology | Purpose | Status |

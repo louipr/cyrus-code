@@ -30,7 +30,7 @@ export interface CacheEntry<T> {
  * Abstracts ts-morph SourceFile caching and retrieval.
  * Services should depend on this interface, not the concrete implementation.
  */
-export interface ISourceFileManager {
+export interface SourceFileManager {
   /**
    * Get a SourceFile, using cache if available and not stale.
    * @param filePath - Relative or absolute path to the TypeScript file

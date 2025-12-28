@@ -2,11 +2,11 @@
  * Dependency Graph Service
  *
  * Handles graph building, analysis, and traversal operations.
- * Provides high-level orchestration of graph algorithms.
+ * Builds graphs from UML relationships stored on symbols.
  */
 
-import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
-import type { DependencyGraph, GraphStats, IDependencyGraphService } from './schema.js';
+import type { ComponentSymbol, SymbolRepository } from '../../domain/symbol/index.js';
+import type { DependencyGraph, GraphStats, DependencyGraphService as IDependencyGraphService } from './schema.js';
 import {
   buildDependencyGraph,
   detectCycles,
@@ -17,7 +17,6 @@ import {
   getRootNodes,
   getLeafNodes,
   getGraphStats,
-  getConnectedComponents,
   wouldCreateCycle,
 } from './algorithms.js';
 
@@ -29,26 +28,25 @@ import {
  * Service for building and analyzing dependency graphs.
  *
  * Responsibilities:
- * - Build dependency graphs from symbols and connections
+ * - Build dependency graphs from symbols and their UML relationships
  * - Detect cycles
  * - Compute topological order
  * - Graph traversal (upstream/downstream)
  * - Graph analysis (roots, leaves, components, stats)
  */
 export class DependencyGraphService implements IDependencyGraphService {
-  constructor(private repo: ISymbolRepository) {}
+  constructor(private repo: SymbolRepository) {}
 
   // ==========================================================================
   // Graph Building
   // ==========================================================================
 
   /**
-   * Build a dependency graph from all symbols and connections.
+   * Build a dependency graph from all symbols using their UML relationships.
    */
   buildGraph(): DependencyGraph {
     const symbols = this.repo.list();
-    const connections = this.repo.findAllConnections();
-    return buildDependencyGraph(symbols, connections);
+    return buildDependencyGraph(symbols);
   }
 
   /**
@@ -63,16 +61,12 @@ export class DependencyGraphService implements IDependencyGraphService {
     const downstream = getDownstreamDependencies(graph, symbolId);
     const connectedIds = new Set([symbolId, ...upstream, ...downstream]);
 
-    // Filter nodes and edges
+    // Filter to just the connected symbols and rebuild
     const symbols = Array.from(connectedIds)
       .map((id) => this.repo.find(id))
       .filter((s): s is ComponentSymbol => s !== undefined);
 
-    const connections = this.repo.findAllConnections().filter(
-      (c) => connectedIds.has(c.fromSymbolId) && connectedIds.has(c.toSymbolId)
-    );
-
-    return buildDependencyGraph(symbols, connections);
+    return buildDependencyGraph(symbols);
   }
 
   // ==========================================================================
@@ -88,7 +82,7 @@ export class DependencyGraphService implements IDependencyGraphService {
   }
 
   /**
-   * Check if adding an edge would create a cycle.
+   * Check if adding a relationship would create a cycle.
    */
   wouldCreateCycle(fromSymbolId: string, toSymbolId: string): boolean {
     const graph = this.buildGraph();
@@ -154,14 +148,6 @@ export class DependencyGraphService implements IDependencyGraphService {
   getLeafNodes(): string[] {
     const graph = this.buildGraph();
     return getLeafNodes(graph);
-  }
-
-  /**
-   * Get connected components (disconnected subgraphs).
-   */
-  getConnectedComponents(): string[][] {
-    const graph = this.buildGraph();
-    return getConnectedComponents(graph);
   }
 
   /**

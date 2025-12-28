@@ -1,7 +1,7 @@
 /**
  * Shared Color Constants
  *
- * Level colors for consistent theming across canvas components.
+ * Color constants for consistent theming across canvas components.
  */
 
 /**
@@ -14,4 +14,17 @@ export const LEVEL_COLORS: Record<string, string> = {
   L2: '#dcdcaa', // Yellow - Modules
   L3: '#ce9178', // Orange - Subsystems
   L4: '#c586c0', // Purple - Full-Stack
+};
+
+/**
+ * Colors for UML relationship edge types.
+ * Used in Canvas and DependencyGraph components.
+ */
+export const EDGE_COLORS: Record<string, string> = {
+  dependency: '#808080',
+  extends: '#4fc1ff',
+  implements: '#dcdcaa',
+  composes: '#c586c0',
+  aggregates: '#9cdcfe',
+  contains: '#6a9955',
 };

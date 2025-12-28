@@ -12,9 +12,8 @@
 // Service (primary API)
 export { DependencyGraphService } from './service.js';
 
-// Commonly used types
+// Commonly used types (interface re-exported via class declaration merging)
 export type {
-  IDependencyGraphService,
   DependencyGraph,
   GraphNode,
   GraphEdge,

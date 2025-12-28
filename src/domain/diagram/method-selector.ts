@@ -5,25 +5,7 @@
  * Implements the "tell the story" principle from C4 model.
  */
 
-import { MethodInfo } from './schema.js';
-
-/**
- * Strategy for method selection.
- */
-export interface MethodSelector {
-  /**
-   * Select methods to include in the diagram.
-   *
-   * @param methods All methods from the class
-   * @param maxMethods Maximum number of methods to include
-   * @param categories Optional categories to filter by
-   */
-  select(
-    methods: MethodInfo[],
-    maxMethods: number,
-    categories?: string[]
-  ): MethodInfo[];
-}
+import type { MethodInfo, MethodSelector } from './schema.js';
 
 /**
  * Default method selector implementation.

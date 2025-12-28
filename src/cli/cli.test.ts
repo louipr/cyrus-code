@@ -1,20 +1,20 @@
 /**
  * CLI Tests
  *
- * Integration tests for CLI commands using the API facade directly.
+ * Integration tests for CLI commands using the Architecture API directly.
  * These tests verify command logic without spawning processes.
  */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { ApiFacade } from '../api/facade.js';
+import { Architecture } from '../api/facade.js';
 import type { ComponentSymbolDTO } from '../api/types.js';
 
 describe('CLI Integration', () => {
-  let facade: ApiFacade;
+  let facade: Architecture;
 
   beforeEach(() => {
-    facade = ApiFacade.createInMemory();
+    facade = Architecture.createInMemory();
   });
 
   afterEach(() => {
@@ -33,7 +33,6 @@ describe('CLI Integration', () => {
       level: 'L1',
       kind: 'service',
       language: 'typescript',
-      ports: [],
       version: { major: 1, minor: 0, patch: 0 },
       tags: [],
       description: 'Test component',
@@ -54,7 +53,7 @@ describe('CLI Integration', () => {
         description: 'JWT token service',
       });
 
-      const result = facade.symbols.register({ symbol });
+      const result = facade.symbols.registerSymbol({ symbol });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -62,54 +61,56 @@ describe('CLI Integration', () => {
       assert.strictEqual(result.data.name, 'JwtService');
     });
 
-    it('should register component with ports', () => {
-      // First register a type
-      const typeSymbol = createSymbolDTO({
-        id: 'core/String@1.0.0',
-        name: 'String',
-        namespace: 'core',
+    it('should register component with UML relationships', () => {
+      // First register an interface (represented as a type at L0)
+      const interfaceSymbol = createSymbolDTO({
+        id: 'auth/ITokenProvider@1.0.0',
+        name: 'ITokenProvider',
+        namespace: 'auth',
         level: 'L0',
         kind: 'type',
       });
-      facade.symbols.register({ symbol: typeSymbol });
+      facade.symbols.registerSymbol({ symbol: interfaceSymbol });
 
-      // Then register component with ports
+      // Register a repository dependency
+      const repoSymbol = createSymbolDTO({
+        id: 'auth/UserRepository@1.0.0',
+        name: 'UserRepository',
+        namespace: 'auth',
+        level: 'L1',
+        kind: 'class',
+      });
+      facade.symbols.registerSymbol({ symbol: repoSymbol });
+
+      // Then register component with UML relationships
       const symbol = createSymbolDTO({
         id: 'auth/JwtService@1.0.0',
         name: 'JwtService',
         namespace: 'auth',
-        ports: [
+        implements: ['auth/ITokenProvider@1.0.0'],
+        dependencies: [
           {
-            name: 'secretKey',
-            direction: 'in',
-            type: { symbolId: 'core/String@1.0.0' },
-            required: true,
-            multiple: false,
-            description: 'JWT signing secret',
-          },
-          {
-            name: 'token',
-            direction: 'out',
-            type: { symbolId: 'core/String@1.0.0' },
-            required: true,
-            multiple: false,
-            description: 'Generated JWT token',
+            symbolId: 'auth/UserRepository@1.0.0',
+            name: 'userRepo',
+            kind: 'constructor',
+            optional: false,
           },
         ],
       });
 
-      const result = facade.symbols.register({ symbol });
+      const result = facade.symbols.registerSymbol({ symbol });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
-      assert.strictEqual(result.data.ports.length, 2);
+      assert.strictEqual(result.data.implements?.length, 1);
+      assert.strictEqual(result.data.dependencies?.length, 1);
     });
 
     it('should reject duplicate registration', () => {
       const symbol = createSymbolDTO();
 
-      facade.symbols.register({ symbol });
-      const result = facade.symbols.register({ symbol });
+      facade.symbols.registerSymbol({ symbol });
+      const result = facade.symbols.registerSymbol({ symbol });
 
       assert.strictEqual(result.success, false);
       assert.ok(result.error);
@@ -120,7 +121,7 @@ describe('CLI Integration', () => {
   describe('list command logic', () => {
     beforeEach(() => {
       // Register test components
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/JwtService@1.0.0',
           name: 'JwtService',
@@ -130,7 +131,7 @@ describe('CLI Integration', () => {
           tags: ['auth', 'jwt'],
         }),
       });
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/AuthGuard@1.0.0',
           name: 'AuthGuard',
@@ -140,7 +141,7 @@ describe('CLI Integration', () => {
           tags: ['auth'],
         }),
       });
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'core/Logger@1.0.0',
           name: 'Logger',
@@ -153,7 +154,7 @@ describe('CLI Integration', () => {
     });
 
     it('should list all components', () => {
-      const result = facade.symbols.list();
+      const result = facade.symbols.listSymbols();
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -162,7 +163,7 @@ describe('CLI Integration', () => {
     });
 
     it('should filter by namespace', () => {
-      const result = facade.symbols.list({ namespace: 'auth' });
+      const result = facade.symbols.listSymbols({ namespace: 'auth' });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -172,7 +173,7 @@ describe('CLI Integration', () => {
 
     it('should filter by level', () => {
       // Add an L2 module
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/AuthModule@1.0.0',
           name: 'AuthModule',
@@ -182,7 +183,7 @@ describe('CLI Integration', () => {
         }),
       });
 
-      const result = facade.symbols.list({ level: 'L2' });
+      const result = facade.symbols.listSymbols({ level: 'L2' });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -193,7 +194,7 @@ describe('CLI Integration', () => {
     });
 
     it('should filter by kind', () => {
-      const result = facade.symbols.list({ kind: 'service' });
+      const result = facade.symbols.listSymbols({ kind: 'service' });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -202,7 +203,7 @@ describe('CLI Integration', () => {
     });
 
     it('should filter by tag', () => {
-      const result = facade.symbols.list({ tag: 'jwt' });
+      const result = facade.symbols.listSymbols({ tag: 'jwt' });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -213,7 +214,7 @@ describe('CLI Integration', () => {
     });
 
     it('should search by text', () => {
-      const result = facade.symbols.list({ search: 'Logger' });
+      const result = facade.symbols.listSymbols({ search: 'Logger' });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -224,7 +225,7 @@ describe('CLI Integration', () => {
     });
 
     it('should support pagination', () => {
-      const result = facade.symbols.list({ limit: 2, offset: 0 });
+      const result = facade.symbols.listSymbols({ limit: 2, offset: 0 });
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -237,7 +238,7 @@ describe('CLI Integration', () => {
 
   describe('get command logic', () => {
     beforeEach(() => {
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/JwtService@1.0.0',
           name: 'JwtService',
@@ -249,7 +250,7 @@ describe('CLI Integration', () => {
     });
 
     it('should get component by ID', () => {
-      const result = facade.symbols.get('auth/JwtService@1.0.0');
+      const result = facade.symbols.getSymbol('auth/JwtService@1.0.0');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
@@ -262,111 +263,63 @@ describe('CLI Integration', () => {
     });
 
     it('should return error for non-existent ID', () => {
-      const result = facade.symbols.get('nonexistent@1.0.0');
+      const result = facade.symbols.getSymbol('nonexistent@1.0.0');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.error);
       assert.strictEqual(result.error.code, 'NOT_FOUND');
     });
 
-    it('should get connections for component', () => {
-      // Register type first
-      facade.symbols.register({
-        symbol: createSymbolDTO({
-          id: 'core/String@1.0.0',
-          name: 'String',
-          namespace: 'core',
-          level: 'L0',
-          kind: 'type',
-        }),
-      });
-
-      // Update JwtService with ports
-      facade.symbols.update({
-        id: 'auth/JwtService@1.0.0',
-        updates: {
-          ports: [
-            {
-              name: 'token',
-              direction: 'out',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Generated token',
-            },
-          ],
-        },
-      });
-
-      // Register consumer
-      facade.symbols.register({
+    it('should get dependents for component', () => {
+      // Register JwtService dependency
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/AuthGuard@1.0.0',
           name: 'AuthGuard',
           namespace: 'auth',
-          ports: [
+          dependencies: [
             {
-              name: 'token',
-              direction: 'in',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Token to validate',
+              symbolId: 'auth/JwtService@1.0.0',
+              name: 'jwtService',
+              kind: 'constructor',
+              optional: false,
             },
           ],
         }),
       });
 
-      // Create connection
-      facade.connections.create({
-        fromSymbolId: 'auth/JwtService@1.0.0',
-        fromPort: 'token',
-        toSymbolId: 'auth/AuthGuard@1.0.0',
-        toPort: 'token',
-      });
-
-      // Get connections
-      const result = facade.connections.getBySymbol('auth/JwtService@1.0.0');
+      // Get dependents
+      const result = facade.symbols.getDependents('auth/JwtService@1.0.0');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
       assert.strictEqual(result.data.length, 1);
       const first = result.data[0];
       assert.ok(first);
-      assert.strictEqual(first.fromPort, 'token');
-      assert.strictEqual(first.toSymbolId, 'auth/AuthGuard@1.0.0');
+      assert.strictEqual(first.id, 'auth/AuthGuard@1.0.0');
     });
   });
 
   describe('validate command logic', () => {
     it('should pass validation for valid registry', () => {
-      // Register type
-      facade.symbols.register({
+      // Register interface (as type at L0)
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
-          id: 'core/String@1.0.0',
-          name: 'String',
-          namespace: 'core',
+          id: 'auth/ITokenProvider@1.0.0',
+          name: 'ITokenProvider',
+          namespace: 'auth',
           level: 'L0',
           kind: 'type',
         }),
       });
 
-      // Register component with valid type reference
-      facade.symbols.register({
+      // Register component with valid implements reference
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/JwtService@1.0.0',
           name: 'JwtService',
           namespace: 'auth',
-          ports: [
-            {
-              name: 'input',
-              direction: 'in',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Input',
-            },
-          ],
+          implements: ['auth/ITokenProvider@1.0.0'],
         }),
       });
 
@@ -378,23 +331,14 @@ describe('CLI Integration', () => {
       assert.strictEqual(result.data.errors.length, 0);
     });
 
-    it('should detect invalid type references', () => {
-      // Register component with non-existent type reference
-      facade.symbols.register({
+    it('should detect invalid implements references', () => {
+      // Register component with non-existent implements reference
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/JwtService@1.0.0',
           name: 'JwtService',
           namespace: 'auth',
-          ports: [
-            {
-              name: 'input',
-              direction: 'in',
-              type: { symbolId: 'nonexistent@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Input',
-            },
-          ],
+          implements: ['nonexistent@1.0.0'],
         }),
       });
 
@@ -405,13 +349,13 @@ describe('CLI Integration', () => {
       assert.strictEqual(result.data.valid, false);
       assert.ok(result.data.errors.length > 0);
       assert.ok(
-        result.data.errors.some((e) => e.code === 'INVALID_TYPE_REFERENCE')
+        result.data.errors.some((e) => e.code === 'INVALID_IMPLEMENTS_REFERENCE')
       );
     });
 
     it('should detect circular containment', () => {
       // Register two modules
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'a@1.0.0',
           name: 'A',
@@ -420,7 +364,7 @@ describe('CLI Integration', () => {
           kind: 'module',
         }),
       });
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'b@1.0.0',
           name: 'B',
@@ -431,11 +375,11 @@ describe('CLI Integration', () => {
       });
 
       // Create circular containment
-      facade.symbols.update({
+      facade.symbols.updateSymbol({
         id: 'a@1.0.0',
         updates: { contains: ['b@1.0.0'] },
       });
-      facade.symbols.update({
+      facade.symbols.updateSymbol({
         id: 'b@1.0.0',
         updates: { contains: ['a@1.0.0'] },
       });
@@ -448,7 +392,7 @@ describe('CLI Integration', () => {
     });
 
     it('should validate specific symbol', () => {
-      facade.symbols.register({
+      facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
           id: 'auth/JwtService@1.0.0',
           name: 'JwtService',
@@ -460,7 +404,7 @@ describe('CLI Integration', () => {
 
       assert.strictEqual(result.success, true);
       assert.ok(result.data);
-      // A simple component with no ports should be valid
+      // A simple component with no relationships should be valid
       assert.strictEqual(result.data.valid, true);
     });
   });

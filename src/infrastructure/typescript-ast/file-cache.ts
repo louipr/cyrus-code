@@ -87,13 +87,3 @@ export function getFileMtime(absolutePath: string): number | null {
 export function resolveFilePath(filePath: string, projectRoot: string): string {
   return path.isAbsolute(filePath) ? filePath : path.join(projectRoot, filePath);
 }
-
-/**
- * Check if a file exists.
- *
- * @param absolutePath - Absolute path to the file
- * @returns True if file exists
- */
-export function fileExists(absolutePath: string): boolean {
-  return fs.existsSync(absolutePath);
-}

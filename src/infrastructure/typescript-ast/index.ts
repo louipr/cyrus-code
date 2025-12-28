@@ -11,7 +11,7 @@
  * Exports:
  * - SourceFileManager: ts-morph Project wrapper with file caching
  * - FileCache<T>: Generic mtime-validated file caching
- * - Utility functions: getFileMtime, resolveFilePath, fileExists
+ * - Utility functions: getFileMtime, resolveFilePath
  * - createTsMorphProject: Factory for standalone ts-morph Project instances
  */
 
@@ -19,7 +19,7 @@
 export * from './schema.js';
 
 // File caching with mtime validation
-export { FileCache, getFileMtime, resolveFilePath, fileExists } from './file-cache.js';
+export { FileCache, getFileMtime, resolveFilePath } from './file-cache.js';
 
 // ts-morph project management
 export { createTsMorphProject, SourceFileManager } from './ts-morph-project.js';

@@ -1,44 +1,30 @@
 /**
  * Canvas Component (2.G1)
  *
- * Interactive editing surface for component wiring.
- * Supports pan/zoom, node dragging, and port-to-port connections.
+ * Interactive editing surface for viewing component relationships.
+ * Supports pan/zoom, node dragging, and displays UML relationships.
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type {
   DependencyGraphDTO,
   GraphNodeDTO,
+  GraphEdgeDTO,
   ComponentSymbolDTO,
-  CompatiblePortDTO,
 } from '../../api/types';
 import { apiClient } from '../api-client';
+import { extractErrorMessage } from '../../infrastructure/errors';
 import { CanvasNode } from './CanvasNode';
-import { PortWire } from './PortWire';
-import { PendingWire } from './PendingWire';
-import { PortTooltip } from './PortTooltip';
-import { LEVEL_COLORS } from '../constants/colors';
+import { LEVEL_COLORS, EDGE_COLORS } from '../constants/colors';
 
 const NODE_WIDTH = 200;
-const NODE_HEIGHT = 100;
+const NODE_HEIGHT = 80;
 const LEVEL_GAP_X = 280;
 const NODE_GAP_Y = 130;
 
 export interface NodePosition {
   x: number;
   y: number;
-}
-
-export interface PendingConnection {
-  fromSymbolId: string;
-  fromPort: string;
-  fromPosition: { x: number; y: number };
-}
-
-export interface HoveredPort {
-  symbolId: string;
-  portName: string;
-  position: { x: number; y: number };
 }
 
 interface CanvasProps {
@@ -64,14 +50,6 @@ export function Canvas({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Wiring state
-  const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
-  const [compatiblePorts, setCompatiblePorts] = useState<CompatiblePortDTO[]>([]);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  // Tooltip state
-  const [hoveredPort, setHoveredPort] = useState<HoveredPort | null>(null);
-
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Fetch graph and symbols
@@ -80,7 +58,7 @@ export function Canvas({
       setLoading(true);
       setError(null);
       try {
-        const graphResult = await apiClient.wiring.getGraph();
+        const graphResult = await apiClient.graph.build();
         if (!graphResult.success || !graphResult.data) {
           setError(graphResult.error?.message ?? 'Failed to load graph');
           return;
@@ -92,17 +70,20 @@ export function Canvas({
         const positions = calculateInitialPositions(graphResult.data.nodes);
         setNodePositions(positions);
 
-        // Fetch full symbol data for ports
+        // Fetch full symbol data in parallel
         const symbolMap = new Map<string, ComponentSymbolDTO>();
-        for (const node of graphResult.data.nodes) {
-          const symbolResult = await apiClient.symbols.get(node.id);
-          if (symbolResult.success && symbolResult.data) {
-            symbolMap.set(node.id, symbolResult.data);
+        const symbolResults = await Promise.all(
+          graphResult.data.nodes.map((node) => apiClient.symbols.get(node.id))
+        );
+        graphResult.data.nodes.forEach((node, index) => {
+          const result = symbolResults[index];
+          if (result?.success && result.data) {
+            symbolMap.set(node.id, result.data);
           }
-        }
+        });
         setSymbols(symbolMap);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
+        setError(extractErrorMessage(e));
       } finally {
         setLoading(false);
       }
@@ -130,8 +111,8 @@ export function Canvas({
 
     // Position each level column
     sortedLevels.forEach((level, levelIndex) => {
-      const nodes = levelGroups.get(level)!;
-      nodes.forEach((node, nodeIndex) => {
+      const levelNodes = levelGroups.get(level)!;
+      levelNodes.forEach((node, nodeIndex) => {
         positions.set(node.id, {
           x: levelIndex * LEVEL_GAP_X,
           y: nodeIndex * NODE_GAP_Y,
@@ -144,7 +125,6 @@ export function Canvas({
 
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only pan on background (not on nodes)
     if (e.button === 0 && e.target === svgRef.current) {
       setDragging(true);
       setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
@@ -152,16 +132,6 @@ export function Canvas({
   }, [transform]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    // Update mouse position for pending wire
-    if (svgRef.current && pendingConnection) {
-      const rect = svgRef.current.getBoundingClientRect();
-      setMousePosition({
-        x: (e.clientX - rect.left - transform.x) / transform.scale,
-        y: (e.clientY - rect.top - transform.y) / transform.scale,
-      });
-    }
-
-    // Pan handling
     if (dragging) {
       setTransform(prev => ({
         ...prev,
@@ -169,7 +139,7 @@ export function Canvas({
         y: e.clientY - dragStart.y,
       }));
     }
-  }, [dragging, dragStart, pendingConnection, transform]);
+  }, [dragging, dragStart]);
 
   const handleMouseUp = useCallback(() => {
     setDragging(false);
@@ -200,105 +170,54 @@ export function Canvas({
     });
   }, [transform.scale]);
 
-  // Port click handler - start or complete wiring
-  const handlePortClick = useCallback(async (
-    symbolId: string,
-    portName: string,
-    portPosition: { x: number; y: number }
-  ) => {
-    if (!pendingConnection) {
-      // Start wiring - find compatible targets
-      const result = await apiClient.wiring.findCompatiblePorts(symbolId, portName);
-      if (result.success && result.data) {
-        setCompatiblePorts(result.data);
-      }
-      setPendingConnection({
-        fromSymbolId: symbolId,
-        fromPort: portName,
-        fromPosition: portPosition,
-      });
-    } else {
-      // Complete wiring
-      const result = await apiClient.wiring.connect({
-        fromSymbolId: pendingConnection.fromSymbolId,
-        fromPort: pendingConnection.fromPort,
-        toSymbolId: symbolId,
-        toPort: portName,
-      });
+  // Render an edge between two nodes
+  const renderEdge = useCallback((edge: GraphEdgeDTO, index: number) => {
+    const fromPos = nodePositions.get(edge.from);
+    const toPos = nodePositions.get(edge.to);
+    if (!fromPos || !toPos) return null;
 
-      if (result.success) {
-        // Refetch graph to show new connection
-        const graphResult = await apiClient.wiring.getGraph();
-        if (graphResult.success && graphResult.data) {
-          setGraph(graphResult.data);
-        }
-      } else {
-        // Show error (could be enhanced with toast notification)
-        console.error('Failed to connect:', result.error);
-      }
+    // Calculate edge endpoints (center right of from node, center left of to node)
+    const x1 = fromPos.x + NODE_WIDTH;
+    const y1 = fromPos.y + NODE_HEIGHT / 2;
+    const x2 = toPos.x;
+    const y2 = toPos.y + NODE_HEIGHT / 2;
 
-      // Clear pending state
-      setPendingConnection(null);
-      setCompatiblePorts([]);
-    }
-  }, [pendingConnection]);
+    // Control points for bezier curve
+    const dx = Math.abs(x2 - x1);
+    const cx1 = x1 + dx * 0.4;
+    const cx2 = x2 - dx * 0.4;
 
-  // Cancel pending connection
-  const handleCanvasClick = useCallback(() => {
-    if (pendingConnection) {
-      setPendingConnection(null);
-      setCompatiblePorts([]);
-    }
-  }, [pendingConnection]);
-
-  // Delete connection
-  const handleDeleteConnection = useCallback(async (connectionId: string) => {
-    const result = await apiClient.wiring.disconnect(connectionId);
-    if (result.success) {
-      const graphResult = await apiClient.wiring.getGraph();
-      if (graphResult.success && graphResult.data) {
-        setGraph(graphResult.data);
-      }
-    }
-  }, []);
-
-  // Port hover handlers
-  const handlePortHover = useCallback((symbolId: string, portName: string, position: { x: number; y: number }) => {
-    setHoveredPort({ symbolId, portName, position });
-  }, []);
-
-  const handlePortLeave = useCallback(() => {
-    setHoveredPort(null);
-  }, []);
-
-  // Get port position for wire rendering
-  const getPortPosition = useCallback((symbolId: string, portName: string, isOutput: boolean): { x: number; y: number } | null => {
-    const nodePos = nodePositions.get(symbolId);
-    const symbol = symbols.get(symbolId);
-    if (!nodePos || !symbol) return null;
-
-    const port = symbol.ports.find(p => p.name === portName);
-    if (!port) return null;
-
-    // Find port index for vertical positioning
-    const ports = symbol.ports.filter(p =>
-      isOutput
-        ? p.direction === 'out' || p.direction === 'inout'
-        : p.direction === 'in' || p.direction === 'inout'
+    const edgeColor = EDGE_COLORS[edge.type] || '#808080';
+    const isCycle = graph?.cycles.some(cycle =>
+      cycle.includes(edge.from) && cycle.includes(edge.to)
     );
-    const portIndex = ports.findIndex(p => p.name === portName);
-    const portY = nodePos.y + 40 + portIndex * 20;
 
-    return {
-      x: isOutput ? nodePos.x + NODE_WIDTH : nodePos.x,
-      y: portY,
-    };
-  }, [nodePositions, symbols]);
+    // Generate unique key from edge properties
+    const edgeKey = `${edge.from}-${edge.to}-${edge.type}-${index}`;
 
-  // Check if port is compatible target
-  const isPortCompatible = useCallback((symbolId: string, portName: string): boolean => {
-    return compatiblePorts.some(cp => cp.symbolId === symbolId && cp.portName === portName);
-  }, [compatiblePorts]);
+    return (
+      <g key={edgeKey}>
+        <path
+          d={`M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`}
+          fill="none"
+          stroke={isCycle ? '#f14c4c' : edgeColor}
+          strokeWidth={isCycle ? 2 : 1.5}
+          strokeDasharray={edge.type === 'implements' ? '5,3' : undefined}
+          markerEnd="url(#arrowhead)"
+        />
+        {/* Edge type label */}
+        <text
+          x={(x1 + x2) / 2}
+          y={(y1 + y2) / 2 - 8}
+          fill="#808080"
+          fontSize={9}
+          textAnchor="middle"
+        >
+          {edge.type}
+        </text>
+      </g>
+    );
+  }, [nodePositions, graph?.cycles]);
 
   if (loading) {
     return (
@@ -319,8 +238,7 @@ export function Canvas({
   if (!graph || graph.nodes.length === 0) {
     return (
       <div style={styles.container} data-testid="canvas">
-        <div style={styles.message}>No components to display. Register components to start wiring.</div>
-        {/* Legend - always show for UX consistency */}
+        <div style={styles.message}>No components to display. Register components to view relationships.</div>
         <div style={styles.legend}>
           {Object.entries(LEVEL_COLORS).map(([level, color]) => (
             <div key={level} style={styles.legendItem}>
@@ -343,36 +261,24 @@ export function Canvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
-        onClick={handleCanvasClick}
       >
+        {/* Arrow marker definition */}
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="#808080" />
+          </marker>
+        </defs>
+
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Render edges first (behind nodes) */}
-          {graph.edges.map((edge) => {
-            const fromPos = getPortPosition(edge.from, edge.fromPort, true);
-            const toPos = getPortPosition(edge.to, edge.toPort, false);
-            if (!fromPos || !toPos) return null;
-
-            return (
-              <PortWire
-                key={edge.id}
-                edge={edge}
-                fromPosition={fromPos}
-                toPosition={toPos}
-                isCycle={graph.cycles.some(cycle =>
-                  cycle.includes(edge.from) && cycle.includes(edge.to)
-                )}
-                onDelete={() => handleDeleteConnection(edge.id)}
-              />
-            );
-          })}
-
-          {/* Pending wire (follows mouse) */}
-          {pendingConnection && (
-            <PendingWire
-              fromPosition={pendingConnection.fromPosition}
-              toPosition={mousePosition}
-            />
-          )}
+          {graph.edges.map((edge, index) => renderEdge(edge, index))}
 
           {/* Render nodes */}
           {graph.nodes.map((node) => {
@@ -389,42 +295,18 @@ export function Canvas({
                 nodeWidth={NODE_WIDTH}
                 nodeHeight={NODE_HEIGHT}
                 isSelected={node.id === selectedSymbolId}
-                isPendingSource={pendingConnection?.fromSymbolId === node.id}
                 onNodeClick={() => onNodeClick(node.id)}
                 onNodeDrag={(delta) => handleNodeDrag(node.id, delta)}
-                onPortClick={(portName, portPos) => handlePortClick(node.id, portName, portPos)}
-                onPortHover={(portName, portPos) => handlePortHover(node.id, portName, portPos)}
-                onPortLeave={handlePortLeave}
-                isPortCompatible={(portName) => isPortCompatible(node.id, portName)}
               />
             );
           })}
         </g>
       </svg>
 
-      {/* Port tooltip */}
-      {hoveredPort && (
-        <PortTooltip
-          symbol={symbols.get(hoveredPort.symbolId)}
-          portName={hoveredPort.portName}
-          position={{
-            x: hoveredPort.position.x * transform.scale + transform.x,
-            y: hoveredPort.position.y * transform.scale + transform.y,
-          }}
-        />
-      )}
-
       {/* Cycle warning */}
       {graph.cycles.length > 0 && (
         <div style={styles.cycleWarning}>
           {graph.cycles.length} cycle(s) detected
-        </div>
-      )}
-
-      {/* Wiring mode indicator */}
-      {pendingConnection && (
-        <div style={styles.wiringIndicator}>
-          Wiring from {pendingConnection.fromPort} - click a compatible port or press Escape to cancel
         </div>
       )}
 
@@ -434,6 +316,16 @@ export function Canvas({
           <div key={level} style={styles.legendItem}>
             <div style={{ ...styles.legendColor, backgroundColor: color }} />
             <span>{level}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Edge type legend */}
+      <div style={styles.edgeLegend}>
+        {Object.entries(EDGE_COLORS).map(([type, color]) => (
+          <div key={type} style={styles.legendItem}>
+            <div style={{ ...styles.legendLine, backgroundColor: color }} />
+            <span>{type}</span>
           </div>
         ))}
       </div>
@@ -482,19 +374,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     fontWeight: 500,
   },
-  wiringIndicator: {
-    position: 'absolute',
-    top: '12px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '8px 16px',
-    backgroundColor: 'rgba(78, 201, 176, 0.2)',
-    border: '1px solid #4ec9b0',
-    borderRadius: '4px',
-    color: '#4ec9b0',
-    fontSize: '12px',
-    fontWeight: 500,
-  },
   legend: {
     position: 'absolute',
     bottom: '12px',
@@ -507,6 +386,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     color: '#d4d4d4',
   },
+  edgeLegend: {
+    position: 'absolute',
+    bottom: '12px',
+    right: '12px',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(37, 37, 38, 0.9)',
+    borderRadius: '4px',
+    fontSize: '11px',
+    color: '#d4d4d4',
+    maxWidth: '200px',
+  },
   legendItem: {
     display: 'flex',
     alignItems: 'center',
@@ -516,5 +409,10 @@ const styles: Record<string, React.CSSProperties> = {
     width: '12px',
     height: '12px',
     borderRadius: '2px',
+  },
+  legendLine: {
+    width: '16px',
+    height: '2px',
+    borderRadius: '1px',
   },
 };

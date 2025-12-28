@@ -7,6 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import type { GraphStatsDTO } from '../../api/types';
 import { apiClient } from '../api-client';
+import { extractErrorMessage } from '../../infrastructure/errors';
 
 export function GraphStats(): React.ReactElement {
   const [stats, setStats] = useState<GraphStatsDTO | null>(null);
@@ -18,14 +19,14 @@ export function GraphStats(): React.ReactElement {
       setLoading(true);
       setError(null);
       try {
-        const result = await apiClient.wiring.getStats();
+        const result = await apiClient.graph.getStats();
         if (result.success && result.data) {
           setStats(result.data);
         } else {
           setError(result.error?.message ?? 'Failed to load stats');
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
+        setError(extractErrorMessage(e));
       } finally {
         setLoading(false);
       }

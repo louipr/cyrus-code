@@ -6,20 +6,27 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
+import type { ComponentSymbol, SymbolRepository } from '../../domain/symbol/index.js';
 import type {
   GenerationOptions,
   GenerationResult,
   GenerationBatchResult,
   PreviewResult,
-  ICodeGenerationService,
+  CodeGenerationService as ICodeGenerationService,
 } from './schema.js';
 import { DEFAULT_GENERATION_OPTIONS } from './schema.js';
-import { isGeneratable, symbolToGeneratedComponent } from './transformer.js';
 
 // ============================================================================
 // Internal Helpers
 // ============================================================================
+
+/**
+ * Check if a symbol can be code-generated.
+ * Currently only L1 (Component) level symbols are generatable.
+ */
+function isGeneratable(symbol: ComponentSymbol): boolean {
+  return symbol.level === 'L1';
+}
 
 /**
  * Create a successful generation result.
@@ -85,11 +92,10 @@ import {
   createSourceFile,
   addGeneratedHeader,
   createBaseClass,
-  addInputPortMethods,
-  addOutputPortMethods,
+  addDependencyInjection,
   createUserStub,
   formatSourceFile,
-  type GeneratedComponent,
+  getClassName,
 } from './typescript/index.js';
 
 // Infrastructure
@@ -115,7 +121,7 @@ function generateContentHash(content: string): string {
  * symbols in the symbol table using the Generation Gap pattern.
  */
 export class CodeGenerationService implements ICodeGenerationService {
-  constructor(private repo: ISymbolRepository) {}
+  constructor(private repo: SymbolRepository) {}
 
   // ===========================================================================
   // Single Symbol Generation
@@ -128,12 +134,7 @@ export class CodeGenerationService implements ICodeGenerationService {
     // Look up the symbol
     const symbol = this.repo.find(symbolId);
     if (!symbol) {
-      return generationError(
-        symbolId,
-        `Symbol not found: ${symbolId}`,
-        '',
-        ''
-      );
+      return generationError(symbolId, `Symbol not found: ${symbolId}`, '', '');
     }
 
     // Check if symbol is generatable
@@ -146,11 +147,8 @@ export class CodeGenerationService implements ICodeGenerationService {
       );
     }
 
-    // Convert to GeneratedComponent
-    const component = symbolToGeneratedComponent(symbol);
-
     // Generate with gap pattern
-    return this.generateWithGap(component, options);
+    return this.generateWithGap(symbol, options);
   }
 
   // ===========================================================================
@@ -160,10 +158,7 @@ export class CodeGenerationService implements ICodeGenerationService {
   /**
    * Generate code for multiple symbols.
    */
-  generateMultiple(
-    symbolIds: string[],
-    options: GenerationOptions
-  ): GenerationBatchResult {
+  generateMultiple(symbolIds: string[], options: GenerationOptions): GenerationBatchResult {
     const result = emptyBatchResult();
     result.total = symbolIds.length;
 
@@ -213,8 +208,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       return null;
     }
 
-    const component = symbolToGeneratedComponent(symbol);
-    const preview = this.previewGeneration(component, outputDir);
+    const preview = this.previewGeneration(symbol, outputDir);
 
     const result: PreviewResult = {
       symbolId,
@@ -260,8 +254,8 @@ export class CodeGenerationService implements ICodeGenerationService {
       return false;
     }
 
-    const component = symbolToGeneratedComponent(symbol);
-    const paths = getGeneratedPaths(component.className, component.namespace, outputDir);
+    const className = getClassName(symbol);
+    const paths = getGeneratedPaths(className, symbol.namespace, outputDir);
     return fileExists(paths.implementationPath);
   }
 
@@ -273,23 +267,21 @@ export class CodeGenerationService implements ICodeGenerationService {
    * Generate the base class file (.generated.ts) content.
    */
   private generateBaseClassContent(
-    component: GeneratedComponent,
+    symbol: ComponentSymbol,
     options: Required<Omit<GenerationOptions, 'outputDir'>>
   ): string {
+    const className = getClassName(symbol);
     const project = createProject();
-    const sourceFile = createSourceFile(project, `${component.className}.generated.ts`);
+    const sourceFile = createSourceFile(project, `${className}.generated.ts`);
 
     // Add generated header
-    addGeneratedHeader(sourceFile, component.symbolId, new Date());
+    addGeneratedHeader(sourceFile, symbol.id, new Date());
 
-    // Create abstract base class
-    const classDecl = createBaseClass(sourceFile, component, options.includeComments);
+    // Create abstract base class with UML relationships
+    const classDecl = createBaseClass(sourceFile, symbol, options.includeComments);
 
-    // Add input port methods (abstract)
-    addInputPortMethods(classDecl, component.inputPorts, options.includeComments);
-
-    // Add output port methods (protected)
-    addOutputPortMethods(classDecl, component.outputPorts, options.includeComments);
+    // Add dependency injection (constructor and property dependencies)
+    addDependencyInjection(classDecl, symbol.dependencies ?? [], options.includeComments);
 
     return formatSourceFile(sourceFile);
   }
@@ -298,19 +290,15 @@ export class CodeGenerationService implements ICodeGenerationService {
    * Generate the user implementation stub file (.ts) content.
    */
   private generateUserStubContent(
-    component: GeneratedComponent,
+    symbol: ComponentSymbol,
     options: Required<Omit<GenerationOptions, 'outputDir'>>
   ): string {
+    const className = getClassName(symbol);
     const project = createProject();
-    const sourceFile = createSourceFile(project, `${component.className}.ts`);
+    const sourceFile = createSourceFile(project, `${className}.ts`);
 
     // Create user implementation class
-    createUserStub(
-      sourceFile,
-      component,
-      `${component.className}.generated.ts`,
-      options.includeComments
-    );
+    createUserStub(sourceFile, symbol, `${className}.generated.ts`, options.includeComments);
 
     return formatSourceFile(sourceFile);
   }
@@ -321,14 +309,12 @@ export class CodeGenerationService implements ICodeGenerationService {
    * Always generates/overwrites the .generated.ts file.
    * Only creates the user .ts file if it doesn't exist.
    */
-  private generateWithGap(
-    component: GeneratedComponent,
-    options: GenerationOptions
-  ): GenerationResult {
+  private generateWithGap(symbol: ComponentSymbol, options: GenerationOptions): GenerationResult {
     const fullOptions = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+    const className = getClassName(symbol);
     const { generatedPath, implementationPath, directory } = getGeneratedPaths(
-      component.className,
-      component.namespace,
+      className,
+      symbol.namespace,
       options.outputDir
     );
 
@@ -336,13 +322,13 @@ export class CodeGenerationService implements ICodeGenerationService {
 
     try {
       // Generate content
-      const generatedContent = this.generateBaseClassContent(component, fullOptions);
+      const generatedContent = this.generateBaseClassContent(symbol, fullOptions);
       const contentHash = generateContentHash(generatedContent);
 
       // Check if this is a dry run
       if (fullOptions.dryRun) {
         return generationSuccess(
-          component.symbolId,
+          symbol.id,
           generatedPath,
           implementationPath,
           contentHash,
@@ -372,7 +358,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       // Create user file only if it doesn't exist
       let userFileCreated = false;
       if (!fileExists(implementationPath)) {
-        const userContent = this.generateUserStubContent(component, fullOptions);
+        const userContent = this.generateUserStubContent(symbol, fullOptions);
         writeFile(implementationPath, userContent);
         userFileCreated = true;
       } else if (!fullOptions.preserveUserFiles) {
@@ -380,7 +366,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       }
 
       return generationSuccess(
-        component.symbolId,
+        symbol.id,
         generatedPath,
         implementationPath,
         contentHash,
@@ -389,7 +375,7 @@ export class CodeGenerationService implements ICodeGenerationService {
       );
     } catch (error) {
       return generationError(
-        component.symbolId,
+        symbol.id,
         error instanceof Error ? error.message : 'Unknown error during generation',
         generatedPath,
         implementationPath
@@ -401,7 +387,7 @@ export class CodeGenerationService implements ICodeGenerationService {
    * Preview generation without writing files.
    */
   private previewGeneration(
-    component: GeneratedComponent,
+    symbol: ComponentSymbol,
     outputDir: string
   ): {
     generatedContent: string;
@@ -411,14 +397,15 @@ export class CodeGenerationService implements ICodeGenerationService {
     userFileExists: boolean;
   } {
     const fullOptions = { ...DEFAULT_GENERATION_OPTIONS, dryRun: true };
+    const className = getClassName(symbol);
     const { generatedPath, implementationPath } = getGeneratedPaths(
-      component.className,
-      component.namespace,
+      className,
+      symbol.namespace,
       outputDir
     );
 
-    const generatedContent = this.generateBaseClassContent(component, fullOptions);
-    const userStubContent = this.generateUserStubContent(component, fullOptions);
+    const generatedContent = this.generateBaseClassContent(symbol, fullOptions);
+    const userStubContent = this.generateUserStubContent(symbol, fullOptions);
     const userFileExists = fileExists(implementationPath);
 
     return {
@@ -434,8 +421,6 @@ export class CodeGenerationService implements ICodeGenerationService {
 /**
  * Create a new CodeGenerationService.
  */
-export function createCodeGenerationService(
-  repo: ISymbolRepository
-): CodeGenerationService {
+export function createCodeGenerationService(repo: SymbolRepository): CodeGenerationService {
   return new CodeGenerationService(repo);
 }

@@ -19,7 +19,7 @@ export {
 } from './symbol-validator.js';
 
 // =============================================================================
-// Service Interfaces
+// Service Interfaces (interface re-exported via class declaration merging)
 // =============================================================================
 
-export type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
+export type { ComponentQuery, ResolveOptions } from './schema.js';

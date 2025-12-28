@@ -11,7 +11,7 @@ Hardware-inspired software component architecture tool. Applies ASIC/FPGA design
 | **Type Definitions** | `docs/spec/symbol-table-schema.md` | **CANONICAL** - single source of truth |
 | **Project Status** | `README.md` | Current phasing and roadmap |
 | **AI Context** | `CLAUDE.md` | Development context and terminology |
-| **Architecture** | `docs/adr/001-010` | Historical decisions (may have outdated examples) |
+| **Architecture** | `docs/adr/` | Historical decisions (may have outdated examples) |
 | **Diagrams** | `docs/c4/*.md` | System architecture |
 | **Diagram Authoring** | `docs/c4/AUTHORING.md` | How to create C4 Level 3/4 diagrams |
 | **Rationale** | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
@@ -41,26 +41,27 @@ L0: Primitive               [JwtPayload type, Role enum, UserId branded type]
 Every component tracked with:
 - **Unique ID**: Package-like format `auth/jwt/JwtService@1.2.0`
 - **Level**: L0-L4 in the hierarchy
-- **Ports**: What it provides (outputs) and requires (inputs)
+- **Relationships**: Static (extends, implements, dependencies) and runtime (ports)
 - **Version**: SemVer with compatibility constraints
 
-### Interface System
+### Relationship Model
 
-Inspired by HDL signals:
-- **Ports**: Named, typed connection points
+**Static Relationships (UML-inspired):**
+- **extends**: Single inheritance (class extends parent)
+- **implements**: Interface realization (class implements interfaces)
+- **dependencies**: Injected dependencies (constructor/property/method injection)
+
+**Runtime Relationships (HDL-inspired):**
+- **Ports**: Named, typed connection points for data flow
 - **Direction**: `in`, `out`, `inout`
-- **Schema**: Zod/TypeScript types for validation
-- **Wiring**: Compile-time verification of connections
+- **Wiring**: Compile-time verification of port connections
 
 ## Feature Overview
 
 | Feature | Summary | Details |
 |---------|---------|---------|
-| **Multi-Language** | Language-agnostic definitions, multiple backends | [ADR-004](docs/adr/004-multi-language-backends.md) |
 | **Dead Code Detection** | Track symbol status: declared → referenced → tested → executed | [ADR-005](docs/adr/005-dead-code-detection.md) |
 | **Generation Gap** | Separate generated code from manual customizations | [ADR-006](docs/adr/006-generation-gap-pattern.md) |
-| **Full Lifecycle** | Design → Develop → Test → Deploy → Operate → Evolve | [ADR-007](docs/adr/007-full-lifecycle-architecture.md) |
-| **Design Patterns** | GoF patterns mapped to architecture components | [ADR-008](docs/adr/008-design-patterns.md) |
 | **GUI Framework** | Electron + React with migration-ready architecture | [ADR-009](docs/adr/009-electron-gui-framework.md) |
 | **Service Refactoring** | Clean Architecture patterns for service layer design | [ADR-011](docs/adr/011-service-layer-refactoring.md) |
 
@@ -68,7 +69,7 @@ Inspired by HDL signals:
 
 | File | Purpose |
 |------|---------|
-| `docs/adr/` | Architecture decision records (001-011) |
+| `docs/adr/` | Architecture decision records |
 | `docs/spec/symbol-table-schema.md` | Canonical type definitions |
 | `docs/c4/` | C4 architecture diagrams (L1 Context, L2 Container, 7 L3 Component, Dynamic) |
 | `docs/runbooks/` | Developer setup and manual verification guides |
@@ -88,7 +89,7 @@ Inspired by HDL signals:
 | **Synthesis** | Generating source code from component graph | HDL-inspired (like RTL synthesis) |
 | **Status** | Usage state: declared → referenced → tested → executed | |
 | **Generation Gap** | Pattern: generated base class + manual subclass | |
-| **Backend** | Language-specific code generator (TypeScript, Python, etc.) | Like compiler backend, not web backend |
+| **Backend** | Language-specific code generator (currently TypeScript only) | Like compiler backend, not web backend |
 | **Import** | Adding untracked manual code to the symbol table | |
 | **Composition** | Versioned snapshot of a complete system (all components + connections) | |
 | **Impact Analysis** | Determining what breaks when a component changes | |
@@ -131,7 +132,7 @@ npm run build:gui      # Build frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 173 unit tests (auto-rebuilds native module)
+npm test               # Run 186 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run 17 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check

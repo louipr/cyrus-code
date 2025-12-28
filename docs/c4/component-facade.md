@@ -9,7 +9,7 @@ Internal structure of the API Facade container, showing its single-component des
 ```mermaid
 flowchart TD
     subgraph facade ["API Facade"]
-        api["ApiFacade<br/><small>TypeScript</small>"]
+        api["Architecture<br/><small>TypeScript</small>"]
         types["DTO Types<br/><small>TypeScript</small>"]
     end
 
@@ -33,7 +33,7 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **ApiFacade** | Single entry point, service routing, DTO conversion | All public API methods | ✅ | `src/api/facade.ts` |
+| **Architecture** | Single entry point, service routing, DTO conversion | All public API methods | ✅ | `src/api/facade.ts` |
 | **DTO Types** | Transport-safe type definitions | DTOs for all domain types | ✅ | `src/api/types.ts` |
 
 > **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) - Facade pattern.
@@ -62,14 +62,14 @@ flowchart TD
 | **Wiring** | Wiring Service |
 | **Generation** | Code Generation Service |
 
-### ApiFacade API
+### Architecture API
 
 ```typescript:include
 source: src/api/types.ts
-exports: [IApiFacade]
+exports: [IArchitecture]
 ```
 
-> **Note**: Static factory methods `ApiFacade.create()` and `ApiFacade.createInMemory()` are class-only (not in interface).
+> **Note**: Static factory methods `Architecture.create()` and `Architecture.createInMemory()` are class-only (not in interface).
 
 ### API Response Type
 
@@ -86,9 +86,10 @@ The facade converts between domain types and DTOs:
 |-------------|----------|------------|
 | `ComponentSymbol` | `ComponentSymbolDTO` | `Date` → ISO string, nested objects flattened |
 | `Connection` | `ConnectionDTO` | `Date` → ISO string |
-| `ValidationResult` | `ValidationResultDTO` | Direct mapping |
 | `GenerationResult` | `GenerationResultDTO` | Direct mapping |
 | `DependencyGraph` | `DependencyGraphDTO` | `Map` → array of entries |
+
+> **Note**: `ValidationResult` is returned directly without conversion (no Date fields).
 
 ### Service Routing Table
 

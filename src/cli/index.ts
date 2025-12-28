@@ -12,13 +12,12 @@
  */
 
 import { parseArgs } from 'node:util';
-import { ApiFacade } from '../api/facade.js';
+import { Architecture } from '../api/facade.js';
 import { extractErrorMessage } from '../infrastructure/errors.js';
 import { registerCommand } from './commands/register.js';
 import { listCommand } from './commands/list.js';
 import { getCommand } from './commands/get.js';
 import { validateCommand } from './commands/validate.js';
-import { wireCommand } from './commands/wire.js';
 import { graphCommand } from './commands/graph.js';
 import { generateCommand } from './commands/generate.js';
 import { helpCommand } from './commands/help.js';
@@ -28,7 +27,7 @@ const DEFAULT_DB_PATH = '.cyrus-code/registry.db';
 
 function printHelp(): void {
   console.log(`
-cyrus-code - Hardware-inspired software component architecture tool
+cyrus-code - UML-based software architecture modeling tool
 
 USAGE:
   cyrus-code <command> [options]
@@ -37,8 +36,7 @@ COMMANDS:
   register <file>    Register a component from JSON file
   list               List components with optional filters
   get <id>           Get component details by ID
-  validate           Validate all components and connections
-  wire               Create and manage connections between ports
+  validate           Validate all components and relationships
   graph              Analyze the dependency graph
   generate           Generate TypeScript code from components
   help [topic]       Show help (run "help --list" for topics)
@@ -66,9 +64,6 @@ EXAMPLES:
   # Validate the registry
   cyrus-code validate
 
-  # Wire components together
-  cyrus-code wire auth/JwtService@1.0.0 output auth/UserService@1.0.0 tokenProvider
-
   # View dependency graph
   cyrus-code graph
 
@@ -84,7 +79,6 @@ EXAMPLES:
   # View help topics
   cyrus-code help                      # Overview with categories
   cyrus-code help levels               # View specific topic
-  cyrus-code help --search wiring      # Search topics
 `);
 }
 
@@ -137,12 +131,12 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  // Initialize the facade
+  // Initialize the architecture API
   const dbPath = globalOpts.db as string;
-  let facade: ApiFacade;
+  let facade: Architecture;
 
   try {
-    facade = ApiFacade.create(dbPath);
+    facade = Architecture.create(dbPath);
   } catch (error) {
     console.error(
       `Error: Failed to initialize database at '${dbPath}'`
@@ -168,9 +162,6 @@ async function main(): Promise<void> {
         break;
       case 'validate':
         await validateCommand(context, commandArgs, args);
-        break;
-      case 'wire':
-        await wireCommand(context, commandArgs, args);
         break;
       case 'graph':
         await graphCommand(context, commandArgs, args);

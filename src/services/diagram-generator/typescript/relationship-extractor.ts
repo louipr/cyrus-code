@@ -8,7 +8,7 @@
 import { MethodSignature, PropertySignature } from 'ts-morph';
 import { RelationshipInfo, RelationshipType } from '../../../domain/diagram/schema.js';
 import { TypeSimplifier, defaultSimplifier } from './type-simplifier.js';
-import type { ISourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
+import type { SourceFileManager } from '../../../infrastructure/typescript-ast/index.js';
 
 /**
  * Context for relationship inference.
@@ -34,7 +34,7 @@ export class RelationshipExtractor {
    * @param simplifier - Optional type simplifier (uses default if not provided)
    */
   constructor(
-    private sourceFileManager: ISourceFileManager,
+    private sourceFileManager: SourceFileManager,
     simplifier?: TypeSimplifier
   ) {
     this.simplifier = simplifier ?? defaultSimplifier;

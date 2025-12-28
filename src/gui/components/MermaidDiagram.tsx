@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
+import { extractErrorMessage } from '../../infrastructure/errors';
 
 // Initialize mermaid with C4-optimized theme
 // Uses 'base' theme with custom variables for maximum control
@@ -110,7 +111,7 @@ export function MermaidDiagram({ code, className }: MermaidDiagramProps) {
         setError(null);
       } catch (err) {
         console.error('Mermaid rendering error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
+        setError(extractErrorMessage(err));
         setSvg('');
       }
     };

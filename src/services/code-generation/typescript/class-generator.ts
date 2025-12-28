@@ -2,35 +2,46 @@
  * TypeScript Class Generator
  *
  * Generates base classes and user stubs using Generation Gap pattern.
+ * Works directly with ComponentSymbol - no intermediate types.
  */
 
 import { ClassDeclaration, Scope, SourceFile } from 'ts-morph';
-import type { GeneratedComponent, GeneratedPort } from './schema.js';
-
-/**
- * Capitalize the first letter of a string.
- */
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
+import type { ComponentSymbol, DependencyRef } from '../../../domain/symbol/index.js';
+import { symbolIdToTypeName, sanitizeClassName } from './type-mapper.js';
 
 /**
  * Create an abstract base class for a component.
  */
 export function createBaseClass(
   sourceFile: SourceFile,
-  component: GeneratedComponent,
+  symbol: ComponentSymbol,
   includeComments: boolean
 ): ClassDeclaration {
+  const className = sanitizeClassName(symbol.name);
+  const baseClassName = `${className}_Base`;
+
   const classDecl = sourceFile.addClass({
-    name: component.baseClassName,
+    name: baseClassName,
     isAbstract: true,
     isExported: true,
   });
 
-  if (includeComments && component.description) {
+  // Add extends clause if parent class is defined
+  if (symbol.extends) {
+    classDecl.setExtends(symbolIdToTypeName(symbol.extends));
+  }
+
+  // Add implements clause if interfaces are defined
+  const implementsInterfaces = symbol.implements ?? [];
+  if (implementsInterfaces.length > 0) {
+    for (const iface of implementsInterfaces) {
+      classDecl.addImplements(symbolIdToTypeName(iface));
+    }
+  }
+
+  if (includeComments && symbol.description) {
     classDecl.addJsDoc({
-      description: `${component.description}\n\nBase class for ${component.className}. Extend this class to implement the component.`,
+      description: `${symbol.description}\n\nBase class for ${className}. Extend this class to implement the component.`,
     });
   }
 
@@ -38,63 +49,53 @@ export function createBaseClass(
 }
 
 /**
- * Add abstract methods for input ports.
+ * Add constructor with dependency injection.
  */
-export function addInputPortMethods(
+export function addDependencyInjection(
   classDecl: ClassDeclaration,
-  ports: GeneratedPort[],
+  dependencies: DependencyRef[],
   includeComments: boolean
 ): void {
-  for (const port of ports) {
-    const methodName = `on${capitalize(port.name)}`;
+  const constructorDeps = dependencies.filter((d) => d.kind === 'constructor');
+  const propertyDeps = dependencies.filter((d) => d.kind === 'property');
 
-    const method = classDecl.addMethod({
-      name: methodName,
-      isAbstract: true,
-      scope: Scope.Public,
-      parameters: [{ name: 'data', type: port.typeString }],
-      returnType: 'void',
+  // Add property dependencies as class properties
+  for (const dep of propertyDeps) {
+    const typeString = symbolIdToTypeName(dep.symbolId);
+    const prop = classDecl.addProperty({
+      name: dep.name,
+      type: dep.optional ? `${typeString} | undefined` : typeString,
+      scope: Scope.Protected,
+      hasQuestionToken: dep.optional,
     });
 
-    if (includeComments && port.description) {
-      method.addJsDoc({
-        description: port.description,
-        tags: [
-          { tagName: 'param', text: `data - Input data of type ${port.typeString}` },
-        ],
-      });
+    if (includeComments) {
+      prop.addJsDoc({ description: `Injected dependency: ${typeString}` });
     }
   }
-}
 
-/**
- * Add protected emit methods for output ports.
- */
-export function addOutputPortMethods(
-  classDecl: ClassDeclaration,
-  ports: GeneratedPort[],
-  includeComments: boolean
-): void {
-  for (const port of ports) {
-    const methodName = `emit${capitalize(port.name)}`;
-
-    const method = classDecl.addMethod({
-      name: methodName,
-      scope: Scope.Protected,
-      parameters: [{ name: 'data', type: port.typeString }],
-      returnType: 'void',
-      statements: [
-        `// Wiring runtime will route data to connected input ports`,
-        `void data; // Placeholder until wiring runtime is implemented`,
-      ],
+  // Add constructor if there are constructor dependencies
+  if (constructorDeps.length > 0) {
+    const ctor = classDecl.addConstructor({
+      parameters: constructorDeps.map((dep) => {
+        const typeString = symbolIdToTypeName(dep.symbolId);
+        return {
+          name: dep.name,
+          type: typeString,
+          hasQuestionToken: dep.optional,
+          scope: Scope.Protected,
+          isReadonly: true,
+        };
+      }),
     });
 
-    if (includeComments && port.description) {
-      method.addJsDoc({
-        description: `Emit data through the ${port.name} port.\n\n${port.description}`,
-        tags: [
-          { tagName: 'param', text: `data - Output data of type ${port.typeString}` },
-        ],
+    if (includeComments) {
+      ctor.addJsDoc({
+        description: 'Create a new instance with injected dependencies.',
+        tags: constructorDeps.map((dep) => ({
+          tagName: 'param',
+          text: `${dep.name} - Injected ${symbolIdToTypeName(dep.symbolId)}`,
+        })),
       });
     }
   }
@@ -105,22 +106,25 @@ export function addOutputPortMethods(
  */
 export function createUserStub(
   sourceFile: SourceFile,
-  component: GeneratedComponent,
+  symbol: ComponentSymbol,
   generatedFileName: string,
   includeComments: boolean
 ): ClassDeclaration {
+  const className = sanitizeClassName(symbol.name);
+  const baseClassName = `${className}_Base`;
+
   // Add import for base class
   sourceFile.addImportDeclaration({
     moduleSpecifier: `./${generatedFileName.replace('.ts', '.js')}`,
-    namedImports: [component.baseClassName],
+    namedImports: [baseClassName],
   });
 
   // Add user file header
   sourceFile.insertStatements(0, [
     `/**`,
-    ` * ${component.className}`,
+    ` * ${className}`,
     ` *`,
-    ` * User implementation of ${component.symbolId}`,
+    ` * User implementation of ${symbol.id}`,
     ` * Extend and customize as needed.`,
     ` */`,
     '',
@@ -128,32 +132,30 @@ export function createUserStub(
 
   // Create concrete class
   const classDecl = sourceFile.addClass({
-    name: component.className,
-    extends: component.baseClassName,
+    name: className,
+    extends: baseClassName,
     isExported: true,
   });
 
-  if (includeComments && component.description) {
+  if (includeComments && symbol.description) {
     classDecl.addJsDoc({
-      description: component.description,
-    });
-  }
-
-  // Add stub implementations for input ports
-  for (const port of component.inputPorts) {
-    const methodName = `on${capitalize(port.name)}`;
-
-    classDecl.addMethod({
-      name: methodName,
-      scope: Scope.Public,
-      parameters: [{ name: 'data', type: port.typeString }],
-      returnType: 'void',
-      statements: [
-        `// TODO: Implement ${methodName}`,
-        `throw new Error('Not implemented: ${methodName}');`,
-      ],
+      description: symbol.description,
     });
   }
 
   return classDecl;
+}
+
+/**
+ * Get the class name for a symbol.
+ */
+export function getClassName(symbol: ComponentSymbol): string {
+  return sanitizeClassName(symbol.name);
+}
+
+/**
+ * Get the base class name for a symbol.
+ */
+export function getBaseClassName(symbol: ComponentSymbol): string {
+  return `${sanitizeClassName(symbol.name)}_Base`;
 }

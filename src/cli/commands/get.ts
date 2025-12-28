@@ -8,7 +8,8 @@
 
 import { parseArgs } from 'node:util';
 import type { CliContext } from '../types.js';
-import type { ComponentSymbolDTO, PortDefinitionDTO } from '../../api/types.js';
+import type { ComponentSymbolDTO } from '../../api/types.js';
+import { exitOnError, exitWithUsage } from '../output.js';
 
 export async function getCommand(
   context: CliContext,
@@ -20,8 +21,7 @@ export async function getCommand(
     options: {
       help: { type: 'boolean', short: 'h', default: false },
       json: { type: 'boolean', short: 'j', default: false },
-      ports: { type: 'boolean', short: 'p', default: false },
-      connections: { type: 'boolean', short: 'c', default: false },
+      relationships: { type: 'boolean', short: 'r', default: false },
     },
     allowPositionals: true,
     strict: false,
@@ -34,59 +34,30 @@ export async function getCommand(
 
   const symbolId = positionals[0];
   if (!symbolId) {
-    console.error('Error: No symbol ID specified');
-    console.error('Usage: cyrus-code get <id>');
-    process.exit(1);
+    exitWithUsage('No symbol ID specified', 'Usage: cyrus-code get <id>');
   }
 
   // Get the symbol
-  const result = context.facade.symbols.get(symbolId);
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Get failed'}`);
-    process.exit(1);
-  }
+  const result = context.facade.symbols.getSymbol(symbolId);
+  exitOnError(result, 'Failed to get symbol');
 
   const symbol = result.data;
   if (!symbol) {
-    console.error(`Error: Symbol '${symbolId}' not found`);
-    process.exit(1);
-  }
-
-  // Get connections if requested
-  let connections = null;
-  if (opts.connections) {
-    const connResult = context.facade.connections.getBySymbol(symbolId);
-    if (connResult.success) {
-      connections = connResult.data;
-    }
+    exitWithUsage(`Symbol '${symbolId}' not found`);
   }
 
   if (opts.json) {
-    const output: Record<string, unknown> = { ...symbol };
-    if (connections) {
-      output.connections = connections;
-    }
-    console.log(JSON.stringify(output, null, 2));
+    console.log(JSON.stringify(symbol, null, 2));
     return;
   }
 
   // Format human-readable output
-  formatSymbolDetail(symbol, opts.ports === true);
-
-  if (connections && connections.length > 0) {
-    console.log('\nConnections:');
-    for (const conn of connections) {
-      console.log(`  ${conn.id}`);
-      console.log(`    ${conn.fromSymbolId}:${conn.fromPort}`);
-      console.log(`    → ${conn.toSymbolId}:${conn.toPort}`);
-    }
-  }
+  formatSymbolDetail(symbol, opts.relationships === true);
 }
 
 function formatSymbolDetail(
   symbol: ComponentSymbolDTO,
-  showPorts: boolean
+  showRelationships: boolean
 ): void {
   const version = `${symbol.version.major}.${symbol.version.minor}.${symbol.version.patch}`;
 
@@ -125,30 +96,53 @@ function formatSymbolDetail(
     console.log(`  Hash: ${symbol.sourceLocation.contentHash}`);
   }
 
-  if (symbol.ports.length > 0) {
-    console.log(`\nPorts: ${symbol.ports.length}`);
-    if (showPorts) {
-      for (const port of symbol.ports) {
-        formatPort(port);
+  // UML Relationships
+  const hasRelationships =
+    symbol.extends ||
+    (symbol.implements && symbol.implements.length > 0) ||
+    (symbol.dependencies && symbol.dependencies.length > 0) ||
+    (symbol.composes && symbol.composes.length > 0) ||
+    (symbol.aggregates && symbol.aggregates.length > 0);
+
+  if (hasRelationships) {
+    console.log(`\nRelationships:`);
+    if (symbol.extends) {
+      console.log(`  Extends: ${symbol.extends}`);
+    }
+    if (symbol.implements && symbol.implements.length > 0) {
+      console.log(`  Implements: ${symbol.implements.join(', ')}`);
+    }
+    if (showRelationships) {
+      if (symbol.dependencies && symbol.dependencies.length > 0) {
+        console.log(`  Dependencies:`);
+        for (const dep of symbol.dependencies) {
+          const optStr = dep.optional ? ' (optional)' : '';
+          console.log(`    - ${dep.name}: ${dep.symbolId} [${dep.kind}]${optStr}`);
+        }
+      }
+      if (symbol.composes && symbol.composes.length > 0) {
+        console.log(`  Composes:`);
+        for (const comp of symbol.composes) {
+          console.log(`    - ${comp.fieldName}: ${comp.symbolId} [${comp.multiplicity}]`);
+        }
+      }
+      if (symbol.aggregates && symbol.aggregates.length > 0) {
+        console.log(`  Aggregates:`);
+        for (const agg of symbol.aggregates) {
+          console.log(`    - ${agg.fieldName}: ${agg.symbolId} [${agg.multiplicity}]`);
+        }
       }
     } else {
-      const inputs = symbol.ports.filter((p) => p.direction === 'in');
-      const outputs = symbol.ports.filter((p) => p.direction === 'out');
-      const inouts = symbol.ports.filter((p) => p.direction === 'inout');
-
-      if (inputs.length > 0) {
-        console.log(`  Inputs:  ${inputs.map((p) => p.name).join(', ')}`);
+      const depCount = symbol.dependencies?.length ?? 0;
+      const compCount = symbol.composes?.length ?? 0;
+      const aggCount = symbol.aggregates?.length ?? 0;
+      if (depCount + compCount + aggCount > 0) {
+        console.log(`  (${depCount} deps, ${compCount} composes, ${aggCount} aggregates - use -r for details)`);
       }
-      if (outputs.length > 0) {
-        console.log(`  Outputs: ${outputs.map((p) => p.name).join(', ')}`);
-      }
-      if (inouts.length > 0) {
-        console.log(`  InOut:   ${inouts.map((p) => p.name).join(', ')}`);
-      }
-      console.log(`  (use --ports for full details)`);
     }
   }
 
+  // C4 Containment
   if (symbol.contains && symbol.contains.length > 0) {
     console.log(`\nContains:`);
     for (const childId of symbol.contains) {
@@ -173,16 +167,6 @@ function formatSymbolDetail(
   console.log('');
 }
 
-function formatPort(port: PortDefinitionDTO): void {
-  const reqStr = port.required ? 'required' : 'optional';
-  const multStr = port.multiple ? ', multiple' : '';
-  console.log(`  ${port.direction} ${port.name}: ${port.type.symbolId}`);
-  console.log(`      [${reqStr}${multStr}]`);
-  if (port.description) {
-    console.log(`      ${port.description}`);
-  }
-}
-
 function printHelp(): void {
   console.log(`
 cyrus-code get - Get component details by ID
@@ -194,14 +178,13 @@ ARGUMENTS:
   <id>    Component ID (e.g., auth/JwtService@1.0.0)
 
 OPTIONS:
-  --ports, -p         Show full port details
-  --connections, -c   Include connection information
-  --json, -j          Output as JSON
-  --help, -h          Show this help message
+  --relationships, -r   Show full relationship details (dependencies, compositions)
+  --json, -j            Output as JSON
+  --help, -h            Show this help message
 
 EXAMPLES:
   cyrus-code get auth/JwtService@1.0.0
-  cyrus-code get auth/JwtService@1.0.0 --ports
-  cyrus-code get auth/JwtService@1.0.0 --connections --json
+  cyrus-code get auth/JwtService@1.0.0 --relationships
+  cyrus-code get auth/JwtService@1.0.0 --json
 `);
 }

@@ -22,15 +22,15 @@ describe('C4DiagramGenerator', () => {
   });
 
   describe('generateForInterface', () => {
-    it('should generate diagram for ISymbolTableService', () => {
+    it('should generate diagram for SymbolTableService', () => {
       const result = generator.generateForInterface(
         'src/services/symbol-table/schema.ts',
-        'ISymbolTableService'
+        'SymbolTableService'
       );
 
       assert.ok(result.diagram.classes.length > 0, 'Should have classes');
       assert.ok(result.rendered.includes('classDiagram'), 'Should include classDiagram');
-      assert.ok(result.rendered.includes('ISymbolTableService'), 'Should include interface name');
+      assert.ok(result.rendered.includes('SymbolTableService'), 'Should include interface name');
       assert.ok(result.rendered.includes('<<interface>>'), 'Should mark as interface');
     });
 
@@ -39,7 +39,7 @@ describe('C4DiagramGenerator', () => {
       // This test verifies the interface diagram includes additional types
       const result = generator.generateForInterface(
         'src/services/symbol-table/schema.ts',
-        'ISymbolTableService',
+        'SymbolTableService',
         { includeTypes: ['ComponentQuery', 'ResolveOptions'] }
       );
 
@@ -51,11 +51,11 @@ describe('C4DiagramGenerator', () => {
     it('should respect maxMethods config', () => {
       const result = generator.generateForInterface(
         'src/services/symbol-table/schema.ts',
-        'ISymbolTableService',
+        'SymbolTableService',
         { maxMethods: 5 }
       );
 
-      const primaryClass = result.diagram.classes.find(c => c.name === 'ISymbolTableService');
+      const primaryClass = result.diagram.classes.find(c => c.name === 'SymbolTableService');
       assert.ok(primaryClass, 'Should find primary class');
       assert.ok(primaryClass.methods.length <= 5, 'Should have at most 5 methods');
     });
@@ -73,7 +73,7 @@ describe('C4DiagramGenerator', () => {
     it('should return error for non-existent file', () => {
       const result = generator.generateForInterface(
         'non/existent/file.ts',
-        'ISymbolTableService'
+        'SymbolTableService'
       );
 
       assert.ok(result.warnings.length > 0, 'Should have warnings');

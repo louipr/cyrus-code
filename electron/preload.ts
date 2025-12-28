@@ -16,13 +16,8 @@ import type {
   ApiResponse,
   PaginatedResponse,
   ValidationResultDTO,
-  ConnectionDTO,
-  CreateConnectionRequest,
-  WiringResultDTO,
   DependencyGraphDTO,
   GraphStatsDTO,
-  CompatiblePortDTO,
-  UnconnectedPortDTO,
   GenerateRequest,
   GenerateBatchRequest,
   PreviewRequest,
@@ -60,10 +55,12 @@ export interface CyrusAPI {
     getDependents: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     getDependencies: (id: string) => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
-  // Connection operations
-  connections: {
-    get: (symbolId: string) => Promise<ApiResponse<ConnectionDTO[]>>;
-    getAll: () => Promise<ApiResponse<ConnectionDTO[]>>;
+  // Graph operations
+  graph: {
+    build: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
+    detectCycles: () => Promise<ApiResponse<string[][]>>;
+    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
+    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
   };
   // Validation operations
   validation: {
@@ -75,18 +72,6 @@ export interface CyrusAPI {
   status: {
     findUnreachable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     findUntested: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
-  };
-  // Wiring operations
-  wiring: {
-    connect: (request: CreateConnectionRequest) => Promise<ApiResponse<WiringResultDTO>>;
-    disconnect: (connectionId: string) => Promise<ApiResponse<WiringResultDTO>>;
-    validateConnection: (request: CreateConnectionRequest) => Promise<ApiResponse<ValidationResultDTO>>;
-    getGraph: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
-    detectCycles: () => Promise<ApiResponse<string[][]>>;
-    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
-    getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
-    findCompatiblePorts: (symbolId: string, portName: string) => Promise<ApiResponse<CompatiblePortDTO[]>>;
-    findUnconnectedRequired: () => Promise<ApiResponse<UnconnectedPortDTO[]>>;
   };
   // Synthesizer operations (code generation)
   synthesizer: {
@@ -140,9 +125,11 @@ const cyrusAPI: CyrusAPI = {
     getDependents: (id) => ipcRenderer.invoke('relationships:getDependents', id),
     getDependencies: (id) => ipcRenderer.invoke('relationships:getDependencies', id),
   },
-  connections: {
-    get: (symbolId) => ipcRenderer.invoke('connections:get', symbolId),
-    getAll: () => ipcRenderer.invoke('connections:getAll'),
+  graph: {
+    build: (symbolId) => ipcRenderer.invoke('graph:build', symbolId),
+    detectCycles: () => ipcRenderer.invoke('graph:detectCycles'),
+    getTopologicalOrder: () => ipcRenderer.invoke('graph:getTopologicalOrder'),
+    getStats: () => ipcRenderer.invoke('graph:getStats'),
   },
   validation: {
     validate: () => ipcRenderer.invoke('validation:validate'),
@@ -152,18 +139,6 @@ const cyrusAPI: CyrusAPI = {
   status: {
     findUnreachable: () => ipcRenderer.invoke('status:findUnreachable'),
     findUntested: () => ipcRenderer.invoke('status:findUntested'),
-  },
-  wiring: {
-    connect: (request) => ipcRenderer.invoke('wiring:connect', request),
-    disconnect: (connectionId) => ipcRenderer.invoke('wiring:disconnect', connectionId),
-    validateConnection: (request) => ipcRenderer.invoke('wiring:validateConnection', request),
-    getGraph: (symbolId) => ipcRenderer.invoke('wiring:getGraph', symbolId),
-    detectCycles: () => ipcRenderer.invoke('wiring:detectCycles'),
-    getTopologicalOrder: () => ipcRenderer.invoke('wiring:getTopologicalOrder'),
-    getStats: () => ipcRenderer.invoke('wiring:getStats'),
-    findCompatiblePorts: (symbolId, portName) =>
-      ipcRenderer.invoke('wiring:findCompatiblePorts', symbolId, portName),
-    findUnconnectedRequired: () => ipcRenderer.invoke('wiring:findUnconnectedRequired'),
   },
   synthesizer: {
     generate: (request) => ipcRenderer.invoke('synthesizer:generate', request),

@@ -79,7 +79,7 @@ export async function registerCommand(
     };
 
     // Register the symbol
-    const result = context.facade.symbols.register({ symbol });
+    const result = context.facade.symbols.registerSymbol({ symbol });
 
     if (!result.success) {
       errors.push(`${symbol.name}: ${result.error?.message ?? 'Registration failed'}`);
@@ -110,8 +110,14 @@ export async function registerCommand(
       console.log(
         `  Version: ${data.version.major}.${data.version.minor}.${data.version.patch}`
       );
-      if (data.ports && data.ports.length > 0) {
-        console.log(`  Ports: ${data.ports.length}`);
+      const depCount = data.dependencies?.length ?? 0;
+      const implCount = data.implements?.length ?? 0;
+      if (depCount > 0 || implCount > 0 || data.extends) {
+        const parts: string[] = [];
+        if (data.extends) parts.push(`extends: ${data.extends}`);
+        if (implCount > 0) parts.push(`implements: ${implCount}`);
+        if (depCount > 0) parts.push(`dependencies: ${depCount}`);
+        console.log(`  Relationships: ${parts.join(', ')}`);
       }
       if (results.length > 1) {
         console.log('');

@@ -9,6 +9,7 @@
 import { parseArgs } from 'node:util';
 import type { CliContext } from '../types.js';
 import type { SymbolQuery, ComponentSymbolDTO } from '../../api/types.js';
+import { exitOnError } from '../output.js';
 
 export async function listCommand(
   context: CliContext,
@@ -71,18 +72,10 @@ export async function listCommand(
   }
 
   // Execute query
-  const result = context.facade.symbols.list(query);
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Query failed'}`);
-    process.exit(1);
-  }
+  const result = context.facade.symbols.listSymbols(query);
+  exitOnError(result, 'Query failed');
 
   const data = result.data;
-  if (!data) {
-    console.error('Error: No data returned');
-    process.exit(1);
-  }
 
   if (opts.json) {
     console.log(JSON.stringify(data, null, 2));

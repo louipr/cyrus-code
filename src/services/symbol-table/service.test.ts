@@ -10,11 +10,11 @@ import {
   initMemoryDatabase,
   closeDatabase,
 } from '../../repositories/persistence.js';
-import { SymbolRepository } from '../../repositories/symbol-repository.js';
+import { SqliteSymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from './service.js';
 import { validateSymbolTable, checkCircularContainment } from './symbol-validator.js';
-import type { Connection } from '../../domain/symbol/index.js';
-import { createSymbol } from '../../testing/fixtures.js';
+import { createSymbol, createDependency } from '../../testing/fixtures.js';
+import type { SymbolRepository } from '../../domain/symbol/index.js';
 
 describe('SymbolTableService', () => {
   let store: SymbolTableService;
@@ -22,7 +22,7 @@ describe('SymbolTableService', () => {
 
   beforeEach(() => {
     const db = initMemoryDatabase();
-    repo = new SymbolRepository(db);
+    repo = new SqliteSymbolRepository(db);
     store = new SymbolTableService(repo);
   });
 
@@ -66,16 +66,15 @@ describe('SymbolTableService', () => {
 
     it('should retrieve symbol with all fields', () => {
       const symbol = createSymbol({
-        ports: [
-          {
-            name: 'input',
-            direction: 'in',
-            type: { symbolId: 'core/String@1.0.0' },
-            required: true,
-            multiple: false,
-            description: 'Input port',
-          },
+        dependencies: [
+          createDependency({
+            symbolId: 'core/Logger@1.0.0',
+            name: 'logger',
+            kind: 'constructor',
+            optional: false,
+          }),
         ],
+        implements: ['api/IService@1.0.0'],
         tags: ['test', 'example'],
         sourceLocation: {
           filePath: '/path/to/file.ts',
@@ -88,10 +87,12 @@ describe('SymbolTableService', () => {
       store.register(symbol);
       const retrieved = store.get(symbol.id)!;
 
-      assert.strictEqual(retrieved.ports.length, 1);
-      const firstPort = retrieved.ports[0];
-      assert.ok(firstPort);
-      assert.strictEqual(firstPort.name, 'input');
+      assert.ok(retrieved.dependencies);
+      assert.strictEqual(retrieved.dependencies.length, 1);
+      const firstDep = retrieved.dependencies[0];
+      assert.ok(firstDep);
+      assert.strictEqual(firstDep.name, 'logger');
+      assert.deepStrictEqual(retrieved.implements, ['api/IService@1.0.0']);
       assert.deepStrictEqual(retrieved.tags.sort(), ['example', 'test']);
       assert.ok(retrieved.sourceLocation);
       assert.strictEqual(retrieved.sourceLocation.filePath, '/path/to/file.ts');
@@ -269,91 +270,24 @@ describe('SymbolTableService', () => {
     });
   });
 
-  describe('connections (via repository)', () => {
-    it('should create and retrieve connections', () => {
-      // Create type symbol for ports
-      store.register(
-        createSymbol({
-          id: 'core/String@1.0.0',
-          name: 'String',
-          namespace: 'core',
-          level: 'L0',
-          kind: 'type',
-        })
-      );
-
-      // Create symbols with ports
-      store.register(
-        createSymbol({
-          id: 'a@1.0.0',
-          ports: [
-            {
-              name: 'output',
-              direction: 'out',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Output',
-            },
-          ],
-        })
-      );
-      store.register(
-        createSymbol({
-          id: 'b@1.0.0',
-          ports: [
-            {
-              name: 'input',
-              direction: 'in',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Input',
-            },
-          ],
-        })
-      );
-
-      const connection: Connection = {
-        id: 'conn-1',
-        fromSymbolId: 'a@1.0.0',
-        fromPort: 'output',
-        toSymbolId: 'b@1.0.0',
-        toPort: 'input',
-        createdAt: new Date(),
-      };
-
-      repo.insertConnection(connection);
-
-      const connections = repo.findConnectionsBySymbol('a@1.0.0');
-      assert.strictEqual(connections.length, 1);
-      const firstConn = connections[0];
-      assert.ok(firstConn);
-      assert.strictEqual(firstConn.id, 'conn-1');
-    });
-  });
-
   describe('validation', () => {
     it('should validate successfully for valid symbols', () => {
       store.register(
         createSymbol({
-          id: 'core/String@1.0.0',
-          level: 'L0',
-          kind: 'type',
+          id: 'core/Logger@1.0.0',
+          level: 'L1',
+          kind: 'service',
         })
       );
       store.register(
         createSymbol({
           id: 'svc@1.0.0',
-          ports: [
-            {
-              name: 'input',
-              direction: 'in',
-              type: { symbolId: 'core/String@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Input',
-            },
+          dependencies: [
+            createDependency({
+              symbolId: 'core/Logger@1.0.0',
+              name: 'logger',
+              kind: 'constructor',
+            }),
           ],
         })
       );
@@ -363,26 +297,23 @@ describe('SymbolTableService', () => {
       assert.strictEqual(result.errors.length, 0);
     });
 
-    it('should detect invalid type references', () => {
+    it('should detect invalid dependency references', () => {
       store.register(
         createSymbol({
           id: 'svc@1.0.0',
-          ports: [
-            {
-              name: 'input',
-              direction: 'in',
-              type: { symbolId: 'nonexistent@1.0.0' },
-              required: true,
-              multiple: false,
-              description: 'Input',
-            },
+          dependencies: [
+            createDependency({
+              symbolId: 'nonexistent@1.0.0',
+              name: 'missing',
+              kind: 'constructor',
+            }),
           ],
         })
       );
 
       const result = validateSymbolTable(repo);
       assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.some((e) => e.code === 'INVALID_TYPE_REFERENCE'));
+      assert.ok(result.errors.some((e) => e.code === 'INVALID_DEPENDENCY_REFERENCE'));
     });
 
     it('should detect circular containment', () => {

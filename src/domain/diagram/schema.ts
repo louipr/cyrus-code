@@ -138,3 +138,25 @@ export function applyDefaults(config?: DiagramConfig): Required<DiagramConfig> {
     ...config,
   };
 }
+
+// ============================================================================
+// Method Selection Interface
+// ============================================================================
+
+/**
+ * Strategy for method selection in diagrams.
+ */
+export interface MethodSelector {
+  /**
+   * Select methods to include in the diagram.
+   *
+   * @param methods All methods from the class
+   * @param maxMethods Maximum number of methods to include
+   * @param categories Optional categories to filter by
+   */
+  select(
+    methods: MethodInfo[],
+    maxMethods: number,
+    categories?: string[]
+  ): MethodInfo[];
+}

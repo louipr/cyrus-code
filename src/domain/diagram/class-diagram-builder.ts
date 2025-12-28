@@ -11,8 +11,9 @@ import {
   RelationshipInfo,
   DiagramConfig,
   applyDefaults,
+  MethodSelector,
 } from './schema.js';
-import { MethodSelector, defaultMethodSelector } from './method-selector.js';
+import { defaultMethodSelector } from './method-selector.js';
 
 /**
  * Fluent builder for C4-4 class diagrams.

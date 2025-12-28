@@ -2,8 +2,18 @@
  * Repositories
  *
  * Data access layer for database operations.
+ * Internal types and prepared statements are not exported.
  */
 
-export * from './persistence.js';
-export * from './symbol-repository.js';
-export * from './help-repository.js';
+export {
+  initDatabase,
+  getDatabase,
+  closeDatabase,
+  initMemoryDatabase,
+  clearAllData,
+  type DatabaseType,
+} from './persistence.js';
+
+// Repository classes
+export { SqliteSymbolRepository } from './symbol-repository.js';
+export { JsonHelpRepository } from './help-repository.js';

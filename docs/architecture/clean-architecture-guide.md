@@ -234,7 +234,7 @@ class WiringService {
 
 | File | Purpose |
 |------|---------|
-| `facade.ts` | ApiFacade class - single entry point |
+| `facade.ts` | Architecture class - single entry point |
 | `types.ts` | API-specific types (DTOs if needed) |
 
 ### 6. External Interfaces (`src/cli/`, `src/gui/`)
@@ -243,7 +243,7 @@ class WiringService {
 
 **Characteristics**:
 - CLI commands, GUI components
-- Use ApiFacade for all operations
+- Use Architecture for all operations
 - Handle user input/output formatting
 - **Depends on**: api facade
 
@@ -400,7 +400,7 @@ class SymbolRepository {
 
 ```typescript
 // BAD: Facade duplicates methods from services
-class ApiFacade {
+class Architecture {
   // ❌ Just delegates to service with no added value
   checkCompatibility(from: Port, to: Port) {
     return this.compatService.checkCompatibility(from, to);

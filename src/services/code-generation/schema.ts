@@ -17,7 +17,7 @@ import type { ComponentSymbol } from '../../domain/symbol/index.js';
  * Provides high-level API for generating TypeScript code from
  * symbols in the symbol table using the Generation Gap pattern.
  */
-export interface ICodeGenerationService {
+export interface CodeGenerationService {
   generateSymbol(symbolId: string, options: GenerationOptions): GenerationResult;
   generateMultiple(symbolIds: string[], options: GenerationOptions): GenerationBatchResult;
   generateAll(options: GenerationOptions): GenerationBatchResult;

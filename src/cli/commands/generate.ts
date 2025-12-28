@@ -11,6 +11,7 @@
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { CliContext } from '../types.js';
+import { exitOnError } from '../output.js';
 
 export async function generateCommand(
   context: CliContext,
@@ -93,12 +94,8 @@ export async function generateCommand(
 }
 
 async function listGeneratable(context: CliContext, json: boolean): Promise<void> {
-  const result = context.facade.codeGen.listGeneratable();
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Failed to list symbols'}`);
-    process.exit(1);
-  }
+  const result = context.facade.generation.listGeneratable();
+  exitOnError(result, 'Failed to list symbols');
 
   const symbols = result.data ?? [];
 
@@ -115,7 +112,15 @@ async function listGeneratable(context: CliContext, json: boolean): Promise<void
     for (const symbol of symbols) {
       console.log(`  ${symbol.id}`);
       console.log(`    ${symbol.kind}: ${symbol.name} (${symbol.namespace})`);
-      console.log(`    Ports: ${symbol.ports.length} (in: ${symbol.ports.filter(p => p.direction === 'in').length}, out: ${symbol.ports.filter(p => p.direction === 'out').length})`);
+      const depCount = symbol.dependencies?.length ?? 0;
+      const implCount = symbol.implements?.length ?? 0;
+      if (depCount > 0 || implCount > 0 || symbol.extends) {
+        const parts: string[] = [];
+        if (symbol.extends) parts.push(`extends 1`);
+        if (implCount > 0) parts.push(`implements ${implCount}`);
+        if (depCount > 0) parts.push(`deps ${depCount}`);
+        console.log(`    Relationships: ${parts.join(', ')}`);
+      }
       console.log('');
     }
   }
@@ -127,12 +132,8 @@ async function previewGeneration(
   outputDir: string,
   json: boolean
 ): Promise<void> {
-  const result = context.facade.codeGen.preview({ symbolId, outputDir });
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Preview failed'}`);
-    process.exit(1);
-  }
+  const result = context.facade.generation.preview({ symbolId, outputDir });
+  exitOnError(result, 'Preview failed');
 
   const preview = result.data!;
 
@@ -167,7 +168,7 @@ async function generateSymbol(
   outputDir: string,
   options: { dryRun: boolean; includeComments: boolean; json: boolean }
 ): Promise<void> {
-  const result = context.facade.codeGen.generate({
+  const result = context.facade.generation.generate({
     symbolId,
     options: {
       outputDir,
@@ -177,11 +178,7 @@ async function generateSymbol(
       preserveUserFiles: true,
     },
   });
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Generation failed'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Generation failed');
 
   const genResult = result.data!;
 
@@ -221,18 +218,14 @@ async function doGenerateAll(
   outputDir: string,
   options: { dryRun: boolean; includeComments: boolean; json: boolean }
 ): Promise<void> {
-  const result = context.facade.codeGen.generateAll({
+  const result = context.facade.generation.generateAll({
     outputDir,
     dryRun: options.dryRun,
     includeComments: options.includeComments,
     overwriteGenerated: true,
     preserveUserFiles: true,
   });
-
-  if (!result.success) {
-    console.error(`Error: ${result.error?.message ?? 'Generation failed'}`);
-    process.exit(1);
-  }
+  exitOnError(result, 'Generation failed');
 
   const batchResult = result.data!;
 

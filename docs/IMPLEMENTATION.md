@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run ~173 unit tests
+npm test               # Run 186 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 285 | `src/**/*.test.ts` |
-| E2E tests | 17 tests (4 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **302** | |
+| Unit tests | 186 | `src/**/*.test.ts` |
+| E2E tests | 17 tests (3 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **203** | |
 
 ---
 
@@ -222,7 +222,7 @@ npm run electron:dev   # Dev mode with hot reload
 | H.5 | Unit tests | `src/services/help/index.test.ts` | ✅ (28 tests) |
 | H.6 | CLI help command | `src/cli/commands/help.ts` | ✅ |
 | H.7 | IPC handlers | `electron/ipc-handlers.ts` | ✅ |
-| H.8 | Add selectComponentByName helper | `tests/e2e/helpers/fixtures.ts` | ✅ |
+| H.8 | Add selectComponentByName helper | (removed - helper consolidated) | ✅ |
 
 ### GUI Tasks
 
@@ -234,7 +234,7 @@ npm run electron:dev   # Dev mode with hot reload
 | H.G4 | AboutDialog component | `src/gui/components/AboutDialog.tsx` | ✅ |
 | H.G5 | F1 shortcut + help button | `src/gui/App.tsx` | ✅ |
 | H.G6 | Help API in preload | `electron/preload.ts` | ✅ |
-| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (14 tests) |
+| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (11 tests) |
 
 ### Verification Tasks
 
@@ -430,7 +430,7 @@ cyrus-code/
 ├── electron/                          # Electron Main Process
 │   ├── main.ts                        # App entry point, window creation
 │   ├── preload.ts                     # Context bridge for IPC
-│   ├── ipc-handlers.ts                # IPC handlers → ApiFacade
+│   ├── ipc-handlers.ts                # IPC handlers → Architecture
 │   └── menu.ts                        # Application menu with Help
 │
 ├── src/
@@ -512,7 +512,7 @@ cyrus-code/
 │   │       └── index.ts
 │   │
 │   ├── api/                           # Layer 5: Unified Facade
-│   │   ├── facade.ts                  # ApiFacade - single entry point
+│   │   ├── facade.ts                  # Architecture - single entry point
 │   │   ├── types.ts                   # API DTOs
 │   │   └── index.ts
 │   │
@@ -580,10 +580,10 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (285 tests)
+# 2. Run unit tests (192 tests)
 npm test
 
-# 3. Run E2E tests (17 tests)
+# 3. Run E2E tests (11 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -592,8 +592,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- ~173 unit tests pass
-- 16 E2E tests pass
+- 192 unit tests pass
+- 11 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling

@@ -8,12 +8,12 @@
  *
  * 1. typescript:include - Extract TypeScript source code
  *    ```typescript:include
- *    source: src/services/wiring/schema.ts
- *    exports: [DependencyGraph, GraphNode]
+ *    source: src/domain/symbol/schema.ts
+ *    exports: [ComponentSymbol, DependencyRef]
  *    ```
  *
  *    Shorthand (single export):
- *    ```typescript:include src/services/wiring/schema.ts#DependencyGraph
+ *    ```typescript:include src/domain/symbol/schema.ts#ComponentSymbol
  *    ```
  *
  * 2. mermaid:c4code - Generate proper C4-4 UML class diagram with relationships
@@ -33,7 +33,7 @@
 import { TypeScriptExtractor, ExtractedCode } from './typescript-extractor.js';
 import { C4DiagramGenerator } from '../diagram-generator/index.js';
 import type { DiagramConfig } from '../../domain/diagram/schema.js';
-import type { ISourceFileManager } from '../../infrastructure/typescript-ast/index.js';
+import type { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
  * Parsed typescript:include directive.
@@ -71,7 +71,7 @@ export class MarkdownPreprocessor {
   private c4Generator: C4DiagramGenerator;
   private projectRoot: string;
 
-  constructor(projectRoot: string, sourceFileManager: ISourceFileManager) {
+  constructor(projectRoot: string, sourceFileManager: SourceFileManager) {
     this.projectRoot = projectRoot;
     this.extractor = new TypeScriptExtractor(sourceFileManager);
     // Share the same sourceFileManager to avoid duplicate caches

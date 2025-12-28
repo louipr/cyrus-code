@@ -7,8 +7,9 @@
  */
 
 import { Project, SourceFile } from 'ts-morph';
-import { FileCache, resolveFilePath, getFileMtime, fileExists } from './file-cache.js';
-import type { ISourceFileManager } from './schema.js';
+import { FileCache, resolveFilePath, getFileMtime } from './file-cache.js';
+import { fileExists } from '../file-system/index.js';
+import type { SourceFileManager as ISourceFileManager } from './schema.js';
 
 /**
  * Create a ts-morph Project with standard configuration.

@@ -6,7 +6,7 @@
  */
 
 import { HelpContentService } from './service.js';
-import { HelpRepository } from '../../repositories/help-repository.js';
+import { JsonHelpRepository } from '../../repositories/help-repository.js';
 import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
@@ -16,7 +16,7 @@ import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js'
  */
 export function createHelpContentService(projectRoot?: string): HelpContentService {
   const root = projectRoot ?? findProjectRoot();
-  const repository = new HelpRepository(root);
+  const repository = new JsonHelpRepository(root);
   const sourceFileManager = new SourceFileManager(root);
   return new HelpContentService(root, repository, sourceFileManager);
 }

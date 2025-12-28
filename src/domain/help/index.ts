@@ -16,7 +16,13 @@ export type {
 } from './schema.js';
 
 // ============================================================================
+// Pure Domain Functions
+// ============================================================================
+
+export { slugify, extractHeadings } from './schema.js';
+
+// ============================================================================
 // Repository Interface (Domain Contract)
 // ============================================================================
 
-export type { IHelpRepository } from './repository.js';
+export type { HelpRepository } from './schema.js';

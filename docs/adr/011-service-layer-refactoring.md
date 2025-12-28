@@ -16,7 +16,7 @@ During code review of `code-generation` service, multiple architectural smells w
 
 1. **Layer Confusion**: Domain logic, backend-specific code, and infrastructure concerns mixed in service layer
 2. **Hidden Dependencies**: Services importing helper modules with unclear responsibilities
-3. **Backend Lock-in**: TypeScript-specific code preventing multi-language support (violates ADR-004)
+3. **Backend Lock-in**: TypeScript-specific code preventing future multi-language support
 4. **Code Duplication**: Same functionality implemented multiple times (e.g., `writeGeneratedFile()` vs `writeImplementationFile()`)
 5. **API Ambiguity**: Functions with misleading names or no-op implementations (e.g., `namespaceToPath()`)
 
@@ -26,7 +26,7 @@ During code review of `code-generation` service, multiple architectural smells w
 |-------|---------|--------|
 | **Mixed Concerns** | `symbol-transformer.ts` contained both domain logic (`isGeneratable()`) and TypeScript backend (`typeRefToTypeScript()`) | Prevents language-agnostic domain model |
 | **Infrastructure in Service** | `file-writer.ts` with fs operations in service directory | Couples service to Node.js, prevents testing |
-| **Backend in Service** | `typescript-ast.ts` with ts-morph in service directory | Violates ADR-004 multi-language architecture |
+| **Backend in Service** | `typescript-ast.ts` with ts-morph in service directory | Prevents multi-language architecture |
 | **Duplicate Functions** | `writeGeneratedFile()` === `writeImplementationFile()` | Maintenance burden, confusion |
 | **No-op Functions** | `namespaceToPath(ns) { return ns.replace(/\//g, '/'); }` | Dead code, misleading name |
 
@@ -38,7 +38,7 @@ During code review of `code-generation` service, multiple architectural smells w
 
 ```
 ┌─────────────────────────────────────────────┐
-│  API Facade (ApiFacade)                     │  ← Orchestration
+│  API Facade (Architecture)                     │  ← Orchestration
 ├─────────────────────────────────────────────┤
 │  Service Layer                              │  ← Business workflows
 │  - code-generation/, wiring/, etc.         │
@@ -68,7 +68,7 @@ Dependency Rule: Outer layers depend on inner layers only
 | **Infrastructure** | External I/O (files, network, etc.) | Domain types for parameters | `writeFile()`, `readFile()`, HTTP clients |
 | **Repository** | Data persistence abstraction | Domain types | `SymbolRepository`, database operations |
 | **Service** | Orchestration, workflow coordination | All inner layers | `CodeGenerationService` orchestrates domain → backend → infrastructure |
-| **API** | Public API facade, DTO transformation | Service layer | `ApiFacade` exposes unified API |
+| **API** | Public API facade, DTO transformation | Service layer | `Architecture` exposes unified API |
 
 ---
 
@@ -326,7 +326,7 @@ export function toGeneratedComponent(transformed: TransformedComponent): Generat
  * WHY THIS EXISTS:
  *
  * While 90% of fields are direct copies, this adapter enables:
- * 1. Multi-language backend support (ADR-004) - Future Python/Go/Rust backends
+ * 1. Multi-language backend support - Future Python/Go/Rust backends
  *    will have their own adapters converting the same domain types
  * 2. Domain model reusability - TransformedComponent is backend-agnostic
  * 3. Backend-specific transformations - className sanitization, type string
@@ -364,7 +364,7 @@ export function toGeneratedComponent(transformed: TransformedComponent): Generat
 
 | Criterion | Keep Adapter? | Reason |
 |-----------|---------------|--------|
-| Enables multi-language support (ADR-004) | ✅ YES | Future Python/Go/Rust backends will use same domain types |
+| Enables multi-language support | ✅ YES | Future Python/Go/Rust backends will use same domain types |
 | Separates domain from backend concerns | ✅ YES | Prevents domain coupling to TypeScript |
 | Has 1+ real transformations | ✅ YES | Even small transformations justify the boundary |
 | Field copying is cheap (primitives) | ✅ YES | Minimal performance cost, architectural clarity is valuable |
@@ -413,7 +413,7 @@ export function toComponent(input: ComponentInput): Component {
 - Backend complexity isolated
 
 **How to recognize intentional vs unnecessary**:
-1. Check ADR-004: Does multi-language support exist? ✅ Keep adapter
+1. Check if multi-language support matters ✅ Keep adapter
 2. Count transformations: 1+ transformations? ✅ Keep adapter
 3. Check domain imports: Domain imports backend? ❌ Design flaw
 4. Check test dependencies: Domain tests import ts-morph? ❌ Delete adapter
@@ -455,8 +455,8 @@ When refactoring a service:
 
 - [ ] **Phase 6: Verify**
   - [ ] `npm run build` passes
-  - [ ] `npm test` passes (173 unit tests)
-  - [ ] `npm run test:e2e` passes (17 E2E tests)
+  - [ ] `npm test` passes (194 unit tests)
+  - [ ] `npm run test:e2e` passes (11 E2E tests)
   - [ ] No TypeScript errors
   - [ ] Manual smoke test
 
@@ -602,11 +602,53 @@ Benefits: Clean layers, multi-language ready, testable, maintainable
 
 ---
 
+## Architectural Decisions
+
+### DIP Boundaries: When NOT to Create Interfaces
+
+Following the anti-over-engineering philosophy (see [CLAUDE.md](../../CLAUDE.md)), we establish these DIP boundaries:
+
+**Create interfaces for:**
+1. Main services (e.g., `ISymbolTableService`, `IWiringService`) - enables testing and composition
+2. Repositories (e.g., `SymbolRepository`, `HelpRepository`) - enables data layer abstraction
+3. External dependencies (e.g., `ISourceFileManager`) - enables mocking
+
+**Do NOT create interfaces for internal helper classes:**
+1. `TypeSimplifier`, `InterfaceExtractor`, `TypeExtractor` - internal to diagram generator
+2. `HelpFormatter`, `MarkdownPreprocessor` - internal to help content service
+3. `MermaidRenderer` - internal implementation detail
+
+**Rationale:**
+- These helpers have single implementations with no planned alternatives
+- Factory patterns already isolate construction (e.g., `createC4DiagramGenerator()`)
+- Creating interfaces would add boilerplate without testability benefits
+- If multiple implementations are needed later, interfaces can be extracted then
+
+### SRP: Architecture Facade Composition
+
+The `Architecture` class follows Facade pattern with proper SRP delegation:
+
+```
+Architecture (56 lines - orchestration only)
+├── SymbolFacade    - Symbol CRUD, queries, relationships
+├── GenerationFacade - Code generation operations
+├── ValidationFacade - Validation rules and checks
+└── GraphFacade     - Dependency graph analysis
+```
+
+Each focused facade handles a single domain. The main Architecture class:
+- Manages database lifecycle
+- Composes sub-facades
+- Provides unified entry point
+
+This is correct Facade pattern usage, not a "God Object" anti-pattern.
+
+---
+
 ## Related ADRs
 
-- **ADR-004: Multi-Language Backends** - This refactoring enables the architecture
-- **ADR-008: Design Patterns** - Adapter, Facade patterns applied
 - **ADR-002: Multi-Level Abstraction** - Domain layer supports L0-L4 hierarchy
+- **ADR-012: Diagram-Driven Architecture** - Draw.io integration
 
 ---
 

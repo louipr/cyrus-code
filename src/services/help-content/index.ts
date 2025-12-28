@@ -9,5 +9,4 @@
 export { HelpContentService } from './service.js';
 export { createHelpContentService } from './factory.js';
 
-// Service interface
-export type { IHelpContentService } from './schema.js';
+// Note: HelpContentService interface re-exported via class declaration merging

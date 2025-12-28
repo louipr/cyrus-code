@@ -1,11 +1,11 @@
 /**
- * Dependency Graph Builder
+ * Dependency Graph Algorithms
  *
- * Builds and analyzes dependency graphs from component connections.
+ * Builds and analyzes dependency graphs from UML relationships.
  * Provides cycle detection, topological sorting, and graph traversal.
  */
 
-import type { ComponentSymbol, Connection, PortDefinition } from '../../domain/symbol/index.js';
+import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import type {
   DependencyGraph,
   GraphNode,
@@ -30,24 +30,12 @@ function createEmptyGraph(): DependencyGraph {
 }
 
 /**
- * Extract input/output port names from a list of port definitions.
+ * Add an edge to the graph.
  */
-function categorizePorts(
-  ports: PortDefinition[]
-): { inputs: string[]; outputs: string[] } {
-  const inputs: string[] = [];
-  const outputs: string[] = [];
-
-  for (const port of ports) {
-    if (port.direction === 'in' || port.direction === 'inout') {
-      inputs.push(port.name);
-    }
-    if (port.direction === 'out' || port.direction === 'inout') {
-      outputs.push(port.name);
-    }
-  }
-
-  return { inputs, outputs };
+function addEdge(graph: DependencyGraph, edge: GraphEdge): void {
+  const existing = graph.edges.get(edge.from) ?? [];
+  existing.push(edge);
+  graph.edges.set(edge.from, existing);
 }
 
 // ============================================================================
@@ -55,41 +43,91 @@ function categorizePorts(
 // ============================================================================
 
 /**
- * Build a dependency graph from symbols and connections.
+ * Build a dependency graph from symbols using their UML relationships.
  */
-export function buildDependencyGraph(
-  symbols: ComponentSymbol[],
-  connections: Connection[]
-): DependencyGraph {
+export function buildDependencyGraph(symbols: ComponentSymbol[]): DependencyGraph {
   const graph = createEmptyGraph();
 
   // Add all symbols as nodes
   for (const symbol of symbols) {
-    const { inputs, outputs } = categorizePorts(symbol.ports);
     const node: GraphNode = {
-      symbolId: symbol.id,
+      id: symbol.id,
       name: symbol.name,
       namespace: symbol.namespace,
       level: symbol.level,
-      inputs,
-      outputs,
+      kind: symbol.kind,
     };
     graph.nodes.set(symbol.id, node);
   }
 
-  // Add all connections as edges
-  for (const conn of connections) {
-    const edge: GraphEdge = {
-      connectionId: conn.id,
-      fromSymbol: conn.fromSymbolId,
-      fromPort: conn.fromPort,
-      toSymbol: conn.toSymbolId,
-      toPort: conn.toPort,
-    };
+  // Add edges from UML relationships
+  for (const symbol of symbols) {
+    // extends relationship
+    if (symbol.extends) {
+      addEdge(graph, {
+        from: symbol.id,
+        to: symbol.extends,
+        type: 'extends',
+      });
+    }
 
-    const existing = graph.edges.get(conn.fromSymbolId) ?? [];
-    existing.push(edge);
-    graph.edges.set(conn.fromSymbolId, existing);
+    // implements relationships
+    if (symbol.implements) {
+      for (const interfaceId of symbol.implements) {
+        addEdge(graph, {
+          from: symbol.id,
+          to: interfaceId,
+          type: 'implements',
+        });
+      }
+    }
+
+    // composes relationships
+    if (symbol.composes) {
+      for (const ref of symbol.composes) {
+        addEdge(graph, {
+          from: symbol.id,
+          to: ref.symbolId,
+          type: 'composes',
+          fieldName: ref.fieldName,
+        });
+      }
+    }
+
+    // aggregates relationships
+    if (symbol.aggregates) {
+      for (const ref of symbol.aggregates) {
+        addEdge(graph, {
+          from: symbol.id,
+          to: ref.symbolId,
+          type: 'aggregates',
+          fieldName: ref.fieldName,
+        });
+      }
+    }
+
+    // dependencies relationships
+    if (symbol.dependencies) {
+      for (const dep of symbol.dependencies) {
+        addEdge(graph, {
+          from: symbol.id,
+          to: dep.symbolId,
+          type: 'dependency',
+          fieldName: dep.name,
+        });
+      }
+    }
+
+    // contains relationships
+    if (symbol.contains) {
+      for (const containedId of symbol.contains) {
+        addEdge(graph, {
+          from: symbol.id,
+          to: containedId,
+          type: 'contains',
+        });
+      }
+    }
   }
 
   // Detect cycles
@@ -117,7 +155,6 @@ export function detectCycles(graph: DependencyGraph): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
-  const parent = new Map<string, string>();
 
   function dfs(nodeId: string, path: string[]): void {
     visited.add(nodeId);
@@ -125,10 +162,9 @@ export function detectCycles(graph: DependencyGraph): string[][] {
 
     const edges = graph.edges.get(nodeId) ?? [];
     for (const edge of edges) {
-      const neighbor = edge.toSymbol;
+      const neighbor = edge.to;
 
       if (!visited.has(neighbor)) {
-        parent.set(neighbor, nodeId);
         dfs(neighbor, [...path, neighbor]);
       } else if (recursionStack.has(neighbor)) {
         // Found a cycle - extract it
@@ -211,8 +247,8 @@ export function topologicalSort(graph: DependencyGraph): string[] | null {
 
   for (const edges of graph.edges.values()) {
     for (const edge of edges) {
-      const current = inDegree.get(edge.toSymbol) ?? 0;
-      inDegree.set(edge.toSymbol, current + 1);
+      const current = inDegree.get(edge.to) ?? 0;
+      inDegree.set(edge.to, current + 1);
     }
   }
 
@@ -233,11 +269,11 @@ export function topologicalSort(graph: DependencyGraph): string[] | null {
     // Remove edges from this node
     const edges = graph.edges.get(nodeId) ?? [];
     for (const edge of edges) {
-      const degree = inDegree.get(edge.toSymbol)!;
-      inDegree.set(edge.toSymbol, degree - 1);
+      const degree = inDegree.get(edge.to)!;
+      inDegree.set(edge.to, degree - 1);
 
       if (degree - 1 === 0) {
-        queue.push(edge.toSymbol);
+        queue.push(edge.to);
       }
     }
   }
@@ -256,7 +292,7 @@ export function topologicalSort(graph: DependencyGraph): string[] | null {
 
 /**
  * Get all upstream dependencies of a symbol (what it depends on).
- * Traverses backwards through connections.
+ * Traverses backwards through relationships.
  */
 export function getUpstreamDependencies(
   graph: DependencyGraph,
@@ -272,7 +308,7 @@ export function getUpstreamDependencies(
     // Find all edges that point TO this node
     for (const [sourceId, edges] of graph.edges) {
       for (const edge of edges) {
-        if (edge.toSymbol === nodeId && sourceId !== symbolId) {
+        if (edge.to === nodeId && sourceId !== symbolId) {
           upstream.add(sourceId);
           traverse(sourceId);
         }
@@ -286,7 +322,7 @@ export function getUpstreamDependencies(
 
 /**
  * Get all downstream dependencies of a symbol (what depends on it).
- * Traverses forward through connections.
+ * Traverses forward through relationships.
  */
 export function getDownstreamDependencies(
   graph: DependencyGraph,
@@ -301,9 +337,9 @@ export function getDownstreamDependencies(
 
     const edges = graph.edges.get(nodeId) ?? [];
     for (const edge of edges) {
-      if (edge.toSymbol !== symbolId) {
-        downstream.add(edge.toSymbol);
-        traverse(edge.toSymbol);
+      if (edge.to !== symbolId) {
+        downstream.add(edge.to);
+        traverse(edge.to);
       }
     }
   }
@@ -325,13 +361,13 @@ export function getDirectDependencies(
   // Downstream: edges from this node
   const edges = graph.edges.get(symbolId) ?? [];
   for (const edge of edges) {
-    downstream.add(edge.toSymbol);
+    downstream.add(edge.to);
   }
 
   // Upstream: edges to this node
   for (const [sourceId, sourceEdges] of graph.edges) {
     for (const edge of sourceEdges) {
-      if (edge.toSymbol === symbolId) {
+      if (edge.to === symbolId) {
         upstream.add(sourceId);
       }
     }
@@ -348,14 +384,14 @@ export function getDirectDependencies(
 // ============================================================================
 
 /**
- * Get root nodes (nodes with no incoming connections).
+ * Get root nodes (nodes with no incoming relationships).
  */
 export function getRootNodes(graph: DependencyGraph): string[] {
   const hasIncoming = new Set<string>();
 
   for (const edges of graph.edges.values()) {
     for (const edge of edges) {
-      hasIncoming.add(edge.toSymbol);
+      hasIncoming.add(edge.to);
     }
   }
 
@@ -370,7 +406,7 @@ export function getRootNodes(graph: DependencyGraph): string[] {
 }
 
 /**
- * Get leaf nodes (nodes with no outgoing connections).
+ * Get leaf nodes (nodes with no outgoing relationships).
  */
 export function getLeafNodes(graph: DependencyGraph): string[] {
   const leaves: string[] = [];
@@ -387,7 +423,6 @@ export function getLeafNodes(graph: DependencyGraph): string[] {
 
 /**
  * Calculate the maximum depth of the graph.
- * Internal helper - not exported.
  */
 function getMaxDepth(graph: DependencyGraph): number {
   if (graph.nodes.size === 0) return 0;
@@ -416,7 +451,7 @@ function getMaxDepth(graph: DependencyGraph): number {
 
     const edges = graph.edges.get(nodeId) ?? [];
     for (const edge of edges) {
-      queue.push({ nodeId: edge.toSymbol, depth: depth + 1 });
+      queue.push({ nodeId: edge.to, depth: depth + 1 });
     }
   }
 
@@ -439,8 +474,8 @@ export function getConnectedComponents(graph: DependencyGraph): string[][] {
 
   for (const [sourceId, edges] of graph.edges) {
     for (const edge of edges) {
-      adjacency.get(sourceId)?.add(edge.toSymbol);
-      adjacency.get(edge.toSymbol)?.add(sourceId);
+      adjacency.get(sourceId)?.add(edge.to);
+      adjacency.get(edge.to)?.add(sourceId);
     }
   }
 
@@ -499,7 +534,7 @@ export function getGraphStats(graph: DependencyGraph): GraphStats {
     leafCount: leaves.length,
     maxDepth: maxDepth >= 0 ? maxDepth : 0,
     hasCycles: graph.cycles.length > 0,
-    componentCount: components.length,
+    connectedComponentCount: components.length,
   };
 }
 
@@ -508,8 +543,7 @@ export function getGraphStats(graph: DependencyGraph): GraphStats {
 // ============================================================================
 
 /**
- * Check if adding a connection would create a cycle.
- * Used to prevent cycles before adding a connection.
+ * Check if adding a relationship would create a cycle.
  */
 export function wouldCreateCycle(
   graph: DependencyGraph,
@@ -517,7 +551,6 @@ export function wouldCreateCycle(
   toSymbolId: string
 ): boolean {
   // A cycle would be created if toSymbol can already reach fromSymbol
-  // (i.e., fromSymbol is downstream of toSymbol)
   const downstream = getDownstreamDependencies(graph, toSymbolId);
   return downstream.includes(fromSymbolId) || fromSymbolId === toSymbolId;
 }

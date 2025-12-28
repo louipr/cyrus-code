@@ -1,6 +1,6 @@
 # Symbol Table Schema Specification
 
-> **Version**: 1.0.0 | **Status**: Stable | **Last Updated**: December 2024
+> **Version**: 2.0.0 | **Status**: Stable | **Last Updated**: December 2024
 
 ## Context
 
@@ -14,7 +14,7 @@ For architecture visualization, see [C4 Diagrams](../c4/1-context.md).
 
 ## Overview
 
-Technical specification for the cyrus-code symbol table - the central registry tracking all components, types, and interfaces.
+Technical specification for the cyrus-code symbol table - the central registry tracking all components, types, and interfaces using **UML-based relationships**.
 
 ## TypeScript Interfaces
 
@@ -48,10 +48,24 @@ interface ComponentSymbol {
   /** Programming language */
   language: Language;
 
-  // === Interface ===
+  // === UML Structural Relationships ===
 
-  /** Input/output ports */
-  ports: PortDefinition[];
+  /** Parent class to extend (single inheritance) - Generalization */
+  extends?: string;
+
+  /** Interfaces to implement (multiple allowed) - Realization */
+  implements?: string[];
+
+  /** Strong ownership with lifecycle management - Composition */
+  composes?: CompositionRef[];
+
+  /** Weak ownership, shared references - Aggregation */
+  aggregates?: AggregationRef[];
+
+  /** Dependencies for injection - Dependency */
+  dependencies?: DependencyRef[];
+
+  // === C4 Containment ===
 
   /** For L2+ symbols: contained child symbols */
   contains?: string[];
@@ -138,13 +152,9 @@ type ComponentKind =
 ```typescript
 /**
  * Supported programming languages.
+ * Currently only TypeScript is implemented.
  */
-type Language =
-  | 'typescript'
-  | 'javascript'
-  | 'python'
-  | 'go'
-  | 'rust';
+type Language = 'typescript';
 ```
 
 ### Symbol Status (ADR-005)
@@ -226,98 +236,60 @@ interface GenerationMetadata {
 }
 ```
 
-### Port Definitions
+### UML Relationship Types
 
 ```typescript
 /**
- * A connection point on a component.
+ * Composition relationship - strong ownership with lifecycle management.
+ * When parent is destroyed, composed children are destroyed.
  */
-interface PortDefinition {
-  /** Port identifier, unique within component */
-  name: string;
-
-  /** Data flow direction */
-  direction: PortDirection;
-
-  /** Type of data on this port */
-  type: TypeReference;
-
-  /** Must be connected for component to work */
-  required: boolean;
-
-  /** Can have multiple connections */
-  multiple: boolean;
-
-  /** Human-readable description */
-  description: string;
-
-  /** Default value if not connected (for optional ports) */
-  defaultValue?: unknown;
-}
-
-type PortDirection =
-  | 'in'     // Component receives data
-  | 'out'    // Component produces data
-  | 'inout'; // Bidirectional
-```
-
-### Type References
-
-```typescript
-/**
- * Reference to a type symbol.
- */
-interface TypeReference {
-  /** Symbol ID of the type */
+interface CompositionRef {
+  /** Symbol ID of the composed component */
   symbolId: string;
 
-  /** Version constraint */
-  version?: string;
+  /** Field name holding the reference */
+  fieldName: string;
 
-  /** For generic types: Array<T>, Map<K, V> */
-  generics?: TypeReference[];
-
-  /** Can be null/undefined */
-  nullable?: boolean;
+  /** Multiplicity: single instance or collection */
+  multiplicity: '1' | '*';
 }
-```
 
-> **Note: Optional vs Nullable**
->
-> This schema distinguishes between two concepts:
-> - **Optional (`?`)**: Field can be omitted entirely. Used for interface fields that have reasonable defaults or are contextually unnecessary (e.g., `sourceLocation?` is omitted for external symbols).
-> - **Nullable (`nullable: true`)**: Value must be provided but can explicitly be `null`. Used for type references where null is a valid domain value (e.g., a port that accepts `User | null`).
->
-> Example: A `PortDefinition` with `required: false` and `defaultValue?: unknown` means the port is optional to connect. A `TypeReference` with `nullable: true` means the connected port accepts null values.
-
-### Connections
-
-```typescript
 /**
- * A connection between component ports.
+ * Aggregation relationship - weak ownership, shared references.
+ * Aggregated components can exist independently of parent.
  */
-interface Connection {
-  /** Unique connection identifier */
-  id: string;
+interface AggregationRef {
+  /** Symbol ID of the aggregated component */
+  symbolId: string;
 
-  /** Symbol ID of the source component */
-  fromSymbolId: string;
+  /** Field name holding the reference */
+  fieldName: string;
 
-  /** Port name on the source component */
-  fromPort: string;
-
-  /** Symbol ID of the target component */
-  toSymbolId: string;
-
-  /** Port name on the target component */
-  toPort: string;
-
-  /** Optional transformation function ID */
-  transform?: string;
-
-  /** When connection was created */
-  createdAt: Date;
+  /** Multiplicity: single instance or collection */
+  multiplicity: '1' | '*';
 }
+
+/**
+ * Dependency relationship - injected dependency.
+ */
+interface DependencyRef {
+  /** Symbol ID of the dependency */
+  symbolId: string;
+
+  /** Parameter/property name */
+  name: string;
+
+  /** Injection method */
+  kind: DependencyKind;
+
+  /** Whether optional */
+  optional: boolean;
+}
+
+type DependencyKind =
+  | 'constructor'  // Injected via constructor parameter
+  | 'property'     // Injected as class property
+  | 'method';      // Injected via setter method
 ```
 
 ### Versioning
@@ -388,6 +360,9 @@ CREATE TABLE symbols (
   kind TEXT NOT NULL,
   language TEXT NOT NULL,
 
+  -- UML Relationships (single inheritance)
+  extends_id TEXT REFERENCES symbols(id),
+
   -- Version
   version_major INTEGER NOT NULL DEFAULT 1,
   version_minor INTEGER NOT NULL DEFAULT 0,
@@ -418,20 +393,40 @@ CREATE TABLE symbols (
   implementation_path TEXT
 );
 
--- Ports table
-CREATE TABLE ports (
+-- Implements relationships (multiple interfaces)
+CREATE TABLE implements (
+  symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+  interface_id TEXT NOT NULL REFERENCES symbols(id),
+  PRIMARY KEY (symbol_id, interface_id)
+);
+
+-- Dependencies (injected)
+CREATE TABLE dependencies (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+  dependency_id TEXT NOT NULL REFERENCES symbols(id),
   name TEXT NOT NULL,
-  direction TEXT NOT NULL CHECK (direction IN ('in', 'out', 'inout')),
-  type_symbol_id TEXT NOT NULL,
-  type_version TEXT,
-  required INTEGER NOT NULL DEFAULT 1,
-  multiple INTEGER NOT NULL DEFAULT 0,
-  description TEXT NOT NULL DEFAULT '',
-  default_value TEXT,
-
+  kind TEXT NOT NULL CHECK (kind IN ('constructor', 'property', 'method')),
+  optional INTEGER NOT NULL DEFAULT 0,
   UNIQUE (symbol_id, name)
+);
+
+-- Composition relationships
+CREATE TABLE composes (
+  symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+  composed_id TEXT NOT NULL REFERENCES symbols(id),
+  field_name TEXT NOT NULL,
+  multiplicity TEXT NOT NULL DEFAULT '1' CHECK (multiplicity IN ('1', '*')),
+  PRIMARY KEY (symbol_id, field_name)
+);
+
+-- Aggregation relationships
+CREATE TABLE aggregates (
+  symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+  aggregated_id TEXT NOT NULL REFERENCES symbols(id),
+  field_name TEXT NOT NULL,
+  multiplicity TEXT NOT NULL DEFAULT '1' CHECK (multiplicity IN ('1', '*')),
+  PRIMARY KEY (symbol_id, field_name)
 );
 
 -- Containment relationships (L2+ containing lower levels)
@@ -456,29 +451,21 @@ CREATE TABLE compatibility (
   PRIMARY KEY (symbol_id, constraint_type, constraint_value)
 );
 
--- Connections between ports
-CREATE TABLE connections (
-  id TEXT PRIMARY KEY,
-  from_symbol_id TEXT NOT NULL REFERENCES symbols(id),
-  from_port TEXT NOT NULL,
-  to_symbol_id TEXT NOT NULL REFERENCES symbols(id),
-  to_port TEXT NOT NULL,
-  transform TEXT, -- Optional transformation function
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 -- Indexes
 CREATE INDEX idx_symbols_namespace ON symbols(namespace);
 CREATE INDEX idx_symbols_level ON symbols(level);
 CREATE INDEX idx_symbols_kind ON symbols(kind);
 CREATE INDEX idx_symbols_language ON symbols(language);
-CREATE INDEX idx_ports_symbol ON ports(symbol_id);
-CREATE INDEX idx_ports_type ON ports(type_symbol_id);
+CREATE INDEX idx_symbols_extends ON symbols(extends_id);
+CREATE INDEX idx_implements_symbol ON implements(symbol_id);
+CREATE INDEX idx_implements_interface ON implements(interface_id);
+CREATE INDEX idx_dependencies_symbol ON dependencies(symbol_id);
+CREATE INDEX idx_dependencies_dep ON dependencies(dependency_id);
+CREATE INDEX idx_composes_symbol ON composes(symbol_id);
+CREATE INDEX idx_aggregates_symbol ON aggregates(symbol_id);
 CREATE INDEX idx_contains_parent ON contains(parent_id);
 CREATE INDEX idx_contains_child ON contains(child_id);
 CREATE INDEX idx_tags_tag ON tags(tag);
-CREATE INDEX idx_connections_from ON connections(from_symbol_id);
-CREATE INDEX idx_connections_to ON connections(to_symbol_id);
 
 -- Status indexes (ADR-005)
 CREATE INDEX idx_symbols_status ON symbols(status);
@@ -523,7 +510,6 @@ interface SymbolTable {
   findByLevel(level: AbstractionLevel): Promise<ComponentSymbol[]>;
   findByKind(kind: ComponentKind): Promise<ComponentSymbol[]>;
   findByTag(tag: string): Promise<ComponentSymbol[]>;
-  findByType(typeId: string): Promise<ComponentSymbol[]>;
   search(query: string): Promise<ComponentSymbol[]>;
 
   // === Version Queries ===
@@ -538,13 +524,6 @@ interface SymbolTable {
   getContainedBy(id: string): Promise<ComponentSymbol | undefined>;
   getDependencies(id: string): Promise<ComponentSymbol[]>;
   getDependents(id: string): Promise<ComponentSymbol[]>;
-
-  // === Connections ===
-
-  connect(connection: Connection): Promise<void>;
-  disconnect(connectionId: string): Promise<void>;
-  getConnections(symbolId: string): Promise<Connection[]>;
-  getAllConnections(): Promise<Connection[]>;
 
   // === Validation ===
 
@@ -609,9 +588,10 @@ interface ValidationError {
 ## Validation Rules
 
 1. **Unique IDs**: No duplicate symbol IDs
-2. **Valid references**: All type references must point to existing symbols
+2. **Valid references**: All relationship references must point to existing symbols
 3. **Level consistency**: L2 can only contain L1, L3 can only contain L2, etc.
-4. **Port uniqueness**: Port names unique within component
-5. **Connection validity**: Connected ports must be type-compatible
-6. **Version constraints**: Dependencies must satisfy version ranges
-7. **No circular contains**: Containment graph must be acyclic
+4. **Version constraints**: Dependencies must satisfy version ranges
+5. **No circular contains**: Containment graph must be acyclic
+6. **Valid extends**: Extended symbol must exist
+7. **Valid implements**: Implemented interfaces must exist
+8. **Valid dependencies**: Dependency symbols must exist

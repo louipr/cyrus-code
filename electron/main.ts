@@ -7,13 +7,13 @@
 
 import { app, BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
-import { ApiFacade } from '../src/api/facade.js';
+import { Architecture } from '../src/api/facade.js';
 import { registerIpcHandlers } from './ipc-handlers.js';
 import { createApplicationMenu } from './menu.js';
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
-let facade: ApiFacade | null = null;
+let facade: Architecture | null = null;
 
 // Database path - use app data directory in production
 const getDbPath = (): string => {
@@ -54,10 +54,10 @@ function createWindow(): void {
 
 // Initialize the application
 app.whenReady().then(() => {
-  // Initialize the backend facade
+  // Initialize the architecture API
   const dbPath = getDbPath();
   console.log(`Initializing database at: ${dbPath}`);
-  facade = ApiFacade.create(dbPath);
+  facade = Architecture.create(dbPath);
 
   // Register IPC handlers
   registerIpcHandlers(facade);

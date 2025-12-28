@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import type { GenerationBatchResultDTO, ComponentSymbolDTO } from '../../api/types';
 import { apiClient } from '../api-client';
+import { extractErrorMessage } from '../../infrastructure/errors';
 import { FileTree } from './FileTree';
 import { GenerationBatchResult } from './GenerationResult';
 
@@ -85,7 +86,7 @@ export function ExportDialog({
         setState('error');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(extractErrorMessage(err));
       setState('error');
     }
   }

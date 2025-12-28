@@ -5,26 +5,23 @@
  * Composes focused services for each responsibility.
  */
 
-import type { ComponentSymbol, ISymbolRepository } from '../../domain/symbol/index.js';
-import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch } from '../../domain/symbol/index.js';
-import type { ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
-import { VersionResolver } from './version-resolver.js';
+import type { ComponentSymbol, SymbolRepository } from '../../domain/symbol/index.js';
+import { validateKindLevel, ComponentSymbolSchema, buildSymbolId, parseConstraint, findBestMatch, compareSemVer } from '../../domain/symbol/index.js';
+import type { SymbolTableService as ISymbolTableService, ComponentQuery, ResolveOptions } from './schema.js';
 
 // =============================================================================
 // Service Class
 // =============================================================================
 
 export class SymbolTableService implements ISymbolTableService {
-  private repo: ISymbolRepository;
-  private versionResolver: VersionResolver;
+  private repo: SymbolRepository;
 
   /**
    * Create a SymbolTableService with dependency injection.
    * @param repo - The symbol repository to use for data access
    */
-  constructor(repo: ISymbolRepository) {
+  constructor(repo: SymbolRepository) {
     this.repo = repo;
-    this.versionResolver = new VersionResolver(this.repo);
   }
 
   // ===========================================================================
@@ -146,7 +143,7 @@ export class SymbolTableService implements ISymbolTableService {
     name: string,
     options: ResolveOptions = {}
   ): ComponentSymbol | undefined {
-    const versions = this.versionResolver.getVersions(namespace, name);
+    const versions = this.getVersionsSorted(namespace, name);
     if (versions.length === 0) return undefined;
 
     if (options.constraint) {
@@ -165,10 +162,7 @@ export class SymbolTableService implements ISymbolTableService {
       );
     }
 
-    if (options.preferLatest !== false) {
-      return this.versionResolver.getLatest(namespace, name);
-    }
-
+    // Already sorted descending, first is latest
     return versions[0];
   }
 
@@ -179,54 +173,52 @@ export class SymbolTableService implements ISymbolTableService {
   query(filters: ComponentQuery): ComponentSymbol[] {
     let results: ComponentSymbol[] | undefined;
 
-    // Apply filters in order of selectivity
     if (filters.namespace !== undefined) {
-      results = this.repo.findByNamespace(filters.namespace);
+      results = this.intersect(results, this.repo.findByNamespace(filters.namespace));
     }
-
     if (filters.level !== undefined) {
-      const levelResults = this.repo.findByLevel(filters.level);
-      results = results
-        ? results.filter((r) => levelResults.some((l) => l.id === r.id))
-        : levelResults;
+      results = this.intersect(results, this.repo.findByLevel(filters.level));
     }
-
     if (filters.kind !== undefined) {
-      const kindResults = this.repo.findByKind(filters.kind);
-      results = results
-        ? results.filter((r) => kindResults.some((k) => k.id === r.id))
-        : kindResults;
+      results = this.intersect(results, this.repo.findByKind(filters.kind));
     }
-
     if (filters.status !== undefined) {
-      const statusResults = this.repo.findByStatus(filters.status);
-      results = results
-        ? results.filter((r) => statusResults.some((s) => s.id === r.id))
-        : statusResults;
+      results = this.intersect(results, this.repo.findByStatus(filters.status));
     }
-
     if (filters.origin !== undefined) {
-      const originResults = this.repo.findByOrigin(filters.origin);
-      results = results
-        ? results.filter((r) => originResults.some((o) => o.id === r.id))
-        : originResults;
+      results = this.intersect(results, this.repo.findByOrigin(filters.origin));
     }
-
     if (filters.tag !== undefined) {
-      const tagResults = this.repo.findByTag(filters.tag);
-      results = results
-        ? results.filter((r) => tagResults.some((t) => t.id === r.id))
-        : tagResults;
+      results = this.intersect(results, this.repo.findByTag(filters.tag));
     }
-
     if (filters.search !== undefined) {
-      const searchResults = this.repo.search(filters.search);
-      results = results
-        ? results.filter((r) => searchResults.some((s) => s.id === r.id))
-        : searchResults;
+      results = this.intersect(results, this.repo.search(filters.search));
     }
 
     return results ?? this.list();
+  }
+
+  /**
+   * Intersect current results with new results by ID.
+   * Returns new results if current is undefined, otherwise filters to common IDs.
+   */
+  private intersect(
+    current: ComponentSymbol[] | undefined,
+    incoming: ComponentSymbol[]
+  ): ComponentSymbol[] {
+    if (!current) return incoming;
+    const ids = new Set(incoming.map((s) => s.id));
+    return current.filter((s) => ids.has(s.id));
+  }
+
+  /**
+   * Get all versions of a symbol sorted by version descending.
+   */
+  private getVersionsSorted(namespace: string, name: string): ComponentSymbol[] {
+    return this.repo
+      .findByNamespace(namespace)
+      .filter((s) => s.name === name)
+      .sort((a, b) => -compareSemVer(a.version, b.version));
   }
 
   // ===========================================================================
@@ -265,22 +257,28 @@ export class SymbolTableService implements ISymbolTableService {
 
   /**
    * Find symbols that depend on the given symbol.
-   * (Symbols that have ports referencing this symbol's type)
+   * (Symbols that have this symbol in their UML relationships)
    */
   getDependents(id: string): ComponentSymbol[] {
     const allSymbols = this.repo.list();
-    return allSymbols.filter((symbol) =>
-      symbol.ports.some(
-        (port) =>
-          port.type.symbolId === id ||
-          port.type.generics?.some((g) => g.symbolId === id)
-      )
-    );
+    return allSymbols.filter((symbol) => {
+      // Check extends
+      if (symbol.extends === id) return true;
+      // Check implements
+      if (symbol.implements?.includes(id)) return true;
+      // Check dependencies
+      if (symbol.dependencies?.some((d) => d.symbolId === id)) return true;
+      // Check composes
+      if (symbol.composes?.some((c) => c.symbolId === id)) return true;
+      // Check aggregates
+      if (symbol.aggregates?.some((a) => a.symbolId === id)) return true;
+      return false;
+    });
   }
 
   /**
    * Find symbols that this symbol depends on.
-   * (Symbols referenced by this symbol's ports)
+   * (Symbols referenced by this symbol's UML relationships)
    */
   getDependencies(id: string): ComponentSymbol[] {
     const symbol = this.repo.find(id);
@@ -288,14 +286,16 @@ export class SymbolTableService implements ISymbolTableService {
 
     const depIds = new Set<string>();
 
-    for (const port of symbol.ports) {
-      depIds.add(port.type.symbolId);
-      if (port.type.generics) {
-        for (const generic of port.type.generics) {
-          depIds.add(generic.symbolId);
-        }
-      }
-    }
+    // Add extends
+    if (symbol.extends) depIds.add(symbol.extends);
+    // Add implements
+    symbol.implements?.forEach((i) => depIds.add(i));
+    // Add dependencies
+    symbol.dependencies?.forEach((d) => depIds.add(d.symbolId));
+    // Add composes
+    symbol.composes?.forEach((c) => depIds.add(c.symbolId));
+    // Add aggregates
+    symbol.aggregates?.forEach((a) => depIds.add(a.symbolId));
 
     return Array.from(depIds)
       .map((depId) => this.repo.find(depId))
@@ -331,7 +331,7 @@ export class SymbolTableService implements ISymbolTableService {
    * Get all versions of a symbol by namespace and name.
    */
   getVersions(namespace: string, name: string): ComponentSymbol[] {
-    return this.versionResolver.getVersions(namespace, name);
+    return this.getVersionsSorted(namespace, name);
   }
 
   // ===========================================================================
@@ -341,9 +341,5 @@ export class SymbolTableService implements ISymbolTableService {
     for (const symbol of symbols) {
       this.register(symbol);
     }
-  }
-
-  export(): ComponentSymbol[] {
-    return this.repo.list();
   }
 }

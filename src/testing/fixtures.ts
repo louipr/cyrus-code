@@ -2,10 +2,10 @@
  * Shared Test Fixtures
  *
  * Common test helper functions for creating ComponentSymbol and related objects.
- * Used by validator, wiring, and symbol-table tests.
+ * Used by validator and symbol-table tests.
  */
 
-import type { ComponentSymbol, PortDefinition } from '../domain/symbol/index.js';
+import type { ComponentSymbol, DependencyRef } from '../domain/symbol/index.js';
 
 /**
  * Create a valid ComponentSymbol with optional overrides.
@@ -21,7 +21,6 @@ export function createSymbol(
     level: 'L1',
     kind: 'service',
     language: 'typescript',
-    ports: [],
     version: { major: 1, minor: 0, patch: 0 },
     tags: [],
     description: 'Test component',
@@ -47,7 +46,6 @@ export function createTypeSymbol(id: string): ComponentSymbol {
     level: 'L0',
     kind: 'type',
     language: 'typescript',
-    ports: [],
     version: { major: 1, minor: 0, patch: 0 },
     tags: [],
     description: 'Type symbol',
@@ -59,28 +57,26 @@ export function createTypeSymbol(id: string): ComponentSymbol {
 }
 
 /**
- * Create a port definition with optional overrides.
+ * Create a dependency reference with optional overrides.
  */
-export function createPort(
-  overrides: Partial<PortDefinition> = {}
-): PortDefinition {
+export function createDependency(
+  overrides: Partial<DependencyRef> = {}
+): DependencyRef {
   return {
-    name: 'testPort',
-    direction: 'in',
-    type: { symbolId: 'core/String@1.0.0' },
-    required: false,
-    multiple: false,
-    description: 'Test port',
+    symbolId: 'test/Dependency@1.0.0',
+    name: 'dependency',
+    kind: 'constructor',
+    optional: false,
     ...overrides,
   };
 }
 
 /**
- * Create a service symbol with specified ports.
+ * Create a service symbol with specified dependencies.
  */
 export function createService(
   id: string,
-  ports: PortDefinition[]
+  dependencies: DependencyRef[] = []
 ): ComponentSymbol {
   const parts = id.split('/');
   const nameParts = parts[parts.length - 1]?.split('@') ?? ['Service', '1.0.0'];
@@ -88,6 +84,6 @@ export function createService(
     id,
     name: nameParts[0] ?? 'Service',
     namespace: parts.slice(0, -1).join('/'),
-    ports,
+    dependencies,
   });
 }

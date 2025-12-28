@@ -2,13 +2,12 @@
  * CanvasNode Component (2.G2)
  *
  * Draggable component node on the canvas.
- * Shows component info and port handles for wiring.
+ * Displays component info for UML relationship visualization.
  */
 
 import React, { useState, useCallback } from 'react';
 import type { GraphNodeDTO, ComponentSymbolDTO } from '../../api/types';
 import { LEVEL_COLORS } from '../constants/colors';
-import { PortHandle } from './PortHandle';
 
 interface CanvasNodeProps {
   node: GraphNodeDTO;
@@ -17,13 +16,8 @@ interface CanvasNodeProps {
   nodeWidth: number;
   nodeHeight: number;
   isSelected: boolean;
-  isPendingSource: boolean;
   onNodeClick: () => void;
   onNodeDrag: (delta: { x: number; y: number }) => void;
-  onPortClick: (portName: string, position: { x: number; y: number }) => void;
-  onPortHover: (portName: string, position: { x: number; y: number }) => void;
-  onPortLeave: () => void;
-  isPortCompatible: (portName: string) => boolean;
 }
 
 export function CanvasNode({
@@ -33,26 +27,13 @@ export function CanvasNode({
   nodeWidth,
   nodeHeight,
   isSelected,
-  isPendingSource,
   onNodeClick,
   onNodeDrag,
-  onPortClick,
-  onPortHover,
-  onPortLeave,
-  isPortCompatible,
 }: CanvasNodeProps): React.ReactElement {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
 
   const color = LEVEL_COLORS[node.level] ?? '#808080';
-
-  // Separate ports by direction
-  const inputPorts = symbol?.ports.filter(p => p.direction === 'in' || p.direction === 'inout') ?? [];
-  const outputPorts = symbol?.ports.filter(p => p.direction === 'out' || p.direction === 'inout') ?? [];
-
-  // Calculate dynamic height based on port count
-  const portCount = Math.max(inputPorts.length, outputPorts.length, 1);
-  const dynamicHeight = Math.max(nodeHeight, 60 + portCount * 20);
 
   // Drag handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -85,14 +66,8 @@ export function CanvasNode({
     }
   }, [isDragging, onNodeClick]);
 
-  // Calculate port position
-  const getPortPosition = (index: number, isOutput: boolean): { x: number; y: number } => {
-    const portY = position.y + 40 + index * 20;
-    return {
-      x: isOutput ? position.x + nodeWidth : position.x,
-      y: portY,
-    };
-  };
+  // Show description or kind as subtitle
+  const subtitle = symbol?.description?.slice(0, 30) || node.kind;
 
   return (
     <g
@@ -109,10 +84,10 @@ export function CanvasNode({
         x={position.x}
         y={position.y}
         width={nodeWidth}
-        height={dynamicHeight}
+        height={nodeHeight}
         fill="#2d2d2d"
-        stroke={isSelected ? '#ffffff' : isPendingSource ? '#4ec9b0' : color}
-        strokeWidth={isSelected || isPendingSource ? 2 : 1}
+        stroke={isSelected ? '#ffffff' : color}
+        strokeWidth={isSelected ? 2 : 1}
         rx={6}
       />
 
@@ -147,10 +122,21 @@ export function CanvasNode({
         {node.name}
       </text>
 
+      {/* Subtitle (description or kind) */}
+      <text
+        x={position.x + nodeWidth / 2}
+        y={position.y + 45}
+        textAnchor="middle"
+        fill="#808080"
+        fontSize={10}
+      >
+        {subtitle}
+      </text>
+
       {/* Namespace and level */}
       <text
         x={position.x + 8}
-        y={position.y + dynamicHeight - 8}
+        y={position.y + nodeHeight - 8}
         fill="#808080"
         fontSize={9}
       >
@@ -158,55 +144,13 @@ export function CanvasNode({
       </text>
       <text
         x={position.x + nodeWidth - 8}
-        y={position.y + dynamicHeight - 8}
+        y={position.y + nodeHeight - 8}
         textAnchor="end"
         fill={color}
         fontSize={9}
       >
         {node.level} · {node.kind}
       </text>
-
-      {/* Input ports (left side) */}
-      {inputPorts.map((port, index) => {
-        const portPos = getPortPosition(index, false);
-        const isCompatible = isPortCompatible(port.name);
-        return (
-          <PortHandle
-            key={`in-${port.name}`}
-            port={port}
-            position={portPos}
-            side="left"
-            nodeX={position.x}
-            nodeWidth={nodeWidth}
-            isCompatible={isCompatible}
-            isPendingSource={false}
-            onClick={() => onPortClick(port.name, portPos)}
-            onHover={() => onPortHover(port.name, portPos)}
-            onLeave={onPortLeave}
-          />
-        );
-      })}
-
-      {/* Output ports (right side) */}
-      {outputPorts.map((port, index) => {
-        const portPos = getPortPosition(index, true);
-        const isCompatible = isPortCompatible(port.name);
-        return (
-          <PortHandle
-            key={`out-${port.name}`}
-            port={port}
-            position={portPos}
-            side="right"
-            nodeX={position.x}
-            nodeWidth={nodeWidth}
-            isCompatible={isCompatible}
-            isPendingSource={isPendingSource}
-            onClick={() => onPortClick(port.name, portPos)}
-            onHover={() => onPortHover(port.name, portPos)}
-            onLeave={onPortLeave}
-          />
-        );
-      })}
     </g>
   );
 }

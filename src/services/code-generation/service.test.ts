@@ -8,27 +8,26 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { initMemoryDatabase, type DatabaseType } from '../../repositories/persistence.js';
-import { SymbolRepository } from '../../repositories/symbol-repository.js';
+import { SqliteSymbolRepository } from '../../repositories/symbol-repository.js';
 import { SymbolTableService } from '../symbol-table/index.js';
 import type { ComponentSymbol } from '../../domain/symbol/index.js';
 import { CodeGenerationService, createCodeGenerationService } from './index.js';
-import { symbolToGeneratedComponent } from './transformer.js';
-import { getGeneratedPaths, fileExists } from '../../infrastructure/file-system/index.js';
-import { createSymbol, createTypeSymbol, createPort } from '../../testing/fixtures.js';
+import { getClassName } from './typescript/index.js';
+import { getGeneratedPaths } from '../../infrastructure/file-system/index.js';
+import { createSymbol, createTypeSymbol, createDependency } from '../../testing/fixtures.js';
 
 // =============================================================================
 // Test Fixtures (codegen-specific)
 // =============================================================================
 
-/** Create a synthesizable L1 component with default ports */
+/** Create a synthesizable L1 component with UML relationships */
 function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSymbol {
   return createSymbol({
     id: 'test/MyComponent@1.0.0',
     name: 'MyComponent',
     kind: 'class',
-    ports: [
-      createPort({ name: 'input', direction: 'in', type: { symbolId: 'core/string@1.0.0' }, required: true }),
-      createPort({ name: 'output', direction: 'out', type: { symbolId: 'core/number@1.0.0' } }),
+    dependencies: [
+      createDependency({ symbolId: 'core/Logger@1.0.0', name: 'logger', kind: 'constructor' }),
     ],
     ...overrides,
   });
@@ -37,15 +36,13 @@ function createTestSymbol(overrides: Partial<ComponentSymbol> = {}): ComponentSy
 // =============================================================================
 // Generation Gap Tests
 // =============================================================================
-// NOTE: isGeneratable, typeRefToTypeScript, and symbolToGeneratedComponent
-// tests are in transformer.test.ts for better separation of concerns.
 
 describe('Generation Gap', () => {
   describe('getGeneratedPaths', () => {
     it('should generate correct paths', () => {
       const symbol = createTestSymbol();
-      const component = symbolToGeneratedComponent(symbol);
-      const paths = getGeneratedPaths(component.className, component.namespace, '/output');
+      const className = getClassName(symbol);
+      const paths = getGeneratedPaths(className, symbol.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/test/MyComponent.generated.ts');
       assert.strictEqual(paths.implementationPath, '/output/test/MyComponent.ts');
@@ -54,21 +51,11 @@ describe('Generation Gap', () => {
 
     it('should handle empty namespace', () => {
       const symbol = createTestSymbol({ namespace: '' });
-      const component = symbolToGeneratedComponent(symbol);
-      const paths = getGeneratedPaths(component.className, component.namespace, '/output');
+      const className = getClassName(symbol);
+      const paths = getGeneratedPaths(className, symbol.namespace, '/output');
 
       assert.strictEqual(paths.generatedPath, '/output/MyComponent.generated.ts');
       assert.strictEqual(paths.implementationPath, '/output/MyComponent.ts');
-    });
-  });
-
-  describe('fileExists', () => {
-    it('should return false for non-existent file', () => {
-      assert.strictEqual(fileExists('/non/existent/file.ts'), false);
-    });
-
-    it('should return true for existing file', () => {
-      assert.strictEqual(fileExists(__filename), true);
     });
   });
 });
@@ -85,7 +72,7 @@ describe('CodeGenerationService', () => {
 
   beforeEach(() => {
     db = initMemoryDatabase();
-    const repo = new SymbolRepository(db);
+    const repo = new SqliteSymbolRepository(db);
     store = new SymbolTableService(repo);
     service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-test-'));
@@ -99,7 +86,6 @@ describe('CodeGenerationService', () => {
       level: 'L0',
       kind: 'type',
       language: 'typescript',
-      ports: [],
       version: { major: 1, minor: 0, patch: 0 },
       tags: ['primitive'],
       description: 'Number type',
@@ -311,7 +297,7 @@ describe('Generated Code Content', () => {
 
   beforeEach(() => {
     db = initMemoryDatabase();
-    const repo = new SymbolRepository(db);
+    const repo = new SqliteSymbolRepository(db);
     store = new SymbolTableService(repo);
     service = createCodeGenerationService(repo);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codegen-content-test-'));
@@ -325,7 +311,6 @@ describe('Generated Code Content', () => {
       level: 'L0',
       kind: 'type',
       language: 'typescript',
-      ports: [],
       version: { major: 1, minor: 0, patch: 0 },
       tags: ['primitive'],
       description: 'Number type',
@@ -353,10 +338,11 @@ describe('Generated Code Content', () => {
     assert.ok(content.includes('DO NOT EDIT'));
     assert.ok(content.includes(symbol.id));
 
-    // Check class structure
+    // Check class structure with dependency injection
     assert.ok(content.includes('export abstract class MyComponent_Base'));
-    assert.ok(content.includes('abstract onInput(data: string): void'));
-    assert.ok(content.includes('protected emitOutput(data: number): void'));
+    assert.ok(content.includes('constructor'));
+    assert.ok(content.includes('logger'));
+    assert.ok(content.includes('Logger'));
   });
 
   it('should generate valid TypeScript user stub', () => {
@@ -369,27 +355,24 @@ describe('Generated Code Content', () => {
     // Check imports (allow both quote styles from ts-morph)
     assert.ok(
       content.includes('import { MyComponent_Base } from "./MyComponent.generated.js"') ||
-      content.includes("import { MyComponent_Base } from './MyComponent.generated.js'"),
+        content.includes("import { MyComponent_Base } from './MyComponent.generated.js'"),
       'Should include import for base class'
     );
 
-    // Check class
+    // Check class extends base
     assert.ok(content.includes('export class MyComponent extends MyComponent_Base'));
-    assert.ok(content.includes('onInput(data: string): void'));
   });
 
   it('should include JSDoc comments when enabled', () => {
     const symbol = createTestSymbol({
       description: 'My awesome component',
-      ports: [
-        {
-          name: 'input',
-          direction: 'in',
-          type: { symbolId: 'core/string@1.0.0' },
-          required: true,
-          multiple: false,
-          description: 'This is the input port',
-        },
+      dependencies: [
+        createDependency({
+          symbolId: 'core/Logger@1.0.0',
+          name: 'logger',
+          kind: 'constructor',
+          optional: false,
+        }),
       ],
     });
     store.register(symbol);
