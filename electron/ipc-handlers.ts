@@ -9,6 +9,7 @@
  */
 
 import { ipcMain, dialog, BrowserWindow, app } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import { extractErrorMessage } from '../src/infrastructure/errors.js';
 import type { Architecture } from '../src/api/facade.js';
@@ -330,5 +331,76 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   ipcMain.handle('help:getAppVersion', async () => {
     return { success: true, data: app.getVersion() };
+  });
+
+  // ==========================================================================
+  // Diagram Operations
+  // ==========================================================================
+
+  ipcMain.handle('diagram:open', async () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(focusedWindow ?? undefined as never, {
+      properties: ['openFile'],
+      title: 'Open Diagram',
+      buttonLabel: 'Open',
+      filters: [
+        { name: 'Draw.io Diagrams', extensions: ['drawio', 'xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: true, data: null };
+    }
+
+    const filePath = result.filePaths[0]!;
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return { success: true, data: { path: filePath, xml: content } };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('diagram:save', async (_event, filePath: string, xml: string) => {
+    try {
+      fs.writeFileSync(filePath, xml, 'utf-8');
+      return { success: true, data: filePath };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('diagram:saveAs', async (_event, xml: string) => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showSaveDialog(focusedWindow ?? undefined as never, {
+      title: 'Save Diagram As',
+      buttonLabel: 'Save',
+      filters: [
+        { name: 'Draw.io Diagram', extensions: ['drawio'] },
+        { name: 'XML', extensions: ['xml'] },
+      ],
+      defaultPath: 'architecture.drawio',
+    });
+
+    if (result.canceled || !result.filePath) {
+      return { success: true, data: null };
+    }
+
+    try {
+      fs.writeFileSync(result.filePath, xml, 'utf-8');
+      return { success: true, data: result.filePath };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
   });
 }

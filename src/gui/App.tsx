@@ -17,10 +17,11 @@ import { ExportDialog } from './components/ExportDialog';
 import { GenerateButton } from './components/GenerateButton';
 import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
+import { DrawioEditor } from './components/DrawioEditor';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
-type ViewMode = 'browser' | 'graph' | 'canvas';
+type ViewMode = 'browser' | 'graph' | 'canvas' | 'diagram';
 
 export default function App(): React.ReactElement {
   const [selectedComponent, setSelectedComponent] = useState<ComponentSymbolDTO | null>(null);
@@ -31,6 +32,8 @@ export default function App(): React.ReactElement {
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [helpTopic, setHelpTopic] = useState<string | undefined>();
   const [helpSearch, setHelpSearch] = useState<string | undefined>();
+  const [diagramXml, setDiagramXml] = useState<string | undefined>();
+  const [currentDiagramPath, setCurrentDiagramPath] = useState<string | undefined>();
 
   // Listen for F1 keyboard shortcut
   useEffect(() => {
@@ -69,6 +72,23 @@ export default function App(): React.ReactElement {
 
     window.cyrus.help.onAbout(() => {
       setShowAboutDialog(true);
+    });
+  }, []);
+
+  // Listen for diagram menu events from Electron
+  useEffect(() => {
+    if (typeof window.cyrus?.diagram?.onNew !== 'function') return;
+
+    window.cyrus.diagram.onNew(() => {
+      setDiagramXml(undefined);
+      setCurrentDiagramPath(undefined);
+      setViewMode('diagram');
+    });
+
+    window.cyrus.diagram.onOpen((path: string, xml: string) => {
+      setDiagramXml(xml);
+      setCurrentDiagramPath(path);
+      setViewMode('diagram');
     });
   }, []);
 
@@ -115,6 +135,16 @@ export default function App(): React.ReactElement {
             type="button"
           >
             Canvas
+          </button>
+          <button
+            style={{
+              ...styles.toggleButton,
+              ...(viewMode === 'diagram' ? styles.toggleButtonActive : {}),
+            }}
+            onClick={() => setViewMode('diagram')}
+            type="button"
+          >
+            Diagram
           </button>
         </div>
         <button
@@ -216,6 +246,20 @@ export default function App(): React.ReactElement {
             </section>
           </main>
         </>
+      )}
+
+      {viewMode === 'diagram' && (
+        <main style={styles.diagramMain}>
+          <DrawioEditor
+            initialXml={diagramXml}
+            onSave={(xml) => {
+              setDiagramXml(xml);
+              if (currentDiagramPath && window.cyrus?.diagram?.save) {
+                window.cyrus.diagram.save(currentDiagramPath, xml);
+              }
+            }}
+          />
+        </main>
       )}
 
       <ExportDialog
@@ -354,6 +398,10 @@ const styles: Record<string, React.CSSProperties> = {
   graphContent: {
     flex: 1,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  diagramMain: {
+    flex: 1,
     overflow: 'hidden',
   },
 };

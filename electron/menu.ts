@@ -4,7 +4,8 @@
  * Defines the application menu including the Help menu with topic shortcuts.
  */
 
-import { Menu, shell, app, BrowserWindow } from 'electron';
+import { Menu, shell, app, BrowserWindow, dialog } from 'electron';
+import * as fs from 'fs';
 
 /**
  * Create the application menu.
@@ -37,7 +38,36 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): Menu {
     // File menu
     {
       label: 'File',
-      submenu: [isMac ? { role: 'close' } : { role: 'quit' }],
+      submenu: [
+        {
+          label: 'New Diagram',
+          accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
+          click: () => {
+            mainWindow?.webContents.send('diagram:new');
+          },
+        },
+        {
+          label: 'Open Diagram...',
+          accelerator: isMac ? 'Cmd+O' : 'Ctrl+O',
+          click: async () => {
+            const result = await dialog.showOpenDialog(mainWindow ?? undefined as never, {
+              properties: ['openFile'],
+              title: 'Open Diagram',
+              filters: [
+                { name: 'Draw.io Diagrams', extensions: ['drawio', 'xml'] },
+                { name: 'All Files', extensions: ['*'] },
+              ],
+            });
+            if (!result.canceled && result.filePaths.length > 0) {
+              const filePath = result.filePaths[0]!;
+              const content = fs.readFileSync(filePath, 'utf-8');
+              mainWindow?.webContents.send('diagram:open-file', filePath, content);
+            }
+          },
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' },
+      ],
     },
 
     // Edit menu

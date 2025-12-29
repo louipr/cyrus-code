@@ -55,6 +55,17 @@ export const canvasActions = {
   },
 };
 
+export const diagramActions = {
+  /**
+   * Switch to diagram view.
+   */
+  async switchToDiagramView(page: Page): Promise<void> {
+    const toggle = page.locator(selectors.viewToggle);
+    await toggle.locator('button:has-text("Diagram")').click();
+    await page.waitForSelector(selectors.diagramEditor, { timeout: 10000 });
+  },
+};
+
 export const helpActions = {
   /**
    * Navigate to a topic via sidebar group and topic buttons.

@@ -104,6 +104,16 @@ export interface CyrusAPI {
     onTopic: (callback: (topicId: string) => void) => void;
     onAbout: (callback: () => void) => void;
   };
+  // Diagram operations
+  diagram: {
+    getUrl: () => Promise<string>;
+    getPreloadPath: () => Promise<string>;
+    open: () => Promise<ApiResponse<{ path: string; xml: string } | null>>;
+    save: (path: string, xml: string) => Promise<ApiResponse<string>>;
+    saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
+    onNew: (callback: () => void) => void;
+    onOpen: (callback: (path: string, xml: string) => void) => void;
+  };
 }
 
 // Expose the API to the renderer
@@ -177,6 +187,19 @@ const cyrusAPI: CyrusAPI = {
     },
     onAbout: (callback) => {
       ipcRenderer.on('help:about', callback);
+    },
+  },
+  diagram: {
+    getUrl: () => ipcRenderer.invoke('drawio:getUrl'),
+    getPreloadPath: () => ipcRenderer.invoke('drawio:getPreloadPath'),
+    open: () => ipcRenderer.invoke('diagram:open'),
+    save: (path, xml) => ipcRenderer.invoke('diagram:save', path, xml),
+    saveAs: (xml) => ipcRenderer.invoke('diagram:saveAs', xml),
+    onNew: (callback) => {
+      ipcRenderer.on('diagram:new', callback);
+    },
+    onOpen: (callback) => {
+      ipcRenderer.on('diagram:open-file', (_event, path: string, xml: string) => callback(path, xml));
     },
   },
 };

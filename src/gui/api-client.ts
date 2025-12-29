@@ -102,6 +102,15 @@ interface CyrusAPI {
     onTopic: (callback: (topicId: string) => void) => void;
     onAbout: (callback: () => void) => void;
   };
+  diagram: {
+    getUrl: () => Promise<string>;
+    getPreloadPath: () => Promise<string>;
+    open: () => Promise<ApiResponse<{ path: string; xml: string } | null>>;
+    save: (path: string, xml: string) => Promise<ApiResponse<string>>;
+    saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
+    onNew: (callback: () => void) => void;
+    onOpen: (callback: (path: string, xml: string) => void) => void;
+  };
 }
 
 declare global {
@@ -202,6 +211,15 @@ function createMockApi(): CyrusAPI {
       onSearch: () => {},
       onTopic: () => {},
       onAbout: () => {},
+    },
+    diagram: {
+      getUrl: () => Promise.resolve('http://localhost:0/index.html'),
+      getPreloadPath: () => Promise.resolve(''),
+      open: () => mockResponse(null),
+      save: () => mockError('Not connected to backend'),
+      saveAs: () => mockResponse(null),
+      onNew: () => {},
+      onOpen: () => {},
     },
   };
 }

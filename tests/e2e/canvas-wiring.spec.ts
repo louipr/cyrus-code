@@ -1,13 +1,13 @@
 /**
  * Canvas Wiring E2E Tests
  *
- * Tests the view switching functionality between Browser, Graph, and Canvas views.
+ * Tests the view switching functionality between Browser, Graph, Canvas, and Diagram views.
  */
 
 import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 import { selectors } from './helpers/selectors';
-import { canvasActions, graphActions } from './helpers/actions';
+import { canvasActions, graphActions, diagramActions } from './helpers/actions';
 
 let context: AppContext;
 
@@ -22,7 +22,7 @@ test.afterAll(async () => {
 });
 
 test.describe('Canvas Wiring', () => {
-  test('can switch between all three views', async () => {
+  test('can switch between all four views', async () => {
     const { page } = context;
 
     // Ensure we start from browser view
@@ -40,8 +40,39 @@ test.describe('Canvas Wiring', () => {
     const canvas = page.locator(selectors.canvas);
     await expect(canvas).toBeVisible();
 
+    // Switch to diagram view
+    await diagramActions.switchToDiagramView(page);
+    const diagramEditor = page.locator(selectors.diagramEditor);
+    await expect(diagramEditor).toBeVisible();
+
+    // Verify the webview is present (Draw.io embed)
+    const diagramWebview = page.locator(selectors.diagramWebview);
+    await expect(diagramWebview).toBeAttached();
+
     // Switch back to browser view
     await graphActions.switchToBrowserView(page);
     await expect(searchBar).toBeVisible();
+  });
+
+  test('Draw.io editor initializes and is usable', async () => {
+    test.setTimeout(60000);
+    const { page } = context;
+
+    // Switch to diagram view
+    await diagramActions.switchToDiagramView(page);
+
+    // Verify the webview is present
+    const diagramWebview = page.locator(selectors.diagramWebview);
+    await expect(diagramWebview).toBeAttached();
+
+    // Wait for our loading indicator to disappear (ready event received from preload)
+    const loadingIndicator = page.locator(selectors.diagramLoading);
+    await expect(loadingIndicator).toBeHidden({ timeout: 30000 });
+
+    // Verify webview is visible
+    await expect(diagramWebview).toBeVisible();
+
+    // Take screenshot to verify Draw.io loaded
+    await page.screenshot({ path: 'test-results/drawio-loaded.png' });
   });
 });

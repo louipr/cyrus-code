@@ -1,6 +1,6 @@
 # ADR-012: Diagram-Driven Architecture with Draw.io and PlantUML
 
-> **Status**: Proposed | **Date**: 2024-12-28 | **Authors**: Architecture Team
+> **Status**: Accepted | **Date**: 2024-12-28 | **Authors**: Architecture Team
 
 ## Context
 
@@ -848,25 +848,32 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 
 ## Implementation Plan
 
-### Phase 1: Infrastructure (ADR-012a)
-- [ ] Define Zod schemas for DiagramElement, DiagramRelationship, Diagram
-- [ ] Implement DrawioParser (XML → Diagram)
-- [ ] Implement DrawioRenderer (Diagram → XML)
-- [ ] Add unit tests for round-trip fidelity
+### Phase 1: Draw.io Editor Integration (ADR-012a) ✅
+- [x] Embed Draw.io editor in Electron app via iframe
+- [x] Add "Diagram" view mode to GUI alongside Browser/Graph/Canvas
+- [x] Implement File > New Diagram / Open Diagram menu items
+- [x] Add IPC handlers for diagram save/load operations
+- [x] Add preload bindings for renderer ↔ main process communication
 
-### Phase 2: PlantUML Support (ADR-012b)
+### Phase 2: Draw.io XML Parsing (ADR-012b) ✅
+- [x] Define TypeScript types for DiagramElement, DiagramRelationship, Diagram
+- [x] Implement DrawioParser (XML → Diagram)
+- [x] Parse cyrus-* custom properties from mxCell/object elements
+- [x] Add 67 unit tests covering all parser functions
+
+### Phase 3: PlantUML Support (ADR-012c)
 - [ ] Implement PlantUmlRenderer (Diagram → PlantUML)
 - [ ] Implement PlantUmlParser (PlantUML → Diagram)
 - [ ] Verify 1:1 mapping coverage
 - [ ] Add tests for all shape and relationship types
 
-### Phase 3: Symbol Table Integration (ADR-012c)
+### Phase 4: Symbol Table Integration (ADR-012d)
 - [ ] Implement SymbolTableSync service
 - [ ] Define template instantiation workflow
 - [ ] Add cyrus-symbolId binding
 - [ ] Handle versioning and updates
 
-### Phase 4: Code Generation Extension (ADR-012d)
+### Phase 5: Code Generation Extension (ADR-012e)
 - [ ] Extend L0 generation (types, interfaces, enums)
 - [ ] Extend L2 generation (module facades)
 - [ ] Extend L3 generation (subsystem facades)

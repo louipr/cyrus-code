@@ -10,6 +10,11 @@ Internal structure of the Diagram Pipeline, showing Draw.io parsing, PlantUML co
 
 ```mermaid
 flowchart TD
+    subgraph electron ["Electron App"]
+        editor["DrawioEditor<br/><small>GUI Component</small>"]
+        ipc["IPC Handlers<br/><small>Electron Main</small>"]
+    end
+
     subgraph pipeline ["Diagram Pipeline"]
         parser["DrawioParser<br/><small>Infrastructure</small>"]
         renderer["DrawioRenderer<br/><small>Infrastructure</small>"]
@@ -19,7 +24,10 @@ flowchart TD
         schema["Diagram Schema<br/><small>Domain</small>"]
     end
 
-    drawio[".drawio Files"] -->|"XML"| parser
+    drawio_embed["Draw.io<br/>(embed.diagrams.net)"] -->|"iframe postMessage"| editor
+    editor -->|"save XML"| ipc
+    ipc -->|"read/write"| drawio[".drawio Files"]
+    drawio -->|"XML"| parser
     parser -->|"Diagram"| schema
     schema -->|"Diagram"| renderer
     renderer -->|"XML"| drawio
@@ -33,29 +41,33 @@ flowchart TD
     sync -->|"ComponentSymbol[]"| registry["Symbol Table"]
 
     ai["AI Agents"] -->|"generate/modify"| puml
-    human["Architects"] -->|"visual editing"| drawio
+    human["Architects"] -->|"Diagram view"| editor
 
     classDef component fill:#1168bd,color:#fff
     classDef schema fill:#6a9955,color:#fff
     classDef external fill:#999,color:#fff
     classDef file fill:#dcdcaa,color:#000
+    classDef gui fill:#094771,color:#fff
 
     class parser,renderer,pumlParser,pumlRenderer,sync component
     class schema schema
-    class registry external
+    class registry,drawio_embed external
     class drawio,puml file
     class ai,human external
+    class editor,ipc gui
 ```
 
 ## Components
 
 | Component | Layer | Responsibility | Status | Location |
 |-----------|-------|----------------|--------|----------|
-| **DrawioParser** | Infrastructure | Parse mxGraphModel XML into Diagram | 🔧 Prototype | `src/infrastructure/drawio/parser.ts` |
-| **DrawioRenderer** | Infrastructure | Render Diagram back to mxGraphModel XML | ⏳ Planned | ADR-012 Phase 1 |
-| **PlantUmlParser** | Infrastructure | Parse PlantUML text into Diagram | ⏳ Planned | ADR-012 Phase 2 |
-| **PlantUmlRenderer** | Infrastructure | Render Diagram to PlantUML text | ⏳ Planned | ADR-012 Phase 2 |
-| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 3 |
+| **DrawioEditor** | GUI | Embed Draw.io editor via iframe, handle postMessage | ✅ Complete | `src/gui/components/DrawioEditor.tsx` |
+| **IPC Handlers** | Electron Main | Handle diagram file operations (open/save) | ✅ Complete | `electron/ipc-handlers.ts` |
+| **DrawioParser** | Infrastructure | Parse mxGraphModel XML into Diagram | ✅ Complete | `src/infrastructure/drawio/parser.ts` |
+| **DrawioRenderer** | Infrastructure | Render Diagram back to mxGraphModel XML | ⏳ Planned | ADR-012 Phase 3 |
+| **PlantUmlParser** | Infrastructure | Parse PlantUML text into Diagram | ⏳ Planned | ADR-012 Phase 3 |
+| **PlantUmlRenderer** | Infrastructure | Render Diagram to PlantUML text | ⏳ Planned | ADR-012 Phase 3 |
+| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 4 |
 | **Diagram Schema** | Domain | Type definitions for DiagramElement, DiagramRelationship | ✅ Complete | `src/infrastructure/drawio/schema.ts` |
 
 ## Data Flow
@@ -63,10 +75,13 @@ flowchart TD
 ### Human → Code Generation
 
 ```
-1. Architect edits architecture.drawio in Draw.io GUI
-2. DrawioParser extracts DiagramElement[] and DiagramRelationship[]
-3. SymbolTableSync creates/updates ComponentSymbol[] in database
-4. CodeGenerationService generates code from symbols
+1. Architect opens Diagram view in cyrus-code Electron app
+2. DrawioEditor loads Draw.io via iframe (embed.diagrams.net)
+3. Architect creates/edits diagram using full Draw.io UI
+4. On save, XML is sent via postMessage → IPC → file system
+5. DrawioParser extracts DiagramElement[] and DiagramRelationship[]
+6. SymbolTableSync creates/updates ComponentSymbol[] in database
+7. CodeGenerationService generates code from symbols
 ```
 
 ### AI → Code Generation
@@ -129,10 +144,11 @@ These properties are stored in Draw.io `<object>` elements:
 
 | Phase | Components | Status |
 |-------|------------|--------|
-| **Phase 1** | DrawioParser, DrawioRenderer | 🔧 In Progress |
-| **Phase 2** | PlantUmlParser, PlantUmlRenderer | ⏳ Planned |
-| **Phase 3** | SymbolTableSync | ⏳ Planned |
-| **Phase 4** | Template instantiation | ⏳ Planned |
+| **Phase 1** | DrawioEditor, IPC Handlers, Menu Integration | ✅ Complete |
+| **Phase 2** | DrawioParser (67 tests) | ✅ Complete |
+| **Phase 3** | PlantUmlParser, PlantUmlRenderer, DrawioRenderer | ⏳ Planned |
+| **Phase 4** | SymbolTableSync | ⏳ Planned |
+| **Phase 5** | Template instantiation, Code Generation | ⏳ Planned |
 
 ---
 

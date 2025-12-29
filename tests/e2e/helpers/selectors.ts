@@ -27,6 +27,11 @@ export const selectors = {
   // Canvas (Wiring)
   canvas: '[data-testid="canvas"]',
 
+  // Diagram Editor
+  diagramEditor: '[data-testid="diagram-editor"]',
+  diagramWebview: '[data-testid="diagram-webview"]',
+  diagramLoading: '[data-testid="diagram-loading"]',
+
   // Help Dialog
   helpButton: '[data-testid="help-button"]',
 };
