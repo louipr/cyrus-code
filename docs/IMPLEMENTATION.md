@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 186 unit tests
+npm test               # Run 233 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 186 | `src/**/*.test.ts` |
-| E2E tests | 17 tests (3 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **203** | |
+| Unit tests | 233 | `src/**/*.test.ts` |
+| E2E tests | 12 tests (2 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **245** | |
 
 ---
 
@@ -47,8 +47,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
-| 3: Generation | Code CodeGeneration | Preview, Export | ✅ Complete |
+| 2: Graph | Graph Service, Validator, API+CLI | Canvas, Graph View | ✅ Complete |
+| 3: Generation | Code Generation | Preview, Export | ✅ Complete |
 | Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
@@ -103,7 +103,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] Symbol table with full CRUD operations
 - [x] Query by namespace, level, kind, tag, text search
 - [x] Version resolution with SemVer constraints
-- [x] Connection management between ports
+- [x] Relationship management (extends, implements, dependencies)
 - [x] Validation (type refs, circular containment)
 - [x] Status tracking (declared/referenced/tested/executed)
 - [x] Can register components via CLI
@@ -115,23 +115,21 @@ npm run electron:dev   # Dev mode with hot reload
 
 ---
 
-## Slice 2: Wiring + Live Validation
+## Slice 2: Graph + Validation
 
 ### Backend Tasks
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| 2.1 | Implement Compatibility Rules | `src/domain/compatibility/checkers.ts` | ✅ |
-| 2.2 | Compatibility schema types | `src/domain/compatibility/schema.ts` | ✅ |
-| 2.3 | Port compatibility checking | `src/domain/compatibility/checkers.ts` | ✅ |
-| 2.4 | Unit tests for Compatibility | (moved to wiring tests) | ✅ |
-| 2.5 | Implement Wiring Service | `src/services/wiring/index.ts` | ✅ |
-| 2.6 | Wiring schema types | `src/services/wiring/schema.ts` | ✅ |
-| 2.7 | Dependency Graph Service (extracted from wiring) | `src/services/dependency-graph/` | ✅ |
-| 2.8 | Unit tests for Wiring | `src/services/wiring/index.test.ts` | ✅ (22 tests) |
-| 2.9 | Extend API Facade with wiring methods | `src/api/facade.ts` | ✅ |
-| 2.10 | CLI: wire, graph commands | `src/cli/commands/wire.ts`, `src/cli/commands/graph.ts` | ✅ |
-| 2.11 | IPC handlers for wiring | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
+| 2.1 | Implement Dependency Graph Service | `src/services/dependency-graph/service.ts` | ✅ |
+| 2.2 | Graph schema types | `src/services/dependency-graph/schema.ts` | ✅ |
+| 2.3 | Graph algorithms (cycles, topological sort) | `src/services/dependency-graph/algorithms.ts` | ✅ |
+| 2.4 | Unit tests for Graph Service | `src/services/dependency-graph/*.test.ts` | ✅ |
+| 2.5 | Validation Service | `src/services/symbol-table/symbol-validator.ts` | ✅ |
+| 2.6 | GraphFacade API | `src/api/graph-facade.ts` | ✅ |
+| 2.7 | ValidationFacade API | `src/api/validation-facade.ts` | ✅ |
+| 2.8 | CLI: graph command | `src/cli/commands/graph.ts` | ✅ |
+| 2.9 | IPC handlers for graph | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
 
 ### GUI Tasks
 
@@ -139,29 +137,26 @@ npm run electron:dev   # Dev mode with hot reload
 |----|------|---------|--------|
 | 2.G1 | Canvas component | `src/gui/components/Canvas.tsx` | ✅ |
 | 2.G2 | Draggable component nodes | `src/gui/components/CanvasNode.tsx` | ✅ |
-| 2.G3 | Port connection wiring | `src/gui/components/PortWire.tsx`, `src/gui/components/PendingWire.tsx` | ✅ |
-| 2.G4 | Real-time validation overlay | `src/gui/components/ValidationOverlay.tsx` | ✅ |
-| 2.G5 | Dependency graph view | `src/gui/components/DependencyGraph.tsx` | ✅ |
-| 2.G6 | Port type tooltips | `src/gui/components/PortTooltip.tsx` | ✅ |
-| 2.G7 | Graph statistics panel | `src/gui/components/GraphStats.tsx` | ✅ |
-| 2.G8 | Port handle indicators | `src/gui/components/PortHandle.tsx` | ✅ |
-| 2.G9 | E2E tests for canvas | `tests/e2e/canvas-wiring.spec.ts` | ✅ |
+| 2.G3 | Real-time validation overlay | `src/gui/components/ValidationOverlay.tsx` | ✅ |
+| 2.G4 | Dependency graph view | `src/gui/components/DependencyGraph.tsx` | ✅ |
+| 2.G5 | Graph statistics panel | `src/gui/components/GraphStats.tsx` | ✅ |
+| 2.G6 | E2E tests for views | `tests/e2e/canvas-wiring.spec.ts` | ✅ |
 
 ### Verification Tasks
 
 | ID | Task | Type | Status |
 |----|------|------|--------|
 | 2.V1 | `npm run build && npm test` passes | Agent | ✅ |
-| 2.V2 | `npm run test:e2e` passes (canvas tests) | Agent | ✅ |
+| 2.V2 | `npm run test:e2e` passes (view tests) | Agent | ✅ |
 | 2.V3 | Manual: Canvas view, drag nodes, view toggle works | User | ⏳ |
 
 ### Deliverables
 
-- [x] Can drag components onto canvas
-- [x] Can wire ports between components (click-to-wire)
-- [x] Live validation feedback (compatible ports highlight green)
 - [x] Dependency graph visualization
-- [x] Port tooltips with type/direction info
+- [x] Cycle detection and display
+- [x] Topological ordering
+- [x] Graph statistics (nodes, edges, depth)
+- [x] View switching (Browser, Graph, Canvas, Diagram)
 
 ---
 
@@ -216,10 +211,10 @@ npm run electron:dev   # Dev mode with hot reload
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | H.1 | Help manifest | `docs/help.json` | ✅ |
-| H.2 | Help schema types | `src/services/help/schema.ts` | ✅ |
-| H.3 | Terminal markdown renderer | `src/services/help/renderer.ts` | ✅ |
-| H.4 | HelpService | `src/services/help/index.ts` | ✅ |
-| H.5 | Unit tests | `src/services/help/index.test.ts` | ✅ (28 tests) |
+| H.2 | Help schema types | `src/services/help-content/schema.ts` | ✅ |
+| H.3 | Terminal markdown renderer | `src/services/help-content/terminal-renderer.ts` | ✅ |
+| H.4 | HelpContentService | `src/services/help-content/service.ts` | ✅ |
+| H.5 | Unit tests | `src/services/help-content/service.test.ts` | ✅ |
 | H.6 | CLI help command | `src/cli/commands/help.ts` | ✅ |
 | H.7 | IPC handlers | `electron/ipc-handlers.ts` | ✅ |
 | H.8 | Add selectComponentByName helper | (removed - helper consolidated) | ✅ |
@@ -240,7 +235,7 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | Type | Status |
 |----|------|------|--------|
-| H.V1 | `npm run build && npm test` passes (202 tests) | Agent | ✅ |
+| H.V1 | `npm run build && npm test` passes (233 tests) | Agent | ✅ |
 | H.V2 | CLI: `cyrus-code help`, `help <topic>`, `help --search` | Agent | ✅ |
 | H.V3 | `npm run test:e2e` passes (help dialog tests) | Agent | ✅ |
 | H.V4 | Manual: F1 opens help, topics render, mermaid diagrams | User | ✅ |
@@ -295,7 +290,7 @@ npm run electron:dev   # Dev mode with hot reload
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | D.21 | Add c4Hierarchy metadata to help.json | `docs/help.json` | ✅ |
-| D.22 | Add getC4Hierarchy API through full stack | `src/services/help/`, `electron/`, `src/gui/api-client.ts` | ✅ |
+| D.22 | Add getC4Hierarchy API through full stack | `src/services/help-content/`, `electron/`, `src/gui/api-client.ts` | ✅ |
 | D.23 | Create C4NavigationBar component | `src/gui/components/C4NavigationBar.tsx` | ✅ |
 | D.24 | Integrate nav bar + status legend into HelpDialog | `src/gui/components/HelpDialog.tsx` | ✅ |
 | D.25 | Remove navigation from all C4 markdown files | `docs/c4/*.md` (10 files) | ✅ |
@@ -341,7 +336,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.33 | Delete L4 E2E tests | `tests/e2e/l4-code.spec.ts` (deleted) | ✅ |
 | D.34 | Remove L4 topics from help.json | `docs/help.json` | ✅ |
 | D.35 | Remove L4 dropdown from C4NavigationBar | `src/gui/components/C4NavigationBar.tsx` | ✅ |
-| D.36 | Deprecate L4 in C4Hierarchy interface | `src/services/help/schema.ts` | ✅ |
+| D.36 | Deprecate L4 in C4Hierarchy interface | `src/domain/help/schema.ts` | ✅ |
 
 **Impact**: 7 fewer docs, 7 fewer help.json entries, L4 dropdown removed, E2E tests reduced 20 → 17 (3 L4 tests removed).
 
@@ -436,16 +431,14 @@ cyrus-code/
 ├── src/
 │   ├── domain/                        # Layer 1: Pure Business Logic (no deps)
 │   │   ├── symbol/                    # Core entity: ComponentSymbol
-│   │   │   ├── schema.ts              # Entity types, PortDefinition
+│   │   │   ├── schema.ts              # Entity types, UML relationships
 │   │   │   ├── version.ts             # SemVer utilities
-│   │   │   └── index.ts
-│   │   ├── compatibility/             # Business rules (pure functions)
-│   │   │   ├── checkers.ts            # checkPortCompatibility()
-│   │   │   ├── schema.ts              # CompatibilityResult type
+│   │   │   ├── builtins.ts            # Built-in type registry
 │   │   │   └── index.ts
 │   │   ├── diagram/                   # Diagram types
 │   │   │   ├── schema.ts              # DiagramConfig, C4Diagram
 │   │   │   ├── class-diagram-builder.ts
+│   │   │   ├── method-selector.ts
 │   │   │   └── index.ts
 │   │   └── help/                      # Help types
 │   │       ├── schema.ts              # HelpTopic, C4Hierarchy
@@ -459,27 +452,24 @@ cyrus-code/
 │   │
 │   ├── infrastructure/                # Layer 3: External Adapters
 │   │   ├── file-system/               # File I/O (node:fs wrapper)
-│   │   │   ├── file-writer.ts
+│   │   │   ├── file-operations.ts     # read/write/exists
 │   │   │   ├── path-resolver.ts
 │   │   │   └── index.ts
 │   │   ├── typescript-ast/            # ts-morph wrapper
 │   │   │   ├── ts-morph-project.ts
 │   │   │   ├── file-cache.ts
 │   │   │   └── index.ts
-│   │   └── markdown/                  # Markdown processing
-│   │       ├── headings.ts
-│   │       └── index.ts
+│   │   ├── drawio/                    # Draw.io XML parsing
+│   │   │   ├── parser.ts
+│   │   │   ├── schema.ts
+│   │   │   └── index.ts
+│   │   └── errors.ts                  # Error utilities
 │   │
 │   ├── services/                      # Layer 4: Application Logic
 │   │   ├── symbol-table/              # Symbol management
 │   │   │   ├── service.ts             # SymbolTableService (CRUD + queries)
-│   │   │   ├── version-resolver.ts    # VersionResolver (internal)
 │   │   │   ├── symbol-validator.ts    # SymbolValidator
 │   │   │   ├── schema.ts              # Service interfaces
-│   │   │   └── index.ts
-│   │   ├── wiring/                    # Connection handling
-│   │   │   ├── service.ts             # WiringService
-│   │   │   ├── schema.ts              # WiringResult, ConnectionRequest
 │   │   │   └── index.ts
 │   │   ├── dependency-graph/          # Graph algorithms
 │   │   │   ├── service.ts             # DependencyGraphService
@@ -488,8 +478,7 @@ cyrus-code/
 │   │   │   └── index.ts
 │   │   ├── code-generation/           # Code generation
 │   │   │   ├── service.ts             # CodeGenerationService
-│   │   │   ├── transformer.ts         # Symbol → GeneratedComponent
-│   │   │   ├── schema.ts              # GeneratedComponent, GenerationResult
+│   │   │   ├── schema.ts              # GenerationResult, GenerationOptions
 │   │   │   ├── typescript/            # TypeScript backend (co-located)
 │   │   │   │   ├── ast-builder.ts
 │   │   │   │   ├── class-generator.ts
@@ -512,7 +501,11 @@ cyrus-code/
 │   │       └── index.ts
 │   │
 │   ├── api/                           # Layer 5: Unified Facade
-│   │   ├── facade.ts                  # Architecture - single entry point
+│   │   ├── facade.ts                  # Architecture - main entry point
+│   │   ├── symbol-facade.ts           # Symbol CRUD and queries
+│   │   ├── graph-facade.ts            # Graph operations
+│   │   ├── generation-facade.ts       # Code generation
+│   │   ├── validation-facade.ts       # Validation operations
 │   │   ├── types.ts                   # API DTOs
 │   │   └── index.ts
 │   │
@@ -520,7 +513,7 @@ cyrus-code/
 │   │   ├── index.ts                   # CLI entry point
 │   │   └── commands/                  # Command implementations
 │   │       ├── register.ts, list.ts, get.ts, validate.ts
-│   │       ├── wire.ts, graph.ts, generate.ts, help.ts
+│   │       ├── graph.ts, generate.ts, help.ts
 │   │       └── ...
 │   │
 │   ├── gui/                           # Layer 6: GUI Interface
@@ -580,10 +573,10 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (192 tests)
+# 2. Run unit tests (233 tests)
 npm test
 
-# 3. Run E2E tests (11 tests)
+# 3. Run E2E tests (12 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -592,8 +585,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 192 unit tests pass
-- 11 E2E tests pass
+- 233 unit tests pass
+- 12 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling
@@ -646,6 +639,6 @@ npm run electron
 
 - [Symbol Table Schema](spec/symbol-table-schema.md) - Canonical type definitions
 - [ADR-009](adr/009-electron-gui-framework.md) - GUI framework decision
-- [ADR-008](adr/008-design-patterns.md) - Design patterns
 - [ADR-010](adr/010-gui-testing-strategy.md) - GUI testing strategy (Playwright)
+- [ADR-011](adr/011-service-layer-refactoring.md) - Service layer patterns
 - [L2 Container Diagram](c4/2-container.md) - System architecture

@@ -126,7 +126,7 @@ npm run build:all      # Build everything
 # Test
 npm test               # Run 233 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
-npm run test:e2e       # Run 6 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:e2e       # Run 12 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
