@@ -37,8 +37,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Category | Count | Location |
 |----------|-------|----------|
 | Unit tests | 317 | `src/**/*.test.ts` |
-| E2E tests | 17 tests (3 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **334** | |
+| E2E tests | 11 tests (2 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **328** | |
 
 ---
 
@@ -609,7 +609,7 @@ npm run build:all
 # 2. Run unit tests (317 tests)
 npm test
 
-# 3. Run E2E tests (17 tests)
+# 3. Run E2E tests (11 tests, 1 skipped)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -619,7 +619,7 @@ npm run test:gui
 **Expected Results:**
 - Build completes without errors
 - 317 unit tests pass
-- 17 E2E tests pass
+- 10 E2E tests pass (1 skipped - external Draw.io dependency)
 - GUI type-check passes
 
 ### Native Module Handling
