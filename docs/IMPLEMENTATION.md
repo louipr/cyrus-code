@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 233 unit tests
+npm test               # Run 317 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 233 | `src/**/*.test.ts` |
-| E2E tests | 12 tests (2 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **245** | |
+| Unit tests | 317 | `src/**/*.test.ts` |
+| E2E tests | 17 tests (3 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **334** | |
 
 ---
 
@@ -69,7 +69,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.4 | Implement Symbol Store | `src/services/symbol-table/store.ts` | ✅ |
 | 1.5 | Implement Symbol Repository | `src/repositories/symbol-repository.ts` | ✅ |
 | 1.6 | Implement Component Registry | Consolidated into symbol-table service | ✅ |
-| 1.7 | Implement Version Resolver | `src/services/symbol-table/version-resolver.ts` | ✅ |
+| 1.7 | Implement Version Utilities | `src/domain/symbol/version.ts` | ✅ |
 | 1.8 | Create API Facade | `src/api/facade.ts` | ✅ |
 | 1.9 | Create API DTOs | `src/api/types.ts` | ✅ |
 | 1.10 | Basic CLI (register, list, get, validate) | `src/cli/` | ✅ |
@@ -283,7 +283,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.17 | Aggressive C4 cleanup - remove redundant sections | `docs/c4/*.md` | ✅ |
 | D.18 | Add consistent C4 Navigation across all levels | `docs/c4/*.md` | ✅ |
 | D.19 | Add L3 Component diagram for Code CodeGeneration | `docs/c4/3-component-code-generation.md` | ✅ |
-| D.20 | Add L3 Component diagrams for remaining containers | `docs/c4/3-component-{help,wiring,validator,registry,facade}.md` | ✅ |
+| D.20 | Add L3 Component diagrams for remaining containers | `docs/c4/component-{help,dependency-graph,facade,diagram-pipeline}.md` | ✅ |
 
 ### C4 DRY Cleanup (Phase 7)
 
@@ -360,6 +360,35 @@ npm run electron:dev   # Dev mode with hot reload
 | D.48 | Unit tests (24 new tests) | `index.test.ts` | ✅ |
 
 **Summary**: Full C4 Level 4 (Code) diagram generation from TypeScript source. Uses ts-morph for AST analysis. Extracts interfaces, types, and relationships to generate Mermaid classDiagram syntax via `mermaid:c4code` preprocessor directive.
+
+### Phase 11: ADR-012 Diagram-Driven Architecture
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.49 | Create MermaidParser infrastructure | `src/infrastructure/mermaid/` | ✅ |
+| D.50 | Parser for flowchart/C4 diagrams | `parser.ts` | ✅ |
+| D.51 | Shape inference (rectangle → class, stadium → service) | `parser.ts` | ✅ |
+| D.52 | Relationship type mapping (arrows → UML types) | `parser.ts` | ✅ |
+| D.53 | Cyrus comment parsing (%% cyrus-*) | `parser.ts` | ✅ |
+| D.54 | Unit tests (84 new tests) | `parser.test.ts` | ✅ |
+| D.55 | Update ADR-012 documentation | `docs/adr/012-diagram-driven-architecture.md` | ✅ |
+
+**Summary**: MermaidParser infrastructure for parsing architecture diagrams (flowchart TD, C4Context/Container/Component) into the `Diagram` schema. Supports shape type inference, relationship mapping, and cyrus-code metadata via comments. Part of ADR-012 Phase 3.
+
+### Phase 12: C4 Documentation Review
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| D.56 | Review all C4 docs against actual project state | All `docs/c4/*.md` | ✅ |
+| D.57 | Remove VersionResolver references (never existed) | `symbol-table.md`, ADR-011 | ✅ |
+| D.58 | Replace WiringService with CodeGenerationService examples | `symbol-table.md`, ADR-011 | ✅ |
+| D.59 | Fix GraphNode/GraphEdge schema in docs | `component-dependency-graph.md` | ✅ |
+| D.60 | Add complete IPC channel mappings | `component-facade.md` | ✅ |
+| D.61 | Update help.json L3 topics | `docs/help.json` | ✅ |
+| D.62 | Update clean-architecture-guide DIP examples | `clean-architecture-guide.md` | ✅ |
+| D.63 | Update C4 AUTHORING.md conventions | `docs/c4/AUTHORING.md` | ✅ |
+
+**Summary**: Comprehensive review of all C4 documentation to ensure accuracy against actual codebase. Removed references to non-existent components (VersionResolver, WiringService, component-wiring.md, component-compatibility.md). Updated schema definitions and IPC channel mappings to match implementation.
 
 ---
 
@@ -462,6 +491,10 @@ cyrus-code/
 │   │   ├── drawio/                    # Draw.io XML parsing
 │   │   │   ├── parser.ts
 │   │   │   ├── schema.ts
+│   │   │   └── index.ts
+│   │   ├── mermaid/                   # Mermaid diagram parsing (ADR-012)
+│   │   │   ├── parser.ts              # flowchart/C4 → Diagram schema
+│   │   │   ├── parser.test.ts         # 84 unit tests
 │   │   │   └── index.ts
 │   │   └── errors.ts                  # Error utilities
 │   │
@@ -573,10 +606,10 @@ Run these commands to verify the build is healthy:
 # 1. Build everything
 npm run build:all
 
-# 2. Run unit tests (233 tests)
+# 2. Run unit tests (317 tests)
 npm test
 
-# 3. Run E2E tests (12 tests)
+# 3. Run E2E tests (17 tests)
 npm run test:e2e
 
 # 4. Type-check GUI code
@@ -585,8 +618,8 @@ npm run test:gui
 
 **Expected Results:**
 - Build completes without errors
-- 233 unit tests pass
-- 12 E2E tests pass
+- 317 unit tests pass
+- 17 E2E tests pass
 - GUI type-check passes
 
 ### Native Module Handling
