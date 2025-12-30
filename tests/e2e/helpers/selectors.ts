@@ -24,7 +24,7 @@ export const selectors = {
   previewModal: '[data-testid="preview-modal"]',
   generateError: '[data-testid="generate-error"]',
 
-  // Canvas (Wiring)
+  // Canvas View
   canvas: '[data-testid="canvas"]',
 
   // Diagram Editor

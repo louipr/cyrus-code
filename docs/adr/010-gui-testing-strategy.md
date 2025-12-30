@@ -166,7 +166,7 @@ cyrus-code/
 │       │   ├── selectors.ts        # Centralized selectors
 │       │   └── actions.ts          # Reusable actions
 │       ├── component-browser.spec.ts  # Slice 1 workflow
-│       ├── canvas-wiring.spec.ts      # Slice 2 workflow
+│       ├── view-switching.spec.ts     # View switching workflow
 │       └── code-generation.spec.ts    # Slice 3 workflow
 └── playwright.config.ts
 ```

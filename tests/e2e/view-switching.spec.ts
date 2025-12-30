@@ -1,5 +1,5 @@
 /**
- * Canvas Wiring E2E Tests
+ * View Switching E2E Tests
  *
  * Tests the view switching functionality between Browser, Graph, Canvas, and Diagram views.
  */
@@ -21,7 +21,7 @@ test.afterAll(async () => {
   }
 });
 
-test.describe('Canvas Wiring', () => {
+test.describe('View Switching', () => {
   test('can switch between all four views', async () => {
     const { page } = context;
 

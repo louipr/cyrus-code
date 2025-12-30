@@ -140,7 +140,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 2.G3 | Real-time validation overlay | `src/gui/components/ValidationOverlay.tsx` | ✅ |
 | 2.G4 | Dependency graph view | `src/gui/components/DependencyGraph.tsx` | ✅ |
 | 2.G5 | Graph statistics panel | `src/gui/components/GraphStats.tsx` | ✅ |
-| 2.G6 | E2E tests for views | `tests/e2e/canvas-wiring.spec.ts` | ✅ |
+| 2.G6 | E2E tests for views | `tests/e2e/view-switching.spec.ts` | ✅ |
 
 ### Verification Tasks
 
@@ -310,7 +310,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] No redundant Legend sections (standard C4 notation removed from all levels)
 - [x] Consistent C4 Navigation blockquote across L1, L2, L3
 - [x] Aggressive cleanup: L1 (-35% lines), L2 (-19% lines)
-- [x] L3 Component diagrams for all core containers (Symbol Table, CodeGeneration, Help, Wiring, Validator, Registry, Facade)
+- [x] L3 Component diagrams for all core containers (Symbol Table, CodeGeneration, Help, DependencyGraph, Facade, DiagramPipeline)
 - [x] C4NavigationBar component in GUI (DRY: navigation moved from markdown to GUI)
 - [x] Status legend as collapsible GUI element (DRY: removed from 9 markdown files)
 
