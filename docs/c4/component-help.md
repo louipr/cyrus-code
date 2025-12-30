@@ -9,13 +9,15 @@ Internal structure of the Help Service container, showing its components and the
 ```mermaid
 flowchart TD
     subgraph help ["Help Service"]
-        service["HelpService<br/><small>TypeScript</small>"]
+        service["HelpContentService<br/><small>TypeScript</small>"]
+        repository["HelpRepository<br/><small>TypeScript</small>"]
         renderer["Terminal Renderer<br/><small>TypeScript</small>"]
-        schema["Schema<br/><small>TypeScript</small>"]
+        schema["Domain Schema<br/><small>TypeScript</small>"]
     end
 
-    service -->|"load"| manifest["docs/help.json"]
-    service -->|"read"| topics["📄 Markdown Files"]
+    service -->|"access"| repository
+    repository -->|"load"| manifest["docs/help.json"]
+    repository -->|"read"| topics["📄 Markdown Files"]
     service -->|"format"| renderer
     renderer -->|"output"| terminal["Terminal (ANSI)"]
     service -->|"use types"| schema
@@ -26,7 +28,7 @@ flowchart TD
     classDef component fill:#1168bd,color:#fff
     classDef external fill:#999,color:#fff
 
-    class service,renderer,schema component
+    class service,repository,renderer,schema component
     class manifest,topics,terminal,gui,cli external
 ```
 
@@ -34,15 +36,17 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **HelpService** | Topic loading, search, formatting | `getTopic()`, `search()`, `getCategories()`, `getTopicContent()` | ✅ | `src/services/help-content/index.ts` |
+| **HelpContentService** | Orchestration, search, formatting | `search()`, `getTopicContent()`, `formatTopicList()`, `clearCache()` | ✅ | `src/services/help-content/service.ts` |
+| **HelpRepository** | Data access, manifest loading | `getCategories()`, `getTopics()`, `getTopic()`, `getByCategory()`, `getTopicSubsections()` | ✅ | `src/repositories/help-repository.ts` |
 | **Terminal Renderer** | Markdown to ANSI conversion | `renderMarkdownForTerminal()` | ✅ | `src/services/help-content/terminal-renderer.ts` |
-| **Schema** | Type definitions | `HelpManifest`, `HelpTopic`, `HelpCategory`, `HelpSearchResult` | ✅ | `src/services/help-content/schema.ts` |
+| **Domain Schema** | Type definitions | `HelpManifest`, `HelpTopic`, `HelpCategory`, `HelpSearchResult`, `HelpRepository` | ✅ | `src/domain/help/schema.ts` |
 
 ## Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
 | Manifest-driven topics | Topics defined in JSON, content in markdown - easy to add new topics |
+| Repository pattern | Separates data access (repository) from orchestration (service) |
 | Lazy loading | Manifest cached on first access, markdown files read on demand |
 | Category grouping | Topics organized by category for better discoverability |
 | Keyword search | Full-text search across title, summary, and explicit keywords |
@@ -57,24 +61,45 @@ flowchart TD
 
 | Category | Methods |
 |----------|---------|
-| **Topics** | `getTopic()`, `listTopics()`, `getTopicContent()` |
-| **Categories** | `getCategories()`, `getByCategory()` |
-| **Search** | `search()` |
-| **Related** | `getRelatedTopics()`, `getTopicSubsections()` |
+| **Service** | `search()`, `getTopicContent()`, `formatTopicList()`, `formatCategoryOverview()`, `clearCache()` |
+| **Repository** | `getCategories()`, `getGroups()`, `getTopics()`, `getTopic()`, `getByCategory()`, `getRelatedTopics()`, `getTopicSubsections()`, `getC4Hierarchy()` |
 
-### HelpService API
+### HelpContentService API
 
-```typescript:include
-source: src/services/help-content/schema.ts
-exports: [IHelpService]
+```typescript
+interface HelpContentService {
+  /** Direct access to help data */
+  readonly repository: HelpRepository;
+
+  /** Search topics by query string (adds scoring logic) */
+  search(query: string): HelpSearchResult[];
+
+  /** Get the content of a topic's markdown file (preprocessed + formatted) */
+  getTopicContent(topicId: string, format?: HelpOutputFormat): string;
+
+  /** Format a topic list for terminal display */
+  formatTopicList(topics: HelpTopic[]): string;
+
+  /** Format categories with their topics for terminal display */
+  formatCategoryOverview(): string;
+
+  /** Clear all caches (manifest and preprocessor) */
+  clearCache(): void;
+}
 ```
 
-### Help Schema Types
+### Help Domain Types
 
-```typescript:include
-source: src/services/help-content/schema.ts
-exports: [HelpManifest, HelpTopic, HelpCategory, HelpSearchResult, HelpOutputFormat]
-```
+| Type | Purpose |
+|------|---------|
+| `HelpManifest` | Root structure for docs/help.json |
+| `HelpTopic` | Topic metadata (id, title, path, category, keywords) |
+| `HelpCategory` | Category metadata (id, label, description) |
+| `HelpGroup` | Collapsible section within a category |
+| `HelpSearchResult` | Search result with score and matched fields |
+| `HelpOutputFormat` | Output format: 'terminal' \| 'html' \| 'raw' |
+| `DocumentHeading` | Extracted h2/h3 headings for navigation |
+| `C4Hierarchy` | C4 diagram navigation structure |
 
 ### Algorithms
 
@@ -120,4 +145,4 @@ The renderer converts markdown to ANSI-escaped terminal output:
 
 ### Notes
 
-- **Source Files**: `src/services/help-content/index.ts`, `src/services/help-content/terminal-renderer.ts`, `src/services/help-content/schema.ts`
+- **Source Files**: `src/services/help-content/service.ts`, `src/services/help-content/terminal-renderer.ts`, `src/domain/help/schema.ts`, `src/repositories/help-repository.ts`

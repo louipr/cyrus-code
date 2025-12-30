@@ -283,19 +283,20 @@ class SymbolTableService {
 const result = symbolTable.getConnectionManager().findConnections(id);
 
 // ✅ NEW PATTERN (services call repository directly)
-class WiringService {
+class CodeGenerationService {
   constructor(
     private repo: ISymbolRepository,           // Inject repository
     private graphService: DependencyGraphService
   ) {}
 
-  connect(request: ConnectionRequest) {
-    this.repo.insertConnection(connection);    // Call repo directly
+  generate(request: GenerationRequest) {
+    const symbol = this.repo.find(request.symbolId);  // Call repo directly
+    // ... generate code
   }
 }
 ```
 
-> **Note**: ConnectionManager was removed (2025-12) as a redundant wrapper. WiringService now calls `repo.insertConnection()` directly.
+> **Note**: Services should inject repositories directly rather than accessing them through a facade. This follows Clean Architecture principles.
 
 ### What This Finds
 
@@ -389,16 +390,17 @@ class SymbolTableService {
 
 ```typescript
 // Services inject dependencies directly (Clean Architecture)
-class WiringService {
+class CodeGenerationService {
   constructor(
     private repo: ISymbolRepository,         // Repository for persistence
     private graphService: DependencyGraphService  // Service for graph operations
   ) {}
 
-  connect(request: ConnectionRequest) {
+  generate(request: GenerationRequest) {
     // Use injected dependencies directly
-    if (this.graphService.wouldCreateCycle(...)) { ... }
-    this.repo.insertConnection(connection);  // Direct repository access
+    if (this.graphService.detectCycles().length > 0) { ... }
+    const symbol = this.repo.find(request.symbolId);  // Direct repository access
+    // ... generate code
   }
 }
 

@@ -610,7 +610,7 @@ Benefits: Clean layers, multi-language ready, testable, maintainable
 Following the anti-over-engineering philosophy (see [CLAUDE.md](../../CLAUDE.md)), we establish these DIP boundaries:
 
 **Create interfaces for:**
-1. Main services (e.g., `ISymbolTableService`, `IWiringService`) - enables testing and composition
+1. Main services (e.g., `ISymbolTableService`, `DependencyGraphService`) - enables testing and composition
 2. Repositories (e.g., `SymbolRepository`, `HelpRepository`) - enables data layer abstraction
 3. External dependencies (e.g., `ISourceFileManager`) - enables mocking
 

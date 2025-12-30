@@ -2,7 +2,7 @@
 
 ## Overview
 
-Graph algorithms and analysis for component dependencies. Provides cycle detection, topological sorting, and dependency traversal operations. Extracted from Wiring Service for reusability across impact analysis, build ordering, and dead code detection.
+Graph algorithms and analysis for component dependencies. Provides cycle detection, topological sorting, and dependency traversal operations. Used for impact analysis, build ordering, and dead code detection.
 
 ## Component Diagram
 
@@ -18,7 +18,7 @@ flowchart TD
     service -->|"use types"| schema
     service -->|"query"| st["Symbol Table"]
 
-    wire["Wiring Service"] -->|"analyze cycles"| service
+    facade["Graph Facade"] -->|"orchestrate"| service
     impact["Impact Analyzer"] -.->|"future"| service
     build["Build Orchestrator"] -.->|"future"| service
 
@@ -27,7 +27,7 @@ flowchart TD
     classDef future fill:#37474f,color:#fff,stroke-dasharray: 5 5
 
     class service,algorithms,schema component
-    class st,wire external
+    class st,facade external
     class impact,build future
 ```
 
@@ -37,15 +37,13 @@ flowchart TD
 |-----------|----------------|----------------|--------|-------|
 | **DependencyGraphService** | Graph orchestration | `buildGraph()`, `detectCycles()`, `getTopologicalOrder()`, `wouldCreateCycle()` | ✅ | `src/services/dependency-graph/service.ts` |
 | **Graph Algorithms** | Pure graph algorithms | `topologicalSort()`, `getUpstreamDependencies()`, `getDownstreamDependencies()`, `getConnectedComponents()` | ✅ | `src/services/dependency-graph/algorithms.ts` |
-| **Schema** | Type definitions and interface | `DependencyGraph`, `GraphNode`, `GraphEdge`, `GraphStats`, `IDependencyGraphService` | ✅ | `src/services/dependency-graph/schema.ts` |
-
-> **Architecture**: Extracted from Wiring Service to enable reuse by future impact analysis, build ordering, and dead code detection features.
+| **Schema** | Type definitions and interface | `DependencyGraph`, `GraphNode`, `GraphEdge`, `GraphStats`, `DependencyGraphService` | ✅ | `src/services/dependency-graph/schema.ts` |
 
 ## Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| Extract from wiring | Graph analysis is more fundamental than wiring business logic; enables reuse |
+| Separate service layer | Graph analysis is reusable across validation, code generation, and future features |
 | Kahn's algorithm for topo sort | O(V+E) complexity, handles disconnected components gracefully |
 | DFS for cycle detection | Natural fit for finding back edges in directed graph |
 | Pure utilities module | Graph algorithms have zero service dependencies - just data structures |
@@ -70,7 +68,7 @@ flowchart TD
 
 ```typescript:include
 source: src/services/dependency-graph/schema.ts
-exports: [IDependencyGraphService]
+exports: [DependencyGraphService]
 ```
 
 ### Graph Types
@@ -78,9 +76,15 @@ exports: [IDependencyGraphService]
 | Type | Key Fields | Purpose |
 |------|------------|---------|
 | `DependencyGraph` | `nodes: Map<string, GraphNode>`, `edges: Map<string, GraphEdge[]>`, `topologicalOrder`, `cycles` | Main graph data structure |
-| `GraphNode` | `symbolId`, `name`, `namespace`, `level`, `inputs[]`, `outputs[]` | Component node in graph |
-| `GraphEdge` | `connectionId`, `fromSymbol`, `fromPort`, `toSymbol`, `toPort` | Connection between components |
-| `GraphStats` | `nodeCount`, `edgeCount`, `rootCount`, `leafCount`, `maxDepth`, `hasCycles`, `componentCount` | Graph statistics |
+| `GraphNode` | `id`, `name`, `namespace`, `level`, `kind` | Component node in graph |
+| `GraphEdge` | `from`, `to`, `type`, `fieldName?` | Relationship between components |
+| `GraphStats` | `nodeCount`, `edgeCount`, `rootCount`, `leafCount`, `maxDepth`, `hasCycles`, `connectedComponentCount` | Graph statistics |
+
+### Edge Types
+
+```typescript
+type EdgeType = 'dependency' | 'extends' | 'implements' | 'composes' | 'aggregates' | 'contains';
+```
 
 ### Algorithms
 
@@ -97,7 +101,7 @@ function detectCycles(graph):
         recursionStack.add(nodeId)
 
         for each edge from nodeId:
-            neighbor = edge.toSymbol
+            neighbor = edge.to
             if neighbor not in visited:
                 dfs(neighbor, path + [neighbor])
             else if neighbor in recursionStack:
@@ -124,7 +128,7 @@ function topologicalSort(graph):
     // Calculate in-degrees
     inDegree = Map()
     for each node: inDegree[node] = 0
-    for each edge: inDegree[edge.toSymbol]++
+    for each edge: inDegree[edge.to]++
 
     // Find nodes with no incoming edges
     queue = [nodes where inDegree == 0]
@@ -135,9 +139,9 @@ function topologicalSort(graph):
         result.push(node)
 
         for each edge from node:
-            inDegree[edge.toSymbol]--
-            if inDegree[edge.toSymbol] == 0:
-                queue.push(edge.toSymbol)
+            inDegree[edge.to]--
+            if inDegree[edge.to] == 0:
+                queue.push(edge.to)
 
     // If we couldn't process all nodes, there's a cycle
     if result.length != graph.nodes.size:

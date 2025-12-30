@@ -147,7 +147,6 @@ class ISymbolTableService {
 
 class SymbolTableService {
     -repo: ISymbolRepository
-    -versionResolver: VersionResolver
     +register()
     +get()
 }
@@ -198,17 +197,15 @@ classDiagram
 
     class SymbolTableService {
         -repo: ISymbolRepository
-        -versionResolver: VersionResolver
         +register()
         +get()
         +query()
         +search()
     }
 
-    class VersionResolver {
-        -repo: ISymbolRepository
-        +getVersions()
-        +getLatest()
+    class SymbolValidator {
+        +validateSymbolTable()
+        +validateSymbolById()
     }
 
     class SymbolRepository {
@@ -219,9 +216,8 @@ classDiagram
     }
 
     ISymbolTableService <|.. SymbolTableService : implements
-    SymbolTableService "1" *-- "1" VersionResolver : owns
     SymbolTableService "1" --> "1" SymbolRepository : uses
-    VersionResolver "1" --> "1" SymbolRepository : reads
+    SymbolValidator ..> SymbolRepository : validates
 ```
 
 ---

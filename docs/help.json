@@ -6,10 +6,9 @@
     "L3": [
       "c4-component",
       "c4-component-help",
-      "c4-component-wiring",
-      "c4-component-compatibility",
       "c4-component-dependency-graph",
-      "c4-component-facade"
+      "c4-component-facade",
+      "c4-component-diagram-pipeline"
     ],
     "Dynamic": ["c4-dynamic"]
   },
@@ -47,16 +46,6 @@
       "category": "architecture"
     },
     {
-      "id": "wiring",
-      "label": "C4 Wiring",
-      "category": "architecture"
-    },
-    {
-      "id": "compatibility",
-      "label": "C4 Compatibility",
-      "category": "architecture"
-    },
-    {
       "id": "dependency-graph",
       "label": "C4 Dependency Graph",
       "category": "architecture"
@@ -69,6 +58,11 @@
     {
       "id": "help-service",
       "label": "C4 Help",
+      "category": "architecture"
+    },
+    {
+      "id": "diagram-pipeline",
+      "label": "C4 Diagram Pipeline",
       "category": "architecture"
     }
   ],
@@ -150,29 +144,11 @@
     {
       "id": "c4-component",
       "title": "Symbol Table",
-      "summary": "Symbol Table internal structure - SymbolStore, QueryEngine, VersionManager",
+      "summary": "Symbol Table internal structure - SymbolTableService, SymbolValidator, SymbolRepository",
       "path": "docs/c4/symbol-table.md",
       "category": "architecture",
       "group": "symbol-table",
       "keywords": ["C4", "component", "diagram", "symbol table", "architecture", "code", "API"]
-    },
-    {
-      "id": "c4-component-wiring",
-      "title": "Wiring",
-      "summary": "Wiring Service internal structure - graph analysis algorithms",
-      "path": "docs/c4/component-wiring.md",
-      "category": "architecture",
-      "group": "wiring",
-      "keywords": ["C4", "component", "wiring", "graph", "cycle detection", "topological sort", "code", "API"]
-    },
-    {
-      "id": "c4-component-compatibility",
-      "title": "Compatibility",
-      "summary": "Port compatibility checking - domain layer pure functions",
-      "path": "docs/c4/component-compatibility.md",
-      "category": "architecture",
-      "group": "compatibility",
-      "keywords": ["C4", "component", "compatibility", "port", "type checking", "domain"]
     },
     {
       "id": "c4-component-dependency-graph",
@@ -200,6 +176,15 @@
       "category": "architecture",
       "group": "help-service",
       "keywords": ["C4", "component", "help", "markdown", "terminal", "code", "API"]
+    },
+    {
+      "id": "c4-component-diagram-pipeline",
+      "title": "Diagram Pipeline",
+      "summary": "Draw.io and Mermaid parsing, Symbol Table sync",
+      "path": "docs/c4/component-diagram-pipeline.md",
+      "category": "architecture",
+      "group": "diagram-pipeline",
+      "keywords": ["C4", "component", "diagram", "drawio", "mermaid", "parser", "pipeline"]
     },
     {
       "id": "c4-dynamic",

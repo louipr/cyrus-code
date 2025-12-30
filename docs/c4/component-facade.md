@@ -110,20 +110,76 @@ type ApiResponse<T> =
 
 For Electron GUI, the facade methods are exposed via IPC handlers:
 
+**Symbol Operations:**
 | IPC Channel | Facade.Method |
 |-------------|---------------|
-| `symbols:register` | `symbols.registerSymbol()` |
-| `symbols:get` | `symbols.getSymbol()` |
 | `symbols:list` | `symbols.listSymbols()` |
+| `symbols:get` | `symbols.getSymbol()` |
 | `symbols:search` | `symbols.searchSymbols()` |
+| `symbols:resolve` | `symbols.resolveSymbol()` |
+| `symbols:getVersions` | `symbols.getSymbolVersions()` |
+| `symbols:register` | `symbols.registerSymbol()` |
+| `symbols:remove` | `symbols.removeSymbol()` |
+
+**Relationship Operations:**
+| IPC Channel | Facade.Method |
+|-------------|---------------|
 | `relationships:findContains` | `symbols.findContains()` |
+| `relationships:findContainedBy` | `symbols.findContainedBy()` |
+| `relationships:getDependents` | `symbols.getDependents()` |
 | `relationships:getDependencies` | `symbols.getDependencies()` |
-| `graph:build` | `graph.build()` |
-| `graph:detectCycles` | `graph.detectCycles()` |
-| `validation:validate` | `validation.validate()` |
+
+**Graph Operations:**
+| IPC Channel | Facade.Method |
+|-------------|---------------|
+| `graph:build` | DependencyGraphService.buildGraph() |
+| `graph:detectCycles` | DependencyGraphService.detectCycles() |
+| `graph:getTopologicalOrder` | DependencyGraphService.getTopologicalOrder() |
+| `graph:getStats` | DependencyGraphService.getStats() |
+
+**Validation Operations:**
+| IPC Channel | Facade.Method |
+|-------------|---------------|
+| `validation:validate` | `validation.validateAll()` |
+| `validation:validateSymbol` | `validation.validateSymbol()` |
+| `validation:checkCircular` | `validation.checkCircular()` |
+
+**Status Operations:**
+| IPC Channel | Facade.Method |
+|-------------|---------------|
+| `status:findUnreachable` | `symbols.findUnreachable()` |
+| `status:findUntested` | `symbols.findUntested()` |
+
+**Generation Operations:**
+| IPC Channel | Facade.Method |
+|-------------|---------------|
 | `synthesizer:generate` | `generation.generate()` |
+| `synthesizer:generateMultiple` | `generation.generateMultiple()` |
+| `synthesizer:generateAll` | `generation.generateAll()` |
 | `synthesizer:preview` | `generation.preview()` |
 | `synthesizer:listGeneratable` | `generation.listGeneratable()` |
+| `synthesizer:canGenerate` | `generation.canGenerate()` |
+| `synthesizer:hasUserImplementation` | `generation.hasUserImplementation()` |
+
+**Help Operations (separate service):**
+| IPC Channel | Service Method |
+|-------------|----------------|
+| `help:getCategories` | HelpContentService.repository.getCategories() |
+| `help:getGroups` | HelpContentService.repository.getGroups() |
+| `help:getTopics` | HelpContentService.repository.getTopics() |
+| `help:getC4Hierarchy` | HelpContentService.repository.getC4Hierarchy() |
+| `help:getByCategory` | HelpContentService.repository.getByCategory() |
+| `help:getTopic` | HelpContentService.repository.getTopic() |
+| `help:search` | HelpContentService.search() |
+| `help:getTopicContent` | HelpContentService.getTopicContent() |
+| `help:getTopicSubsections` | HelpContentService.repository.getTopicSubsections() |
+
+**Diagram Operations:**
+| IPC Channel | Description |
+|-------------|-------------|
+| `diagram:open` | Open file dialog for .drawio files |
+| `diagram:save` | Save XML to specified path |
+| `diagram:saveAs` | Save As dialog for .drawio files |
 
 > **Note**: IPC handlers are defined in `electron/ipc-handlers.ts`
 

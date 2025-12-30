@@ -188,7 +188,6 @@ export function writeFile(filePath: string, content: string): void {
 | Service | Purpose |
 |---------|---------|
 | `symbol-table/` | Symbol CRUD, queries, validation |
-| `wiring/` | Connection management, compatibility validation |
 | `code-generation/` | Generate TypeScript from symbols |
 | `diagram-generator/` | Generate C4 diagrams |
 | `dependency-graph/` | Graph algorithms, cycle detection |
@@ -196,26 +195,26 @@ export function writeFile(filePath: string, content: string): void {
 
 **Example - Service Orchestration**:
 ```typescript
-// src/services/wiring/service.ts
-class WiringService {
+// src/services/code-generation/service.ts
+class CodeGenerationService {
   constructor(
     private repo: ISymbolRepository,      // Repository
     private graphService: DependencyGraphService  // Another service
   ) {}
 
-  connect(request: ConnectionRequest): WiringResult {
-    // 1. Use domain rules for validation
-    const compat = checkPortCompatibility(fromPort, toPort);
-    if (!compat.compatible) return { success: false, error: compat.reason };
-
-    // 2. Use graph service for cycle detection
-    if (this.graphService.wouldCreateCycle(...)) {
-      return { success: false, errorCode: 'WOULD_CREATE_CYCLE' };
+  generate(request: GenerationRequest): GenerationResult {
+    // 1. Use graph service for cycle detection
+    if (this.graphService.detectCycles().length > 0) {
+      return { success: false, errorCode: 'CYCLES_DETECTED' };
     }
 
-    // 3. Use repository for persistence
-    this.repo.insertConnection(connection);
-    return { success: true, connectionId: connection.id };
+    // 2. Use repository for data access
+    const symbol = this.repo.find(request.symbolId);
+    if (!symbol) return { success: false, error: 'Symbol not found' };
+
+    // 3. Generate code
+    const generated = this.generateCode(symbol);
+    return { success: true, files: generated };
   }
 }
 ```
@@ -272,7 +271,6 @@ src/
 │
 ├── services/            # Layer 4: Application logic
 │   ├── symbol-table/    # Symbol management
-│   ├── wiring/          # Connection handling
 │   ├── code-generation/ # Code gen + typescript/ backend
 │   ├── diagram-generator/# Diagram gen + typescript/ backend
 │   ├── dependency-graph/# Graph algorithms
@@ -369,7 +367,7 @@ export function analyzeSymbol(symbol: ComponentSymbol) {
 
 ```typescript
 // BAD: Pure function inside service class
-class WiringService {
+class ValidationService {
   // This has no state, no dependencies - why is it in a class?
   checkCompatibility(from: Port, to: Port): boolean {
     return from.direction === 'out' && to.direction === 'in';
@@ -459,7 +457,7 @@ class C4DiagramGenerator {
 // repositories/symbol-repository.ts
 export interface ISymbolRepository { ... }  // ❌ Wrong layer
 
-// services/wiring/service.ts
+// services/code-generation/service.ts
 import { ISymbolRepository } from '../../repositories/symbol-repository.js';  // ❌
 ```
 
@@ -474,7 +472,7 @@ export interface ISymbolRepository { ... }  // ✓ Domain owns the contract
 import { ISymbolRepository } from '../domain/symbol/index.js';
 export class SymbolRepository implements ISymbolRepository { ... }  // ✓ Implements
 
-// services/wiring/service.ts
+// services/code-generation/service.ts
 import type { ISymbolRepository } from '../../domain/symbol/index.js';  // ✓ Uses
 ```
 

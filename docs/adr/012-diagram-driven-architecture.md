@@ -751,45 +751,45 @@ This section defines the exact mappings between Draw.io, Mermaid, and Symbol Tab
 ### Conversion Pipeline
 
 ```
-                    ┌────────────────────────────────────────────────┐
-                    │            HUMAN EDITING LAYER                 │
-                    │                                                │
-                    │   Draw.io GUI ──edit──► architecture.drawio   │
-                    │                                                │
-                    └────────────────────────┬───────────────────────┘
-                                             │
-                              ┌──────────────▼──────────────┐
-                              │      DrawioParser           │
-                              │                             │
-                              │  • Parse mxGraphModel XML   │
-                              │  • Extract cyrus- metadata  │
-                              │  • Build DiagramElement[]   │
-                              │  • Build DiagramRelationship[] │
-                              └──────────────┬──────────────┘
-                                             │
-┌────────────────────────────────────────────▼────────────────────────────────────────────┐
-│                                  INTERNAL MODEL                                         │
-│                                                                                         │
-│                              ┌─────────────────┐                                        │
-│                              │    Diagram      │                                        │
-│                              │   (TypeScript)  │                                        │
-│                              └────────┬────────┘                                        │
-│                                       │                                                 │
-│              ┌────────────────────────┼────────────────────────┐                        │
-│              │                        │                        │                        │
-│              ▼                        ▼                        ▼                        │
-│   ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐                 │
-│   │ MermaidRenderer  │    │  SymbolTableSync │    │  DrawioRenderer  │                 │
-│   │                  │    │                  │    │                  │                 │
-│   │ Diagram →        │    │ Diagram →        │    │ Diagram →        │                 │
-│   │ Mermaid text     │    │ ComponentSymbol[]│    │ mxGraphModel XML │                 │
-│   └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘                 │
-│            │                       │                       │                           │
-│            ▼                       ▼                       ▼                           │
-│     architecture.md        Symbol Table DB         architecture.drawio                 │
-│     (AI-readable)          (canonical)             (human-editable)                    │
-│                                                                                         │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐  ┌────────────────────────────────────────────────┐
+│            HUMAN EDITING LAYER                 │  │              AI EDITING LAYER                  │
+│                                                │  │                                                │
+│   Draw.io GUI ──edit──► architecture.drawio   │  │   AI Agent ──generate──► architecture.md      │
+│                                                │  │                         (Mermaid syntax)      │
+└────────────────────────┬───────────────────────┘  └────────────────────────┬───────────────────────┘
+                         │                                                   │
+          ┌──────────────▼──────────────┐                     ┌──────────────▼──────────────┐
+          │      DrawioParser           │                     │      MermaidParser          │
+          │                             │                     │                             │
+          │  • Parse mxGraphModel XML   │                     │  • Parse flowchart/C4       │
+          │  • Extract cyrus- metadata  │                     │  • Extract cyrus- comments  │
+          │  • Build DiagramElement[]   │                     │  • Build DiagramElement[]   │
+          │  • Build DiagramRelationship[] │                  │  • Build DiagramRelationship[] │
+          └──────────────┬──────────────┘                     └──────────────┬──────────────┘
+                         │                                                   │
+                         └───────────────────────┬───────────────────────────┘
+                                                 │
+┌────────────────────────────────────────────────▼────────────────────────────────────────────┐
+│                                  INTERNAL MODEL                                             │
+│                                                                                             │
+│                              ┌─────────────────┐                                            │
+│                              │    Diagram      │                                            │
+│                              │   (TypeScript)  │                                            │
+│                              └────────┬────────┘                                            │
+│                                       │                                                     │
+│                         ┌─────────────▼─────────────┐                                       │
+│                         │    SymbolTableSync        │                                       │
+│                         │    (Phase 4)              │                                       │
+│                         │                           │                                       │
+│                         │  Diagram →                │                                       │
+│                         │  ComponentSymbol[]        │                                       │
+│                         └─────────────┬─────────────┘                                       │
+│                                       │                                                     │
+│                                       ▼                                                     │
+│                              Symbol Table DB                                                │
+│                              (canonical)                                                    │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
                                              │
                               ┌──────────────▼──────────────┐
                               │   CodeGenerationService     │
@@ -848,11 +848,15 @@ This section defines the exact mappings between Draw.io, Mermaid, and Symbol Tab
 - [x] Parse cyrus-* custom properties from mxCell/object elements
 - [x] Add 67 unit tests covering all parser functions
 
-### Phase 3: Mermaid Support (ADR-012c)
-- [ ] Implement MermaidRenderer (Diagram → Mermaid)
-- [ ] Implement MermaidParser (Mermaid → Diagram)
-- [ ] Verify 1:1 mapping coverage
-- [ ] Add tests for all shape and relationship types
+### Phase 3: Mermaid Support (ADR-012c) ✅
+- [x] **MermaidParser** (Mermaid → Diagram): Parses Mermaid architecture diagrams (flowchart, C4) into Diagram schema
+  - Supports cyrus-* properties via comments: `%% cyrus-level: L1`
+  - Maps Mermaid node shapes to ShapeType enum
+  - Maps Mermaid arrows to RelationshipType enum
+  - Location: `src/infrastructure/mermaid/parser.ts`
+- [x] Add comprehensive unit tests (co-located at `src/infrastructure/mermaid/parser.test.ts`)
+
+> **Note**: MermaidRenderer for code visualization (C4Diagram → classDiagram) already exists in the diagram-generator service. Phase 3 focuses on MermaidParser for architecture diagrams.
 
 ### Phase 4: Symbol Table Integration (ADR-012d)
 - [ ] Implement SymbolTableSync service

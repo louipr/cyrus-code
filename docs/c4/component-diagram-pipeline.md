@@ -58,8 +58,8 @@ flowchart TD
 | **DrawioEditor** | GUI | Embed Draw.io editor via Electron webview | ✅ Complete | `src/gui/components/DrawioEditor.tsx` |
 | **IPC Handlers** | Electron Main | Handle diagram file operations (open/save) | ✅ Complete | `electron/ipc-handlers.ts` |
 | **DrawioParser** | Infrastructure | Parse mxGraphModel XML into Diagram | ✅ Complete | `src/infrastructure/drawio/parser.ts` |
-| **MermaidParser** | Infrastructure | Parse Mermaid text into Diagram | ⏳ Planned | ADR-012 Phase 3 |
-| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 3 |
+| **MermaidParser** | Infrastructure | Parse Mermaid text into Diagram | ✅ Complete | `src/infrastructure/mermaid/parser.ts` |
+| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 4 |
 | **Diagram Schema** | Domain | Type definitions for DiagramElement, DiagramRelationship | ✅ Complete | `src/infrastructure/drawio/schema.ts` |
 
 ## Data Flow
@@ -117,8 +117,9 @@ These properties are stored in Draw.io `<object>` elements:
 |-------|------------|--------|
 | **Phase 1** | DrawioEditor, IPC Handlers, Menu Integration | ✅ Complete |
 | **Phase 2** | DrawioParser (67 tests), Diagram Schema | ✅ Complete |
-| **Phase 3** | MermaidParser, SymbolTableSync | ⏳ Planned |
-| **Phase 4** | Template instantiation, Code Generation integration | ⏳ Planned |
+| **Phase 3** | MermaidParser | ✅ Complete |
+| **Phase 4** | SymbolTableSync | ⏳ Planned |
+| **Phase 5** | Template instantiation, Code Generation integration | ⏳ Planned |
 
 ---
 

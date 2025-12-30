@@ -67,10 +67,9 @@ npm run test:e2e -- --grep "help"
 | L2 Container | `docs/c4/2-container.md` | C4 Overview |
 | L3 Symbol Table | `docs/c4/symbol-table.md` | Symbol Table |
 | L3 Help | `docs/c4/component-help.md` | Help Service |
-| L3 Wiring | `docs/c4/component-wiring.md` | Wiring |
-| L3 Compatibility | `docs/c4/component-compatibility.md` | Compatibility |
 | L3 Dependency Graph | `docs/c4/component-dependency-graph.md` | Dependency Graph |
 | L3 Facade | `docs/c4/component-facade.md` | API Facade |
+| L3 Diagram Pipeline | `docs/c4/component-diagram-pipeline.md` | Diagram Pipeline |
 | Dynamic Flows | `docs/c4/dynamic.md` | C4 Overview |
 
 ## Quick Verification Command
