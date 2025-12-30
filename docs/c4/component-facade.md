@@ -2,50 +2,62 @@
 
 ## Overview
 
-Internal structure of the API Facade container, showing its single-component design and service routing.
+Internal structure of the API Facade container, showing its focused-facade design and service routing.
 
 ## Component Diagram
 
 ```mermaid
 flowchart TD
     subgraph facade ["API Facade"]
-        api["Architecture<br/><small>TypeScript</small>"]
+        arch["Architecture<br/><small>Main Entry Point</small>"]
+        symbols["SymbolFacade<br/><small>CRUD + Queries</small>"]
+        generation["GenerationFacade<br/><small>Code Synthesis</small>"]
+        validation["ValidationFacade<br/><small>Validation</small>"]
+        graph["GraphFacade<br/><small>Graph Ops</small>"]
         types["DTO Types<br/><small>TypeScript</small>"]
     end
 
-    cli["CLI"] -->|"call"| api
-    gui["GUI"] -->|"IPC"| api
+    cli["CLI"] -->|"call"| arch
+    gui["GUI"] -->|"IPC"| arch
 
-    api -->|"symbols"| registry["Component Registry"]
-    api -->|"wiring"| wiring["Wiring"]
-    api -->|"generate"| codegen["Code Generation"]
+    arch -->|"symbols"| symbols
+    arch -->|"generation"| generation
+    arch -->|"validation"| validation
+    arch -->|"graph"| graph
 
-    api -->|"convert"| types
+    symbols -->|"query"| st["Symbol Table"]
+    generation -->|"query"| st
+    validation -->|"query"| st
+    graph -->|"query"| st
+
+    arch -->|"convert"| types
 
     classDef component fill:#1168bd,color:#fff
     classDef external fill:#999,color:#fff
 
-    class api,types component
-    class cli,gui,registry,wiring,codegen external
+    class arch,symbols,generation,validation,graph,types component
+    class cli,gui,st external
 ```
 
 ## Components
 
-| Component | Responsibility | Key Operations | Status | Notes |
-|-----------|----------------|----------------|--------|-------|
-| **Architecture** | Single entry point, service routing, DTO conversion | All public API methods | ✅ | `src/api/facade.ts` |
+| Component | Responsibility | Key Operations | Status | Location |
+|-----------|----------------|----------------|--------|----------|
+| **Architecture** | Entry point, DB lifecycle, facade composition | `create()`, `createInMemory()`, `close()` | ✅ | `src/api/facade.ts` |
+| **SymbolFacade** | Symbol CRUD, queries, relationships, status | `registerSymbol`, `getSymbol`, `listSymbols`, `findContains`, `findUnreachable` | ✅ | `src/api/symbol-facade.ts` |
+| **GenerationFacade** | Code synthesis operations | `generate`, `generateMultiple`, `generateAll`, `preview`, `listGeneratable` | ✅ | `src/api/generation-facade.ts` |
+| **ValidationFacade** | Symbol and graph validation | `validate`, `validateSymbol`, `checkCircular` | ✅ | `src/api/validation-facade.ts` |
+| **GraphFacade** | Dependency graph operations | `build`, `detectCycles`, `getTopologicalOrder`, `getStats` | ✅ | `src/api/graph-facade.ts` |
 | **DTO Types** | Transport-safe type definitions | DTOs for all domain types | ✅ | `src/api/types.ts` |
-
-> **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) - Facade pattern.
 
 ## Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| Single facade class | Simplified API surface, one import for all operations |
+| Focused facades | Single Responsibility - each facade handles one domain concern |
+| Composition over inheritance | Architecture composes facades, not monolithic class |
 | DTO conversion | Transport-agnostic: works with Electron IPC, HTTP, CLI |
 | ApiResponse wrapper | Consistent error handling across all operations |
-| Service composition | Facade holds Registry, Wiring, Code Generation - routes appropriately |
 | Factory methods | `create()` and `createInMemory()` for different contexts |
 | Transport-agnostic | Same facade used by CLI (direct) and GUI (via IPC) |
 
@@ -55,81 +67,66 @@ flowchart TD
 
 ### Quick Reference
 
-| Category | Routes To |
-|----------|-----------|
-| **Symbol CRUD** | Component Registry |
-| **Symbol Queries** | Component Registry |
-| **Wiring** | Wiring Service |
-| **Generation** | Code Generation Service |
+| Facade | Domain |
+|--------|--------|
+| **symbols** | Symbol CRUD, queries, relationships, status |
+| **generation** | Code synthesis (generate, preview) |
+| **validation** | Validation (symbol, graph) |
+| **graph** | Graph algorithms (cycles, topological sort) |
 
 ### Architecture API
 
-```typescript:include
-source: src/api/types.ts
-exports: [IArchitecture]
-```
+```typescript
+class Architecture {
+  readonly symbols: SymbolFacade;
+  readonly generation: GenerationFacade;
+  readonly validation: ValidationFacade;
+  readonly graph: GraphFacade;
 
-> **Note**: Static factory methods `Architecture.create()` and `Architecture.createInMemory()` are class-only (not in interface).
+  static create(dbPath: string): Architecture;
+  static createInMemory(): Architecture;
+  close(): void;
+}
+```
 
 ### API Response Type
 
-```typescript:include
-source: src/api/types.ts
-exports: [ApiResponse, PaginatedResponse]
+```typescript
+type ApiResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: { code: string; message: string } };
 ```
-
-### DTO Conversion
-
-The facade converts between domain types and DTOs:
-
-| Domain Type | DTO Type | Conversion |
-|-------------|----------|------------|
-| `ComponentSymbol` | `ComponentSymbolDTO` | `Date` → ISO string, nested objects flattened |
-| `Connection` | `ConnectionDTO` | `Date` → ISO string |
-| `GenerationResult` | `GenerationResultDTO` | Direct mapping |
-| `DependencyGraph` | `DependencyGraphDTO` | `Map` → array of entries |
-
-> **Note**: `ValidationResult` is returned directly without conversion (no Date fields).
 
 ### Service Routing Table
 
-The facade routes operations to internal services:
-
-| API Method Group | Routes To | Operations |
-|------------------|-----------|------------|
-| **Symbol CRUD** | Component Registry | `registerSymbol`, `getSymbol`, `updateSymbol`, `removeSymbol` |
-| **Symbol Queries** | Component Registry | `listSymbols`, `searchSymbols`, `resolveSymbol`, `getSymbolVersions` |
-| **Relationships** | Component Registry | `getContains`, `getContainedBy`, `getDependents`, `getDependencies` |
-| **Connections** | Component Registry | `createConnection`, `removeConnection`, `getConnections`, `getAllConnections` |
-| **Validation** | Component Registry | `validate`, `validateSymbol`, `checkCircular` |
-| **Wiring** | Wiring Service | `wireConnection`, `unwireConnection`, `validateConnectionRequest`, `getDependencyGraph`, `detectCycles`, `getTopologicalOrder`, `getGraphStats`, `findCompatiblePorts`, `findUnconnectedRequired` |
-| **Status** | Component Registry | `updateStatus`, `findUnreachable`, `findUntested` |
-| **Bulk** | Component Registry | `importSymbols`, `exportSymbols` |
-| **Generation** | Code Generation Service | `generateSymbol`, `generateMultiple`, `generateAll`, `previewGeneration`, `listGeneratableSymbols`, `canGenerateSymbol`, `hasUserImplementation` |
+| Facade | Methods |
+|--------|---------|
+| **symbols** | `registerSymbol`, `getSymbol`, `updateSymbol`, `removeSymbol`, `listSymbols`, `searchSymbols`, `resolveSymbol`, `getSymbolVersions`, `findContains`, `findContainedBy`, `getDependents`, `getDependencies`, `updateStatus`, `findUnreachable`, `findUntested` |
+| **generation** | `generate`, `generateMultiple`, `generateAll`, `preview`, `listGeneratable`, `canGenerate`, `hasUserImplementation` |
+| **validation** | `validate`, `validateSymbol`, `checkCircular` |
+| **graph** | `build`, `detectCycles`, `getTopologicalOrder`, `getStats` |
 
 ### IPC Channel Mapping
 
 For Electron GUI, the facade methods are exposed via IPC handlers:
 
-| IPC Channel | Facade Method |
+| IPC Channel | Facade.Method |
 |-------------|---------------|
-| `symbols:register` | `registerSymbol()` |
-| `symbols:get` | `getSymbol()` |
-| `symbols:update` | `updateSymbol()` |
-| `symbols:remove` | `removeSymbol()` |
-| `symbols:list` | `listSymbols()` |
-| `symbols:search` | `searchSymbols()` |
-| `wiring:connect` | `wireConnection()` |
-| `wiring:disconnect` | `unwireConnection()` |
-| `wiring:graph` | `getDependencyGraph()` |
-| `wiring:compatible-ports` | `findCompatiblePorts()` |
-| `synthesizer:generate` | `generateSymbol()` |
-| `synthesizer:preview` | `previewGeneration()` |
-| `synthesizer:list-generable` | `listGeneratableSymbols()` |
+| `symbols:register` | `symbols.registerSymbol()` |
+| `symbols:get` | `symbols.getSymbol()` |
+| `symbols:list` | `symbols.listSymbols()` |
+| `symbols:search` | `symbols.searchSymbols()` |
+| `relationships:findContains` | `symbols.findContains()` |
+| `relationships:getDependencies` | `symbols.getDependencies()` |
+| `graph:build` | `graph.build()` |
+| `graph:detectCycles` | `graph.detectCycles()` |
+| `validation:validate` | `validation.validate()` |
+| `synthesizer:generate` | `generation.generate()` |
+| `synthesizer:preview` | `generation.preview()` |
+| `synthesizer:listGeneratable` | `generation.listGeneratable()` |
 
 > **Note**: IPC handlers are defined in `electron/ipc-handlers.ts`
 
 ### Notes
 
-- **Source Files**: `src/api/facade.ts`, `src/api/types.ts`
-- **Design Patterns**: See [ADR-008: Design Patterns](../adr/008-design-patterns.md) - Facade pattern.
+- **Source Files**: `src/api/facade.ts`, `src/api/symbol-facade.ts`, `src/api/generation-facade.ts`, `src/api/validation-facade.ts`, `src/api/graph-facade.ts`, `src/api/types.ts`

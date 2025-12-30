@@ -2,7 +2,7 @@
 
 ## Overview
 
-Internal structure of the Diagram Pipeline, showing Draw.io parsing, PlantUML conversion, and Symbol Table synchronization.
+Internal structure of the Diagram Pipeline, showing Draw.io parsing and Symbol Table synchronization.
 
 > **Reference**: See [ADR-012: Diagram-Driven Architecture](../adr/012-diagram-driven-architecture.md) for detailed specifications.
 
@@ -17,25 +17,19 @@ flowchart TD
 
     subgraph pipeline ["Diagram Pipeline"]
         parser["DrawioParser<br/><small>Infrastructure</small>"]
-        renderer["DrawioRenderer<br/><small>Infrastructure</small>"]
         pumlParser["PlantUmlParser<br/><small>Infrastructure</small>"]
-        pumlRenderer["PlantUmlRenderer<br/><small>Infrastructure</small>"]
         sync["SymbolTableSync<br/><small>Service</small>"]
         schema["Diagram Schema<br/><small>Domain</small>"]
     end
 
-    drawio_embed["Draw.io<br/>(embed.diagrams.net)"] -->|"iframe postMessage"| editor
+    drawio_app["Draw.io App<br/>(local server)"] -->|"webview"| editor
     editor -->|"save XML"| ipc
     ipc -->|"read/write"| drawio[".drawio Files"]
     drawio -->|"XML"| parser
     parser -->|"Diagram"| schema
-    schema -->|"Diagram"| renderer
-    renderer -->|"XML"| drawio
 
     puml[".puml Files"] -->|"text"| pumlParser
     pumlParser -->|"Diagram"| schema
-    schema -->|"Diagram"| pumlRenderer
-    pumlRenderer -->|"text"| puml
 
     schema -->|"elements + relationships"| sync
     sync -->|"ComponentSymbol[]"| registry["Symbol Table"]
@@ -49,9 +43,9 @@ flowchart TD
     classDef file fill:#dcdcaa,color:#000
     classDef gui fill:#094771,color:#fff
 
-    class parser,renderer,pumlParser,pumlRenderer,sync component
+    class parser,pumlParser,sync component
     class schema schema
-    class registry,drawio_embed external
+    class registry,drawio_app external
     class drawio,puml file
     class ai,human external
     class editor,ipc gui
@@ -61,13 +55,11 @@ flowchart TD
 
 | Component | Layer | Responsibility | Status | Location |
 |-----------|-------|----------------|--------|----------|
-| **DrawioEditor** | GUI | Embed Draw.io editor via iframe, handle postMessage | ✅ Complete | `src/gui/components/DrawioEditor.tsx` |
+| **DrawioEditor** | GUI | Embed Draw.io editor via Electron webview | ✅ Complete | `src/gui/components/DrawioEditor.tsx` |
 | **IPC Handlers** | Electron Main | Handle diagram file operations (open/save) | ✅ Complete | `electron/ipc-handlers.ts` |
 | **DrawioParser** | Infrastructure | Parse mxGraphModel XML into Diagram | ✅ Complete | `src/infrastructure/drawio/parser.ts` |
-| **DrawioRenderer** | Infrastructure | Render Diagram back to mxGraphModel XML | ⏳ Planned | ADR-012 Phase 3 |
 | **PlantUmlParser** | Infrastructure | Parse PlantUML text into Diagram | ⏳ Planned | ADR-012 Phase 3 |
-| **PlantUmlRenderer** | Infrastructure | Render Diagram to PlantUML text | ⏳ Planned | ADR-012 Phase 3 |
-| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 4 |
+| **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 3 |
 | **Diagram Schema** | Domain | Type definitions for DiagramElement, DiagramRelationship | ✅ Complete | `src/infrastructure/drawio/schema.ts` |
 
 ## Data Flow
@@ -76,9 +68,9 @@ flowchart TD
 
 ```
 1. Architect opens Diagram view in cyrus-code Electron app
-2. DrawioEditor loads Draw.io via iframe (embed.diagrams.net)
+2. DrawioEditor loads Draw.io via webview (local server)
 3. Architect creates/edits diagram using full Draw.io UI
-4. On save, XML is sent via postMessage → IPC → file system
+4. On save, XML is written to file system via IPC
 5. DrawioParser extracts DiagramElement[] and DiagramRelationship[]
 6. SymbolTableSync creates/updates ComponentSymbol[] in database
 7. CodeGenerationService generates code from symbols
@@ -91,41 +83,20 @@ flowchart TD
 2. PlantUmlParser extracts DiagramElement[] and DiagramRelationship[]
 3. SymbolTableSync creates/updates ComponentSymbol[] in database
 4. CodeGenerationService generates code from symbols
-5. (Optional) PlantUmlRenderer → DrawioRenderer to sync visual diagram
 ```
 
-### Bidirectional Sync
-
-```
-              ┌─────────────┐
-              │  Draw.io    │ ◄─── Architect (visual)
-              │  .drawio    │
-              └──────┬──────┘
-                     │
-           DrawioParser/Renderer
-                     │
-              ┌──────▼──────┐
-              │   Diagram   │ ◄─── Internal Model
-              │  (Schema)   │
-              └──────┬──────┘
-                     │
-          PlantUmlParser/Renderer
-                     │
-              ┌──────▼──────┐
-              │  PlantUML   │ ◄─── AI Agent (text)
-              │   .puml     │
-              └─────────────┘
-```
+> **Note**: Human and AI paths are independent. Both lead to Symbol Table → Code Generation. No bidirectional sync between formats is required.
 
 ## Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| Separate parsers/renderers | Single Responsibility: parsing ≠ rendering |
+| Parse-only (no render) | Draw.io app handles rendering; we only need to extract data |
 | Internal Diagram model | Decouples Draw.io format from PlantUML format |
 | cyrus-* custom properties | Preserve metadata on Draw.io round-trip |
 | SymbolTableSync service | Centralizes diagram ↔ symbol table mapping |
 | Zod schemas | Runtime validation + TypeScript types from one source |
+| Independent paths | Human (Draw.io) and AI (PlantUML) both sync to Symbol Table independently |
 
 ## Custom Properties (cyrus-* prefix)
 
@@ -145,10 +116,9 @@ These properties are stored in Draw.io `<object>` elements:
 | Phase | Components | Status |
 |-------|------------|--------|
 | **Phase 1** | DrawioEditor, IPC Handlers, Menu Integration | ✅ Complete |
-| **Phase 2** | DrawioParser (67 tests) | ✅ Complete |
-| **Phase 3** | PlantUmlParser, PlantUmlRenderer, DrawioRenderer | ⏳ Planned |
-| **Phase 4** | SymbolTableSync | ⏳ Planned |
-| **Phase 5** | Template instantiation, Code Generation | ⏳ Planned |
+| **Phase 2** | DrawioParser (67 tests), Diagram Schema | ✅ Complete |
+| **Phase 3** | PlantUmlParser, SymbolTableSync | ⏳ Planned |
+| **Phase 4** | Template instantiation, Code Generation integration | ⏳ Planned |
 
 ---
 

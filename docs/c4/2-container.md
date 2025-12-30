@@ -21,10 +21,7 @@ flowchart TB
         api["API Facade<br/><small>TypeScript</small>"]
         help["Help Service<br/><small>TypeScript</small>"]
 
-        reg["Component Registry<br/><small>TypeScript</small>"]
-        wire["Wiring<br/><small>TypeScript</small>"]
         graph["Dependency Graph<br/><small>TypeScript</small>"]
-        compat["Compatibility<br/><small>TypeScript + Zod</small>"]
         synth["Code Synthesizer<br/><small>ts-morph</small>"]
 
         st["Symbol Table<br/><small>SQLite + TypeScript</small>"]
@@ -35,15 +32,10 @@ flowchart TB
     gui -->|"IPC"| api
     gui -->|"IPC"| help
 
-    api -->|"register"| reg
-    api -->|"wire"| wire
+    api -->|"symbols"| st
     api -->|"generate"| synth
+    api -->|"analyze"| graph
 
-    reg -->|"store"| st
-    wire -->|"validate"| compat
-    wire -->|"analyze cycles"| graph
-    wire -->|"query"| st
-    compat -->|"query"| st
     graph -->|"query"| st
     synth -->|"query"| st
 
@@ -57,7 +49,7 @@ flowchart TB
     classDef external fill:#999,color:#fff
 
     class dev,ai person
-    class cli,gui,api,help,reg,wire,graph,compat,synth,st container
+    class cli,gui,api,help,graph,synth,st container
     class db storage
     class fs,docs external
 ```
@@ -71,20 +63,17 @@ flowchart TB
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
 | **CLI** | Node.js | Primary interface for all operations | ✅ |
-| **GUI** | Electron + React | Graphical component wiring (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
+| **GUI** | Electron + React | Visual component editing, diagram view (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
 | **Language Server** | TypeScript | IDE integration (LSP protocol) | 🔮 |
 
 ### Core Services
 
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
-| **API Facade** | TypeScript | Single entry point for CLI and GUI; routes to all services | ✅ |
+| **API Facade** | TypeScript | Focused facades for symbols, generation, validation, graph | ✅ |
 | **Help Service** | TypeScript | Documentation and help topic management | ✅ |
 | **Symbol Table** | SQLite + TypeScript | Central registry of all tracked components | ✅ |
-| **Component Registry** | TypeScript | Discovery, loading, version resolution | ✅ |
 | **Dependency Graph** | TypeScript | Graph algorithms: cycle detection, topological sort, traversal | ✅ |
-| **Compatibility** | TypeScript + Zod | Port type checking and compatibility scoring | ✅ |
-| **Wiring Service** | TypeScript | Connection management and validation orchestration | ✅ |
 | **Code Synthesizer** | ts-morph | AST-based code generation | ✅ |
 
 ### Analysis Services (ADR-005, ADR-006)
@@ -108,6 +97,7 @@ flowchart TB
 
 | Decision | Rationale |
 |----------|-----------|
-| API Facade as single entry point | Unified interface for CLI and GUI |
+| API Facade with focused sub-facades | Single entry point with domain-specific facades (symbols, generation, validation, graph) |
 | Help Service bypasses API Facade | Documentation separate from symbol table domain |
 | SQLite for persistence | Embedded, no server required, portable |
+| Software-oriented relationships | Uses extends/implements/dependencies/contains instead of HDL port-based wiring |

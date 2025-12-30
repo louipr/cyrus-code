@@ -11,11 +11,11 @@ Runtime behavior showing how containers collaborate for key use cases.
 | Flow | Status | Notes |
 |------|--------|-------|
 | 1. Register Component | ✅ | `cyrus-code register` |
-| 2. Validate Connections | ✅ | `cyrus-code validate` |
+| 2. Validate Symbols | ✅ | `cyrus-code validate` |
 | 3. Generate Code | ✅ | `cyrus-code generate` |
 | 4. Dead Code Analysis | 🔮 | Static Analyzer schema only |
 | 5. Import Manual Code | 🔮 | Import Detector not implemented |
-| 6. Internal Flows | ✅ | Wiring algorithm, IPC architecture |
+| 6. Internal Flows | ✅ | Graph algorithms, IPC architecture |
 
 ---
 
@@ -30,29 +30,27 @@ C4Dynamic
     Person(developer, "Developer", "Registers a component")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
-    Container(componentRegistry, "Component Registry", "TypeScript", "Parses and validates")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to facades")
+    Container(symbolFacade, "Symbol Facade", "TypeScript", "Symbol operations")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Stores symbols")
     ContainerDb(symbolDb, "Symbol Database", "SQLite", "Persistence")
 
     Rel(developer, cli, "1. cyrus-code register <file>")
-    Rel(cli, apiFacade, "2. Route to registry")
-    Rel(apiFacade, componentRegistry, "3. Parse source file")
-    Rel(componentRegistry, componentRegistry, "4. Extract ports, types, metadata")
-    Rel(componentRegistry, symbolTable, "5. Register symbol")
-    Rel(symbolTable, symbolDb, "6. Persist to database")
-    Rel(cli, developer, "7. Return symbol ID")
+    Rel(cli, apiFacade, "2. Route to symbol facade")
+    Rel(apiFacade, symbolFacade, "3. registerSymbol()")
+    Rel(symbolFacade, symbolTable, "4. Register with auto-ID")
+    Rel(symbolTable, symbolDb, "5. Persist to database")
+    Rel(cli, developer, "6. Return symbol ID")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code register src/auth/JwtService.ts`
 2. CLI routes request to API Facade
-3. API Facade delegates to Component Registry to parse the source file
-4. Component Registry extracts component metadata, ports, and type references
-5. Symbol Table receives the new symbol with generated ID
-6. Symbol Database persists the symbol
-7. CLI returns the registered symbol ID to developer
+3. API Facade delegates to Symbol Facade
+4. Symbol Table receives the new symbol with generated ID
+5. Symbol Database persists the symbol
+6. CLI returns the registered symbol ID to developer
 
 ### Error Handling
 
@@ -60,64 +58,61 @@ C4Dynamic
 |-------|-------|----------|
 | **Parse failure** | Invalid syntax, missing exports | Report parse error with file location |
 | **Duplicate symbol** | Symbol ID already exists | Report conflict, suggest version bump |
-| **Invalid metadata** | Missing required fields (ports, level) | Report validation errors |
+| **Invalid metadata** | Missing required fields | Report validation errors |
 | **Database error** | SQLite write failure | Report persistence error |
 
 ---
 
-## 2. Validate Connections Flow
+## 2. Validate Symbols Flow
 
-Shows how port connections are validated before code generation.
+Shows how symbols and the dependency graph are validated.
 
 ```mermaid
 C4Dynamic
-    title Dynamic Diagram - Validate Connections
+    title Dynamic Diagram - Validate Symbols
 
-    Person(developer, "Developer", "Validates wiring")
+    Person(developer, "Developer", "Validates symbols")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
-    Container(wiring, "Wiring", "TypeScript", "Connection validation")
-    Container(interfaceValidator, "Interface Validator", "Zod", "Type checking")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to facades")
+    Container(validationFacade, "Validation Facade", "TypeScript", "Validation ops")
+    Container(graphFacade, "Graph Facade", "TypeScript", "Graph analysis")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Symbol lookup")
 
     Rel(developer, cli, "1. cyrus-code validate")
-    Rel(cli, apiFacade, "2. Route to wiring")
-    Rel(apiFacade, wiring, "3. Get all connections")
-    Rel(wiring, symbolTable, "4. Resolve source/target symbols")
-    Rel(wiring, interfaceValidator, "5. Validate each connection")
-    Rel(interfaceValidator, symbolTable, "6. Lookup port types")
-    Rel(interfaceValidator, wiring, "7. Return type compatibility result")
-    Rel(wiring, apiFacade, "8. Return validation result")
-    Rel(cli, developer, "9. Display errors/warnings")
+    Rel(cli, apiFacade, "2. Route to validation facade")
+    Rel(apiFacade, validationFacade, "3. validate()")
+    Rel(validationFacade, symbolTable, "4. Query all symbols")
+    Rel(validationFacade, graphFacade, "5. Check for cycles")
+    Rel(graphFacade, symbolTable, "6. Build dependency graph")
+    Rel(validationFacade, cli, "7. Return validation result")
+    Rel(cli, developer, "8. Display errors/warnings")
 ```
 
 ### Steps
 
 1. Developer runs `cyrus-code validate`
 2. CLI routes request to API Facade
-3. API Facade delegates to Wiring to check all connections
-4. Wiring resolves each connection's source and target symbols
-5. Interface Validator checks port type compatibility
-6. Symbol Table provides type definitions for comparison
+3. API Facade delegates to Validation Facade
+4. Validation Facade queries all symbols from Symbol Table
+5. Graph Facade checks for circular dependencies
+6. Dependency graph built from symbol relationships
 7. Validation results aggregated (errors, warnings)
-8. API Facade returns results to CLI
-9. CLI displays results with source locations
+8. CLI displays results
 
 ### Error Handling
 
 | Error | Cause | Response |
 |-------|-------|----------|
-| **Missing symbol** | Referenced symbol not in registry | Report unresolved reference with source location |
-| **Type mismatch** | Incompatible port types | Report type incompatibility details |
-| **Direction conflict** | Invalid flow direction (e.g., out→out) | Report invalid port direction |
+| **Missing symbol** | Referenced symbol not in registry | Report unresolved reference |
 | **Circular dependency** | Dependency cycle detected | Report cycle path |
+| **Invalid relationship** | Broken containment/dependency | Report relationship error |
 
 ---
 
 ## 3. Generate Code Flow
 
-Shows how code is synthesized from the component graph.
+Shows how code is synthesized from the symbol graph.
 
 ```mermaid
 C4Dynamic
@@ -126,20 +121,20 @@ C4Dynamic
     Person(developer, "Developer", "Generates code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
-    Container(wiring, "Wiring", "TypeScript", "Validates first")
-    Container(codeGen, "Code Generation", "ts-morph", "AST generation")
-    Container(symbolTable, "Symbol Table", "SQLite + TS", "Component graph")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to facades")
+    Container(validationFacade, "Validation Facade", "TypeScript", "Validates first")
+    Container(generationFacade, "Generation Facade", "TypeScript", "Code synthesis")
+    Container(symbolTable, "Symbol Table", "SQLite + TS", "Symbol graph")
     System_Ext(fileSystem, "File System", "Output directory")
 
     Rel(developer, cli, "1. cyrus-code generate ./out")
-    Rel(cli, apiFacade, "2. Route to code generation")
-    Rel(apiFacade, wiring, "3. Validate connections first")
-    Rel(wiring, apiFacade, "4. Validation passed")
-    Rel(apiFacade, codeGen, "5. Generate from graph")
-    Rel(codeGen, symbolTable, "6. Read component graph")
-    Rel(codeGen, codeGen, "7. Build AST")
-    Rel(codeGen, fileSystem, "8. Write source files")
+    Rel(cli, apiFacade, "2. Route to generation facade")
+    Rel(apiFacade, validationFacade, "3. Validate first")
+    Rel(validationFacade, apiFacade, "4. Validation passed")
+    Rel(apiFacade, generationFacade, "5. generate()")
+    Rel(generationFacade, symbolTable, "6. Read symbol graph")
+    Rel(generationFacade, generationFacade, "7. Build AST")
+    Rel(generationFacade, fileSystem, "8. Write source files")
     Rel(cli, developer, "9. Report generated files")
 ```
 
@@ -147,11 +142,11 @@ C4Dynamic
 
 1. Developer runs `cyrus-code generate ./out`
 2. CLI routes request to API Facade
-3. API Facade first validates all connections via Wiring
+3. API Facade first validates via Validation Facade
 4. If validation passes, proceed to generation
-5. API Facade delegates to Code Generation service
-6. Code Generation reads the full component graph from Symbol Table
-7. AST is built for each component with connections wired
+5. API Facade delegates to Generation Facade
+6. Generation Facade reads the symbol graph from Symbol Table
+7. AST is built for each component
 8. Generated files written to output directory
 9. CLI reports what was generated
 
@@ -179,8 +174,8 @@ C4Dynamic
     Person(developer, "Developer", "Analyzes dead code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
-    %% 🔮 Planned: Schema exists, logic not implemented (Slice 4)
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to facades")
+    %% 🔮 Planned: Schema exists, logic not implemented
     Container(staticAnalyzer, "Static Analyzer", "ts-morph", "Call graph [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Status tracking")
     System_Ext(fileSystem, "File System", "Source files")
@@ -221,7 +216,7 @@ C4Dynamic
     Person(developer, "Developer", "Imports manual code")
 
     Container(cli, "CLI", "Node.js", "Command interface")
-    Container(apiFacade, "API Facade", "TypeScript", "Routes to services")
+    Container(apiFacade, "API Facade", "TypeScript", "Routes to facades")
     %% 🔮 Planned: Import Detector not implemented
     Container(importDetector, "Import Detector", "ts-morph", "Scans untracked [PLANNED]")
     Container(symbolTable, "Symbol Table", "SQLite + TS", "Registration")
@@ -260,63 +255,31 @@ C4Dynamic
 
 > **Note**: These sequence diagrams show internal component interactions for key algorithms. They complement the container-level flows above.
 
-### Wiring: Connect Ports
-
-The 8-step validation sequence when connecting two ports:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Wiring as WiringService
-    participant ST as Symbol Table
-    participant Val as Interface Validator
-    participant Graph as Graph Analysis
-
-    Client->>Wiring: connect(request)
-    Wiring->>Wiring: 1. Validate self-connection
-    Wiring->>ST: 2. Lookup source/target symbols
-    ST-->>Wiring: symbols
-    Wiring->>Wiring: 3. Find source/target ports
-    Wiring->>Wiring: 4. Check duplicate connection
-    Wiring->>Val: 5. Validate port compatibility
-    Val-->>Wiring: compatibility result
-    Wiring->>Wiring: 6. Check cardinality
-    Wiring->>Graph: 7. wouldCreateCycle()
-    Graph-->>Wiring: cycle check result
-    alt all checks pass
-        Wiring->>ST: 8. Persist connection
-        ST-->>Wiring: success
-        Wiring-->>Client: WiringResult (success)
-    else validation failed
-        Wiring-->>Client: WiringResult (error code)
-    end
-```
-
-### Wiring: Build Dependency Graph
+### Graph: Build Dependency Graph
 
 How the dependency graph is constructed with cycle detection:
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Wiring as WiringService
+    participant GraphFacade as Graph Facade
+    participant GraphService as Dependency Graph Service
     participant ST as Symbol Table
-    participant Graph as Graph Analysis
 
-    Client->>Wiring: buildDependencyGraph()
-    Wiring->>ST: 1. Get all symbols
-    ST-->>Wiring: symbols[]
-    Wiring->>ST: 2. Get all connections
-    ST-->>Wiring: connections[]
-    Wiring->>Graph: 3. Create GraphNodes
-    Wiring->>Graph: 4. Create GraphEdges
-    Wiring->>Graph: 5. detectCycles()
-    Graph-->>Wiring: cycles[]
+    Client->>GraphFacade: build()
+    GraphFacade->>GraphService: buildGraph()
+    GraphService->>ST: 1. Get all symbols
+    ST-->>GraphService: symbols[]
+    GraphService->>GraphService: 2. Create graph nodes
+    GraphService->>GraphService: 3. Create edges from dependencies
+    GraphService->>GraphService: 4. detectCycles()
     alt no cycles
-        Wiring->>Graph: 6. topologicalSort()
-        Graph-->>Wiring: sorted order
+        GraphService->>GraphService: 5. topologicalSort()
+        GraphService-->>GraphFacade: DependencyGraph
+    else cycles found
+        GraphService-->>GraphFacade: DependencyGraph (with cycles)
     end
-    Wiring-->>Client: DependencyGraph
+    GraphFacade-->>Client: ApiResponse<DependencyGraphDTO>
 ```
 
 ### IPC Architecture (Electron)
@@ -329,17 +292,17 @@ sequenceDiagram
     participant Client as apiClient
     participant IPC as IPC (electronAPI)
     participant Handler as IPC Handler
-    participant API as Architecture
-    participant Service as Component Registry
+    participant Facade as Architecture Facade
+    participant Service as Symbol Table Service
 
     React->>Client: symbols.get(id)
     Client->>IPC: invoke('symbols:get', id)
     IPC->>Handler: IPC Main handler
-    Handler->>API: getSymbol(id)
-    API->>Service: Route to registry
-    Service-->>API: domain result
-    API->>API: Convert to DTO
-    API-->>Handler: ApiResponse
+    Handler->>Facade: symbols.getSymbol(id)
+    Facade->>Service: get(id)
+    Service-->>Facade: domain result
+    Facade->>Facade: Convert to DTO
+    Facade-->>Handler: ApiResponse
     Handler-->>IPC: Return via IPC
     IPC-->>Client: response
     Client-->>React: DTO
@@ -355,6 +318,7 @@ sequenceDiagram
 | Validate before generate | Fail fast - don't generate invalid code |
 | Error handling tables per flow | Clear documentation of failure modes |
 | Mark planned flows with 🔮 | Distinguish implemented vs roadmap |
+| Focused facades | Each facade handles one domain concern |
 
 ---
 

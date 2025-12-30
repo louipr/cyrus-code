@@ -52,13 +52,13 @@ L0: Primitive               [JwtPayload, Role enum]
 **Phase: Slice 3 Complete**
 
 ### Completed
-- [x] Architecture: 10 ADRs, C4 diagrams, symbol table schema
+- [x] Architecture: 8 ADRs, C4 diagrams, symbol table schema
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
-- [x] Slice 2 Backend: Validator Service, Wiring Service, API + CLI
+- [x] Slice 2 Backend: Validator Service, Graph Service, API + CLI
 - [x] Slice 3 Backend: Code Synthesizer, Generation Gap pattern, TypeScript backend
-- [x] 192 unit tests + 11 E2E tests passing
+- [x] 233 unit tests + 6 E2E tests passing
 - [x] Electron desktop app with React frontend
-- [x] CLI commands: `wire`, `graph` with full wiring support
+- [x] CLI commands: `validate`, `graph` with full graph support
 
 ### Implementation Approach: Vertical Slices
 
@@ -67,7 +67,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Wiring | Wiring, Validator, API+CLI | Canvas, Validation | ✅ Complete |
+| 2: Graph | Graph Service, Validator, API+CLI | Validation | ✅ Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |
@@ -90,14 +90,12 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 - **[Implementation Tracking](docs/IMPLEMENTATION.md)** - Detailed task breakdown by slice
 - [ADR-001: Symbol Table Architecture](docs/adr/001-symbol-table-architecture.md)
 - [ADR-002: Multi-Level Abstraction](docs/adr/002-multi-level-abstraction.md)
-- [ADR-003: Interface Definition System](docs/adr/003-interface-definition-system.md)
-- [ADR-004: Multi-Language Backends](docs/adr/004-multi-language-backends.md)
 - [ADR-005: Dead Code Detection](docs/adr/005-dead-code-detection.md)
 - [ADR-006: Generation Gap Pattern](docs/adr/006-generation-gap-pattern.md)
-- [ADR-007: Full Lifecycle Architecture](docs/adr/007-full-lifecycle-architecture.md)
-- [ADR-008: Design Patterns](docs/adr/008-design-patterns.md)
 - [ADR-009: Electron GUI Framework](docs/adr/009-electron-gui-framework.md)
 - [ADR-010: GUI Testing Strategy](docs/adr/010-gui-testing-strategy.md)
+- [ADR-011: Service Layer Refactoring](docs/adr/011-service-layer-refactoring.md)
+- [ADR-012: Diagram-Driven Architecture](docs/adr/012-diagram-driven-architecture.md)
 - C4 Diagrams: [Context](docs/c4/1-context.md), [Container](docs/c4/2-container.md), [Dynamic](docs/c4/dynamic.md)
 - [Symbol Table Schema](docs/spec/symbol-table-schema.md)
 
@@ -111,8 +109,8 @@ npm install
 npm run build:all
 
 # Run tests
-npm test           # 192 unit tests
-npm run test:e2e   # 11 E2E tests (3 spec files)
+npm test           # 233 unit tests
+npm run test:e2e   # 6 E2E tests (2 spec files)
 
 # Launch desktop app
 npm run electron
@@ -128,13 +126,12 @@ cyrus-code register <file>        # Register component from source
 cyrus-code list [--level L1]      # List symbols, optionally filter
 cyrus-code get <symbol-id>        # Get symbol details
 
-# Wiring
-cyrus-code wire <from> <to>       # Connect component ports
+# Graph & Validation
 cyrus-code graph                  # Display dependency graph
+cyrus-code validate               # Validate all symbols and relationships
 
-# Validation & Generation
-cyrus-code validate               # Validate all connections
-cyrus-code generate <output>      # Generate code from graph
+# Code Generation
+cyrus-code generate <output>      # Generate code from symbol graph
 
 # Help
 cyrus-code help                   # Show help information
@@ -143,14 +140,8 @@ cyrus-code help                   # Show help information
 ### Planned 🔮
 
 ```bash
-# Symbol management (ADR-003)
+# Symbol management
 cyrus-code remove <symbol-id>     # Remove from registry
-
-# Validation
-cyrus-code lint                   # Check for issues
-cyrus-code preview                # Show what would be generated
-
-# Version management (ADR-003)
 cyrus-code version <symbol-id>    # Show version history
 cyrus-code bump <symbol-id> <type># Bump version (major/minor/patch)
 
@@ -159,23 +150,10 @@ cyrus-code analyze                # Run static analysis
 cyrus-code analyze --entry <file> # Specify entry points
 cyrus-code dead                   # List dead code candidates
 cyrus-code status <symbol-id>     # Show symbol status
-cyrus-code trace start            # Start runtime tracing (dev mode)
-cyrus-code trace stop             # Stop and report
 
 # Import detection (ADR-006)
 cyrus-code scan                   # Find untracked files
 cyrus-code import <file>          # Import file to registry
-cyrus-code import --interactive   # Interactive import wizard
-cyrus-code check                  # Check for modified generated files
-
-# Lifecycle management (ADR-007)
-cyrus-code spec create <name>     # Create requirement specification
-cyrus-code spec link <req> <sym>  # Link requirement to component
-cyrus-code test generate <symbol> # Generate tests from contracts
-cyrus-code test affected <symbol> # Run affected tests only
-cyrus-code impact <symbol>        # Analyze change impact
-cyrus-code release create <ver>   # Create immutable release
-cyrus-code release diff <v1> <v2> # Compare releases
 ```
 
 ## See Also

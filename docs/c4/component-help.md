@@ -34,9 +34,9 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **HelpService** | Topic loading, search, formatting | `getTopic()`, `search()`, `getCategories()`, `getTopicContent()` | ✅ | `src/services/help/index.ts` |
-| **Terminal Renderer** | Markdown to ANSI conversion | `renderMarkdownForTerminal()` | ✅ | `src/services/help/renderer.ts` |
-| **Schema** | Type definitions | `HelpManifest`, `HelpTopic`, `HelpCategory`, `HelpSearchResult` | ✅ | `src/services/help/schema.ts` |
+| **HelpService** | Topic loading, search, formatting | `getTopic()`, `search()`, `getCategories()`, `getTopicContent()` | ✅ | `src/services/help-content/index.ts` |
+| **Terminal Renderer** | Markdown to ANSI conversion | `renderMarkdownForTerminal()` | ✅ | `src/services/help-content/terminal-renderer.ts` |
+| **Schema** | Type definitions | `HelpManifest`, `HelpTopic`, `HelpCategory`, `HelpSearchResult` | ✅ | `src/services/help-content/schema.ts` |
 
 ## Design Decisions
 
@@ -65,14 +65,14 @@ flowchart TD
 ### HelpService API
 
 ```typescript:include
-source: src/services/help/schema.ts
+source: src/services/help-content/schema.ts
 exports: [IHelpService]
 ```
 
 ### Help Schema Types
 
 ```typescript:include
-source: src/services/help/schema.ts
+source: src/services/help-content/schema.ts
 exports: [HelpManifest, HelpTopic, HelpCategory, HelpSearchResult, HelpOutputFormat]
 ```
 
@@ -120,4 +120,4 @@ The renderer converts markdown to ANSI-escaped terminal output:
 
 ### Notes
 
-- **Source Files**: `src/services/help/index.ts`, `src/services/help/renderer.ts`, `src/services/help/schema.ts`
+- **Source Files**: `src/services/help-content/index.ts`, `src/services/help-content/terminal-renderer.ts`, `src/services/help-content/schema.ts`

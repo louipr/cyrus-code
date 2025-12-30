@@ -1,12 +1,13 @@
 # ADR-011: Service Layer Refactoring Patterns
 
-**Status**: Superseded by implementation
+**Status**: Implemented
 **Date**: 2025-12-23
 **Context**: Aggressive refactoring of code-generation service revealed architectural patterns applicable across all services
 
-> **Note**: This ADR documents the original architectural proposal with separate `backends/` directory.
-> **Actual implementation** co-locates language-specific code with services (e.g., `services/code-generation/typescript/`)
-> to avoid YAGNI violations and unnecessary abstraction layers. See code for current structure.
+> **Implementation Note**: The core architectural patterns from this ADR were implemented, but with a simplified structure.
+> Instead of a separate `backends/` directory, language-specific code is co-located with services
+> (e.g., `services/code-generation/typescript/`) to avoid YAGNI violations. The layered architecture
+> principles (domain, service, infrastructure separation) were fully adopted.
 
 ---
 

@@ -41,7 +41,7 @@ L0: Primitive               [JwtPayload type, Role enum, UserId branded type]
 Every component tracked with:
 - **Unique ID**: Package-like format `auth/jwt/JwtService@1.2.0`
 - **Level**: L0-L4 in the hierarchy
-- **Relationships**: Static (extends, implements, dependencies) and runtime (ports)
+- **Relationships**: extends, implements, dependencies, contains
 - **Version**: SemVer with compatibility constraints
 
 ### Relationship Model
@@ -50,11 +50,7 @@ Every component tracked with:
 - **extends**: Single inheritance (class extends parent)
 - **implements**: Interface realization (class implements interfaces)
 - **dependencies**: Injected dependencies (constructor/property/method injection)
-
-**Runtime Relationships (HDL-inspired):**
-- **Ports**: Named, typed connection points for data flow
-- **Direction**: `in`, `out`, `inout`
-- **Wiring**: Compile-time verification of port connections
+- **contains**: Parent-child containment (L3 subsystem contains L2 modules)
 
 ## Feature Overview
 
@@ -69,9 +65,9 @@ Every component tracked with:
 
 | File | Purpose |
 |------|---------|
-| `docs/adr/` | Architecture decision records |
+| `docs/adr/` | Architecture decision records (8 ADRs) |
 | `docs/spec/symbol-table-schema.md` | Canonical type definitions |
-| `docs/c4/` | C4 architecture diagrams (L1 Context, L2 Container, 7 L3 Component, Dynamic) |
+| `docs/c4/` | C4 architecture diagrams (L1 Context, L2 Container, 5 L3 Component, Dynamic) |
 | `docs/runbooks/` | Developer setup and manual verification guides |
 | `docs/design-rationale.md` | Why decisions were made (research + rationale) |
 
@@ -83,17 +79,13 @@ Every component tracked with:
 |------|------------|------|
 | **Symbol Table** | Persistent database tracking all components | Expanded from compiler term; persistent, not ephemeral |
 | **Symbol** | A tracked entity in the symbol table (component, type, module) | |
-| **Port** | A typed connection point on a component | HDL-inspired, not network ports |
-| **Signal** | Data flowing between ports | HDL-inspired, not Unix signals |
-| **Wiring** | Connecting component ports and validating compatibility | Avoids "linking" (compiler term) |
 | **Synthesis** | Generating source code from component graph | HDL-inspired (like RTL synthesis) |
 | **Status** | Usage state: declared → referenced → tested → executed | |
 | **Generation Gap** | Pattern: generated base class + manual subclass | |
 | **Backend** | Language-specific code generator (currently TypeScript only) | Like compiler backend, not web backend |
 | **Import** | Adding untracked manual code to the symbol table | |
-| **Composition** | Versioned snapshot of a complete system (all components + connections) | |
+| **Composition** | Versioned snapshot of a complete system (all components + relationships) | |
 | **Impact Analysis** | Determining what breaks when a component changes | |
-| **Contract Test** | Test auto-generated from port type definitions | |
 
 ### Level Terminology (Important!)
 
@@ -132,9 +124,9 @@ npm run build:gui      # Build frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 186 unit tests (auto-rebuilds native module)
+npm test               # Run 233 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
-npm run test:e2e       # Run 17 Playwright E2E tests (auto-rebuilds for Electron)
+npm run test:e2e       # Run 6 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
@@ -151,10 +143,10 @@ npm run lint           # ESLint
 
 ## Development Philosophy
 
-1. **Symbol table is the source of truth** - All components tracked, versioned, linked
-2. **Interfaces before implementation** - Define ports, then fill in components
+1. **Symbol table is the source of truth** - All components tracked, versioned, related
+2. **Interfaces before implementation** - Define relationships, then fill in components
 3. **Verify before generate** - Multi-stage pipeline catches errors early
-4. **Configure, don't regenerate** - AI selects and wires components, not rewrites them
+4. **Configure, don't regenerate** - AI selects and composes components, not rewrites them
 
 ### Code Quality Principles
 
