@@ -1,4 +1,4 @@
-# ADR-012: Diagram-Driven Architecture with Draw.io and PlantUML
+# ADR-012: Diagram-Driven Architecture with Draw.io and Mermaid
 
 > **Status**: Accepted | **Date**: 2024-12-28 | **Authors**: Architecture Team
 
@@ -31,13 +31,14 @@ This ADR is grounded in peer-reviewed and industry-vetted sources:
 - Uncompressed XML option for version control
 - Cross-platform support (web, desktop, VS Code extension)
 
-### 2. PlantUML as AI-Friendly Representation
+### 2. Mermaid as AI-Friendly Representation
 
-**Rationale**: PlantUML provides:
+**Rationale**: Mermaid provides:
 - Text-based format optimized for LLM understanding
-- Comprehensive UML relationship syntax
+- Native GitHub/GitLab rendering (no external tools needed)
 - Easy diff/merge in version control
 - 1:1 mappable to Draw.io elements
+- Already used for all C4 diagrams in cyrus-code
 
 ### 3. Dual Source of Truth Architecture
 
@@ -111,112 +112,112 @@ These are orthogonal concepts:
 
 #### L0: Primitives (Types)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| Primitive Type | `<<primitive>>` | `class UserId <<primitive>>` | Small rectangle, green (#6a9955) | `type UserId = string` |
-| Interface | `<<interface>>` | `interface IAuthService` | Rectangle with lollipop | `interface IAuthService {}` |
-| DTO | `<<DTO>>` | `class LoginRequest <<DTO>>` | Rectangle, dashed border | `interface LoginRequest {}` |
-| Enum | `<<enum>>` | `enum UserRole` | Rectangle with compartments | `enum UserRole {}` |
-| Type Alias | `<<type>>` | `class Config <<type>>` | Small rectangle | `type Config = {...}` |
-| Branded Type | `<<branded>>` | `class UserId <<branded>>` | Rectangle with B icon | `type UserId = string & {_brand: 'UserId'}` |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| Primitive Type | `<<primitive>>` | `class UserId["UserId &lt;&lt;primitive&gt;&gt;"]` | Small rectangle, green (#6a9955) | `type UserId = string` |
+| Interface | `<<interface>>` | `class IAuthService["IAuthService &lt;&lt;interface&gt;&gt;"]` | Rectangle with lollipop | `interface IAuthService {}` |
+| DTO | `<<DTO>>` | `class LoginRequest["LoginRequest &lt;&lt;DTO&gt;&gt;"]` | Rectangle, dashed border | `interface LoginRequest {}` |
+| Enum | `<<enum>>` | `class UserRole["UserRole &lt;&lt;enum&gt;&gt;"]` | Rectangle with compartments | `enum UserRole {}` |
+| Type Alias | `<<type>>` | `class Config["Config &lt;&lt;type&gt;&gt;"]` | Small rectangle | `type Config = {...}` |
+| Branded Type | `<<branded>>` | `class UserId["UserId &lt;&lt;branded&gt;&gt;"]` | Rectangle with B icon | `type UserId = string & {_brand: 'UserId'}` |
 
 #### L1: Components (Classes)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
 | Class | (none) | `class ClassName` | Rectangle, cyan (#4ec9b0) | `class ClassName {}` |
-| Service | `<<service>>` | `class X <<service>>` | Rectangle with S icon | `class XService {}` |
-| Controller | `<<controller>>` | `class X <<controller>>` | Rectangle with C icon | `class XController {}` |
-| Repository | `<<repository>>` | `class X <<repository>>` | Rectangle with R icon | `class XRepository {}` |
-| Middleware | `<<middleware>>` | `class X <<middleware>>` | Rectangle with M icon | `class XMiddleware {}` |
-| Factory | `<<factory>>` | `class X <<factory>>` | Rectangle with F icon | `class XFactory {}` |
-| Handler | `<<handler>>` | `class X <<handler>>` | Rectangle with H icon | `class XHandler {}` |
-| Validator | `<<validator>>` | `class X <<validator>>` | Rectangle with V icon | `class XValidator {}` |
-| Mapper | `<<mapper>>` | `class X <<mapper>>` | Rectangle with arrow icon | `class XMapper {}` |
+| Service | `<<service>>` | `class X["X &lt;&lt;service&gt;&gt;"]` | Rectangle with S icon | `class XService {}` |
+| Controller | `<<controller>>` | `class X["X &lt;&lt;controller&gt;&gt;"]` | Rectangle with C icon | `class XController {}` |
+| Repository | `<<repository>>` | `class X["X &lt;&lt;repository&gt;&gt;"]` | Rectangle with R icon | `class XRepository {}` |
+| Middleware | `<<middleware>>` | `class X["X &lt;&lt;middleware&gt;&gt;"]` | Rectangle with M icon | `class XMiddleware {}` |
+| Factory | `<<factory>>` | `class X["X &lt;&lt;factory&gt;&gt;"]` | Rectangle with F icon | `class XFactory {}` |
+| Handler | `<<handler>>` | `class X["X &lt;&lt;handler&gt;&gt;"]` | Rectangle with H icon | `class XHandler {}` |
+| Validator | `<<validator>>` | `class X["X &lt;&lt;validator&gt;&gt;"]` | Rectangle with V icon | `class XValidator {}` |
+| Mapper | `<<mapper>>` | `class X["X &lt;&lt;mapper&gt;&gt;"]` | Rectangle with arrow icon | `class XMapper {}` |
 
 #### L2: Modules (Containers)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| Module | `<<module>>` | `package ModuleName` | Large rectangle, yellow (#dcdcaa) | Directory + index.ts barrel |
-| Feature | `<<feature>>` | `package X <<feature>>` | Rounded rectangle | Feature module structure |
-| Library | `<<library>>` | `package X <<library>>` | Rectangle with book icon | Shared library |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| Module | `<<module>>` | `subgraph ModuleName` | Large rectangle, yellow (#dcdcaa) | Directory + index.ts barrel |
+| Feature | `<<feature>>` | `subgraph X["X &lt;&lt;feature&gt;&gt;"]` | Rounded rectangle | Feature module structure |
+| Library | `<<library>>` | `subgraph X["X &lt;&lt;library&gt;&gt;"]` | Rectangle with book icon | Shared library |
 
 #### L3: Subsystems
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| Subsystem | `<<subsystem>>` | `package X <<subsystem>>` | Large rectangle, orange (#ce9178) | Subsystem facade |
-| Domain | `<<domain>>` | `package X <<domain>>` | Bounded context shape | DDD bounded context |
-| Layer | `<<layer>>` | `package X <<layer>>` | Horizontal band | Architectural layer |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| Subsystem | `<<subsystem>>` | `subgraph X["X &lt;&lt;subsystem&gt;&gt;"]` | Large rectangle, orange (#ce9178) | Subsystem facade |
+| Domain | `<<domain>>` | `subgraph X["X &lt;&lt;domain&gt;&gt;"]` | Bounded context shape | DDD bounded context |
+| Layer | `<<layer>>` | `subgraph X["X &lt;&lt;layer&gt;&gt;"]` | Horizontal band | Architectural layer |
 
 #### L4: Contracts (API Boundaries)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| API Contract | `<<API>>` | `package X <<API>>` | Dashed rectangle, purple (#c586c0) | OpenAPI spec + types |
-| Event Contract | `<<events>>` | `package X <<events>>` | Dashed with lightning | Event schemas |
-| GraphQL | `<<graphql>>` | `package X <<graphql>>` | Hexagon shape | GraphQL schema |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| API Contract | `<<API>>` | `subgraph X["X &lt;&lt;API&gt;&gt;"]` | Dashed rectangle, purple (#c586c0) | OpenAPI spec + types |
+| Event Contract | `<<events>>` | `subgraph X["X &lt;&lt;events&gt;&gt;"]` | Dashed with lightning | Event schemas |
+| GraphQL | `<<graphql>>` | `subgraph X["X &lt;&lt;graphql&gt;&gt;"]` | Hexagon shape | GraphQL schema |
 
 #### Infrastructure (Non-L-Level)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| Database | `<<database>>` | `database DB` | Cylinder | Connection config |
-| Message Queue | `<<queue>>` | `queue Queue` | Parallelogram | Queue client config |
-| Cache | `<<cache>>` | `storage Cache` | Small cylinder | Cache client config |
-| File Storage | `<<storage>>` | `storage Files` | Folder shape | Storage adapter |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| Database | `<<database>>` | `DB[(Database)]` | Cylinder | Connection config |
+| Message Queue | `<<queue>>` | `Queue[/Queue/]` | Parallelogram | Queue client config |
+| Cache | `<<cache>>` | `Cache[(Cache)]` | Small cylinder | Cache client config |
+| File Storage | `<<storage>>` | `Files[(Files)]` | Folder shape | Storage adapter |
 
 #### Boundary (External Systems)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| External System | `<<external>>` | `actor External` | Cloud shape | Client adapter |
-| Third-Party API | `<<3rdparty>>` | `cloud ThirdParty` | Cloud with API | HTTP client |
-| User Actor | `<<actor>>` | `actor User` | Stick figure | N/A (documentation) |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| External System | `<<external>>` | `External((External))` | Cloud shape | Client adapter |
+| Third-Party API | `<<3rdparty>>` | `ThirdParty((ThirdParty))` | Cloud with API | HTTP client |
+| User Actor | `<<actor>>` | `User([User])` | Stick figure | N/A (documentation) |
 
 #### UI Components (Full-Stack)
 
-| Shape | Stereotype | PlantUML | Draw.io Style | Code Generation |
-|-------|------------|----------|---------------|-----------------|
-| Page | `<<page>>` | `class X <<page>>` | Rectangle with browser | Page component |
-| Component | `<<component>>` | `class X <<component>>` | Rectangle with puzzle | React/Vue component |
-| Hook | `<<hook>>` | `class X <<hook>>` | Rectangle with hook | Custom hook |
-| Context | `<<context>>` | `class X <<context>>` | Oval shape | React context |
-| Store | `<<store>>` | `class X <<store>>` | Rectangle with state | State store |
+| Shape | Stereotype | Mermaid | Draw.io Style | Code Generation |
+|-------|------------|---------|---------------|-----------------|
+| Page | `<<page>>` | `class X["X &lt;&lt;page&gt;&gt;"]` | Rectangle with browser | Page component |
+| Component | `<<component>>` | `class X["X &lt;&lt;component&gt;&gt;"]` | Rectangle with puzzle | React/Vue component |
+| Hook | `<<hook>>` | `class X["X &lt;&lt;hook&gt;&gt;"]` | Rectangle with hook | Custom hook |
+| Context | `<<context>>` | `class X["X &lt;&lt;context&gt;&gt;"]` | Oval shape | React context |
+| Store | `<<store>>` | `class X["X &lt;&lt;store&gt;&gt;"]` | Rectangle with state | State store |
 
 ### Relationship Types (Comprehensive)
 
 #### Structural Relationships
 
-| Relationship | UML Type | PlantUML Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
-|--------------|----------|-----------------|---------------|----------------------|-----------------|
-| Extends | Generalization | `A <\|-- B` | Solid line, hollow triangle | `extends: string` | `class B extends A` |
-| Implements | Realization | `A <\|.. B` | Dashed line, hollow triangle | `implements: string[]` | `class B implements A` |
+| Relationship | UML Type | Mermaid Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
+|--------------|----------|----------------|---------------|----------------------|-----------------|
+| Extends | Generalization | `B --\|> A` | Solid line, hollow triangle | `extends: string` | `class B extends A` |
+| Implements | Realization | `B ..\|> A` | Dashed line, hollow triangle | `implements: string[]` | `class B implements A` |
 | Dependency | Dependency | `A ..> B` | Dashed arrow | `dependencies[]` | Constructor/property injection |
 | Composition | Composition | `A *-- B` | Solid line, filled diamond | `composes[]` | Private owned instance |
 | Aggregation | Aggregation | `A o-- B` | Solid line, hollow diamond | `aggregates[]` | Shared reference |
 | Association | Association | `A -- B` | Solid line | `associations[]` | Reference field |
-| Contains | Containment | `A +-- B` | Nested in package | `contains[]` | Directory nesting |
+| Contains | Containment | `subgraph A ... B ... end` | Nested in package | `contains[]` | Directory nesting |
 
 #### Behavioral Relationships
 
-| Relationship | UML Type | PlantUML Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
-|--------------|----------|-----------------|---------------|----------------------|-----------------|
-| Calls | Method Call | `A -> B : method()` | Solid arrow with label | `calls[]` | Method invocation |
-| Creates | Instantiation | `A ..> B : <<creates>>` | Dashed arrow, creates | `creates[]` | `new B()` |
-| Publishes | Event Emit | `A -[#green]-> B : Event` | Green dashed arrow | `publishes[]` | `emit('Event', data)` |
-| Subscribes | Event Listen | `A <-[#blue]- B : Event` | Blue dashed arrow | `subscribes[]` | `on('Event', handler)` |
-| Returns | Return Value | `A <-- B` | Dashed return arrow | `returns[]` | Return type |
+| Relationship | UML Type | Mermaid Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
+|--------------|----------|----------------|---------------|----------------------|-----------------|
+| Calls | Method Call | `A --> B : method()` | Solid arrow with label | `calls[]` | Method invocation |
+| Creates | Instantiation | `A ..> B : creates` | Dashed arrow, creates | `creates[]` | `new B()` |
+| Publishes | Event Emit | `A -.-> B : Event` | Green dashed arrow | `publishes[]` | `emit('Event', data)` |
+| Subscribes | Event Listen | `B -.-> A : Event` | Blue dashed arrow | `subscribes[]` | `on('Event', handler)` |
+| Returns | Return Value | `B -.-> A` | Dashed return arrow | `returns[]` | Return type |
 
 #### Data Flow Relationships
 
-| Relationship | UML Type | PlantUML Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
-|--------------|----------|-----------------|---------------|----------------------|-----------------|
-| Reads | Query | `A .[#blue].> B` | Blue dashed arrow | `reads[]` | Repository query |
-| Writes | Command | `A .[#red].> B` | Red dashed arrow | `writes[]` | Repository mutation |
-| Transforms | Mapping | `A .[#gray].> B` | Gray dashed arrow | `transforms[]` | Mapper function |
-| Validates | Validation | `A .[#orange].> B` | Orange dashed arrow | `validates[]` | Validator call |
+| Relationship | UML Type | Mermaid Syntax | Draw.io Arrow | Symbol Table Property | Code Generation |
+|--------------|----------|----------------|---------------|----------------------|-----------------|
+| Reads | Query | `A -.-> B : reads` | Blue dashed arrow | `reads[]` | Repository query |
+| Writes | Command | `A -.-> B : writes` | Red dashed arrow | `writes[]` | Repository mutation |
+| Transforms | Mapping | `A -.-> B : transforms` | Gray dashed arrow | `transforms[]` | Mapper function |
+| Validates | Validation | `A -.-> B : validates` | Orange dashed arrow | `validates[]` | Validator call |
 
 ### Draw.io XML Schema (Detailed)
 
@@ -376,84 +377,69 @@ mxfile (root)
 | `cyrus-optional` | boolean | Whether dependency is optional |
 | `cyrus-version` | string | SemVer version constraint |
 
-### PlantUML Equivalent Syntax
+### Mermaid Equivalent Syntax
 
-```plantuml
-@startuml architecture
+```mermaid
+classDiagram
+    %% === L0: TYPES ===
+    class IAuthService {
+        <<interface>>
+        +validateToken(token: string) boolean
+        +generateToken(userId: string) string
+    }
 
-' === CONFIGURATION ===
-skinparam packageStyle rectangle
-skinparam class {
-  BackgroundColor<<service>> #4ec9b0
-  BackgroundColor<<controller>> #4ec9b0
-  BackgroundColor<<repository>> #4ec9b0
-  BackgroundColor<<DTO>> #6a9955
-  BackgroundColor<<interface>> #6a9955
-}
+    class LoginRequest {
+        <<DTO>>
+        +email: string
+        +password: string
+    }
 
-' === L0: TYPES ===
-interface IAuthService {
-  +validateToken(token: string): boolean
-  +generateToken(userId: string): string
-}
+    class TokenResponse {
+        <<DTO>>
+        +accessToken: string
+        +refreshToken: string
+    }
 
-class LoginRequest <<DTO>> {
-  +email: string
-  +password: string
-}
+    %% === L1: COMPONENTS ===
+    class JwtService {
+        <<service>>
+        -secret: string
+        +validateToken(token: string) boolean
+        +generateToken(userId: string) string
+    }
 
-class TokenResponse <<DTO>> {
-  +accessToken: string
-  +refreshToken: string
-}
+    class AuthController {
+        <<controller>>
+        +login(req: LoginRequest) TokenResponse
+        +logout() void
+    }
 
-' === L1: COMPONENTS ===
-class JwtService <<service>> {
-  -secret: string
-  +validateToken(token: string): boolean
-  +generateToken(userId: string): string
-}
+    class UserRepository {
+        <<repository>>
+        +findByEmail(email: string) User
+        +findById(id: string) User
+    }
 
-class AuthController <<controller>> {
-  +login(req: LoginRequest): TokenResponse
-  +logout(): void
-}
+    %% === RELATIONSHIPS ===
+    %% Structural
+    JwtService ..|> IAuthService : implements
+    AuthController ..> JwtService : dependency
+    AuthController ..> UserRepository : dependency
 
-class UserRepository <<repository>> {
-  +findByEmail(email: string): User
-  +findById(id: string): User
-}
+    %% Behavioral
+    AuthController --> JwtService : validateToken()
 
-' === L2: MODULES ===
-package "auth-module" <<module>> {
-  JwtService
-  AuthController
-  UserRepository
-}
+    %% Data flow
+    UserRepository -.-> PostgreSQL : reads
+    UserRepository -.-> PostgreSQL : writes
 
-' === L3: SUBSYSTEMS ===
-package "auth-subsystem" <<subsystem>> {
-  package "auth-module"
-}
-
-' === RELATIONSHIPS ===
-' Structural
-JwtService ..|> IAuthService : implements
-AuthController ..> JwtService : dependency (constructor)
-AuthController ..> UserRepository : dependency (constructor)
-
-' Behavioral
-AuthController -> JwtService : validateToken()
-
-' Data flow
-UserRepository .[#blue].> PostgreSQL : reads
-UserRepository .[#red].> PostgreSQL : writes
-
-' === INFRASTRUCTURE ===
-database PostgreSQL
-
-@enduml
+    %% === INFRASTRUCTURE ===
+    class PostgreSQL {
+        <<database>>
+    }
 ```
+
+> **Note**: Mermaid class diagrams don't support packages/subgraphs for grouping. Use the flowchart diagram type with subgraphs for module/subsystem containment, or document containment separately.
 
 ### TypeScript Interfaces
 
@@ -660,54 +646,54 @@ export interface TemplateInstantiationResult {
 
 ### 1:1 Mapping Specification
 
-This section defines the exact mappings between Draw.io, PlantUML, and Symbol Table representations.
+This section defines the exact mappings between Draw.io, Mermaid, and Symbol Table representations.
 
 #### Shape Type Mappings
 
-| Draw.io Style | PlantUML Syntax | Symbol Table `kind` | Level |
-|---------------|-----------------|---------------------|-------|
-| `shape=rectangle;fillColor=#6a9955` | `class X <<primitive>>` | `primitive-type` | L0 |
-| `shape=rectangle;dashed=1` | `interface X` | `interface` | L0 |
-| `shape=rectangle;dashed=1;fillColor=#6a9955` | `class X <<DTO>>` | `dto` | L0 |
-| `shape=rectangle` (with compartments) | `enum X` | `enum` | L0 |
+| Draw.io Style | Mermaid Syntax | Symbol Table `kind` | Level |
+|---------------|----------------|---------------------|-------|
+| `shape=rectangle;fillColor=#6a9955` | `class X { <<primitive>> }` | `primitive-type` | L0 |
+| `shape=rectangle;dashed=1` | `class X { <<interface>> }` | `interface` | L0 |
+| `shape=rectangle;dashed=1;fillColor=#6a9955` | `class X { <<DTO>> }` | `dto` | L0 |
+| `shape=rectangle` (with compartments) | `class X { <<enum>> }` | `enum` | L0 |
 | `shape=rectangle;fillColor=#4ec9b0` | `class X` | `class` | L1 |
-| `shape=rectangle;fillColor=#4ec9b0` + S icon | `class X <<service>>` | `service` | L1 |
-| `shape=rectangle;fillColor=#4ec9b0` + C icon | `class X <<controller>>` | `controller` | L1 |
-| `shape=rectangle;fillColor=#4ec9b0` + R icon | `class X <<repository>>` | `repository` | L1 |
-| `shape=swimlane;fillColor=#dcdcaa` | `package X` | `module` | L2 |
-| `shape=swimlane;fillColor=#ce9178` | `package X <<subsystem>>` | `subsystem` | L3 |
-| `shape=swimlane;dashed=1;fillColor=#c586c0` | `package X <<API>>` | `api-contract` | L4 |
-| `shape=cylinder` | `database X` | `database` | infra |
-| `shape=parallelogram` | `queue X` | `queue` | infra |
-| `shape=cloud` | `cloud X` | `external` | boundary |
-| `shape=actor` | `actor X` | `actor` | boundary |
+| `shape=rectangle;fillColor=#4ec9b0` + S icon | `class X { <<service>> }` | `service` | L1 |
+| `shape=rectangle;fillColor=#4ec9b0` + C icon | `class X { <<controller>> }` | `controller` | L1 |
+| `shape=rectangle;fillColor=#4ec9b0` + R icon | `class X { <<repository>> }` | `repository` | L1 |
+| `shape=swimlane;fillColor=#dcdcaa` | `subgraph X` | `module` | L2 |
+| `shape=swimlane;fillColor=#ce9178` | `subgraph X["X &lt;&lt;subsystem&gt;&gt;"]` | `subsystem` | L3 |
+| `shape=swimlane;dashed=1;fillColor=#c586c0` | `subgraph X["X &lt;&lt;API&gt;&gt;"]` | `api-contract` | L4 |
+| `shape=cylinder` | `X[(Database)]` | `database` | infra |
+| `shape=parallelogram` | `X[/Queue/]` | `queue` | infra |
+| `shape=cloud` | `X((External))` | `external` | boundary |
+| `shape=actor` | `X([Actor])` | `actor` | boundary |
 
 #### Relationship Mappings
 
-| Draw.io Edge Style | PlantUML Arrow | Symbol Table `type` | Notes |
-|--------------------|----------------|---------------------|-------|
-| `endArrow=block;endFill=0` | `A <\|-- B` | `extends` | Hollow triangle (generalization) |
-| `endArrow=block;endFill=0;dashed=1` | `A <\|.. B` | `implements` | Dashed + hollow triangle |
+| Draw.io Edge Style | Mermaid Arrow | Symbol Table `type` | Notes |
+|--------------------|---------------|---------------------|-------|
+| `endArrow=block;endFill=0` | `B --\|> A` | `extends` | Hollow triangle (generalization) |
+| `endArrow=block;endFill=0;dashed=1` | `B ..\|> A` | `implements` | Dashed + hollow triangle |
 | `endArrow=open;dashed=1` | `A ..> B` | `dependency` | Dashed open arrow |
 | `endArrow=diamond;endFill=1` | `A *-- B` | `composition` | Filled diamond |
 | `endArrow=diamond;endFill=0` | `A o-- B` | `aggregation` | Hollow diamond |
 | `endArrow=none` | `A -- B` | `association` | Plain line |
 | `endArrow=classic` | `A --> B` | `calls` | Standard arrow |
-| `endArrow=open;dashed=1;strokeColor=#00FF00` | `A -[#green]-> B` | `publishes` | Green dashed |
-| `endArrow=open;dashed=1;strokeColor=#0000FF` | `A -[#blue]-> B` | `reads` | Blue dashed |
-| `endArrow=open;dashed=1;strokeColor=#FF0000` | `A -[#red]-> B` | `writes` | Red dashed |
+| `endArrow=open;dashed=1;strokeColor=#00FF00` | `A -.-> B` | `publishes` | Dashed arrow |
+| `endArrow=open;dashed=1;strokeColor=#0000FF` | `A -.-> B : reads` | `reads` | Dashed with label |
+| `endArrow=open;dashed=1;strokeColor=#FF0000` | `A -.-> B : writes` | `writes` | Dashed with label |
 
 #### Color Mappings (Level → Color)
 
-| Level | Draw.io `fillColor` | PlantUML `skinparam` | CSS Variable |
-|-------|---------------------|----------------------|--------------|
-| L0 | `#6a9955` | `BackgroundColor<<primitive>> #6a9955` | `--level-l0-bg` |
-| L1 | `#4ec9b0` | `BackgroundColor<<service>> #4ec9b0` | `--level-l1-bg` |
-| L2 | `#dcdcaa` | `BackgroundColor<<module>> #dcdcaa` | `--level-l2-bg` |
-| L3 | `#ce9178` | `BackgroundColor<<subsystem>> #ce9178` | `--level-l3-bg` |
-| L4 | `#c586c0` | `BackgroundColor<<api>> #c586c0` | `--level-l4-bg` |
-| infra | `#808080` | `BackgroundColor<<database>> #808080` | `--level-infra-bg` |
-| boundary | `#9cdcfe` | `BackgroundColor<<external>> #9cdcfe` | `--level-boundary-bg` |
+| Level | Draw.io `fillColor` | Mermaid `classDef` | CSS Variable |
+|-------|---------------------|-------------------|--------------|
+| L0 | `#6a9955` | `classDef l0 fill:#6a9955` | `--level-l0-bg` |
+| L1 | `#4ec9b0` | `classDef l1 fill:#4ec9b0` | `--level-l1-bg` |
+| L2 | `#dcdcaa` | `classDef l2 fill:#dcdcaa` | `--level-l2-bg` |
+| L3 | `#ce9178` | `classDef l3 fill:#ce9178` | `--level-l3-bg` |
+| L4 | `#c586c0` | `classDef l4 fill:#c586c0` | `--level-l4-bg` |
+| infra | `#808080` | `classDef infra fill:#808080` | `--level-infra-bg` |
+| boundary | `#9cdcfe` | `classDef boundary fill:#9cdcfe` | `--level-boundary-bg` |
 
 #### cyrus-* Property to Symbol Table Mapping
 
@@ -722,9 +708,9 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 | `cyrus-kind` (on edge) | `injectionKind` | constructor, property, method |
 | `cyrus-optional` (on edge) | `optional` | Boolean for optional deps |
 
-#### PlantUML Stereotype to Symbol Table Mapping
+#### Mermaid Stereotype to Symbol Table Mapping
 
-| PlantUML Stereotype | Symbol Table `kind` | Symbol Table `level` |
+| Mermaid Stereotype | Symbol Table `kind` | Symbol Table `level` |
 |---------------------|---------------------|----------------------|
 | `<<primitive>>` | `primitive-type` | L0 |
 | `<<interface>>` | `interface` | L0 |
@@ -793,14 +779,14 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 │              │                        │                        │                        │
 │              ▼                        ▼                        ▼                        │
 │   ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐                 │
-│   │ PlantUmlRenderer │    │  SymbolTableSync │    │  DrawioRenderer  │                 │
+│   │ MermaidRenderer  │    │  SymbolTableSync │    │  DrawioRenderer  │                 │
 │   │                  │    │                  │    │                  │                 │
 │   │ Diagram →        │    │ Diagram →        │    │ Diagram →        │                 │
-│   │ PlantUML text    │    │ ComponentSymbol[]│    │ mxGraphModel XML │                 │
+│   │ Mermaid text     │    │ ComponentSymbol[]│    │ mxGraphModel XML │                 │
 │   └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘                 │
 │            │                       │                       │                           │
 │            ▼                       ▼                       ▼                           │
-│     architecture.puml      Symbol Table DB         architecture.drawio                 │
+│     architecture.md        Symbol Table DB         architecture.drawio                 │
 │     (AI-readable)          (canonical)             (human-editable)                    │
 │                                                                                         │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
@@ -827,23 +813,24 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 
 ### Positive
 
-1. **Human-AI Collaboration**: Architects edit visually, AI agents work with PlantUML text
+1. **Human-AI Collaboration**: Architects edit visually, AI agents work with Mermaid text
 2. **Template Reusability**: Patterns defined once, instantiated many times
-3. **Version Control Friendly**: PlantUML text diffs cleanly
-4. **Stable Foundation**: Draw.io XML format unchanged since 2005
-5. **Comprehensive Coverage**: All UML relationships + full-stack stereotypes
-6. **Generation Gap Compliance**: Follows established pattern from Gang of Four member
+3. **Version Control Friendly**: Mermaid text diffs cleanly
+4. **Native Rendering**: Mermaid renders natively in GitHub/GitLab without external tools
+5. **Stable Foundation**: Draw.io XML format unchanged since 2005
+6. **Comprehensive Coverage**: All UML relationships + full-stack stereotypes
+7. **Generation Gap Compliance**: Follows established pattern from Gang of Four member
 
 ### Negative
 
-1. **Complexity**: Two representations (Draw.io + PlantUML) must stay synchronized
+1. **Complexity**: Two representations (Draw.io + Mermaid) must stay synchronized
 2. **Learning Curve**: Team must understand both formats
 3. **Metadata Management**: Custom cyrus- properties require documentation
 
 ### Risks
 
 1. **Drift**: If manual Draw.io edits don't include cyrus- metadata, synchronization breaks
-2. **PlantUML Limitations**: Some visual layouts can't be expressed in PlantUML
+2. **Mermaid Limitations**: Some visual layouts can't be expressed in Mermaid (e.g., package nesting in class diagrams)
 3. **Template Evolution**: Changing templates after instantiation requires migration strategy
 
 ## Implementation Plan
@@ -861,9 +848,9 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 - [x] Parse cyrus-* custom properties from mxCell/object elements
 - [x] Add 67 unit tests covering all parser functions
 
-### Phase 3: PlantUML Support (ADR-012c)
-- [ ] Implement PlantUmlRenderer (Diagram → PlantUML)
-- [ ] Implement PlantUmlParser (PlantUML → Diagram)
+### Phase 3: Mermaid Support (ADR-012c)
+- [ ] Implement MermaidRenderer (Diagram → Mermaid)
+- [ ] Implement MermaidParser (Mermaid → Diagram)
 - [ ] Verify 1:1 mapping coverage
 - [ ] Add tests for all shape and relationship types
 
@@ -886,4 +873,5 @@ This section defines the exact mappings between Draw.io, PlantUML, and Symbol Ta
 - [Pattern Hatching - Generation Gap](https://slidetodoc.com/generation-gap-pattern-hatching-john-vlissides-pages-85/)
 - [Round-Trip Engineering Research](https://link.springer.com/chapter/10.1007/978-3-540-69927-9_3)
 - [Draw.io XML Documentation](https://www.drawio.com/doc/faq/diagram-source-edit)
-- [PlantUML Language Reference](https://plantuml.com/class-diagram)
+- [Mermaid Class Diagrams](https://mermaid.js.org/syntax/classDiagram.html)
+- [Mermaid Flowcharts](https://mermaid.js.org/syntax/flowchart.html)

@@ -17,7 +17,7 @@ flowchart TD
 
     subgraph pipeline ["Diagram Pipeline"]
         parser["DrawioParser<br/><small>Infrastructure</small>"]
-        pumlParser["PlantUmlParser<br/><small>Infrastructure</small>"]
+        mermaidParser["MermaidParser<br/><small>Infrastructure</small>"]
         sync["SymbolTableSync<br/><small>Service</small>"]
         schema["Diagram Schema<br/><small>Domain</small>"]
     end
@@ -28,13 +28,13 @@ flowchart TD
     drawio -->|"XML"| parser
     parser -->|"Diagram"| schema
 
-    puml[".puml Files"] -->|"text"| pumlParser
-    pumlParser -->|"Diagram"| schema
+    mermaid[".md Files"] -->|"text"| mermaidParser
+    mermaidParser -->|"Diagram"| schema
 
     schema -->|"elements + relationships"| sync
     sync -->|"ComponentSymbol[]"| registry["Symbol Table"]
 
-    ai["AI Agents"] -->|"generate/modify"| puml
+    ai["AI Agents"] -->|"generate/modify"| mermaid
     human["Architects"] -->|"Diagram view"| editor
 
     classDef component fill:#1168bd,color:#fff
@@ -43,10 +43,10 @@ flowchart TD
     classDef file fill:#dcdcaa,color:#000
     classDef gui fill:#094771,color:#fff
 
-    class parser,pumlParser,sync component
+    class parser,mermaidParser,sync component
     class schema schema
     class registry,drawio_app external
-    class drawio,puml file
+    class drawio,mermaid file
     class ai,human external
     class editor,ipc gui
 ```
@@ -58,7 +58,7 @@ flowchart TD
 | **DrawioEditor** | GUI | Embed Draw.io editor via Electron webview | ✅ Complete | `src/gui/components/DrawioEditor.tsx` |
 | **IPC Handlers** | Electron Main | Handle diagram file operations (open/save) | ✅ Complete | `electron/ipc-handlers.ts` |
 | **DrawioParser** | Infrastructure | Parse mxGraphModel XML into Diagram | ✅ Complete | `src/infrastructure/drawio/parser.ts` |
-| **PlantUmlParser** | Infrastructure | Parse PlantUML text into Diagram | ⏳ Planned | ADR-012 Phase 3 |
+| **MermaidParser** | Infrastructure | Parse Mermaid text into Diagram | ⏳ Planned | ADR-012 Phase 3 |
 | **SymbolTableSync** | Service | Sync Diagram elements with Symbol Table | ⏳ Planned | ADR-012 Phase 3 |
 | **Diagram Schema** | Domain | Type definitions for DiagramElement, DiagramRelationship | ✅ Complete | `src/infrastructure/drawio/schema.ts` |
 
@@ -79,8 +79,8 @@ flowchart TD
 ### AI → Code Generation
 
 ```
-1. AI agent generates/modifies architecture.puml
-2. PlantUmlParser extracts DiagramElement[] and DiagramRelationship[]
+1. AI agent generates/modifies architecture.md (Mermaid diagrams)
+2. MermaidParser extracts DiagramElement[] and DiagramRelationship[]
 3. SymbolTableSync creates/updates ComponentSymbol[] in database
 4. CodeGenerationService generates code from symbols
 ```
@@ -92,11 +92,11 @@ flowchart TD
 | Decision | Rationale |
 |----------|-----------|
 | Parse-only (no render) | Draw.io app handles rendering; we only need to extract data |
-| Internal Diagram model | Decouples Draw.io format from PlantUML format |
+| Internal Diagram model | Decouples Draw.io format from Mermaid format |
 | cyrus-* custom properties | Preserve metadata on Draw.io round-trip |
 | SymbolTableSync service | Centralizes diagram ↔ symbol table mapping |
 | Zod schemas | Runtime validation + TypeScript types from one source |
-| Independent paths | Human (Draw.io) and AI (PlantUML) both sync to Symbol Table independently |
+| Independent paths | Human (Draw.io) and AI (Mermaid) both sync to Symbol Table independently |
 
 ## Custom Properties (cyrus-* prefix)
 
@@ -117,7 +117,7 @@ These properties are stored in Draw.io `<object>` elements:
 |-------|------------|--------|
 | **Phase 1** | DrawioEditor, IPC Handlers, Menu Integration | ✅ Complete |
 | **Phase 2** | DrawioParser (67 tests), Diagram Schema | ✅ Complete |
-| **Phase 3** | PlantUmlParser, SymbolTableSync | ⏳ Planned |
+| **Phase 3** | MermaidParser, SymbolTableSync | ⏳ Planned |
 | **Phase 4** | Template instantiation, Code Generation integration | ⏳ Planned |
 
 ---
