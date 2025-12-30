@@ -1,0 +1,57 @@
+<mxfile host="cyrus-code" modified="2024-01-01T00:00:00.000Z" agent="cyrus-code" version="1.0.0">
+  <diagram name="C4 Context" id="context-diagram">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#1e1e1e">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Users boundary -->
+        <mxCell id="users-boundary" value="Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#444444;strokeDashArray=5;verticalAlign=top;fontColor=#888888;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="300" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Developer -->
+        <mxCell id="developer" value="&lt;b&gt;Developer&lt;/b&gt;&lt;br&gt;&lt;small&gt;GUI &amp; CLI&lt;/small&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427b;strokeColor=#052e56;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="100" y="100" width="40" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- AI Agent -->
+        <mxCell id="ai-agent" value="&lt;b&gt;AI Agent&lt;/b&gt;&lt;br&gt;&lt;small&gt;CLI&lt;/small&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427b;strokeColor=#052e56;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="100" width="40" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- cyrus-code system -->
+        <mxCell id="cyrus-code" value="&lt;b&gt;cyrus-code&lt;/b&gt;&lt;br&gt;&lt;small&gt;Component architecture tool&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4884;fontColor=#ffffff;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="120" y="300" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- External Systems boundary -->
+        <mxCell id="external-boundary" value="External Systems" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#444444;strokeDashArray=5;verticalAlign=top;fontColor=#888888;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="460" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- File System -->
+        <mxCell id="file-system" value="&lt;b&gt;File System&lt;/b&gt;&lt;br&gt;&lt;small&gt;Source &amp; generated code&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=#666666;fontColor=#ffffff;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="140" y="500" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships -->
+        <!-- Developer to cyrus-code -->
+        <mxCell id="dev-to-cyrus" value="commands &amp; visual editing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;fontColor=#888888;" edge="1" parent="1" source="developer" target="cyrus-code">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- AI Agent to cyrus-code -->
+        <mxCell id="ai-to-cyrus" value="commands" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;fontColor=#888888;" edge="1" parent="1" source="ai-agent" target="cyrus-code">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cyrus-code to File System -->
+        <mxCell id="cyrus-to-fs" value="read/write code" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;fontColor=#888888;" edge="1" parent="1" source="cyrus-code" target="file-system">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
