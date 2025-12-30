@@ -40,7 +40,7 @@ export function ExportDialog({
   }, [isOpen]);
 
   async function fetchGeneratable(): Promise<void> {
-    const response = await apiClient.codeGeneration.listGeneratable();
+    const response = await apiClient.synthesizer.listGeneratable();
     if (response.success && response.data) {
       setGeneratableSymbols(response.data);
     }
@@ -66,13 +66,13 @@ export function ExportDialog({
 
       if (symbolIds && symbolIds.length > 0) {
         // Export specific symbols
-        response = await apiClient.codeGeneration.generateMultiple({
+        response = await apiClient.synthesizer.generateMultiple({
           symbolIds,
           options: { outputDir, overwriteGenerated: true },
         });
       } else {
         // Export all generatable symbols
-        response = await apiClient.codeGeneration.generateAll({
+        response = await apiClient.synthesizer.generateAll({
           outputDir,
           overwriteGenerated: true,
         });

@@ -197,31 +197,4 @@ export class SymbolFacade {
       return symbols.map((s) => serialize(s));
     }, 'QUERY_FAILED');
   }
-
-  // ==========================================================================
-  // Bulk Operations
-  // ==========================================================================
-
-  bulkImport(symbols: Serialized<ComponentSymbol>[]): ApiResponse<number> {
-    return apiCall(() => {
-      const domainSymbols = symbols.map((s) => deserialize(s) as unknown as ComponentSymbol);
-      this.symbolTable.import(domainSymbols);
-      return symbols.length;
-    }, 'IMPORT_FAILED');
-  }
-
-  bulkExport(): ApiResponse<Serialized<ComponentSymbol>[]> {
-    return apiCall(() => {
-      const symbols = this.symbolTable.list();
-      return symbols.map((s) => serialize(s));
-    }, 'EXPORT_FAILED');
-  }
-
-  // ==========================================================================
-  // Internal Access
-  // ==========================================================================
-
-  getSymbolTableService(): SymbolTableService {
-    return this.symbolTable;
-  }
 }

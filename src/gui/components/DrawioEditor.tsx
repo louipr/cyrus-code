@@ -1,17 +1,15 @@
 /**
  * Draw.io Editor Component
  *
- * Embeds Draw.io diagram editor via Electron webview using the embed mode.
- * Uses a preload script to establish proper IPC communication with Draw.io.
+ * Embeds Draw.io diagram editor via Electron webview in standalone mode.
+ * Uses a preload script that detects when Draw.io is ready.
  *
  * Architecture:
- * - Webview loads Draw.io with embed mode parameters
- * - drawio-preload.ts runs before Draw.io, creating a fake window.opener
- * - Draw.io sends messages to window.opener.postMessage() which routes to IPC
- * - Host receives messages via webview's 'ipc-message' event
- * - Host sends messages via webview.send() which routes to window.postMessage()
+ * - Webview loads Draw.io in standalone mode (ui=dark&drafts=0)
+ * - drawio-preload.ts polls for .geDiagramContainer to detect readiness
+ * - Preload sends 'ready' event via ipcRenderer.sendToHost()
+ * - Host receives ready event via webview's 'ipc-message' event
  *
- * @see https://www.drawio.com/doc/faq/embed-mode
  * @see electron/drawio-preload.ts
  */
 
@@ -24,21 +22,15 @@ import { apiClient } from '../api-client';
 const DRAWIO_CHANNEL = 'drawio:message';
 
 interface DrawioEditorProps {
-  /** Initial XML content to load */
+  /** Initial XML content to load (reserved for future use) */
   initialXml?: string;
-  /** Callback when diagram is saved */
+  /** Callback when diagram is saved (reserved for future use) */
   onSave?: (xml: string) => void;
-  /** Callback when diagram is exported */
-  onExport?: (data: string, format: string) => void;
 }
 
 interface DrawioMessage {
   event: string;
   xml?: string;
-  data?: string;
-  format?: string;
-  bounds?: { x: number; y: number; width: number; height: number };
-  message?: string;
 }
 
 /**
@@ -62,7 +54,6 @@ interface IpcMessageEvent {
 export function DrawioEditor({
   initialXml,
   onSave,
-  onExport,
 }: DrawioEditorProps): React.ReactElement {
   const [webviewElement, setWebviewElement] = useState<WebviewElement | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -70,7 +61,9 @@ export function DrawioEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [drawioUrl, setDrawioUrl] = useState<string | null>(null);
   const [preloadPath, setPreloadPath] = useState<string | null>(null);
-  const [pendingXml, setPendingXml] = useState<string | undefined>(initialXml);
+
+  // Note: initialXml reserved for future embed mode integration
+  void initialXml;
 
   // Fetch Draw.io URL and preload path from main process
   useEffect(() => {
@@ -108,88 +101,28 @@ export function DrawioEditor({
     return () => clearTimeout(timeoutId);
   }, [isLoading, isReady]);
 
-  // Send message to Draw.io via IPC
-  const sendMessage = useCallback(
-    (msg: object) => {
-      if (webviewElement && isReady) {
-        const data = JSON.stringify(msg);
-        console.log('[DrawioEditor] Sending message:', msg);
-        webviewElement.send(DRAWIO_CHANNEL, data);
-      }
-    },
-    [webviewElement, isReady]
-  );
-
-  // Load XML into the editor
-  const loadXml = useCallback(
-    (xml: string) => {
-      sendMessage({
-        action: 'load',
-        xml,
-        autosave: 1,
-      });
-    },
-    [sendMessage]
-  );
-
-  // Handle Draw.io message events
+  // Handle Draw.io message events (standalone mode only sends 'ready')
   const handleDrawioMessage = useCallback(
-    (msg: DrawioMessage, webview: WebviewElement) => {
+    (msg: DrawioMessage) => {
       console.log('[DrawioEditor] Received message:', msg.event);
 
       switch (msg.event) {
         case 'ready':
-          // Standalone mode: preload detected .geEditor element
-          console.log('[DrawioEditor] Draw.io editor ready (standalone mode)');
+          // Standalone mode: preload detected .geDiagramContainer element
+          console.log('[DrawioEditor] Draw.io editor ready');
           setIsReady(true);
           setIsLoading(false);
           break;
-
-        case 'init': {
-          // Embed mode: Draw.io sent init event
-          console.log('[DrawioEditor] Editor initialized (embed mode)');
-          setIsReady(true);
-          setIsLoading(false);
-          // Send load action directly - can't use sendMessage due to React closure
-          // Draw.io requires a load action to finish initializing
-          const xml = pendingXml || '';
-          const loadMsg = JSON.stringify({ action: 'load', xml, autosave: 1 });
-          console.log('[DrawioEditor] Sending load action');
-          webview.send(DRAWIO_CHANNEL, loadMsg);
-          if (pendingXml) {
-            setPendingXml(undefined);
-          }
-          break;
-        }
 
         case 'save':
+          // Reserved for future embed mode integration
           if (msg.xml && onSave) {
             onSave(msg.xml);
           }
-          sendMessage({ action: 'status', modified: false });
-          break;
-
-        case 'exit':
-          // User clicked exit - could trigger close behavior
-          break;
-
-        case 'export':
-          if (msg.data && msg.format && onExport) {
-            onExport(msg.data, msg.format);
-          }
-          break;
-
-        case 'autosave':
-          // Autosave triggered - can be used for draft saving
-          break;
-
-        case 'configure':
-          console.log('[DrawioEditor] Configure requested');
-          sendMessage({ action: 'configure', config: {} });
           break;
       }
     },
-    [loadXml, onSave, onExport, sendMessage, pendingXml]
+    [onSave]
   );
 
   // Set up webview event handlers
@@ -202,20 +135,12 @@ export function DrawioEditor({
         if (typeof data === 'string') {
           try {
             const msg: DrawioMessage = JSON.parse(data);
-            handleDrawioMessage(msg, webviewElement);
+            handleDrawioMessage(msg);
           } catch {
             console.error('[DrawioEditor] Failed to parse message:', data);
           }
         }
       }
-    };
-
-    const handleDomReady = () => {
-      console.log('[DrawioEditor] webview dom-ready');
-    };
-
-    const handleDidFinishLoad = () => {
-      console.log('[DrawioEditor] webview did-finish-load');
     };
 
     const handleDidFailLoad = (evt: { errorCode: number; errorDescription: string }) => {
@@ -224,37 +149,15 @@ export function DrawioEditor({
       setIsLoading(false);
     };
 
-    const handleConsoleMessage = (evt: { message: string }) => {
-      // Log webview console messages for debugging
-      if (evt.message.includes('DrawioPreload')) {
-        console.log('[DrawioEditor webview]', evt.message);
-      }
-    };
-
     // Add event listeners with proper type casting for webview-specific events
     webviewElement.addEventListener('ipc-message', handleIpcMessage as unknown as EventListener);
-    webviewElement.addEventListener('dom-ready', handleDomReady as unknown as EventListener);
-    webviewElement.addEventListener('did-finish-load', handleDidFinishLoad as unknown as EventListener);
     webviewElement.addEventListener('did-fail-load', handleDidFailLoad as unknown as EventListener);
-    webviewElement.addEventListener('console-message', handleConsoleMessage as unknown as EventListener);
 
     return () => {
       webviewElement.removeEventListener('ipc-message', handleIpcMessage as unknown as EventListener);
-      webviewElement.removeEventListener('dom-ready', handleDomReady as unknown as EventListener);
-      webviewElement.removeEventListener('did-finish-load', handleDidFinishLoad as unknown as EventListener);
       webviewElement.removeEventListener('did-fail-load', handleDidFailLoad as unknown as EventListener);
-      webviewElement.removeEventListener('console-message', handleConsoleMessage as unknown as EventListener);
     };
   }, [webviewElement, handleDrawioMessage]);
-
-  // Update content when initialXml changes
-  useEffect(() => {
-    if (isReady && initialXml) {
-      loadXml(initialXml);
-    } else if (!isReady && initialXml) {
-      setPendingXml(initialXml);
-    }
-  }, [initialXml, isReady, loadXml]);
 
   // Callback ref to capture the webview element
   const webviewRefCallback = useCallback((node: HTMLElement | null) => {

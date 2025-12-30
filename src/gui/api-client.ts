@@ -34,7 +34,9 @@ import type {
 
 /**
  * Type definition for the cyrus API exposed via preload script.
- * This must match the interface in electron/preload.ts.
+ *
+ * SYNC: This interface must match `CyrusAPI` in electron/preload.ts
+ * Any changes here must be reflected there, and vice versa.
  */
 interface CyrusAPI {
   symbols: {
@@ -74,7 +76,7 @@ interface CyrusAPI {
     findUnreachable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     findUntested: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
   };
-  codeGeneration: {
+  synthesizer: {
     generate: (request: GenerateRequest) => Promise<ApiResponse<GenerationResultDTO>>;
     generateMultiple: (request: GenerateBatchRequest) => Promise<ApiResponse<GenerationBatchResultDTO>>;
     generateAll: (options: GenerationOptionsDTO) => Promise<ApiResponse<GenerationBatchResultDTO>>;
@@ -184,7 +186,7 @@ function createMockApi(): CyrusAPI {
       findUnreachable: () => mockResponse([]),
       findUntested: () => mockResponse([]),
     },
-    codeGeneration: {
+    synthesizer: {
       generate: () => mockError('Not connected to backend'),
       generateMultiple: () => mockError('Not connected to backend'),
       generateAll: () => mockError('Not connected to backend'),

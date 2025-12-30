@@ -36,7 +36,12 @@ import type {
   DocumentHeading,
 } from '../src/domain/help/index.js';
 
-// Type definitions for the exposed API
+/**
+ * Type definitions for the exposed API.
+ *
+ * SYNC: This interface must match `CyrusAPI` in src/gui/api-client.ts
+ * Any changes here must be reflected there, and vice versa.
+ */
 export interface CyrusAPI {
   // Symbol operations
   symbols: {
