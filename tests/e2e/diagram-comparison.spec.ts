@@ -88,7 +88,7 @@ test.describe('Diagram Export', () => {
       await page.waitForTimeout(300);
 
       // === Step 2: Export Draw.io PNG ===
-      console.log('Step 2: Capturing Draw.io render...');
+      console.log('Step 2: Exporting Draw.io diagram...');
 
       // Switch to Diagram view
       await diagramActions.switchToDiagramView(page);
@@ -113,16 +113,37 @@ test.describe('Diagram Export', () => {
 
       // Wait for diagram to render
       await page.waitForTimeout(3000);
+      console.log('  Diagram loaded, requesting export...');
 
-      // Capture the Draw.io editor (includes editor chrome for now)
-      const drawioEditor = page.locator(selectors.diagramEditor);
+      // Export using Draw.io's API (clean diagram without editor chrome/grid)
+      const pngData = await diagramActions.exportToPng(page);
 
       const drawioPngPath = path.join(pngDir, `${diagram.name}-drawio.png`);
       const drawioResultPath = path.join(resultsDir, `${diagram.name}-drawio.png`);
 
-      await drawioEditor.screenshot({ path: drawioPngPath });
-      fs.copyFileSync(drawioPngPath, drawioResultPath);
-      console.log(`  Saved: ${drawioPngPath}`);
+      if (pngData) {
+        // pngData is base64 data URL, extract the base64 part
+        const base64Data = pngData.replace(/^data:image\/png;base64,/, '');
+        fs.writeFileSync(drawioPngPath, base64Data, 'base64');
+        fs.copyFileSync(drawioPngPath, drawioResultPath);
+        console.log(`  Exported clean PNG: ${drawioPngPath}`);
+      } else {
+        // Fallback: hide grid and take screenshot
+        console.log('  Export API failed, trying clean screenshot...');
+        const cleanScreenshot = await diagramActions.screenshotDiagramClean(page);
+        if (cleanScreenshot) {
+          fs.writeFileSync(drawioPngPath, cleanScreenshot);
+          fs.copyFileSync(drawioPngPath, drawioResultPath);
+          console.log(`  Saved clean screenshot: ${drawioPngPath}`);
+        } else {
+          // Last resort: raw screenshot
+          console.log('  Clean screenshot failed, using raw screenshot...');
+          const drawioEditor = page.locator(selectors.diagramEditor);
+          await drawioEditor.screenshot({ path: drawioPngPath });
+          fs.copyFileSync(drawioPngPath, drawioResultPath);
+          console.log(`  Saved raw screenshot: ${drawioPngPath}`);
+        }
+      }
 
       // === Step 3: Output summary ===
       console.log('\n=== Export Complete ===');
