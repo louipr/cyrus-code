@@ -1,8 +1,14 @@
 /**
- * Diagram Comparison Test
+ * Diagram Export and Comparison Test
  *
- * Captures screenshots of Mermaid and Draw.io renders for visual comparison.
- * Used to verify Draw.io diagrams match their Mermaid source.
+ * Exports Mermaid and Draw.io diagrams to PNG for visual comparison.
+ * PNGs are saved to docs/c4/png/ for version control and documentation.
+ *
+ * Workflow:
+ * 1. Capture Mermaid render from Help dialog (dynamic render)
+ * 2. Capture Draw.io render from Diagram view (loaded from file)
+ * 3. Save both to docs/c4/png/ for review
+ * 4. Copy to test-results/ for CI artifacts
  */
 
 import { test, expect } from '@playwright/test';
@@ -24,84 +30,119 @@ test.afterAll(async () => {
   }
 });
 
-test.describe('Diagram Comparison', () => {
-  test('compare C4 Context: Mermaid vs Draw.io', async () => {
-    const { app, page } = context;
+/**
+ * Diagram configurations for export
+ */
+const diagrams = [
+  {
+    name: 'context',
+    helpCategory: 'c4-overview',
+    helpTopic: 'c4-context',
+    drawioFile: 'docs/c4/drawio/context.drawio',
+  },
+];
 
-    // Ensure test-results directory exists
-    const resultsDir = path.resolve(__dirname, '../../test-results');
-    if (!fs.existsSync(resultsDir)) {
-      fs.mkdirSync(resultsDir, { recursive: true });
-    }
+test.describe('Diagram Export', () => {
+  for (const diagram of diagrams) {
+    test(`export ${diagram.name}: Mermaid and Draw.io PNGs`, async () => {
+      const { app, page } = context;
 
-    // === Step 1: Capture Mermaid render from Help dialog ===
-    console.log('Step 1: Capturing Mermaid render...');
+      // Output directories
+      const pngDir = path.join(process.cwd(), 'docs/c4/png');
+      const resultsDir = path.join(process.cwd(), 'test-results');
 
-    const helpButton = page.locator(selectors.helpButton);
-    await helpButton.click();
-
-    // Navigate to C4 Context diagram
-    await helpActions.navigateToTopic(page, 'c4-overview', 'c4-context');
-
-    // Wait for Mermaid to render
-    await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(2000); // Let rendering settle
-
-    // Take screenshot of the mermaid diagram
-    const mermaidDiagram = page.locator('.mermaid-diagram svg').first();
-    await mermaidDiagram.scrollIntoViewIfNeeded();
-    const mermaidPath = path.join(resultsDir, 'c4-context-mermaid.png');
-    await mermaidDiagram.screenshot({ path: mermaidPath });
-    console.log(`  Captured: ${mermaidPath}`);
-
-    // Close help dialog
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
-
-    // === Step 2: Load Draw.io diagram and capture ===
-    console.log('Step 2: Loading Draw.io diagram...');
-
-    // Switch to Diagram view
-    await diagramActions.switchToDiagramView(page);
-
-    // Wait for Draw.io to be ready
-    await page.waitForSelector(selectors.diagramLoading, { state: 'hidden', timeout: 60000 });
-    console.log('  Draw.io editor ready');
-
-    // Read the .drawio file (use process.cwd() which is project root during tests)
-    const drawioFilePath = path.join(process.cwd(), 'docs/c4/drawio/context.drawio');
-    const drawioXml = fs.readFileSync(drawioFilePath, 'utf-8');
-    console.log(`  Read file: ${drawioFilePath}`);
-
-    // Inject the diagram via Electron IPC event simulation
-    // This triggers the same flow as File > Open Diagram
-    await app.evaluate(
-      ({ BrowserWindow }, { filePath, xml }) => {
-        const win = BrowserWindow.getAllWindows()[0];
-        if (win) {
-          win.webContents.send('diagram:open-file', filePath, xml);
+      // Ensure directories exist
+      for (const dir of [pngDir, resultsDir]) {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
         }
-      },
-      { filePath: drawioFilePath, xml: drawioXml }
-    );
+      }
 
-    // Wait for diagram to load in Draw.io
-    await page.waitForTimeout(3000); // Give Draw.io time to render
+      // === Step 1: Export Mermaid PNG ===
+      console.log(`\n=== Exporting ${diagram.name} ===`);
+      console.log('Step 1: Capturing Mermaid render...');
 
-    // Take screenshot of the Draw.io diagram
-    const diagramEditor = page.locator(selectors.diagramEditor);
-    const drawioPath = path.join(resultsDir, 'c4-context-drawio.png');
-    await diagramEditor.screenshot({ path: drawioPath });
-    console.log(`  Captured: ${drawioPath}`);
+      const helpButton = page.locator(selectors.helpButton);
+      await helpButton.click();
 
-    // === Step 3: Output comparison info ===
-    console.log('\n=== COMPARISON ===');
-    console.log(`Mermaid: ${mermaidPath}`);
-    console.log(`Draw.io: ${drawioPath}`);
-    console.log('\nOpen both images to compare visually.');
+      // Navigate to the diagram topic
+      await helpActions.navigateToTopic(page, diagram.helpCategory, diagram.helpTopic);
 
-    // Basic assertion - both files exist
-    expect(fs.existsSync(mermaidPath)).toBe(true);
-    expect(fs.existsSync(drawioPath)).toBe(true);
-  });
+      // Wait for Mermaid to render
+      await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
+      await page.waitForTimeout(2000); // Let rendering settle
+
+      // Capture the Mermaid SVG
+      const mermaidDiagram = page.locator('.mermaid-diagram svg').first();
+      await mermaidDiagram.scrollIntoViewIfNeeded();
+
+      const mermaidPngPath = path.join(pngDir, `${diagram.name}-mermaid.png`);
+      const mermaidResultPath = path.join(resultsDir, `${diagram.name}-mermaid.png`);
+
+      await mermaidDiagram.screenshot({ path: mermaidPngPath });
+      fs.copyFileSync(mermaidPngPath, mermaidResultPath);
+      console.log(`  Saved: ${mermaidPngPath}`);
+
+      // Close help dialog
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+
+      // === Step 2: Export Draw.io PNG ===
+      console.log('Step 2: Capturing Draw.io render...');
+
+      // Switch to Diagram view
+      await diagramActions.switchToDiagramView(page);
+
+      // Wait for Draw.io to be ready
+      await page.waitForSelector(selectors.diagramLoading, { state: 'hidden', timeout: 60000 });
+      console.log('  Draw.io editor ready');
+
+      // Load the diagram file via IPC
+      const drawioFilePath = path.join(process.cwd(), diagram.drawioFile);
+      const drawioXml = fs.readFileSync(drawioFilePath, 'utf-8');
+
+      await app.evaluate(
+        ({ BrowserWindow }, { filePath, xml }) => {
+          const win = BrowserWindow.getAllWindows()[0];
+          if (win) {
+            win.webContents.send('diagram:open-file', filePath, xml);
+          }
+        },
+        { filePath: drawioFilePath, xml: drawioXml }
+      );
+
+      // Wait for diagram to render
+      await page.waitForTimeout(3000);
+
+      // Capture the Draw.io editor (includes editor chrome for now)
+      const drawioEditor = page.locator(selectors.diagramEditor);
+
+      const drawioPngPath = path.join(pngDir, `${diagram.name}-drawio.png`);
+      const drawioResultPath = path.join(resultsDir, `${diagram.name}-drawio.png`);
+
+      await drawioEditor.screenshot({ path: drawioPngPath });
+      fs.copyFileSync(drawioPngPath, drawioResultPath);
+      console.log(`  Saved: ${drawioPngPath}`);
+
+      // === Step 3: Output summary ===
+      console.log('\n=== Export Complete ===');
+      console.log(`Diagram: ${diagram.name}`);
+      console.log(`Mermaid PNG: ${mermaidPngPath}`);
+      console.log(`Draw.io PNG: ${drawioPngPath}`);
+      console.log('\nReview both images to verify visual equivalence.');
+
+      // Assertions
+      expect(fs.existsSync(mermaidPngPath)).toBe(true);
+      expect(fs.existsSync(drawioPngPath)).toBe(true);
+
+      // Log file sizes for sanity check
+      const mermaidSize = fs.statSync(mermaidPngPath).size;
+      const drawioSize = fs.statSync(drawioPngPath).size;
+      console.log(`\nFile sizes: Mermaid=${mermaidSize} bytes, Draw.io=${drawioSize} bytes`);
+
+      // Both should have reasonable size (not empty)
+      expect(mermaidSize).toBeGreaterThan(1000);
+      expect(drawioSize).toBeGreaterThan(1000);
+    });
+  }
 });
