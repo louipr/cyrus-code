@@ -69,7 +69,7 @@ test.describe('Diagram Comparison', () => {
     console.log('  Draw.io editor ready');
 
     // Read the .drawio file (use process.cwd() which is project root during tests)
-    const drawioFilePath = path.join(process.cwd(), 'docs/c4/1-context.drawio');
+    const drawioFilePath = path.join(process.cwd(), 'docs/c4/drawio/context.drawio');
     const drawioXml = fs.readFileSync(drawioFilePath, 'utf-8');
     console.log(`  Read file: ${drawioFilePath}`);
 
