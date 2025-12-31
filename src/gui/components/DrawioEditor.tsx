@@ -22,8 +22,8 @@ import { apiClient } from '../api-client';
 const DRAWIO_CHANNEL = 'drawio:message';
 
 interface DrawioEditorProps {
-  /** Initial XML content to load (reserved for future use) */
-  initialXml?: string;
+  /** File path to load (served via local HTTP server) */
+  filePath?: string;
   /** Callback when diagram is saved (reserved for future use) */
   onSave?: (xml: string) => void;
 }
@@ -52,7 +52,7 @@ interface IpcMessageEvent {
 }
 
 export function DrawioEditor({
-  initialXml,
+  filePath,
   onSave,
 }: DrawioEditorProps): React.ReactElement {
   const [webviewElement, setWebviewElement] = useState<WebviewElement | null>(null);
@@ -60,10 +60,8 @@ export function DrawioEditor({
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [drawioUrl, setDrawioUrl] = useState<string | null>(null);
+  const [baseDrawioUrl, setBaseDrawioUrl] = useState<string | null>(null);
   const [preloadPath, setPreloadPath] = useState<string | null>(null);
-
-  // Note: initialXml reserved for future embed mode integration
-  void initialXml;
 
   // Fetch Draw.io URL and preload path from main process
   useEffect(() => {
@@ -72,14 +70,12 @@ export function DrawioEditor({
       apiClient.diagram.getPreloadPath(),
     ])
       .then(([baseUrl, preload]) => {
-        // Load Draw.io in standalone mode (no embed) for simpler integration
-        // The preload script notifies when Draw.io is ready via 'ready' event
-        const url = `${baseUrl}?ui=dark&drafts=0`;
-        console.log('[DrawioEditor] Using Draw.io URL:', url);
+        console.log('[DrawioEditor] Using Draw.io base URL:', baseUrl);
         console.log('[DrawioEditor] Using preload:', preload);
-        setDrawioUrl(url);
+        setBaseDrawioUrl(baseUrl);
         setPreloadPath(preload);
-        // Note: isLoading remains true until we receive 'ready' event from preload
+        // Build URL with or without file to load
+        updateDrawioUrl(baseUrl, filePath);
       })
       .catch((err: Error) => {
         console.error('[DrawioEditor] Failed to get Draw.io config:', err);
@@ -87,6 +83,28 @@ export function DrawioEditor({
         setIsLoading(false);
       });
   }, []);
+
+  // Update Draw.io URL when file path changes
+  const updateDrawioUrl = (baseUrl: string, file?: string) => {
+    let url = `${baseUrl}?ui=dark&drafts=0`;
+    if (file) {
+      // Use the local server's /diagram endpoint to serve the file
+      const serverUrl = baseUrl.replace('/index.html', '');
+      const diagramUrl = `${serverUrl}/diagram?path=${encodeURIComponent(file)}`;
+      url = `${baseUrl}?ui=dark&drafts=0&url=${encodeURIComponent(diagramUrl)}`;
+      console.log('[DrawioEditor] Loading diagram from:', diagramUrl);
+    }
+    setDrawioUrl(url);
+  };
+
+  // Reload when filePath changes
+  useEffect(() => {
+    if (baseDrawioUrl && filePath) {
+      setIsLoading(true);
+      setIsReady(false);
+      updateDrawioUrl(baseDrawioUrl, filePath);
+    }
+  }, [filePath, baseDrawioUrl]);
 
   // Timeout for initialization
   useEffect(() => {

@@ -94,6 +94,24 @@ const startDrawioServer = (): Promise<number> => {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const url = new URL(req.url || '/', `http://localhost`);
+
+      // Handle /diagram endpoint - serves local .drawio files
+      if (url.pathname === '/diagram') {
+        const diagramPath = url.searchParams.get('path');
+        if (!diagramPath || !fs.existsSync(diagramPath)) {
+          res.writeHead(404);
+          res.end('Diagram not found');
+          return;
+        }
+        const content = fs.readFileSync(diagramPath);
+        res.writeHead(200, {
+          'Content-Type': 'application/xml',
+          'Access-Control-Allow-Origin': '*',
+        });
+        res.end(content);
+        return;
+      }
+
       let filePath = path.join(getDrawioPath(), url.pathname);
 
       // Default to index.html

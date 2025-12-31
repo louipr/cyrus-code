@@ -251,7 +251,7 @@ export default function App(): React.ReactElement {
       {viewMode === 'diagram' && (
         <main style={styles.diagramMain}>
           <DrawioEditor
-            initialXml={diagramXml}
+            filePath={currentDiagramPath}
             onSave={(xml) => {
               setDiagramXml(xml);
               if (currentDiagramPath && window.cyrus?.diagram?.save) {
