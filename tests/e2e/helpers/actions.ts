@@ -66,71 +66,135 @@ export const diagramActions = {
   },
 
   /**
-   * Export the current diagram as PNG via IPC message to the webview preload.
-   * The preload script handles the export using Draw.io's internal API.
+   * Export the current diagram as PNG using Draw.io's native exportToCanvas.
+   * Uses __cyrusEditorUi captured by the preload hook.
    */
   async exportToPng(page: Page): Promise<string | null> {
-    const DRAWIO_CHANNEL = 'drawio:message';
-
     try {
-      // First check if webview exists and has send method
-      const webviewCheck = await page.evaluate(() => {
+      // Check webview state first
+      const webviewState = await page.evaluate(async () => {
         const webview = document.querySelector('[data-testid="diagram-webview"]') as any;
-        if (!webview) return { exists: false, hasSend: false };
-        return {
-          exists: true,
-          hasSend: typeof webview.send === 'function',
-          tagName: webview.tagName,
-          src: webview.src?.substring(0, 100),
-        };
-      });
-      console.log('[exportToPng] Webview check:', JSON.stringify(webviewCheck));
+        if (!webview) return { error: 'no webview' };
 
-      if (!webviewCheck.exists || !webviewCheck.hasSend) {
+        return await webview.executeJavaScript(`
+          (function() {
+            return {
+              hasCyrusUi: !!window.__cyrusEditorUi,
+              hasEditorUi: !!window.editorUi,
+              hasGeDiagramContainer: !!document.querySelector('.geDiagramContainer')
+            };
+          })()
+        `);
+      });
+      console.log('[exportToPng] Webview state:', JSON.stringify(webviewState));
+
+      if (!webviewState || webviewState.error) {
         console.log('[exportToPng] Webview not ready');
         return null;
       }
 
-      // Set up a promise to wait for the export response
-      const exportPromise = page.evaluate(
-        ({ channel }) => {
-          return new Promise<string | null>((resolve) => {
-            const webview = document.querySelector('[data-testid="diagram-webview"]') as any;
+      // Wait a moment for editorUi to be captured if needed
+      if (!webviewState.hasCyrusUi) {
+        await page.waitForTimeout(1000);
+      }
 
-            // Set up listener for the export response
-            const handleMessage = (event: any) => {
-              if (event.channel === channel && event.args.length > 0) {
-                try {
-                  const data =
-                    typeof event.args[0] === 'string' ? JSON.parse(event.args[0]) : event.args[0];
-                  if (data.event === 'export' && data.format === 'png') {
-                    webview.removeEventListener('ipc-message', handleMessage);
-                    resolve(data.data);
+      // Start the export using exportToCanvas
+      const startExport = await page.evaluate(async () => {
+        const webview = document.querySelector('[data-testid="diagram-webview"]') as any;
+        if (!webview) return { error: 'no webview' };
+
+        return await webview.executeJavaScript(`
+          (function() {
+            var editorUi = window.__cyrusEditorUi || window.editorUi || window.ui || window.app;
+
+            if (!editorUi || !editorUi.editor) {
+              return { error: 'no editorUi' };
+            }
+
+            window.__exportResult = null;
+            window.__exportError = null;
+            window.__exportDone = false;
+
+            var editor = editorUi.editor;
+
+            if (typeof editor.exportToCanvas !== 'function') {
+              return { error: 'exportToCanvas not available' };
+            }
+
+            try {
+              editor.exportToCanvas(
+                function(canvas) {
+                  try {
+                    window.__exportResult = canvas.toDataURL('image/png');
+                    window.__exportDone = true;
+                  } catch(e) {
+                    window.__exportError = 'toDataURL error: ' + e.message;
+                    window.__exportDone = true;
                   }
-                } catch (_e) {
-                  // Ignore parse errors
-                }
+                },
+                null,       // width
+                null,       // imageCache
+                '#1e1e1e',  // background
+                function(e) {
+                  window.__exportError = 'export error: ' + (e ? e.message : 'unknown');
+                  window.__exportDone = true;
+                },
+                null,       // limitHeight
+                true,       // ignoreSelection
+                1,          // scale
+                false,      // transparentBackground
+                false,      // addShadow
+                null,       // converter
+                null,       // graph
+                10,         // border
+                true        // noCrop
+              );
+              return { started: true };
+            } catch(e) {
+              return { error: 'call error: ' + e.message };
+            }
+          })()
+        `);
+      });
+      console.log('[exportToPng] Start export result:', JSON.stringify(startExport));
+
+      if (!startExport || startExport.error) {
+        // Fallback to SVG extraction
+        console.log('[exportToPng] Falling back to SVG extraction...');
+        return await this.extractSvgAsFallback(page);
+      }
+
+      // Poll for result (up to 10 seconds)
+      for (let i = 0; i < 100; i++) {
+        await page.waitForTimeout(100);
+        const status = await page.evaluate(async () => {
+          const webview = document.querySelector('[data-testid="diagram-webview"]') as any;
+          if (!webview) return { done: true, error: 'no webview' };
+          return await webview.executeJavaScript(`
+            (function() {
+              if (window.__exportDone) {
+                return { done: true, result: window.__exportResult, error: window.__exportError };
               }
-            };
+              return { done: false };
+            })()
+          `);
+        });
 
-            webview.addEventListener('ipc-message', handleMessage);
+        if (status && typeof status === 'object' && 'done' in status && status.done) {
+          if (status.error) {
+            console.log('[exportToPng] Export error:', status.error);
+            return await this.extractSvgAsFallback(page);
+          }
+          if (status.result) {
+            console.log('[exportToPng] Native export success!');
+            return status.result as string;
+          }
+          break;
+        }
+      }
 
-            // Send export request to the webview
-            webview.send(channel, JSON.stringify({ action: 'export', format: 'png' }));
-
-            // Timeout after 10 seconds
-            setTimeout(() => {
-              webview.removeEventListener('ipc-message', handleMessage);
-              resolve(null);
-            }, 10000);
-          });
-        },
-        { channel: DRAWIO_CHANNEL }
-      );
-
-      const result = await exportPromise;
-      console.log('[exportToPng] Export result:', result ? 'received PNG data' : 'null');
-      return result;
+      console.log('[exportToPng] Export timed out, trying fallback');
+      return await this.extractSvgAsFallback(page);
     } catch (error) {
       console.log('[exportToPng] Error:', error);
       return null;
@@ -138,66 +202,77 @@ export const diagramActions = {
   },
 
   /**
-   * Toggle the grid and hide UI panels in Draw.io, then take a screenshot.
-   * Uses keyboard shortcuts after focusing the webview.
+   * Fallback: Extract SVG from the diagram container.
+   */
+  async extractSvgAsFallback(page: Page): Promise<string | null> {
+    const svgCode = `
+      (function() {
+        var container = document.querySelector('.geDiagramContainer');
+        if (!container) return null;
+
+        var svg = container.querySelector('svg');
+        if (!svg) return null;
+
+        var bbox = svg.getBBox();
+        var width = Math.ceil(bbox.width + bbox.x + 40);
+        var height = Math.ceil(bbox.height + bbox.y + 40);
+
+        var svgClone = svg.cloneNode(true);
+        svgClone.setAttribute('width', width);
+        svgClone.setAttribute('height', height);
+        svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', width);
+        rect.setAttribute('height', height);
+        rect.setAttribute('fill', '#1e1e1e');
+        svgClone.insertBefore(rect, svgClone.firstChild);
+
+        var svgString = new XMLSerializer().serializeToString(svgClone);
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+      })()
+    `;
+
+    const result = await page.evaluate(
+      async (code) => {
+        const webview = document.querySelector('[data-testid="diagram-webview"]') as any;
+        if (!webview) return null;
+        try {
+          return await webview.executeJavaScript(code);
+        } catch (e) {
+          return null;
+        }
+      },
+      svgCode
+    );
+
+    console.log('[exportToPng] SVG fallback result:', result ? 'received data' : 'null');
+    return result as string | null;
+  },
+
+  /**
+   * Fallback: Toggle grid off and take a screenshot.
    */
   async screenshotDiagramClean(page: Page): Promise<Buffer | null> {
     try {
-      // Get the webview and focus it
       const webview = page.locator('[data-testid="diagram-webview"]');
-      await webview.click(); // Focus the webview
+      await webview.click();
       await page.waitForTimeout(300);
 
       const isMac = process.platform === 'darwin';
       const modifier = isMac ? 'Meta' : 'Control';
 
-      console.log('[screenshotDiagramClean] Toggling grid and panels...');
+      console.log('[screenshotDiagramClean] Toggling grid off...');
 
-      // Toggle grid off (Ctrl/Cmd+Shift+G)
+      // Toggle grid off
       await page.keyboard.press(`${modifier}+Shift+G`);
-      await page.waitForTimeout(200);
-
-      // Toggle format panel off (Ctrl/Cmd+Shift+F) - right sidebar/format
-      await page.keyboard.press(`${modifier}+Shift+F`);
-      await page.waitForTimeout(200);
-
-      // Toggle shapes panel off (Ctrl/Cmd+Shift+K) - left sidebar
-      await page.keyboard.press(`${modifier}+Shift+K`);
-      await page.waitForTimeout(200);
-
-      // Toggle outline off (Ctrl/Cmd+Shift+O)
-      await page.keyboard.press(`${modifier}+Shift+O`);
-      await page.waitForTimeout(200);
-
-      // Toggle page tabs/footer (Ctrl/Cmd+Shift+P)
-      await page.keyboard.press(`${modifier}+Shift+P`);
-      await page.waitForTimeout(200);
-
-      // Toggle ruler (Ctrl/Cmd+Shift+R)
-      await page.keyboard.press(`${modifier}+Shift+R`);
-      await page.waitForTimeout(200);
-
-      // Enter fullscreen mode to hide more chrome
-      await page.keyboard.press('F11');
-      await page.waitForTimeout(500);
-
-      // Wait for UI to settle
       await page.waitForTimeout(500);
 
       // Take screenshot
       const screenshot = await webview.screenshot();
       console.log('[screenshotDiagramClean] Screenshot captured');
 
-      // Exit fullscreen
-      await page.keyboard.press('F11');
-      await page.waitForTimeout(200);
-
-      // Restore panels (toggle them back)
-      await page.keyboard.press(`${modifier}+Shift+R`);
-      await page.keyboard.press(`${modifier}+Shift+P`);
-      await page.keyboard.press(`${modifier}+Shift+O`);
-      await page.keyboard.press(`${modifier}+Shift+K`);
-      await page.keyboard.press(`${modifier}+Shift+F`);
+      // Restore grid
       await page.keyboard.press(`${modifier}+Shift+G`);
 
       return screenshot;

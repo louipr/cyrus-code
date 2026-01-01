@@ -403,4 +403,5 @@ export function registerIpcHandlers(facade: Architecture): void {
       };
     }
   });
+
 }

@@ -17,6 +17,7 @@ import { selectors } from './helpers/selectors';
 import { diagramActions, helpActions } from './helpers/actions';
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 
 let context: AppContext;
 
@@ -43,6 +44,9 @@ const diagrams = [
 ];
 
 test.describe('Diagram Export', () => {
+  // Increase timeout for diagram operations
+  test.setTimeout(120000);
+
   for (const diagram of diagrams) {
     test(`export ${diagram.name}: Mermaid and Draw.io PNGs`, async () => {
       const { app, page } = context;
@@ -115,34 +119,35 @@ test.describe('Diagram Export', () => {
       await page.waitForTimeout(3000);
       console.log('  Diagram loaded, requesting export...');
 
-      // Export using Draw.io's API (clean diagram without editor chrome/grid)
-      const pngData = await diagramActions.exportToPng(page);
-
       const drawioPngPath = path.join(pngDir, `${diagram.name}-drawio.png`);
       const drawioResultPath = path.join(resultsDir, `${diagram.name}-drawio.png`);
 
-      if (pngData) {
-        // pngData is base64 data URL, extract the base64 part
-        const base64Data = pngData.replace(/^data:image\/png;base64,/, '');
-        fs.writeFileSync(drawioPngPath, base64Data, 'base64');
+      // Export using Draw.io's native exportToCanvas via webview
+      const dataUrl = await diagramActions.exportToPng(page);
+
+      if (dataUrl && dataUrl.startsWith('data:image/png;base64,')) {
+        const base64Png = dataUrl.replace(/^data:image\/png;base64,/, '');
+        const pngBuffer = Buffer.from(base64Png, 'base64');
+        fs.writeFileSync(drawioPngPath, pngBuffer);
         fs.copyFileSync(drawioPngPath, drawioResultPath);
-        console.log(`  Exported clean PNG: ${drawioPngPath}`);
+        console.log(`  Exported PNG via Draw.io native: ${drawioPngPath}`);
+      } else if (dataUrl && dataUrl.startsWith('data:image/svg+xml;base64,')) {
+        // SVG fallback - convert with sharp
+        const base64Svg = dataUrl.replace(/^data:image\/svg\+xml;base64,/, '');
+        const svgBuffer = Buffer.from(base64Svg, 'base64');
+        console.log(`  Got SVG (${svgBuffer.length} bytes), converting to PNG...`);
+
+        const pngBuffer = await sharp(svgBuffer).png().toBuffer();
+        fs.writeFileSync(drawioPngPath, pngBuffer);
+        fs.copyFileSync(drawioPngPath, drawioResultPath);
+        console.log(`  Exported PNG via SVG + sharp: ${drawioPngPath}`);
       } else {
-        // Fallback: hide grid and take screenshot
-        console.log('  Export API failed, trying clean screenshot...');
-        const cleanScreenshot = await diagramActions.screenshotDiagramClean(page);
-        if (cleanScreenshot) {
-          fs.writeFileSync(drawioPngPath, cleanScreenshot);
-          fs.copyFileSync(drawioPngPath, drawioResultPath);
-          console.log(`  Saved clean screenshot: ${drawioPngPath}`);
-        } else {
-          // Last resort: raw screenshot
-          console.log('  Clean screenshot failed, using raw screenshot...');
-          const drawioEditor = page.locator(selectors.diagramEditor);
-          await drawioEditor.screenshot({ path: drawioPngPath });
-          fs.copyFileSync(drawioPngPath, drawioResultPath);
-          console.log(`  Saved raw screenshot: ${drawioPngPath}`);
-        }
+        // Screenshot fallback
+        console.log('  Export failed, taking screenshot as fallback...');
+        const drawioEditor = page.locator(selectors.diagramEditor);
+        await drawioEditor.screenshot({ path: drawioPngPath });
+        fs.copyFileSync(drawioPngPath, drawioResultPath);
+        console.log(`  Saved fallback screenshot: ${drawioPngPath}`);
       }
 
       // === Step 3: Output summary ===

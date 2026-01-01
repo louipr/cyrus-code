@@ -16,16 +16,26 @@ import { ipcRenderer, contextBridge } from 'electron';
 
 // Type declarations for DOM APIs (preload runs in renderer context)
 /* eslint-disable @typescript-eslint/no-explicit-any */
+interface DomElement {
+  appendChild(child: any): void;
+  remove(): void;
+  textContent: string | null;
+}
+
 declare const document: {
   readyState: string;
-  body: { textContent: string | null } | null;
-  querySelector(selector: string): Element | null;
+  body: DomElement | null;
+  head: DomElement | null;
+  documentElement: DomElement;
+  querySelector(selector: string): DomElement | null;
   createElement(tagName: string): any;
   addEventListener(type: string, listener: () => void): void;
 };
 
 declare const window: {
   editorUi?: any;
+  __cyrusEditorUi?: any;
+  App?: any;
 };
 
 declare class XMLSerializer {
@@ -55,18 +65,69 @@ declare class Image {
 const DRAWIO_CHANNEL = 'drawio:message';
 
 /**
+ * Find the Draw.io editor graph.
+ * Tries multiple locations since Draw.io stores it differently in various modes.
+ */
+function findGraph(): any {
+  // Try our captured EditorUi instance (set by hookAppMain)
+  if ((window as any).__cyrusEditorUi?.editor?.graph) {
+    console.log('[DrawioPreload] Found graph via __cyrusEditorUi');
+    return (window as any).__cyrusEditorUi.editor.graph;
+  }
+
+  // Try window.editorUi (embed mode)
+  if (window.editorUi?.editor?.graph) {
+    console.log('[DrawioPreload] Found graph via window.editorUi');
+    return window.editorUi.editor.graph;
+  }
+
+  // Try window.mxEditor (some standalone modes)
+  const mxEditorRef = (window as any).mxEditor;
+  if (mxEditorRef?.prototype?.graph) {
+    console.log('[DrawioPreload] Found graph via mxEditor');
+    return mxEditorRef.prototype.graph;
+  }
+
+  // Try finding the App instance
+  const appRef = (window as any).App;
+  if (appRef?.prototype?.editor?.graph) {
+    console.log('[DrawioPreload] Found graph via App.prototype');
+    return appRef.prototype.editor.graph;
+  }
+
+  // Try finding via DOM - look for the diagram container's data
+  const diagramContainer = document.querySelector('.geDiagramContainer');
+  if (diagramContainer) {
+    // mxGraph stores a reference to itself on the container element
+    const containerGraph = (diagramContainer as any).graph;
+    if (containerGraph) {
+      console.log('[DrawioPreload] Found graph via container element');
+      return containerGraph;
+    }
+  }
+
+  // Check for global Graph instances
+  const graphRef = (window as any).graph;
+  if (graphRef?.getSvg) {
+    console.log('[DrawioPreload] Found global graph variable');
+    return graphRef;
+  }
+
+  console.error('[DrawioPreload] Could not find graph in any location');
+  return null;
+}
+
+/**
  * Export the current diagram as PNG.
- * Uses Draw.io's internal EditorUi to generate the export.
+ * Uses Draw.io's internal graph to generate the export.
  */
 async function exportToPng(): Promise<string | null> {
   try {
-    const editorUi = window.editorUi;
-    if (!editorUi || !editorUi.editor || !editorUi.editor.graph) {
-      console.error('[DrawioPreload] EditorUi not available');
+    const graph = findGraph();
+    if (!graph) {
+      console.error('[DrawioPreload] Graph not available for export');
       return null;
     }
-
-    const graph = editorUi.editor.graph;
 
     // Get the SVG of the diagram
     const svgRoot = graph.getSvg(
@@ -125,11 +186,57 @@ async function exportToPng(): Promise<string | null> {
 }
 
 /**
+ * Inject a script into the page context to hook into App.main.
+ * This is necessary because context isolation separates preload and page contexts.
+ */
+function injectHookScript(): void {
+  const script = `
+    (function() {
+      var hookInterval = setInterval(function() {
+        if (window.App && typeof window.App.main === 'function' && !window.__cyrusHooked) {
+          window.__cyrusHooked = true;
+          clearInterval(hookInterval);
+          var originalMain = window.App.main;
+
+          window.App.main = function(callback) {
+            var wrappedCallback = function(ui) {
+              console.log('[DrawioHook] Captured EditorUi instance');
+              window.__cyrusEditorUi = ui;
+              if (callback) {
+                callback(ui);
+              }
+            };
+            var args = Array.prototype.slice.call(arguments);
+            args[0] = wrappedCallback;
+            return originalMain.apply(this, args);
+          };
+
+          console.log('[DrawioHook] Hooked into App.main');
+        }
+      }, 20);
+
+      // Stop trying after 30 seconds
+      setTimeout(function() { clearInterval(hookInterval); }, 30000);
+    })();
+  `;
+
+  // Inject the script into the page
+  const scriptElement = document.createElement('script');
+  scriptElement.textContent = script;
+  (document.head || document.documentElement).appendChild(scriptElement);
+  scriptElement.remove();
+  console.log('[DrawioPreload] Injected hook script into page context');
+}
+
+/**
  * Set up communication with the host renderer.
  * In standalone mode, Draw.io loads as a normal app.
  * We watch for the editor to be ready and notify the host.
  */
 function setupBridge(): void {
+  // Inject hook script into page context to capture EditorUi instance
+  injectHookScript();
+
   // Poll for Draw.io editor to be ready
   const checkReady = setInterval(() => {
     // Check for .geDiagramContainer which is the actual canvas container
