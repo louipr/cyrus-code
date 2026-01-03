@@ -17,39 +17,83 @@ metadata:
   tags: [export, png, drawio, native-api]
   author: AI exploration session
   created: "2025-01-01"
-  modified: "2025-01-01"
+  modified: "2025-01-03"
 
 context:
-  app: diagram-webview
+  app: cyrus-code
   prerequisites:
+    - App is launched
     - Diagram view is active
-    - A .drawio file is loaded
-    - Draw.io editor has finished loading
-  waitFor: ".geDiagramContainer"
+  waitFor: "[data-testid='search-bar']"
 
 tasks:
-  - id: verify-editor-ready
-    name: Verify EditorUi is available
+  - id: open-diagram
+    name: Open diagram view
     steps:
-      - action: wait-for
-        selector: ".geDiagramContainer"
-        timeout: 60000
-        why: |
-          Draw.io renders the diagram into .geDiagramContainer.
-          This selector appears only after the editor fully loads,
-          not during the initial "Loading..." screen.
+      - action: click
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+        why: Click the Diagram button to switch to diagram view.
 
+      - action: wait-for
+        selector: "[data-testid='diagram-webview']"
+        timeout: 10000
+        why: Wait for Draw.io webview to appear.
+
+  - id: wait-for-drawio
+    name: Wait for Draw.io editor
+    depends: [open-diagram]
+    steps:
       - action: evaluate
         code: |
-          (function() {
-            return {
-              hasCyrusUi: !!window.__cyrusEditorUi,
-              hasEditor: !!(window.__cyrusEditorUi && window.__cyrusEditorUi.editor),
-              hasExportFn: !!(window.__cyrusEditorUi &&
-                              window.__cyrusEditorUi.editor &&
-                              typeof window.__cyrusEditorUi.editor.exportToCanvas === 'function')
-            };
-          })()
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Poll for Draw.io readiness
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            try {
+              const ready = await webview.executeJavaScript(`
+                (function() {
+                  const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+                  return !!(ui && ui.editor && ui.editor.graph);
+                })()
+              `);
+              if (ready) {
+                return { ready: true, attempts: i + 1 };
+              }
+            } catch (e) {
+              // Continue polling
+            }
+          }
+          throw new Error('Draw.io editor not ready after 15 seconds');
+        timeout: 20000
+        why: Wait for Draw.io's editor API to be available.
+
+  - id: verify-editor-ready
+    name: Verify EditorUi is available
+    depends: [wait-for-drawio]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              return {
+                hasCyrusUi: !!window.__cyrusEditorUi,
+                hasEditor: !!(ui && ui.editor),
+                hasExportFn: !!(ui && ui.editor && typeof ui.editor.exportToCanvas === 'function')
+              };
+            })()
+          `);
+
+          if (!result.hasExportFn) {
+            throw new Error('exportToCanvas not available: ' + JSON.stringify(result));
+          }
+          return result;
+        timeout: 5000
         why: |
           The preload hook (drawio-preload.ts) intercepts App.main() to capture
           the EditorUi instance in window.__cyrusEditorUi. We verify:
@@ -63,50 +107,59 @@ tasks:
     steps:
       - action: evaluate
         code: |
-          (function() {
-            var editorUi = window.__cyrusEditorUi || window.editorUi;
-            if (!editorUi || !editorUi.editor) {
-              return { error: 'no editorUi' };
-            }
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
 
-            // Clear previous export state
-            window.__exportResult = null;
-            window.__exportError = null;
-            window.__exportDone = false;
+          const result = await webview.executeJavaScript(`
+            (function() {
+              var editorUi = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (!editorUi || !editorUi.editor) {
+                return { error: 'no editorUi' };
+              }
 
-            var editor = editorUi.editor;
+              // Clear previous export state
+              window.__exportResult = null;
+              window.__exportError = null;
+              window.__exportDone = false;
 
-            // Call native export with dark background
-            editor.exportToCanvas(
-              function(canvas) {
-                try {
-                  window.__exportResult = canvas.toDataURL('image/png');
+              var editor = editorUi.editor;
+
+              // Call native export with dark background
+              editor.exportToCanvas(
+                function(canvas) {
+                  try {
+                    window.__exportResult = canvas.toDataURL('image/png');
+                    window.__exportDone = true;
+                  } catch(e) {
+                    window.__exportError = 'toDataURL error: ' + e.message;
+                    window.__exportDone = true;
+                  }
+                },
+                null,       // width (null = auto)
+                null,       // imageCache
+                '#1e1e1e',  // background color (dark theme)
+                function(e) {
+                  window.__exportError = 'export error: ' + (e ? e.message : 'unknown');
                   window.__exportDone = true;
-                } catch(e) {
-                  window.__exportError = 'toDataURL error: ' + e.message;
-                  window.__exportDone = true;
-                }
-              },
-              null,       // width (null = auto)
-              null,       // imageCache
-              '#1e1e1e',  // background color (dark theme)
-              function(e) {
-                window.__exportError = 'export error: ' + (e ? e.message : 'unknown');
-                window.__exportDone = true;
-              },
-              null,       // limitHeight
-              true,       // ignoreSelection (export full diagram)
-              1,          // scale (1 = 100%)
-              false,      // transparentBackground
-              false,      // addShadow
-              null,       // converter
-              null,       // graph (null = use current)
-              10,         // border padding in pixels
-              true        // noCrop
-            );
+                },
+                null,       // limitHeight
+                true,       // ignoreSelection (export full diagram)
+                1,          // scale (1 = 100%)
+                false,      // transparentBackground
+                false,      // addShadow
+                null,       // converter
+                null,       // graph (null = use current)
+                10,         // border padding in pixels
+                true        // noCrop
+              );
 
-            return { started: true };
-          })()
+              return { started: true };
+            })()
+          `);
+
+          if (result.error) throw new Error(result.error);
+          return result;
+        timeout: 10000
         why: |
           editor.exportToCanvas() is Draw.io's native export method.
           It renders the diagram to a canvas element asynchronously.
@@ -121,39 +174,58 @@ tasks:
     name: Poll for export completion
     depends: [start-export]
     steps:
-      - action: poll
-        condition: "window.__exportDone === true"
-        interval: 100
-        timeout: 10000
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Poll for export completion
+          for (let i = 0; i < 100; i++) {
+            await new Promise(r => setTimeout(r, 100));
+            const done = await webview.executeJavaScript('window.__exportDone === true');
+            if (done) break;
+          }
+
+          const result = await webview.executeJavaScript(`
+            (function() {
+              if (window.__exportError) {
+                return { success: false, error: window.__exportError };
+              }
+              return {
+                success: true,
+                dataUrl: window.__exportResult,
+                size: window.__exportResult ? window.__exportResult.length : 0
+              };
+            })()
+          `);
+
+          if (!result.success) {
+            throw new Error('Export failed: ' + result.error);
+          }
+          return result;
+        timeout: 15000
         why: |
           exportToCanvas is asynchronous - it needs to render all shapes,
           apply styles, and convert to canvas. We poll window.__exportDone
           which is set by our callback when export completes or fails.
 
-      - action: evaluate
-        code: |
-          (function() {
-            if (window.__exportError) {
-              return { success: false, error: window.__exportError };
-            }
-            return {
-              success: true,
-              dataUrl: window.__exportResult,
-              size: window.__exportResult ? window.__exportResult.length : 0
-            };
-          })()
-        why: |
-          After polling completes, we check if export succeeded.
-          window.__exportResult contains the PNG as a base64 data URL:
-          "data:image/png;base64,..." which can be decoded and written to file.
-
   - id: extract-result
     name: Extract PNG data URL
     depends: [wait-for-export]
     steps:
-      - action: extract
-        variable: "window.__exportResult"
-        returns: png-data-url
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          const dataUrl = await webview.executeJavaScript('window.__exportResult');
+          return {
+            dataUrl: dataUrl,
+            size: dataUrl ? dataUrl.length : 0,
+            isValidPng: dataUrl && dataUrl.startsWith('data:image/png;base64,')
+          };
+        timeout: 5000
+        returns: "{ dataUrl: 'data:image/png;base64,...', size: 12345, isValidPng: true }"
         why: |
           The final PNG data is in window.__exportResult as a data URL.
           This can be processed by the caller:

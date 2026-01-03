@@ -40,13 +40,6 @@ recordings:
         status: verified
         tags: [export, png]
 
-      - id: export-svg-fallback
-        file: drawio/export-svg-fallback.yaml
-        name: Draw.io SVG Fallback Export
-        description: Extract SVG from DOM when native export unavailable
-        status: verified
-        tags: [export, svg, fallback]
-
       - id: create-architecture-diagram
         file: drawio/create-architecture-diagram.yaml
         name: Create Architecture Diagram
