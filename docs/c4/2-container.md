@@ -13,6 +13,7 @@ flowchart TB
     dev["👤 Developer"] -->|"commands"| cli
     dev -->|"visual editing"| gui
     ai["🤖 AI Agent"] -->|"commands"| cli
+    ai -->|"recordings"| recordings
 
     subgraph cyrus ["cyrus-code"]
         cli["CLI<br/><small>Node.js</small>"]
@@ -26,11 +27,17 @@ flowchart TB
 
         st["Symbol Table<br/><small>SQLite + TypeScript</small>"]
         db[("SQLite")]
+
+        subgraph testing ["Testing Infrastructure"]
+            recordings["Recording System<br/><small>TypeScript + YAML</small>"]
+            drawio["Draw.io Integration<br/><small>Webview + Preload</small>"]
+        end
     end
 
     cli -->|"commands"| api
     gui -->|"IPC"| api
     gui -->|"IPC"| help
+    gui -->|"embed"| drawio
 
     api -->|"symbols"| st
     api -->|"generate"| synth
@@ -42,16 +49,20 @@ flowchart TB
     st -->|"persist"| db
     synth -->|"write"| fs["📁 Files"]
     help -->|"read"| docs["📄 Docs"]
+    recordings -->|"replay"| gui
+    drawio -->|"export"| fs
 
     classDef person fill:#08427b,color:#fff
     classDef container fill:#1168bd,color:#fff
     classDef storage fill:#438dd5,color:#fff
     classDef external fill:#999,color:#fff
+    classDef testing fill:#2e7d32,color:#fff
 
     class dev,ai person
     class cli,gui,api,help,graph,synth,st container
     class db storage
     class fs,docs external
+    class recordings,drawio testing
 ```
 
 > **Note**: Help Service has direct IPC access (not through API Facade) because it operates on documentation files, not the symbol table ecosystem.
@@ -91,6 +102,14 @@ flowchart TB
 | **Symbol Database** | SQLite | Persistent symbol storage | ✅ |
 | **Component Store** | File System | Component source and interface files | ✅ |
 
+### Testing Infrastructure
+
+| Container | Technology | Purpose | Status |
+|-----------|------------|---------|--------|
+| **Recording System** | TypeScript + YAML | AI-recordable GUI exploration patterns | ✅ |
+| **Draw.io Integration** | Electron Webview + Preload Hook | Diagram viewing and PNG export | ✅ |
+| **E2E Test Suite** | Playwright | Automated UI testing with visual comparison | ✅ |
+
 > **Technology Decisions**: See [ADR index](../adr/) for detailed rationale on SQLite, ts-morph, Zod, Electron, and other technology choices.
 
 ## Design Decisions
@@ -101,3 +120,6 @@ flowchart TB
 | Help Service bypasses API Facade | Documentation separate from symbol table domain |
 | SQLite for persistence | Embedded, no server required, portable |
 | Software-oriented relationships | Uses extends/implements/dependencies/contains instead of HDL port-based wiring |
+| YAML recordings for GUI patterns | LLM-readable format with `why` fields explaining each action; enables AI agents to learn and replay GUI interactions |
+| EditorUi hook for Draw.io export | Preload script captures Draw.io's native EditorUi instance via `window.__cyrusEditorUi` for reliable PNG export |
+| Visual regression testing | Screenshot comparison for diagrams ensures rendering consistency across changes |

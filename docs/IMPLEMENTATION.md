@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 317 | `src/**/*.test.ts` |
-| E2E tests | 10 tests (2 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **327** | |
+| Unit tests | 341 | `src/**/*.test.ts` |
+| E2E tests | 11 tests (3 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **352** | |
 
 ---
 
@@ -52,6 +52,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Help System | HelpService, CLI | Help Dialog, Mermaid | ✅ Complete |
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
+| Draw.io Integration | EditorUi hook, PNG export | Diagram view, webview | ✅ Complete |
+| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder | - | ✅ Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -392,6 +394,62 @@ npm run electron:dev   # Dev mode with hot reload
 
 ---
 
+## Draw.io Integration
+
+### Phase 1: Native PNG Export
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| DIO.1 | EditorUi capture hook in preload | `electron/drawio-preload.ts` | ✅ |
+| DIO.2 | App.main wrapper for EditorUi interception | `electron/drawio-preload.ts` | ✅ |
+| DIO.3 | Native exportToCanvas PNG export | `tests/e2e/helpers/actions.ts` | ✅ |
+| DIO.4 | SVG extraction fallback | `tests/e2e/helpers/actions.ts` | ✅ |
+| DIO.5 | Diagram comparison test (Mermaid vs Draw.io) | `tests/e2e/diagram-comparison.spec.ts` | ✅ |
+
+**Summary**: Implemented programmatic PNG export from Draw.io diagrams using the native `exportToCanvas` API. The preload script injects a hook that wraps `App.main()` to capture the `EditorUi` instance in `window.__cyrusEditorUi`, giving access to `editor.exportToCanvas()` for proper PNG generation.
+
+**Export Flow**: `webview → __cyrusEditorUi → editor.exportToCanvas() → canvas → toDataURL('image/png') → base64 → file`
+
+---
+
+## E2E Testing Infrastructure
+
+### Phase 1: AI-Recordable GUI Exploration System
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.1 | Recording schema types | `src/recordings/schema.ts` | ✅ |
+| E2E.2 | RecordingPlayer (executes YAML recordings) | `src/recordings/player.ts` | ✅ |
+| E2E.3 | RecordingBuilder (fluent API for creating recordings) | `src/recordings/builder.ts` | ✅ |
+| E2E.4 | Draw.io export-png recording | `tests/e2e/recordings/drawio/export-png.yaml` | ✅ |
+| E2E.5 | Draw.io SVG fallback recording | `tests/e2e/recordings/drawio/export-svg-fallback.yaml` | ✅ |
+| E2E.6 | Draw.io context documentation | `tests/e2e/recordings/drawio/_context.yaml` | ✅ |
+| E2E.7 | Recording index | `tests/e2e/recordings/_index.yaml` | ✅ |
+| E2E.8 | Unit tests for RecordingBuilder | `src/recordings/recording-builder.test.ts` | ✅ |
+
+**Summary**: AI-recordable GUI exploration system for E2E tests. Recordings are YAML files with tree-structured tasks and LLM-optimized `why` fields explaining each step's purpose. Supports 10 action types: click, type, wait-for, evaluate, poll, extract, assert, keyboard, hover, screenshot.
+
+### Phase 2: Recording System Integration (Future)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.9 | Integrate RecordingPlayer into diagram-comparison test | `tests/e2e/diagram-comparison.spec.ts` | ⏳ |
+| E2E.10 | Add feedback/grading mechanism (success rates from CI) | `src/recordings/` | ⏳ |
+| E2E.11 | Create menu navigation recording | `tests/e2e/recordings/drawio/menu-navigation.yaml` | ⏳ |
+| E2E.12 | Create dialog handling recording | `tests/e2e/recordings/drawio/dialog-handling.yaml` | ⏳ |
+| E2E.13 | Demo RecordingBuilder in live exploration | - | ⏳ |
+
+### Deliverables
+
+- [x] Recording schema with tasks, steps, and `why` explanations
+- [x] RecordingPlayer for executing YAML recordings against Playwright
+- [x] RecordingBuilder fluent API for AI agents to create recordings
+- [x] First recordings capturing Draw.io export knowledge
+- [ ] Integration with existing E2E tests
+- [ ] Feedback/grading mechanism for recording quality
+
+---
+
 ## Slice 4: Analysis + Dead Code (DEFERRED)
 
 > **Note:** Analyzer stub (schema.ts only) was deleted during service architecture cleanup.
@@ -454,6 +512,7 @@ cyrus-code/
 ├── electron/                          # Electron Main Process
 │   ├── main.ts                        # App entry point, window creation
 │   ├── preload.ts                     # Context bridge for IPC
+│   ├── drawio-preload.ts              # Draw.io webview preload (EditorUi hook)
 │   ├── ipc-handlers.ts                # IPC handlers → Architecture
 │   └── menu.ts                        # Application menu with Help
 │
@@ -554,11 +613,24 @@ cyrus-code/
 │   │   ├── api-client.ts              # IPC wrapper
 │   │   └── components/                # React components
 │   │
+│   ├── recordings/                    # AI-Recordable GUI System
+│   │   ├── schema.ts                  # Recording types
+│   │   ├── player.ts                  # RecordingPlayer
+│   │   ├── builder.ts                 # RecordingBuilder
+│   │   └── index.ts
+│   │
 │   └── testing/                       # Test Utilities
 │       ├── fixtures.ts                # Shared test helpers
 │       └── index.ts
 │
 ├── tests/e2e/                         # Playwright E2E Tests
+│   ├── recordings/                    # YAML recordings for AI agents
+│   │   ├── _index.yaml                # Recording registry
+│   │   └── drawio/                    # Draw.io recordings
+│   │       ├── _context.yaml          # Shared context
+│   │       ├── export-png.yaml        # Native PNG export
+│   │       └── export-svg-fallback.yaml
+│   └── helpers/
 ├── docs/                              # Documentation
 │   ├── architecture/                  # Architecture guides
 │   ├── adr/                           # Architecture Decision Records
