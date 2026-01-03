@@ -233,7 +233,8 @@ export class RecordingPlayer {
           break;
 
         case 'evaluate':
-          value = await this.page.evaluate(step.code!);
+          // Wrap in async IIFE to support await in code
+          value = await this.page.evaluate(`(async function() { ${step.code!} })()`);
           break;
 
         case 'poll':
