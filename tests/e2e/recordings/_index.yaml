@@ -1,0 +1,51 @@
+# Recordings Index
+#
+# Registry of all available recordings with metadata.
+# Used by AI agents to discover available patterns.
+
+version: "1.0"
+description: |
+  AI-recordable GUI exploration recordings for E2E tests.
+  Each recording captures knowledge about how to interact with
+  specific parts of the application.
+
+# Recordings by application/component
+recordings:
+  drawio:
+    description: Draw.io diagram editor interactions
+    context: drawio/_context.yaml
+    recordings:
+      - id: export-png
+        file: drawio/export-png.yaml
+        name: Draw.io PNG Export
+        description: Export diagram to PNG using native exportToCanvas
+        status: verified
+        tags: [export, png]
+
+      - id: export-svg-fallback
+        file: drawio/export-svg-fallback.yaml
+        name: Draw.io SVG Fallback Export
+        description: Extract SVG from DOM when native export unavailable
+        status: verified
+        tags: [export, svg, fallback]
+
+# How to use recordings:
+#
+# 1. In tests:
+#    import { RecordingPlayer } from './recordings/lib';
+#    const player = new RecordingPlayer(page);
+#    const result = await player.run('drawio/export-png');
+#
+# 2. To create new recordings:
+#    import { RecordingBuilder } from './recordings/lib';
+#    const builder = new RecordingBuilder('my-feature')
+#      .setContext({ app: 'my-app' })
+#      .addTask('step-1', 'First step')
+#        .click('.button', 'Click the button to start')
+#        .waitFor('.result', 'Wait for result to appear')
+#      .save('my-app/my-feature.yaml');
+#
+# 3. For AI agents exploring:
+#    - Read this index to discover available patterns
+#    - Use RecordingPlayer to replay known patterns
+#    - Use RecordingBuilder to capture new knowledge

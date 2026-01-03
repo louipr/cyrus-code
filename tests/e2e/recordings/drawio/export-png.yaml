@@ -1,0 +1,173 @@
+# Draw.io PNG Export Recording
+#
+# Exports a diagram to PNG using Draw.io's native exportToCanvas API.
+# This recording captures the knowledge learned during exploration:
+# - EditorUi is captured via window.__cyrusEditorUi by the preload hook
+# - editor.exportToCanvas() is the native API for PNG generation
+# - Export is async, requires polling for completion
+
+name: Draw.io PNG Export
+description: |
+  Export the current diagram to PNG using Draw.io's native exportToCanvas API.
+  Returns a base64 data URL that can be written to a file.
+
+metadata:
+  status: verified
+  reliability: high
+  tags: [export, png, drawio, native-api]
+  author: AI exploration session
+  created: "2025-01-01"
+  modified: "2025-01-01"
+
+context:
+  app: diagram-webview
+  prerequisites:
+    - Diagram view is active
+    - A .drawio file is loaded
+    - Draw.io editor has finished loading
+  waitFor: ".geDiagramContainer"
+
+tasks:
+  - id: verify-editor-ready
+    name: Verify EditorUi is available
+    steps:
+      - action: wait-for
+        selector: ".geDiagramContainer"
+        timeout: 60000
+        why: |
+          Draw.io renders the diagram into .geDiagramContainer.
+          This selector appears only after the editor fully loads,
+          not during the initial "Loading..." screen.
+
+      - action: evaluate
+        code: |
+          (function() {
+            return {
+              hasCyrusUi: !!window.__cyrusEditorUi,
+              hasEditor: !!(window.__cyrusEditorUi && window.__cyrusEditorUi.editor),
+              hasExportFn: !!(window.__cyrusEditorUi &&
+                              window.__cyrusEditorUi.editor &&
+                              typeof window.__cyrusEditorUi.editor.exportToCanvas === 'function')
+            };
+          })()
+        why: |
+          The preload hook (drawio-preload.ts) intercepts App.main() to capture
+          the EditorUi instance in window.__cyrusEditorUi. We verify:
+          1. The hook captured the instance
+          2. It has an editor property
+          3. The editor has exportToCanvas method
+
+  - id: start-export
+    name: Start native PNG export
+    depends: [verify-editor-ready]
+    steps:
+      - action: evaluate
+        code: |
+          (function() {
+            var editorUi = window.__cyrusEditorUi || window.editorUi;
+            if (!editorUi || !editorUi.editor) {
+              return { error: 'no editorUi' };
+            }
+
+            // Clear previous export state
+            window.__exportResult = null;
+            window.__exportError = null;
+            window.__exportDone = false;
+
+            var editor = editorUi.editor;
+
+            // Call native export with dark background
+            editor.exportToCanvas(
+              function(canvas) {
+                try {
+                  window.__exportResult = canvas.toDataURL('image/png');
+                  window.__exportDone = true;
+                } catch(e) {
+                  window.__exportError = 'toDataURL error: ' + e.message;
+                  window.__exportDone = true;
+                }
+              },
+              null,       // width (null = auto)
+              null,       // imageCache
+              '#1e1e1e',  // background color (dark theme)
+              function(e) {
+                window.__exportError = 'export error: ' + (e ? e.message : 'unknown');
+                window.__exportDone = true;
+              },
+              null,       // limitHeight
+              true,       // ignoreSelection (export full diagram)
+              1,          // scale (1 = 100%)
+              false,      // transparentBackground
+              false,      // addShadow
+              null,       // converter
+              null,       // graph (null = use current)
+              10,         // border padding in pixels
+              true        // noCrop
+            );
+
+            return { started: true };
+          })()
+        why: |
+          editor.exportToCanvas() is Draw.io's native export method.
+          It renders the diagram to a canvas element asynchronously.
+          Parameters explained:
+          - callback: receives canvas when done
+          - background: '#1e1e1e' matches our dark theme
+          - ignoreSelection: true exports everything, not just selected
+          - border: 10px padding around the diagram
+          The result is stored in window.__exportResult for polling.
+
+  - id: wait-for-export
+    name: Poll for export completion
+    depends: [start-export]
+    steps:
+      - action: poll
+        condition: "window.__exportDone === true"
+        interval: 100
+        timeout: 10000
+        why: |
+          exportToCanvas is asynchronous - it needs to render all shapes,
+          apply styles, and convert to canvas. We poll window.__exportDone
+          which is set by our callback when export completes or fails.
+
+      - action: evaluate
+        code: |
+          (function() {
+            if (window.__exportError) {
+              return { success: false, error: window.__exportError };
+            }
+            return {
+              success: true,
+              dataUrl: window.__exportResult,
+              size: window.__exportResult ? window.__exportResult.length : 0
+            };
+          })()
+        why: |
+          After polling completes, we check if export succeeded.
+          window.__exportResult contains the PNG as a base64 data URL:
+          "data:image/png;base64,..." which can be decoded and written to file.
+
+  - id: extract-result
+    name: Extract PNG data URL
+    depends: [wait-for-export]
+    steps:
+      - action: extract
+        variable: "window.__exportResult"
+        returns: png-data-url
+        why: |
+          The final PNG data is in window.__exportResult as a data URL.
+          This can be processed by the caller:
+          - Strip "data:image/png;base64," prefix
+          - Decode from base64
+          - Write to file as binary PNG
+
+# Usage example in tests:
+#
+# const player = new RecordingPlayer(page);
+# const result = await player.run('drawio/export-png');
+#
+# if (result.success) {
+#   const dataUrl = result.extracts['png-data-url'];
+#   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+#   fs.writeFileSync('output.png', Buffer.from(base64, 'base64'));
+# }
