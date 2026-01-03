@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 341 unit tests
+npm test               # Run 324 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -36,9 +36,9 @@ npm run electron:dev   # Dev mode with hot reload
 
 | Category | Count | Location |
 |----------|-------|----------|
-| Unit tests | 341 | `src/**/*.test.ts` |
-| E2E tests | 11 tests (3 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **352** | |
+| Unit tests | 324 | `src/**/*.test.ts` |
+| E2E tests | 9 tests (7 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **333** | |
 
 ---
 
@@ -53,7 +53,7 @@ npm run electron:dev   # Dev mode with hot reload
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
 | Draw.io Integration | EditorUi hook, PNG export | Diagram view, webview | ✅ Complete |
-| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder | Recording Visualization View | 🔄 Phase 1 ✅ |
+| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder | Recording Visualization View | ✅ Phase 1-3, ⏳ Phase 4 |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -75,8 +75,8 @@ npm run electron:dev   # Dev mode with hot reload
 | 1.8 | Create API Facade | `src/api/facade.ts` | ✅ |
 | 1.9 | Create API DTOs | `src/api/types.ts` | ✅ |
 | 1.10 | Basic CLI (register, list, get, validate) | `src/cli/` | ✅ |
-| 1.11 | Unit tests for Symbol Table | `src/services/symbol-table/*.test.ts` | ✅ (55 tests) |
-| 1.12 | CLI tests | `src/cli/cli.test.ts` | ✅ (17 tests) |
+| 1.11 | Unit tests for Symbol Table | `src/services/symbol-table/*.test.ts` | ✅ |
+| 1.12 | CLI tests | `src/cli/cli.test.ts` | ✅ |
 
 ### GUI Tasks
 
@@ -176,7 +176,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 3.6 | Extend API Facade | `src/api/facade.ts` | ✅ |
 | 3.7 | CLI: generate | `src/cli/commands/generate.ts` | ✅ |
 | 3.8 | IPC handlers for code-generation | `electron/ipc-handlers.ts`, `electron/preload.ts` | ✅ |
-| 3.9 | Unit tests for CodeGeneration | `src/services/code-generation/index.test.ts` | ✅ (51 tests) |
+| 3.9 | Unit tests for CodeGeneration | `src/services/code-generation/service.test.ts` | ✅ |
 
 ### GUI Tasks
 
@@ -231,13 +231,13 @@ npm run electron:dev   # Dev mode with hot reload
 | H.G4 | AboutDialog component | `src/gui/components/AboutDialog.tsx` | ✅ |
 | H.G5 | F1 shortcut + help button | `src/gui/App.tsx` | ✅ |
 | H.G6 | Help API in preload | `electron/preload.ts` | ✅ |
-| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (11 tests) |
+| H.G7 | E2E tests | `tests/e2e/help-dialog.spec.ts` | ✅ (8 tests) |
 
 ### Verification Tasks
 
 | ID | Task | Type | Status |
 |----|------|------|--------|
-| H.V1 | `npm run build && npm test` passes (233 tests) | Agent | ✅ |
+| H.V1 | `npm run build && npm test` passes | Agent | ✅ |
 | H.V2 | CLI: `cyrus-code help`, `help <topic>`, `help --search` | Agent | ✅ |
 | H.V3 | `npm run test:e2e` passes (help dialog tests) | Agent | ✅ |
 | H.V4 | Manual: F1 opens help, topics render, mermaid diagrams | User | ✅ |
@@ -359,7 +359,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.45 | MethodSelector (selective filtering) | `builder/method-selector.ts` | ✅ |
 | D.46 | DiagramRenderer + MermaidRenderer | `renderer/*.ts` | ✅ |
 | D.47 | C4DiagramGenerator facade + preprocessor integration | `index.ts`, `preprocessor.ts` | ✅ |
-| D.48 | Unit tests (24 new tests) | `index.test.ts` | ✅ |
+| D.48 | Unit tests | `generator.test.ts` | ✅ |
 
 **Summary**: Full C4 Level 4 (Code) diagram generation from TypeScript source. Uses ts-morph for AST analysis. Extracts interfaces, types, and relationships to generate Mermaid classDiagram syntax via `mermaid:c4code` preprocessor directive.
 
@@ -372,7 +372,7 @@ npm run electron:dev   # Dev mode with hot reload
 | D.51 | Shape inference (rectangle → class, stadium → service) | `parser.ts` | ✅ |
 | D.52 | Relationship type mapping (arrows → UML types) | `parser.ts` | ✅ |
 | D.53 | Cyrus comment parsing (%% cyrus-*) | `parser.ts` | ✅ |
-| D.54 | Unit tests (84 new tests) | `parser.test.ts` | ✅ |
+| D.54 | Unit tests | `parser.test.ts` | ✅ |
 | D.55 | Update ADR-012 documentation | `docs/adr/012-diagram-driven-architecture.md` | ✅ |
 
 **Summary**: MermaidParser infrastructure for parsing architecture diagrams (flowchart TD, C4Context/Container/Component) into the `Diagram` schema. Supports shape type inference, relationship mapping, and cyrus-code metadata via comments. Part of ADR-012 Phase 3.
@@ -439,19 +439,19 @@ npm run electron:dev   # Dev mode with hot reload
 | E2E.12 | Create dialog handling recording | `tests/e2e/recordings/drawio/dialog-handling.yaml` | ⏳ |
 | E2E.13 | Demo RecordingBuilder in live exploration | - | ⏳ |
 
-### Phase 3: Recording Visualization View (Future)
+### Phase 3: Recording Visualization View
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.14 | Recording Tree Navigator component | `src/gui/components/RecordingTreeView.tsx` | ⏳ |
-| E2E.15 | Task Dependency Graph (DAG visualization) | `src/gui/components/TaskDependencyGraph.tsx` | ⏳ |
-| E2E.16 | Step Timeline component (action sequence) | `src/gui/components/StepTimeline.tsx` | ⏳ |
-| E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/StepDetailsPanel.tsx` | ⏳ |
-| E2E.18 | Execution Status overlay (pass/fail indicators) | `src/gui/components/ExecutionStatus.tsx` | ⏳ |
-| E2E.19 | Context Panel (globals, selectors, prerequisites) | `src/gui/components/RecordingContext.tsx` | ⏳ |
-| E2E.20 | Recording comparison view (diff similar patterns) | `src/gui/components/RecordingComparison.tsx` | ⏳ |
-| E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ⏳ |
-| E2E.22 | IPC handlers for loading recordings | `electron/ipc-handlers.ts` | ⏳ |
+| E2E.14 | Recording Tree Navigator component | `src/gui/components/recordings/RecordingTree.tsx` | ✅ |
+| E2E.15 | Task Dependency Graph (DAG visualization) | `src/gui/components/recordings/TaskDependencyGraph.tsx` | ✅ |
+| E2E.16 | Step Timeline component (action sequence) | `src/gui/components/recordings/StepTimeline.tsx` | ✅ |
+| E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/recordings/StepDetail.tsx` | ✅ |
+| E2E.18 | Recording Detail view (combined task/step view) | `src/gui/components/recordings/RecordingDetail.tsx` | ✅ |
+| E2E.19 | Play Recording Dialog (execution UI) | `src/gui/components/recordings/PlayRecordingDialog.tsx` | ✅ |
+| E2E.20 | Recording Toolbar (actions) | `src/gui/components/recordings/RecordingToolbar.tsx` | ✅ |
+| E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ✅ |
+| E2E.22 | IPC handlers for loading/running recordings | `electron/ipc-handlers.ts` | ✅ |
 
 **View Layout Concept:**
 ```
@@ -497,9 +497,98 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] RecordingPlayer for executing YAML recordings against Playwright
 - [x] RecordingBuilder fluent API for AI agents to create recordings
 - [x] First recordings capturing Draw.io export knowledge
-- [ ] Integration with existing E2E tests
-- [ ] Feedback/grading mechanism for recording quality
-- [ ] Recording Visualization View in GUI
+- [x] Integration with existing E2E tests (run-recording.spec.ts)
+- [x] Recording Visualization View in GUI (RecordingsView with tree, DAG, timeline, details)
+- [ ] Feedback/grading mechanism for recording quality (future)
+- [ ] Step-through debugger (Phase 4)
+
+### Phase 4: Step-Through Debugger
+
+Interactive step-by-step execution of recordings with real-time GUI feedback.
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Renderer Process                                                   │
+│    DebugControls ───► [▶ Step] [⏸ Pause] [▶▶ Run to End] [⏹ Stop] │
+│    StepTimeline  ───► ○ pending │ ◉ running │ ✓ success │ ✕ failed│
+│    StepResultOverlay ───► Real-time result display                 │
+└─────────────────────────────────────────────────────────────────────┘
+                         │  IPC Events (step-start, step-complete)
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Main Process                                                       │
+│    StepExecutionSession ───► Manages Playwright + execution state  │
+│    StepExecutor ───► Wraps RecordingPlayer with pause/resume       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.1 Backend: StepExecutor Core
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.23 | Define debug session types | `src/recordings/step-executor/schema.ts` | ⏳ |
+| E2E.24 | Create StepExecutor class | `src/recordings/step-executor/step-executor.ts` | ⏳ |
+| E2E.25 | Implement pause/resume flow | `src/recordings/step-executor/step-executor.ts` | ⏳ |
+| E2E.26 | Create StepExecutionSession | `src/recordings/step-executor/session.ts` | ⏳ |
+| E2E.27 | Session manager (singleton) | `src/recordings/step-executor/session-manager.ts` | ⏳ |
+| E2E.28 | Unit tests | `src/recordings/step-executor/step-executor.test.ts` | ⏳ |
+
+#### 4.2 IPC Layer: Real-time Streaming
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.29 | Add debug session IPC handlers | `electron/ipc-handlers.ts` | ⏳ |
+| E2E.30 | Implement event streaming | `electron/ipc-handlers.ts` | ⏳ |
+| E2E.31 | Add preload API for debug commands | `electron/preload.ts` | ⏳ |
+| E2E.32 | Add preload listeners for events | `electron/preload.ts` | ⏳ |
+
+**IPC Channels:**
+- Commands: `recordings:debug:start`, `step`, `pause`, `resume`, `run-to-end`, `stop`
+- Events: `recordings:debug:step-start`, `step-complete`, `task-start`, `task-complete`, `state-change`
+
+#### 4.3 GUI: Debug Controls
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.33 | Create DebugControls component | `src/gui/components/recordings/DebugControls.tsx` | ⏳ |
+| E2E.34 | Add useDebugSession hook | `src/gui/hooks/useDebugSession.ts` | ⏳ |
+| E2E.35 | Integrate into RecordingsView | `RecordingsView.tsx` | ⏳ |
+
+#### 4.4 GUI: Timeline Highlighting
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.36 | Add execution state to StepTimeline | `StepTimeline.tsx` | ⏳ |
+| E2E.37 | Visual status indicators (spinner, colors) | `StepTimeline.tsx` | ⏳ |
+| E2E.38 | Add execution state to TaskDependencyGraph | `TaskDependencyGraph.tsx` | ⏳ |
+
+#### 4.5 GUI: Step Result Overlay
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.39 | Create StepResultOverlay | `src/gui/components/recordings/StepResultOverlay.tsx` | ⏳ |
+| E2E.40 | Display extracted values | `StepResultOverlay.tsx` | ⏳ |
+| E2E.41 | Error display for failed steps | `StepResultOverlay.tsx` | ⏳ |
+
+#### 4.6 Integration & Testing
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.42 | Create DebugPlayRecordingDialog | `DebugPlayRecordingDialog.tsx` | ⏳ |
+| E2E.43 | Add "Debug" button to RecordingToolbar | `RecordingToolbar.tsx` | ⏳ |
+| E2E.44 | E2E tests for step-through | `tests/e2e/recordings-debug.spec.ts` | ⏳ |
+
+#### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| E2E.V1 | `npm run build && npm test` passes | Agent | ⏳ |
+| E2E.V2 | `npm run test:e2e` recordings-debug | Agent | ⏳ |
+| E2E.V3 | Manual: Debug button starts session | User | ⏳ |
+| E2E.V4 | Manual: Step advances one step | User | ⏳ |
+| E2E.V5 | Manual: Pause/Resume works | User | ⏳ |
+| E2E.V6 | Manual: Timeline shows current step | User | ⏳ |
 
 ---
 
