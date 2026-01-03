@@ -20,13 +20,13 @@ import { RecordingPlayer } from '../../src/recordings/player';
 const recordingPath = process.env.RECORDING_PATH;
 const debugPause = process.env.DEBUG_PAUSE === 'true';
 
+// Skip entire suite if RECORDING_PATH not set
+test.skip(!recordingPath, 'RECORDING_PATH environment variable is required');
+
 test.describe('Recording Runner', () => {
   let context: AppContext;
 
   test.beforeAll(async () => {
-    if (!recordingPath) {
-      throw new Error('RECORDING_PATH environment variable is required');
-    }
     context = await launchApp();
   });
 

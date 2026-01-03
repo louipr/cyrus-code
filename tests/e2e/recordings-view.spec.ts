@@ -49,14 +49,14 @@ test.describe('Recordings View', () => {
     const hasTimeline = pageContent.includes('Select a task');
     console.log(`   Timeline placeholder: ${hasTimeline}`);
 
-    // Switch back to Browser view
-    console.log('4. Switching to Browser view...');
-    await page.getByRole('button', { name: 'Browser' }).click();
+    // Switch to Symbols (list) view
+    console.log('4. Switching to Symbols (list) view...');
+    await page.getByRole('button', { name: /Symbols/ }).click();
     await page.waitForTimeout(300);
 
-    const browserContent = await page.content();
-    expect(browserContent).toContain('Select a component');
-    console.log('   Browser view: OK');
+    const symbolsContent = await page.content();
+    expect(symbolsContent).toContain('Select a component');
+    console.log('   Symbols view: OK');
 
     // Switch back to recordings
     console.log('5. Switching back to Recordings...');

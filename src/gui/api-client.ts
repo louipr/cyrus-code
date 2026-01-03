@@ -33,6 +33,11 @@ import type {
 } from '../domain/help/index';
 import type { Recording } from '../recordings/schema';
 import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
+import type {
+  DebugSessionConfig,
+  DebugSessionSnapshot,
+  DebugEvent,
+} from '../recordings/step-executor/schema';
 
 /**
  * Options for running a recording.
@@ -146,6 +151,17 @@ interface CyrusAPI {
       recordingId: string,
       options?: RunRecordingOptions
     ) => Promise<ApiResponse<RunRecordingResultDTO>>;
+    debug: {
+      create: (config: DebugSessionConfig) => Promise<ApiResponse<{ sessionId: string }>>;
+      start: (sessionId: string) => Promise<ApiResponse<void>>;
+      step: (sessionId: string) => Promise<ApiResponse<void>>;
+      pause: (sessionId: string) => Promise<ApiResponse<void>>;
+      resume: (sessionId: string) => Promise<ApiResponse<void>>;
+      stop: (sessionId: string) => Promise<ApiResponse<void>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<DebugSessionSnapshot>>;
+      subscribe: () => Promise<ApiResponse<void>>;
+      onEvent: (callback: (data: { sessionId: string; event: DebugEvent }) => void) => void;
+    };
   };
 }
 
@@ -264,6 +280,17 @@ function createMockApi(): CyrusAPI {
       get: () => mockResponse(null),
       getByPath: () => mockResponse(null),
       run: () => mockError('Not connected to backend'),
+      debug: {
+        create: () => mockError('Not connected to backend'),
+        start: () => mockError('Not connected to backend'),
+        step: () => mockError('Not connected to backend'),
+        pause: () => mockError('Not connected to backend'),
+        resume: () => mockError('Not connected to backend'),
+        stop: () => mockError('Not connected to backend'),
+        snapshot: () => mockError('Not connected to backend'),
+        subscribe: () => mockError('Not connected to backend'),
+        onEvent: () => {},
+      },
     },
   };
 }

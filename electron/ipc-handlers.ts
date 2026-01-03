@@ -24,6 +24,11 @@ import type { GenerationOptions } from '../src/services/code-generation/index.js
 import { spawn } from 'child_process';
 import { createHelpContentService } from '../src/services/help-content/index.js';
 import { createRecordingContentService } from '../src/services/recording-content/index.js';
+import {
+  getSessionManager,
+  type DebugSessionConfig,
+  type DebugEvent,
+} from '../src/recordings/step-executor/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import { SqliteSymbolRepository } from '../src/repositories/symbol-repository.js';
 import { getDatabase } from '../src/repositories/persistence.js';
@@ -555,5 +560,167 @@ export function registerIpcHandlers(facade: Architecture): void {
       }
     }
   );
+
+  // ==========================================================================
+  // Debug Session Handlers (Step-through Debugger)
+  // ==========================================================================
+
+  const sessionManager = getSessionManager();
+  let debugEventListener: ((sessionId: string, event: DebugEvent) => void) | null = null;
+
+  // Create a new debug session (runs in current Electron window)
+  ipcMain.handle(
+    'recordings:debug:create',
+    async (_event, config: DebugSessionConfig) => {
+      try {
+        // Get the main window's webContents for in-app execution
+        const mainWindow = BrowserWindow.getAllWindows()[0];
+        if (!mainWindow) {
+          throw new Error('No window available for debug session');
+        }
+
+        // Set the webContents for the session manager
+        sessionManager.setWebContents(mainWindow.webContents);
+
+        const sessionId = await sessionManager.createSession(config);
+        return { success: true, data: { sessionId } };
+      } catch (error) {
+        return {
+          success: false,
+          error: { message: extractErrorMessage(error) },
+        };
+      }
+    }
+  );
+
+  // Start or resume debug session execution
+  ipcMain.handle('recordings:debug:start', async (_event, sessionId: string) => {
+    try {
+      // Start in background and return immediately
+      // Results will be streamed via events
+      sessionManager.startSession(sessionId).catch((err) => {
+        // Send error event if start fails
+        const mainWindow = BrowserWindow.getAllWindows()[0];
+        if (mainWindow) {
+          mainWindow.webContents.send('recordings:debug:event', {
+            sessionId,
+            event: {
+              type: 'session-state',
+              state: 'error',
+              error: extractErrorMessage(err),
+              timestamp: Date.now(),
+            },
+          });
+        }
+      });
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Execute single step
+  ipcMain.handle('recordings:debug:step', async (_event, sessionId: string) => {
+    try {
+      sessionManager.stepSession(sessionId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Pause execution
+  ipcMain.handle('recordings:debug:pause', async (_event, sessionId: string) => {
+    try {
+      sessionManager.pauseSession(sessionId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Resume execution
+  ipcMain.handle('recordings:debug:resume', async (_event, sessionId: string) => {
+    try {
+      sessionManager.resumeSession(sessionId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Stop debug session
+  ipcMain.handle('recordings:debug:stop', async (_event, sessionId: string) => {
+    try {
+      await sessionManager.stopSession(sessionId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Get session snapshot
+  ipcMain.handle('recordings:debug:snapshot', async (_event, sessionId: string) => {
+    try {
+      const snapshot = sessionManager.getSessionSnapshot(sessionId);
+      if (!snapshot) {
+        return {
+          success: false,
+          error: { message: `Session not found: ${sessionId}` },
+        };
+      }
+      return { success: true, data: snapshot };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Subscribe to debug events (set up event streaming)
+  ipcMain.handle('recordings:debug:subscribe', async () => {
+    try {
+      // Remove existing listener if any
+      if (debugEventListener) {
+        // Can't unsubscribe since SessionManager.onEvent returns void
+        // This is a known limitation - we rely on single subscriber model
+      }
+
+      // Set up event forwarding to renderer
+      debugEventListener = (sessionId: string, event: DebugEvent) => {
+        const mainWindow = BrowserWindow.getAllWindows()[0];
+        if (mainWindow) {
+          mainWindow.webContents.send('recordings:debug:event', {
+            sessionId,
+            event,
+          });
+        }
+      };
+
+      sessionManager.onEvent(debugEventListener);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
 
 }

@@ -20,5 +20,5 @@
     "exactOptionalPropertyTypes": true
   },
   "include": ["src/**/*", "electron/**/*"],
-  "exclude": ["node_modules", "dist", "src/gui/**/*"]
+  "exclude": ["node_modules", "dist", "src/gui/**/*", "**/*.test.ts"]
 }

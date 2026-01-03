@@ -107,16 +107,6 @@ export const symbolsActions = {
   },
 };
 
-// Legacy aliases for backwards compatibility with existing tests
-export const graphActions = {
-  switchToGraphView: symbolsActions.switchToGraphView,
-  switchToBrowserView: symbolsActions.switchToListView,
-};
-
-export const canvasActions = {
-  switchToCanvasView: symbolsActions.switchToCanvasView,
-};
-
 export const diagramActions = {
   /**
    * Switch to diagram view.

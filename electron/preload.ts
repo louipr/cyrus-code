@@ -37,6 +37,11 @@ import type {
 } from '../src/domain/help/index.js';
 import type { Recording } from '../src/recordings/schema.js';
 import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
+import type {
+  DebugSessionConfig,
+  DebugSessionSnapshot,
+  DebugEvent,
+} from '../src/recordings/step-executor/index.js';
 
 /**
  * Options for running a recording.
@@ -153,6 +158,18 @@ export interface CyrusAPI {
       recordingId: string,
       options?: RunRecordingOptions
     ) => Promise<ApiResponse<RunRecordingResultDTO>>;
+    // Debug session operations
+    debug: {
+      create: (config: DebugSessionConfig) => Promise<ApiResponse<{ sessionId: string }>>;
+      start: (sessionId: string) => Promise<ApiResponse<void>>;
+      step: (sessionId: string) => Promise<ApiResponse<void>>;
+      pause: (sessionId: string) => Promise<ApiResponse<void>>;
+      resume: (sessionId: string) => Promise<ApiResponse<void>>;
+      stop: (sessionId: string) => Promise<ApiResponse<void>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<DebugSessionSnapshot>>;
+      subscribe: () => Promise<ApiResponse<void>>;
+      onEvent: (callback: (data: { sessionId: string; event: DebugEvent }) => void) => void;
+    };
   };
 }
 
@@ -250,6 +267,19 @@ const cyrusAPI: CyrusAPI = {
     getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
     run: (appId, recordingId, options) =>
       ipcRenderer.invoke('recordings:run', appId, recordingId, options),
+    debug: {
+      create: (config) => ipcRenderer.invoke('recordings:debug:create', config),
+      start: (sessionId) => ipcRenderer.invoke('recordings:debug:start', sessionId),
+      step: (sessionId) => ipcRenderer.invoke('recordings:debug:step', sessionId),
+      pause: (sessionId) => ipcRenderer.invoke('recordings:debug:pause', sessionId),
+      resume: (sessionId) => ipcRenderer.invoke('recordings:debug:resume', sessionId),
+      stop: (sessionId) => ipcRenderer.invoke('recordings:debug:stop', sessionId),
+      snapshot: (sessionId) => ipcRenderer.invoke('recordings:debug:snapshot', sessionId),
+      subscribe: () => ipcRenderer.invoke('recordings:debug:subscribe'),
+      onEvent: (callback) => {
+        ipcRenderer.on('recordings:debug:event', (_event, data) => callback(data));
+      },
+    },
   },
 };
 
