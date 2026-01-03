@@ -27,6 +27,7 @@ npm-debug.log*
 # Test
 coverage/
 test-results/
+tests/e2e/generated/
 
 # Database
 *.sqlite
