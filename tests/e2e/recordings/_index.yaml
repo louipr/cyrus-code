@@ -29,6 +29,20 @@ recordings:
         status: verified
         tags: [smoke, diagram, drawio]
 
+      - id: create-architecture-diagram
+        file: smoke/create-architecture-diagram.yaml
+        name: Create Architecture Diagram
+        description: Create a 3-tier architecture diagram (Frontend/API/Database)
+        status: draft
+        tags: [smoke, diagram, drawio, uml]
+
+      - id: create-c4-context
+        file: smoke/create-c4-context.yaml
+        name: Create C4 Context Diagram
+        description: Create a C4 Context diagram for cyrus-code system
+        status: draft
+        tags: [smoke, diagram, drawio, c4, architecture]
+
   drawio:
     description: Draw.io diagram editor interactions
     context: drawio/_context.yaml
