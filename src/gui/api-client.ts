@@ -31,6 +31,8 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../domain/help/index';
+import type { Recording } from '../recordings/schema';
+import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
 
 /**
  * Type definition for the cyrus API exposed via preload script.
@@ -112,6 +114,13 @@ interface CyrusAPI {
     saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
     onNew: (callback: () => void) => void;
     onOpen: (callback: (path: string, xml: string) => void) => void;
+  };
+  recordings: {
+    getIndex: () => Promise<ApiResponse<RecordingIndex>>;
+    getApps: () => Promise<ApiResponse<string[]>>;
+    getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
+    get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
   };
 }
 
@@ -222,6 +231,13 @@ function createMockApi(): CyrusAPI {
       saveAs: () => mockResponse(null),
       onNew: () => {},
       onOpen: () => {},
+    },
+    recordings: {
+      getIndex: () => mockResponse({ version: '1.0', description: 'Mock', recordings: {} }),
+      getApps: () => mockResponse([]),
+      getByApp: () => mockResponse([]),
+      get: () => mockResponse(null),
+      getByPath: () => mockResponse(null),
     },
   };
 }

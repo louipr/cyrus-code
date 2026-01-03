@@ -22,6 +22,7 @@ import type {
 } from '../src/api/types.js';
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
+import { createRecordingContentService } from '../src/services/recording-content/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import { SqliteSymbolRepository } from '../src/repositories/symbol-repository.js';
 import { getDatabase } from '../src/repositories/persistence.js';
@@ -396,6 +397,68 @@ export function registerIpcHandlers(facade: Architecture): void {
     try {
       fs.writeFileSync(result.filePath, xml, 'utf-8');
       return { success: true, data: result.filePath };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // ==========================================================================
+  // Recording Operations
+  // ==========================================================================
+
+  // Initialize recording service with same project root as help
+  const recordingService = createRecordingContentService(helpProjectRoot);
+
+  ipcMain.handle('recordings:index', async () => {
+    try {
+      return { success: true, data: recordingService.getIndex() };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('recordings:apps', async () => {
+    try {
+      return { success: true, data: recordingService.getApps() };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('recordings:byApp', async (_event, appId: string) => {
+    try {
+      return { success: true, data: recordingService.getRecordingsByApp(appId) };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('recordings:get', async (_event, appId: string, recordingId: string) => {
+    try {
+      return { success: true, data: recordingService.getRecording(appId, recordingId) };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('recordings:getByPath', async (_event, filePath: string) => {
+    try {
+      return { success: true, data: recordingService.getRecordingByPath(filePath) };
     } catch (error) {
       return {
         success: false,

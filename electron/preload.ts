@@ -35,6 +35,8 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../src/domain/help/index.js';
+import type { Recording } from '../src/recordings/schema.js';
+import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
 
 /**
  * Type definitions for the exposed API.
@@ -118,6 +120,14 @@ export interface CyrusAPI {
     saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
     onNew: (callback: () => void) => void;
     onOpen: (callback: (path: string, xml: string) => void) => void;
+  };
+  // Recording operations
+  recordings: {
+    getIndex: () => Promise<ApiResponse<RecordingIndex>>;
+    getApps: () => Promise<ApiResponse<string[]>>;
+    getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
+    get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
   };
 }
 
@@ -206,6 +216,13 @@ const cyrusAPI: CyrusAPI = {
     onOpen: (callback) => {
       ipcRenderer.on('diagram:open-file', (_event, path: string, xml: string) => callback(path, xml));
     },
+  },
+  recordings: {
+    getIndex: () => ipcRenderer.invoke('recordings:index'),
+    getApps: () => ipcRenderer.invoke('recordings:apps'),
+    getByApp: (appId) => ipcRenderer.invoke('recordings:byApp', appId),
+    get: (appId, recordingId) => ipcRenderer.invoke('recordings:get', appId, recordingId),
+    getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
   },
 };
 

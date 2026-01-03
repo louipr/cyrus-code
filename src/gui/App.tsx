@@ -18,10 +18,11 @@ import { GenerateButton } from './components/GenerateButton';
 import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor } from './components/DrawioEditor';
+import { RecordingsView } from './components/recordings';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
-type ViewMode = 'browser' | 'graph' | 'canvas' | 'diagram';
+type ViewMode = 'browser' | 'graph' | 'canvas' | 'diagram' | 'recordings';
 
 export default function App(): React.ReactElement {
   const [selectedComponent, setSelectedComponent] = useState<ComponentSymbolDTO | null>(null);
@@ -146,6 +147,17 @@ export default function App(): React.ReactElement {
           >
             Diagram
           </button>
+          <button
+            style={{
+              ...styles.toggleButton,
+              ...(viewMode === 'recordings' ? styles.toggleButtonActive : {}),
+            }}
+            onClick={() => setViewMode('recordings')}
+            type="button"
+            data-testid="recordings-view-button"
+          >
+            Recordings
+          </button>
         </div>
         <button
           style={styles.exportButton}
@@ -259,6 +271,12 @@ export default function App(): React.ReactElement {
               }
             }}
           />
+        </main>
+      )}
+
+      {viewMode === 'recordings' && (
+        <main style={styles.diagramMain}>
+          <RecordingsView />
         </main>
       )}
 
