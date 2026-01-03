@@ -38,6 +38,16 @@ export interface CanvasTransformResult {
     handleMouseUp: () => void;
     handleWheel: (e: React.WheelEvent) => void;
   };
+  /** Set transform programmatically */
+  setTransform: (t: Transform) => void;
+  /** Reset to initial transform */
+  reset: () => void;
+  /** Zoom in by a factor */
+  zoomIn: () => void;
+  /** Zoom out by a factor */
+  zoomOut: () => void;
+  /** Fit content to viewport */
+  fitToView: (contentBounds: { width: number; height: number }, viewportSize: { width: number; height: number }) => void;
 }
 
 /**
@@ -112,6 +122,40 @@ export function useCanvasTransform(options: CanvasTransformOptions = {}): Canvas
     }));
   }, [minScale, maxScale]);
 
+  const reset = useCallback(() => {
+    setTransform({ x: initialX, y: initialY, scale: initialScale });
+  }, [initialX, initialY, initialScale]);
+
+  const zoomIn = useCallback(() => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.min(maxScale, prev.scale * 1.2),
+    }));
+  }, [maxScale]);
+
+  const zoomOut = useCallback(() => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.max(minScale, prev.scale / 1.2),
+    }));
+  }, [minScale]);
+
+  const fitToView = useCallback((
+    contentBounds: { width: number; height: number },
+    viewportSize: { width: number; height: number }
+  ) => {
+    const padding = 40;
+    const scaleX = (viewportSize.width - padding * 2) / contentBounds.width;
+    const scaleY = (viewportSize.height - padding * 2) / contentBounds.height;
+    const scale = Math.min(Math.max(minScale, Math.min(scaleX, scaleY, 1)), maxScale);
+
+    // Center the content
+    const x = (viewportSize.width - contentBounds.width * scale) / 2;
+    const y = (viewportSize.height - contentBounds.height * scale) / 2;
+
+    setTransform({ x, y, scale });
+  }, [minScale, maxScale]);
+
   return {
     transform,
     dragging,
@@ -121,5 +165,10 @@ export function useCanvasTransform(options: CanvasTransformOptions = {}): Canvas
       handleMouseUp,
       handleWheel,
     },
+    setTransform,
+    reset,
+    zoomIn,
+    zoomOut,
+    fitToView,
   };
 }

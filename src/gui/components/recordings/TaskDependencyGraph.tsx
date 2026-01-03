@@ -3,9 +3,10 @@
  *
  * Visualizes the task dependency DAG for a recording.
  * Shows tasks as nodes with edges representing dependencies.
+ * Includes standard zoom controls (fit all, zoom in/out, reset).
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import type { RecordingTask } from '../../../recordings/schema';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
 
@@ -22,18 +23,11 @@ interface TaskPosition {
   height: number;
 }
 
-const NODE_WIDTH = 140;
-const NODE_HEIGHT = 50;
-const GAP_X = 180;
-const GAP_Y = 70;
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 56;
+const GAP_X = 220;
+const GAP_Y = 80;
 const PADDING = 40;
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#808080',
-  running: '#4fc1ff',
-  success: '#89d185',
-  failed: '#f14c4c',
-};
 
 /**
  * Calculate topological levels for DAG layout.
@@ -96,16 +90,50 @@ function calculatePositions(tasks: RecordingTask[]): Map<string, TaskPosition> {
   return positions;
 }
 
+/**
+ * Wrap text to fit within a given width (approximate).
+ */
+function wrapText(text: string, maxChars: number): string[] {
+  if (text.length <= maxChars) return [text];
+
+  const words = text.split(/[\s-]+/);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine = currentLine ? `${currentLine} ${word}` : word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word.length > maxChars ? word.substring(0, maxChars - 2) + '...' : word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  // Max 2 lines
+  if (lines.length > 2) {
+    lines[1] = lines[1].substring(0, maxChars - 3) + '...';
+    return lines.slice(0, 2);
+  }
+  return lines;
+}
+
 export function TaskDependencyGraph({
   tasks,
   selectedTaskId,
   onTaskClick,
 }: TaskDependencyGraphProps) {
-  const { transform, handlers } = useCanvasTransform();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  const { transform, handlers, zoomIn, zoomOut, reset, fitToView } = useCanvasTransform({
+    initialX: PADDING,
+    initialY: PADDING,
+  });
 
   const positions = useMemo(() => calculatePositions(tasks), [tasks]);
 
-  // Calculate SVG bounds
+  // Calculate content bounds
   const bounds = useMemo(() => {
     let maxX = 0;
     let maxY = 0;
@@ -113,8 +141,39 @@ export function TaskDependencyGraph({
       maxX = Math.max(maxX, pos.x + pos.width);
       maxY = Math.max(maxY, pos.y + pos.height);
     });
-    return { width: maxX + PADDING * 2, height: maxY + PADDING * 2 };
+    return { width: maxX + PADDING, height: maxY + PADDING };
   }, [positions]);
+
+  // Track container size
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      setContainerSize({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  // Auto-fit on mount and when tasks change
+  useEffect(() => {
+    if (containerSize.width > 0 && containerSize.height > 0 && tasks.length > 0) {
+      fitToView(bounds, containerSize);
+    }
+  }, [tasks.length, containerSize.width, containerSize.height]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleFitAll = useCallback(() => {
+    if (containerSize.width > 0 && containerSize.height > 0) {
+      fitToView(bounds, containerSize);
+    }
+  }, [bounds, containerSize, fitToView]);
 
   const handleNodeClick = useCallback(
     (taskId: string) => {
@@ -123,19 +182,20 @@ export function TaskDependencyGraph({
     [onTaskClick]
   );
 
+  const zoomPercent = Math.round(transform.scale * 100);
+
   if (tasks.length === 0) {
     return (
-      <div style={styles.container}>
+      <div style={styles.container} ref={containerRef}>
         <div style={styles.placeholder}>No tasks in this recording</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container} data-testid="task-dependency-graph">
+    <div style={styles.container} ref={containerRef} data-testid="task-dependency-graph">
       <svg
         style={styles.svg}
-        viewBox={`0 0 ${bounds.width} ${bounds.height}`}
         onMouseDown={handlers.handleMouseDown}
         onMouseMove={handlers.handleMouseMove}
         onMouseUp={handlers.handleMouseUp}
@@ -167,6 +227,27 @@ export function TaskDependencyGraph({
         </g>
       </svg>
 
+      {/* Zoom Controls */}
+      <div style={styles.toolbar}>
+        <button
+          style={styles.toolbarButton}
+          onClick={handleFitAll}
+          title="Fit All (View entire graph)"
+        >
+          ⊞
+        </button>
+        <button style={styles.toolbarButton} onClick={zoomIn} title="Zoom In">
+          +
+        </button>
+        <span style={styles.zoomLabel}>{zoomPercent}%</span>
+        <button style={styles.toolbarButton} onClick={zoomOut} title="Zoom Out">
+          −
+        </button>
+        <button style={styles.toolbarButton} onClick={reset} title="Reset View">
+          ↺
+        </button>
+      </div>
+
       {/* Legend */}
       <div style={styles.legend}>
         <span style={styles.legendLabel}>Tasks: {tasks.length}</span>
@@ -183,7 +264,7 @@ interface TaskNodeProps {
 }
 
 function TaskNode({ task, position, isSelected, onClick }: TaskNodeProps) {
-  const color = STATUS_COLORS.pending;
+  const lines = wrapText(task.name, 22);
 
   return (
     <g
@@ -200,23 +281,26 @@ function TaskNode({ task, position, isSelected, onClick }: TaskNodeProps) {
         width={position.width}
         height={position.height}
         fill="#2d2d2d"
-        stroke={isSelected ? '#4fc1ff' : color}
+        stroke={isSelected ? '#4fc1ff' : '#555'}
         strokeWidth={isSelected ? 2 : 1}
         rx={6}
       />
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={position.x + position.width / 2}
+          y={position.y + 18 + i * 14}
+          textAnchor="middle"
+          fill="#ffffff"
+          fontSize={12}
+          fontWeight={500}
+        >
+          {line}
+        </text>
+      ))}
       <text
         x={position.x + position.width / 2}
-        y={position.y + 22}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize={12}
-        fontWeight={500}
-      >
-        {task.name.length > 18 ? task.name.substring(0, 16) + '...' : task.name}
-      </text>
-      <text
-        x={position.x + position.width / 2}
-        y={position.y + 38}
+        y={position.y + position.height - 8}
         textAnchor="middle"
         fill="#808080"
         fontSize={10}
@@ -281,6 +365,37 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#666',
     fontSize: '14px',
     fontStyle: 'italic',
+  },
+  toolbar: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px',
+    backgroundColor: 'rgba(37, 37, 38, 0.95)',
+    borderRadius: '4px',
+    border: '1px solid #3c3c3c',
+  },
+  toolbarButton: {
+    width: '28px',
+    height: '28px',
+    border: 'none',
+    borderRadius: '3px',
+    backgroundColor: 'transparent',
+    color: '#ccc',
+    fontSize: '16px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomLabel: {
+    color: '#888',
+    fontSize: '11px',
+    minWidth: '36px',
+    textAlign: 'center',
   },
   legend: {
     position: 'absolute',
