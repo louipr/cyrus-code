@@ -1,23 +1,10 @@
 /**
  * Recording Domain Types for GUI Visualization
  *
- * Extends the base recording schema with types for the Recording View.
+ * GUI-specific types for the Recording View.
+ * Base recording types (Recording, RecordingTask, etc.) should be imported
+ * directly from 'recordings/schema'.
  */
-
-// Re-export base types
-export type {
-  Recording,
-  RecordingTask,
-  RecordingStep,
-  RecordingContext,
-  RecordingMetadata,
-  RecordingStatus,
-  ReliabilityLevel,
-  ActionType,
-  RecordingResult,
-  TaskResult,
-  StepResult,
-} from '../../recordings/schema.js';
 
 /**
  * Entry in the recordings index for a single recording.

@@ -8,7 +8,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type {
   DependencyGraphDTO,
-  GraphNodeDTO,
   GraphEdgeDTO,
   ComponentSymbolDTO,
 } from '../../api/types';
@@ -16,11 +15,10 @@ import { apiClient } from '../api-client';
 import { extractErrorMessage } from '../../infrastructure/errors';
 import { CanvasNode } from './CanvasNode';
 import { LEVEL_COLORS, EDGE_COLORS } from '../constants/colors';
+import { CANVAS_LAYOUT } from '../constants/graph-layout';
+import { calculateGridPositions } from '../utils/calculate-grid-positions';
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 80;
-const LEVEL_GAP_X = 280;
-const NODE_GAP_Y = 130;
+const { nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT } = CANVAS_LAYOUT;
 
 export interface NodePosition {
   x: number;
@@ -66,8 +64,18 @@ export function Canvas({
 
         setGraph(graphResult.data);
 
-        // Calculate initial positions
-        const positions = calculateInitialPositions(graphResult.data.nodes);
+        // Calculate initial positions using shared utility
+        const gridPositions = calculateGridPositions(
+          graphResult.data.nodes,
+          (node) => node.level,
+          (node) => node.id,
+          CANVAS_LAYOUT
+        );
+        // Convert to NodePosition (x, y only - Canvas manages width/height separately for drag)
+        const positions = new Map<string, NodePosition>();
+        gridPositions.forEach((pos, id) => {
+          positions.set(id, { x: pos.x, y: pos.y });
+        });
         setNodePositions(positions);
 
         // Fetch full symbol data in parallel
@@ -91,37 +99,6 @@ export function Canvas({
 
     fetchData();
   }, []);
-
-  // Calculate initial positions based on level
-  function calculateInitialPositions(nodes: GraphNodeDTO[]): Map<string, NodePosition> {
-    const positions = new Map<string, NodePosition>();
-
-    // Group nodes by level
-    const levelGroups = new Map<string, GraphNodeDTO[]>();
-    for (const node of nodes) {
-      const level = node.level;
-      if (!levelGroups.has(level)) {
-        levelGroups.set(level, []);
-      }
-      levelGroups.get(level)!.push(node);
-    }
-
-    // Sort levels (L0 first, L4 last)
-    const sortedLevels = Array.from(levelGroups.keys()).sort();
-
-    // Position each level column
-    sortedLevels.forEach((level, levelIndex) => {
-      const levelNodes = levelGroups.get(level)!;
-      levelNodes.forEach((node, nodeIndex) => {
-        positions.set(node.id, {
-          x: levelIndex * LEVEL_GAP_X,
-          y: nodeIndex * NODE_GAP_Y,
-        });
-      });
-    });
-
-    return positions;
-  }
 
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

@@ -115,7 +115,7 @@ function getStepIcon(action: string): string {
 function TreeNode({
   id,
   label,
-  type,
+  type: _type,
   icon,
   depth,
   isExpanded,

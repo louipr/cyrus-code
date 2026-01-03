@@ -33,7 +33,7 @@ export default function App(): React.ReactElement {
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [helpTopic, setHelpTopic] = useState<string | undefined>();
   const [helpSearch, setHelpSearch] = useState<string | undefined>();
-  const [diagramXml, setDiagramXml] = useState<string | undefined>();
+  const [, setDiagramXml] = useState<string | undefined>();
   const [currentDiagramPath, setCurrentDiagramPath] = useState<string | undefined>();
 
   // Listen for F1 keyboard shortcut

@@ -19,11 +19,6 @@ export const selectors = {
   // Graph View
   graphView: '[data-testid="graph-view"]',
 
-  // Code Generation
-  previewButton: '[data-testid="preview-button"]',
-  previewModal: '[data-testid="preview-modal"]',
-  generateError: '[data-testid="generate-error"]',
-
   // Canvas View
   canvas: '[data-testid="canvas"]',
 

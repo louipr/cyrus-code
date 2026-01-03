@@ -9,6 +9,9 @@
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import type { RecordingTask } from '../../../recordings/schema';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
+import { TASK_GRAPH_LAYOUT } from '../../constants/graph-layout';
+import { calculateGridPositions, type GridPosition } from '../../utils/calculate-grid-positions';
+import { EdgeLine } from '../shared/EdgeLine';
 
 /** Toolbar button with hover state */
 function ToolbarButton({
@@ -58,18 +61,7 @@ interface TaskDependencyGraphProps {
   onTaskClick: (taskId: string) => void;
 }
 
-interface TaskPosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 56;
-const GAP_X = 220;
-const GAP_Y = 80;
-const PADDING = 40;
+const PADDING = TASK_GRAPH_LAYOUT.padding ?? 40;
 
 /**
  * Calculate topological levels for DAG layout.
@@ -101,35 +93,16 @@ function calculateLevels(tasks: RecordingTask[]): Map<string, number> {
 }
 
 /**
- * Calculate positions for all tasks in a DAG layout.
+ * Calculate positions for all tasks in a DAG layout using shared utility.
  */
-function calculatePositions(tasks: RecordingTask[]): Map<string, TaskPosition> {
-  const positions = new Map<string, TaskPosition>();
+function calculateTaskPositions(tasks: RecordingTask[]): Map<string, GridPosition> {
   const levels = calculateLevels(tasks);
-
-  // Group tasks by level
-  const levelGroups = new Map<number, RecordingTask[]>();
-  tasks.forEach((task) => {
-    const level = levels.get(task.id) ?? 0;
-    if (!levelGroups.has(level)) {
-      levelGroups.set(level, []);
-    }
-    levelGroups.get(level)!.push(task);
-  });
-
-  // Position each level column
-  levelGroups.forEach((levelTasks, level) => {
-    levelTasks.forEach((task, index) => {
-      positions.set(task.id, {
-        x: PADDING + level * GAP_X,
-        y: PADDING + index * GAP_Y,
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-      });
-    });
-  });
-
-  return positions;
+  return calculateGridPositions(
+    tasks,
+    (task) => levels.get(task.id) ?? 0,
+    (task) => task.id,
+    TASK_GRAPH_LAYOUT
+  );
 }
 
 /**
@@ -173,7 +146,7 @@ export function TaskDependencyGraph({
     initialY: PADDING,
   });
 
-  const positions = useMemo(() => calculatePositions(tasks), [tasks]);
+  const positions = useMemo(() => calculateTaskPositions(tasks), [tasks]);
 
   // Calculate content bounds
   const bounds = useMemo(() => {
@@ -247,13 +220,22 @@ export function TaskDependencyGraph({
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Render edges */}
           {tasks.map((task) =>
-            task.depends?.map((depId) => (
-              <EdgeLine
-                key={`${depId}-${task.id}`}
-                fromPos={positions.get(depId)}
-                toPos={positions.get(task.id)}
-              />
-            ))
+            task.depends?.map((depId) => {
+              const fromPos = positions.get(depId);
+              const toPos = positions.get(task.id);
+              if (!fromPos || !toPos) return null;
+              return (
+                <EdgeLine
+                  key={`${depId}-${task.id}`}
+                  x1={fromPos.x + fromPos.width}
+                  y1={fromPos.y + fromPos.height / 2}
+                  x2={toPos.x}
+                  y2={toPos.y + toPos.height / 2}
+                  color="#4fc1ff"
+                  opacity={0.6}
+                />
+              );
+            })
           )}
 
           {/* Render nodes */}
@@ -296,7 +278,7 @@ export function TaskDependencyGraph({
 
 interface TaskNodeProps {
   task: RecordingTask;
-  position: TaskPosition;
+  position: GridPosition;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -345,39 +327,6 @@ function TaskNode({ task, position, isSelected, onClick }: TaskNodeProps) {
       >
         {task.steps.length} step{task.steps.length !== 1 ? 's' : ''}
       </text>
-    </g>
-  );
-}
-
-interface EdgeLineProps {
-  fromPos?: TaskPosition;
-  toPos?: TaskPosition;
-}
-
-function EdgeLine({ fromPos, toPos }: EdgeLineProps) {
-  if (!fromPos || !toPos) return null;
-
-  const x1 = fromPos.x + fromPos.width;
-  const y1 = fromPos.y + fromPos.height / 2;
-  const x2 = toPos.x;
-  const y2 = toPos.y + toPos.height / 2;
-
-  const midX = (x1 + x2) / 2;
-
-  return (
-    <g>
-      <path
-        d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
-        fill="none"
-        stroke="#4fc1ff"
-        strokeWidth={1.5}
-        opacity={0.6}
-      />
-      <polygon
-        points={`${x2},${y2} ${x2 - 6},${y2 - 3} ${x2 - 6},${y2 + 3}`}
-        fill="#4fc1ff"
-        opacity={0.6}
-      />
     </g>
   );
 }

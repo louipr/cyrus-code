@@ -6,29 +6,20 @@
  * Displays UML relationship types with colored edges.
  */
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import type { DependencyGraphDTO, GraphNodeDTO, GraphEdgeDTO } from '../../api/types';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import type { DependencyGraphDTO, GraphNodeDTO } from '../../api/types';
 import { apiClient } from '../api-client';
 import { extractErrorMessage } from '../../infrastructure/errors';
 import { LEVEL_COLORS, EDGE_COLORS } from '../constants/colors';
+import { DEPENDENCY_GRAPH_LAYOUT } from '../constants/graph-layout';
 import { useCanvasTransform } from '../hooks/useCanvasTransform';
+import { calculateGridPositions, type GridPosition } from '../utils/calculate-grid-positions';
+import { EdgeLine } from './shared/EdgeLine';
 
 interface DependencyGraphProps {
   selectedSymbolId?: string;
   onNodeClick: (symbolId: string) => void;
 }
-
-interface NodePosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 60;
-const LEVEL_GAP_X = 250;
-const NODE_GAP_Y = 80;
 
 export function DependencyGraph({
   selectedSymbolId,
@@ -63,41 +54,16 @@ export function DependencyGraph({
     fetchGraph();
   }, [selectedSymbolId]);
 
-  // Calculate node positions based on topological order or level
-  const calculatePositions = useCallback((): Map<string, NodePosition> => {
-    const positions = new Map<string, NodePosition>();
-    if (!graph) return positions;
-
-    // Group nodes by level
-    const levelGroups = new Map<string, GraphNodeDTO[]>();
-    for (const node of graph.nodes) {
-      const level = node.level;
-      if (!levelGroups.has(level)) {
-        levelGroups.set(level, []);
-      }
-      levelGroups.get(level)!.push(node);
-    }
-
-    // Sort levels (L0 first, L4 last)
-    const sortedLevels = Array.from(levelGroups.keys()).sort();
-
-    // Position each level column
-    sortedLevels.forEach((level, levelIndex) => {
-      const nodes = levelGroups.get(level)!;
-      nodes.forEach((node, nodeIndex) => {
-        positions.set(node.id, {
-          x: levelIndex * LEVEL_GAP_X,
-          y: nodeIndex * NODE_GAP_Y,
-          width: NODE_WIDTH,
-          height: NODE_HEIGHT,
-        });
-      });
-    });
-
-    return positions;
+  // Calculate node positions using shared utility
+  const positions = useMemo((): Map<string, GridPosition> => {
+    if (!graph) return new Map();
+    return calculateGridPositions(
+      graph.nodes,
+      (node) => node.level,
+      (node) => node.id,
+      DEPENDENCY_GRAPH_LAYOUT
+    );
   }, [graph]);
-
-  const positions = calculatePositions();
 
   if (loading) {
     return (
@@ -136,16 +102,33 @@ export function DependencyGraph({
       >
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Render edges first (behind nodes) */}
-          {graph.edges.map((edge, index) => (
-            <EdgeLine
-              key={`${edge.from}-${edge.to}-${edge.type}-${index}`}
-              edge={edge}
-              positions={positions}
-              isCycle={graph.cycles.some(cycle =>
-                cycle.includes(edge.from) && cycle.includes(edge.to)
-              )}
-            />
-          ))}
+          {graph.edges.map((edge, index) => {
+            const fromPos = positions.get(edge.from);
+            const toPos = positions.get(edge.to);
+            if (!fromPos || !toPos) return null;
+
+            const isCycle = graph.cycles.some(cycle =>
+              cycle.includes(edge.from) && cycle.includes(edge.to)
+            );
+            const edgeColor = isCycle ? '#f14c4c' : (EDGE_COLORS[edge.type] || '#808080');
+            const dashArray = edge.type === 'implements' ? '5,3' : isCycle ? '5,5' : undefined;
+
+            return (
+              <EdgeLine
+                key={`${edge.from}-${edge.to}-${edge.type}-${index}`}
+                x1={fromPos.x + fromPos.width}
+                y1={fromPos.y + fromPos.height / 2}
+                x2={toPos.x}
+                y2={toPos.y + toPos.height / 2}
+                color={edgeColor}
+                strokeWidth={isCycle ? 2 : 1.5}
+                dashArray={dashArray}
+                label={edge.type}
+                arrowSize={8}
+                testId="graph-edge"
+              />
+            );
+          })}
 
           {/* Render nodes */}
           {graph.nodes.map((node) => (
@@ -192,7 +175,7 @@ export function DependencyGraph({
 
 interface NodeBoxProps {
   node: GraphNodeDTO;
-  position: NodePosition;
+  position: GridPosition;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -243,58 +226,6 @@ function NodeBox({ node, position, isSelected, onClick }: NodeBoxProps): React.R
         fontSize={9}
       >
         {node.level} · {node.kind}
-      </text>
-    </g>
-  );
-}
-
-interface EdgeLineProps {
-  edge: GraphEdgeDTO;
-  positions: Map<string, NodePosition>;
-  isCycle: boolean;
-}
-
-function EdgeLine({ edge, positions, isCycle }: EdgeLineProps): React.ReactElement | null {
-  const fromPos = positions.get(edge.from);
-  const toPos = positions.get(edge.to);
-
-  if (!fromPos || !toPos) return null;
-
-  // Calculate connection points (right side of from, left side of to)
-  const x1 = fromPos.x + fromPos.width;
-  const y1 = fromPos.y + fromPos.height / 2;
-  const x2 = toPos.x;
-  const y2 = toPos.y + toPos.height / 2;
-
-  // Bezier control points for smooth curve
-  const midX = (x1 + x2) / 2;
-
-  const edgeColor = EDGE_COLORS[edge.type] || '#808080';
-
-  return (
-    <g data-testid="graph-edge">
-      <path
-        d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
-        fill="none"
-        stroke={isCycle ? '#f14c4c' : edgeColor}
-        strokeWidth={isCycle ? 2 : 1.5}
-        strokeDasharray={edge.type === 'implements' ? '5,3' : isCycle ? '5,5' : 'none'}
-        opacity={0.8}
-      />
-      {/* Arrowhead */}
-      <polygon
-        points={`${x2},${y2} ${x2 - 8},${y2 - 4} ${x2 - 8},${y2 + 4}`}
-        fill={isCycle ? '#f14c4c' : edgeColor}
-      />
-      {/* Edge type label */}
-      <text
-        x={(x1 + x2) / 2}
-        y={(y1 + y2) / 2 - 8}
-        fill="#808080"
-        fontSize={9}
-        textAnchor="middle"
-      >
-        {edge.type}
       </text>
     </g>
   );
