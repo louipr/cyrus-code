@@ -1,0 +1,182 @@
+# Create Architecture Diagram Smoke Test
+#
+# Opens Draw.io and creates a simple 3-tier UML architecture diagram.
+
+name: Create Architecture Diagram
+description: Open Draw.io and create a 3-tier architecture diagram with Frontend, API, and Database components.
+
+metadata:
+  status: draft
+  reliability: medium
+  tags: [smoke, diagram, drawio, uml]
+  author: smoke-test
+  created: "2025-01-03"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+  waitFor: "[data-testid='search-bar']"
+
+tasks:
+  - id: open-diagram
+    name: Open diagram view
+    steps:
+      - action: click
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+        why: Click the Diagram button to switch to diagram view.
+
+      - action: wait-for
+        selector: "[data-testid='diagram-webview']"
+        timeout: 10000
+        why: Wait for Draw.io webview to appear.
+
+      - action: poll
+        condition: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) return false;
+          return true;
+        timeout: 15000
+        interval: 500
+        why: Ensure webview element is ready.
+
+  - id: wait-for-drawio
+    name: Wait for Draw.io editor
+    depends: [open-diagram]
+    steps:
+      - action: evaluate
+        code: |
+          // Wait for Draw.io to fully initialize inside the webview
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Poll for Draw.io readiness
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            try {
+              const ready = await webview.executeJavaScript(`
+                (function() {
+                  const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+                  return !!(ui && ui.editor && ui.editor.graph);
+                })()
+              `);
+              if (ready) {
+                return { ready: true, attempts: i + 1 };
+              }
+            } catch (e) {
+              // Continue polling
+            }
+          }
+          throw new Error('Draw.io editor not ready after 15 seconds');
+        timeout: 20000
+        why: Wait for Draw.io's editor API to be available.
+
+  - id: create-diagram
+    name: Create 3-tier architecture diagram
+    depends: [wait-for-drawio]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Create a 3-tier architecture diagram using Draw.io's API
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (!ui || !ui.editor || !ui.editor.graph) {
+                return { error: 'Editor not ready' };
+              }
+
+              const graph = ui.editor.graph;
+              const model = graph.getModel();
+              const parent = graph.getDefaultParent();
+
+              model.beginUpdate();
+              try {
+                // Clear existing content
+                graph.removeCells(graph.getChildCells(parent, true, true));
+
+                // Component style (UML component box)
+                const componentStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;';
+                const dbStyle = 'shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;';
+                const arrowStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;';
+
+                // Create Frontend component
+                const frontend = graph.insertVertex(parent, null, 'Frontend\\n(React)', 200, 50, 140, 70, componentStyle);
+
+                // Create API component
+                const api = graph.insertVertex(parent, null, 'API\\n(Express)', 200, 180, 140, 70, componentStyle);
+
+                // Create Database component
+                const database = graph.insertVertex(parent, null, 'Database\\n(PostgreSQL)', 200, 310, 140, 80, dbStyle);
+
+                // Create connections
+                graph.insertEdge(parent, null, 'HTTP/REST', frontend, api, arrowStyle);
+                graph.insertEdge(parent, null, 'SQL', api, database, arrowStyle);
+
+                // Fit the diagram in view
+                graph.fit();
+                graph.center();
+
+                return {
+                  success: true,
+                  components: 3,
+                  connections: 2,
+                  message: '3-tier architecture diagram created'
+                };
+              } finally {
+                model.endUpdate();
+              }
+            })()
+          `);
+
+          if (result.error) throw new Error(result.error);
+          return result;
+        timeout: 10000
+        returns: "{ success: true, components: 3, connections: 2 }"
+        why: Use Draw.io's graph API to create a 3-tier architecture with Frontend, API, and Database components.
+
+  - id: verify-diagram
+    name: Verify diagram was created
+    depends: [create-diagram]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (!ui || !ui.editor || !ui.editor.graph) {
+                return { error: 'Editor not ready' };
+              }
+
+              const graph = ui.editor.graph;
+              const parent = graph.getDefaultParent();
+              const cells = graph.getChildCells(parent, true, true);
+
+              // Count vertices (components) and edges (connections)
+              let vertices = 0;
+              let edges = 0;
+              for (const cell of cells) {
+                if (cell.vertex) vertices++;
+                if (cell.edge) edges++;
+              }
+
+              return {
+                verified: vertices >= 3 && edges >= 2,
+                vertices: vertices,
+                edges: edges
+              };
+            })()
+          `);
+
+          if (!result.verified) {
+            throw new Error('Diagram verification failed: expected at least 3 vertices and 2 edges, got ' + result.vertices + ' vertices and ' + result.edges + ' edges');
+          }
+          return result;
+        timeout: 5000
+        returns: "{ verified: true, vertices: 3, edges: 2 }"
+        why: Verify the diagram contains the expected components and connections.
