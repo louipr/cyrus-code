@@ -22,7 +22,7 @@ npm run build:gui      # Build React frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 317 unit tests
+npm test               # Run 341 unit tests
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run Playwright E2E tests
 npm run test:all       # Run unit tests + GUI type-check
@@ -501,162 +501,6 @@ All tasks in this slice are deferred pending future implementation needs.
 
 ---
 
-## Project Structure
-
-### Current Architecture (Clean Architecture)
-
-> **See also**: [Clean Architecture Guide](architecture/clean-architecture-guide.md) for design patterns and layer responsibilities.
-
-```
-cyrus-code/
-├── electron/                          # Electron Main Process
-│   ├── main.ts                        # App entry point, window creation
-│   ├── preload.ts                     # Context bridge for IPC
-│   ├── drawio-preload.ts              # Draw.io webview preload (EditorUi hook)
-│   ├── ipc-handlers.ts                # IPC handlers → Architecture
-│   └── menu.ts                        # Application menu with Help
-│
-├── src/
-│   ├── domain/                        # Layer 1: Pure Business Logic (no deps)
-│   │   ├── symbol/                    # Core entity: ComponentSymbol
-│   │   │   ├── schema.ts              # Entity types, UML relationships
-│   │   │   ├── version.ts             # SemVer utilities
-│   │   │   ├── builtins.ts            # Built-in type registry
-│   │   │   └── index.ts
-│   │   ├── diagram/                   # Diagram types
-│   │   │   ├── schema.ts              # DiagramConfig, C4Diagram
-│   │   │   ├── class-diagram-builder.ts
-│   │   │   ├── method-selector.ts
-│   │   │   └── index.ts
-│   │   └── help/                      # Help types
-│   │       ├── schema.ts              # HelpTopic, C4Hierarchy
-│   │       └── index.ts
-│   │
-│   ├── repositories/                  # Layer 2: Data Persistence
-│   │   ├── persistence.ts             # SQLite database setup
-│   │   ├── symbol-repository.ts       # Symbol + Connection CRUD
-│   │   ├── help-repository.ts         # Help topic data access
-│   │   └── index.ts
-│   │
-│   ├── infrastructure/                # Layer 3: External Adapters
-│   │   ├── file-system/               # File I/O (node:fs wrapper)
-│   │   │   ├── file-operations.ts     # read/write/exists
-│   │   │   ├── path-resolver.ts
-│   │   │   └── index.ts
-│   │   ├── typescript-ast/            # ts-morph wrapper
-│   │   │   ├── ts-morph-project.ts
-│   │   │   ├── file-cache.ts
-│   │   │   └── index.ts
-│   │   ├── drawio/                    # Draw.io XML parsing
-│   │   │   ├── parser.ts
-│   │   │   ├── schema.ts
-│   │   │   └── index.ts
-│   │   ├── mermaid/                   # Mermaid diagram parsing (ADR-012)
-│   │   │   ├── parser.ts              # flowchart/C4 → Diagram schema
-│   │   │   ├── parser.test.ts         # 84 unit tests
-│   │   │   └── index.ts
-│   │   └── errors.ts                  # Error utilities
-│   │
-│   ├── services/                      # Layer 4: Application Logic
-│   │   ├── symbol-table/              # Symbol management
-│   │   │   ├── service.ts             # SymbolTableService (CRUD + queries)
-│   │   │   ├── symbol-validator.ts    # SymbolValidator
-│   │   │   ├── schema.ts              # Service interfaces
-│   │   │   └── index.ts
-│   │   ├── dependency-graph/          # Graph algorithms
-│   │   │   ├── service.ts             # DependencyGraphService
-│   │   │   ├── algorithms.ts          # Cycle detection, topological sort
-│   │   │   ├── schema.ts              # GraphNode, GraphEdge
-│   │   │   └── index.ts
-│   │   ├── code-generation/           # Code generation
-│   │   │   ├── service.ts             # CodeGenerationService
-│   │   │   ├── schema.ts              # GenerationResult, GenerationOptions
-│   │   │   ├── typescript/            # TypeScript backend (co-located)
-│   │   │   │   ├── ast-builder.ts
-│   │   │   │   ├── class-generator.ts
-│   │   │   │   ├── type-mapper.ts
-│   │   │   │   └── index.ts
-│   │   │   └── index.ts
-│   │   ├── diagram-generator/         # C4 diagram generation
-│   │   │   ├── generator.ts           # C4DiagramGenerator
-│   │   │   ├── diagram-renderer.ts
-│   │   │   ├── typescript/            # TypeScript extraction
-│   │   │   │   ├── interface-extractor.ts
-│   │   │   │   ├── type-extractor.ts
-│   │   │   │   └── index.ts
-│   │   │   └── index.ts
-│   │   └── help-content/              # Help formatting
-│   │       ├── service.ts             # HelpContentService
-│   │       ├── formatter.ts
-│   │       ├── terminal-renderer.ts
-│   │       ├── preprocessor.ts
-│   │       └── index.ts
-│   │
-│   ├── api/                           # Layer 5: Unified Facade
-│   │   ├── facade.ts                  # Architecture - main entry point
-│   │   ├── symbol-facade.ts           # Symbol CRUD and queries
-│   │   ├── graph-facade.ts            # Graph operations
-│   │   ├── generation-facade.ts       # Code generation
-│   │   ├── validation-facade.ts       # Validation operations
-│   │   ├── types.ts                   # API DTOs
-│   │   └── index.ts
-│   │
-│   ├── cli/                           # Layer 6: CLI Interface
-│   │   ├── index.ts                   # CLI entry point
-│   │   └── commands/                  # Command implementations
-│   │       ├── register.ts, list.ts, get.ts, validate.ts
-│   │       ├── graph.ts, generate.ts, help.ts
-│   │       └── ...
-│   │
-│   ├── gui/                           # Layer 6: GUI Interface
-│   │   ├── App.tsx                    # Main app component
-│   │   ├── api-client.ts              # IPC wrapper
-│   │   └── components/                # React components
-│   │
-│   ├── recordings/                    # AI-Recordable GUI System
-│   │   ├── schema.ts                  # Recording types
-│   │   ├── player.ts                  # RecordingPlayer
-│   │   ├── builder.ts                 # RecordingBuilder
-│   │   └── index.ts
-│   │
-│   └── testing/                       # Test Utilities
-│       ├── fixtures.ts                # Shared test helpers
-│       └── index.ts
-│
-├── tests/e2e/                         # Playwright E2E Tests
-│   ├── recordings/                    # YAML recordings for AI agents
-│   │   ├── _index.yaml                # Recording registry
-│   │   └── drawio/                    # Draw.io recordings
-│   │       ├── _context.yaml          # Shared context
-│   │       ├── export-png.yaml        # Native PNG export
-│   │       └── export-svg-fallback.yaml
-│   └── helpers/
-├── docs/                              # Documentation
-│   ├── architecture/                  # Architecture guides
-│   ├── adr/                           # Architecture Decision Records
-│   ├── c4/                            # C4 diagrams
-│   └── spec/                          # Canonical type specifications
-└── package.json
-```
-
-### Layer Dependency Rules
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  CLI / GUI                                                   │  → can import: api, services, domain
-├──────────────────────────────────────────────────────────────┤
-│  API Facade                                                  │  → can import: services, repositories, domain
-├──────────────────────────────────────────────────────────────┤
-│  Services                                                    │  → can import: domain, repositories, infrastructure
-├──────────────────────────────────────────────────────────────┤
-│  Repositories / Infrastructure                               │  → can import: domain only
-├──────────────────────────────────────────────────────────────┤
-│  Domain                                                      │  → no external imports (pure)
-└──────────────────────────────────────────────────────────────┘
-```
-
----
-
 ## Status Legend
 
 | Symbol | Meaning |
@@ -668,82 +512,18 @@ cyrus-code/
 
 ---
 
-## Verification Checklist
-
-### Before Committing
-
-Run these commands to verify the build is healthy:
-
-```bash
-# 1. Build everything
-npm run build:all
-
-# 2. Run unit tests (317 tests)
-npm test
-
-# 3. Run E2E tests (10 tests)
-npm run test:e2e
-
-# 4. Type-check GUI code
-npm run test:gui
-```
-
-**Expected Results:**
-- Build completes without errors
-- 317 unit tests pass
-- 10 E2E tests pass
-- GUI type-check passes
-
-### Native Module Handling
-
-The `better-sqlite3` native module requires rebuilding for different Node.js versions:
-
-| Context | Node Version | Command |
-|---------|--------------|---------|
-| Unit tests | System Node (20.x) | `npm rebuild better-sqlite3` |
-| Electron app | Electron's Node (20.9.0) | `electron-rebuild -f -w better-sqlite3` |
-
-The `npm test` and `npm run test:e2e` scripts handle this automatically.
-
-### Environment Requirements
-
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | ≥20.0.0 | For better-sqlite3 compatibility |
-| Electron | 29.x | Uses Node 20.9.0 internally |
-| Playwright | 1.57.x | For Electron E2E testing |
-
-### Known Issues
-
-1. **ELECTRON_RUN_AS_NODE**: VSCode sets this env var which breaks Electron module loading. The scripts handle this by unsetting it.
-
-2. **macOS IPC Permissions**: Running Electron from some terminals may fail with "Permission denied" errors. Playwright handles this correctly for E2E tests.
-
-### Manual GUI Verification
-
-After automated tests pass, optionally verify the GUI manually:
-
-```bash
-npm run electron
-```
-
-**Check:**
-- [ ] App window opens with "cyrus-code" title
-- [ ] Search bar is visible at the top
-- [ ] Component list shows placeholder text (empty registry)
-- [ ] Typing in search bar filters correctly
-- [ ] View toggle (Browser/Graph/Canvas) works
-- [ ] F1 opens help dialog
-- [ ] Help button (?) visible in header
-- [ ] About dialog accessible from Help menu
-- [ ] No console errors in DevTools (Cmd+Option+I)
-
----
-
 ## References
 
+### Architecture
+- [Clean Architecture Guide](architecture/clean-architecture-guide.md) - Directory structure, layer definitions, dependency rules
+- [L2 Container Diagram](c4/2-container.md) - System architecture
 - [Symbol Table Schema](spec/symbol-table-schema.md) - Canonical type definitions
+
+### Runbooks
+- [Developer Setup](runbooks/developer-setup.md) - Build commands, native module handling, common issues
+- [Manual Verification](runbooks/manual-verification.md) - GUI verification procedures
+
+### ADRs
 - [ADR-009](adr/009-electron-gui-framework.md) - GUI framework decision
 - [ADR-010](adr/010-gui-testing-strategy.md) - GUI testing strategy (Playwright)
 - [ADR-011](adr/011-service-layer-refactoring.md) - Service layer patterns
-- [L2 Container Diagram](c4/2-container.md) - System architecture
