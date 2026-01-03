@@ -25,33 +25,19 @@ test.afterAll(async () => {
 });
 
 test.describe('Help Dialog', () => {
-  test('help button opens help dialog', async () => {
+  test('opens via button and F1, closes with Escape', async () => {
     const { page } = context;
 
-    // Click the help button
+    // Test button trigger
     await page.click(selectors.helpButton);
-
-    // Wait for help dialog title to appear (exact match on h2)
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Should have search input
     await expect(page.locator('input[placeholder="Search topics..."]')).toBeVisible();
-
-    // Close the dialog
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
-  });
 
-  test('F1 keyboard shortcut opens help dialog', async () => {
-    const { page } = context;
-
-    // Press F1
+    // Test F1 trigger
     await page.keyboard.press('F1');
-
-    // Wait for help dialog title to appear
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-    // Close the dialog
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
   });

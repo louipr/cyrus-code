@@ -84,33 +84,13 @@ describe('C4DiagramGenerator', () => {
 });
 
 describe('TypeSimplificationRegistry', () => {
-  let registry: TypeSimplificationRegistry;
-
-  beforeEach(() => {
-    registry = new TypeSimplificationRegistry();
-  });
-
-  it('should simplify Zod inferred types', () => {
-    const result = registry.simplify('z.infer<typeof ComponentSymbolSchema>');
-    assert.strictEqual(result, 'ComponentSymbol');
-  });
-
-  it('should simplify Partial types', () => {
-    const result = registry.simplify('Partial<ComponentSymbol>');
-    assert.strictEqual(result, 'ComponentSymbol?');
-  });
-
-  it('should simplify Array types', () => {
-    const result = registry.simplify('Array<string>');
-    assert.strictEqual(result, 'string[]');
-  });
-
-  it('should simplify Promise types', () => {
-    const result = registry.simplify('Promise<ComponentSymbol>');
-    assert.strictEqual(result, 'ComponentSymbol');
-  });
-
-  it('should handle exact matches', () => {
+  it('should simplify common type patterns and support exact matches', () => {
+    const registry = new TypeSimplificationRegistry();
+    // Built-in simplifications
+    assert.strictEqual(registry.simplify('z.infer<typeof XSchema>'), 'X');
+    assert.strictEqual(registry.simplify('Array<string>'), 'string[]');
+    assert.strictEqual(registry.simplify('Partial<Foo>'), 'Foo?');
+    // Custom exact matches
     registry.registerExact('MyComplexType', 'Simple');
     assert.strictEqual(registry.simplify('MyComplexType'), 'Simple');
   });

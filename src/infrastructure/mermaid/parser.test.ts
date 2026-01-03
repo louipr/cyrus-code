@@ -217,54 +217,21 @@ describe('inferLevelFromMermaid', () => {
 });
 
 describe('extractNodeLabel', () => {
-  it('extracts label from rectangle', () => {
-    const result = extractNodeLabel('[UserService]');
-    assert.strictEqual(result, 'UserService');
+  it('extracts labels from all shape types', () => {
+    // Various bracket shapes
+    assert.strictEqual(extractNodeLabel('[Service]'), 'Service');
+    assert.strictEqual(extractNodeLabel('([Stadium])'), 'Stadium');
+    assert.strictEqual(extractNodeLabel('[(Cylinder)]'), 'Cylinder');
+    assert.strictEqual(extractNodeLabel('((Circle))'), 'Circle');
+    assert.strictEqual(extractNodeLabel('{Diamond}'), 'Diamond');
+    assert.strictEqual(extractNodeLabel('[[Subroutine]]'), 'Subroutine');
+    assert.strictEqual(extractNodeLabel('{{Hexagon}}'), 'Hexagon');
+    assert.strictEqual(extractNodeLabel('>Asymmetric]'), 'Asymmetric');
   });
 
-  it('extracts label from stadium', () => {
-    const result = extractNodeLabel('([AuthService])');
-    assert.strictEqual(result, 'AuthService');
-  });
-
-  it('extracts label from cylinder', () => {
-    const result = extractNodeLabel('[(Database)]');
-    assert.strictEqual(result, 'Database');
-  });
-
-  it('extracts label from circle', () => {
-    const result = extractNodeLabel('((External))');
-    assert.strictEqual(result, 'External');
-  });
-
-  it('extracts label from diamond', () => {
-    const result = extractNodeLabel('{Module}');
-    assert.strictEqual(result, 'Module');
-  });
-
-  it('extracts label from subroutine', () => {
-    const result = extractNodeLabel('[[Subsystem]]');
-    assert.strictEqual(result, 'Subsystem');
-  });
-
-  it('extracts label from hexagon', () => {
-    const result = extractNodeLabel('{{Controller}}');
-    assert.strictEqual(result, 'Controller');
-  });
-
-  it('extracts label from asymmetric', () => {
-    const result = extractNodeLabel('>Handler]');
-    assert.strictEqual(result, 'Handler');
-  });
-
-  it('removes double quotes from label', () => {
-    const result = extractNodeLabel('["Label with spaces"]');
-    assert.strictEqual(result, 'Label with spaces');
-  });
-
-  it('removes single quotes from label', () => {
-    const result = extractNodeLabel("[\'Label\']");
-    assert.strictEqual(result, 'Label');
+  it('removes quotes from labels', () => {
+    assert.strictEqual(extractNodeLabel('["With spaces"]'), 'With spaces');
+    assert.strictEqual(extractNodeLabel("[\'Quoted\']"), 'Quoted');
   });
 });
 

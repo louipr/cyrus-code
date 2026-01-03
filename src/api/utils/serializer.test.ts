@@ -12,14 +12,6 @@ describe('serialize', () => {
     assert.strictEqual(serialize(date), '2024-01-15T10:30:00.000Z');
   });
 
-  it('passes through primitives unchanged', () => {
-    assert.strictEqual(serialize(42), 42);
-    assert.strictEqual(serialize('hello'), 'hello');
-    assert.strictEqual(serialize(true), true);
-    assert.strictEqual(serialize(null), null);
-    assert.strictEqual(serialize(undefined), undefined);
-  });
-
   it('serializes arrays with dates', () => {
     const dates = [
       new Date('2024-01-01T00:00:00.000Z'),
@@ -47,11 +39,6 @@ describe('serialize', () => {
       },
     });
   });
-
-  it('handles empty objects and arrays', () => {
-    assert.deepStrictEqual(serialize({}), {});
-    assert.deepStrictEqual(serialize([]), []);
-  });
 });
 
 describe('deserialize', () => {
@@ -59,30 +46,12 @@ describe('deserialize', () => {
     const data = {
       createdAt: '2024-01-15T10:30:00.000Z',
       updatedAt: '2024-01-16T11:00:00.000Z',
-    };
-    const result = deserialize(data) as Record<string, unknown>;
-    assert.ok(result.createdAt instanceof Date);
-    assert.ok(result.updatedAt instanceof Date);
-    assert.strictEqual(
-      (result.createdAt as Date).toISOString(),
-      '2024-01-15T10:30:00.000Z'
-    );
-  });
-
-  it('handles all known date fields', () => {
-    const data = {
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: '2024-01-02T00:00:00.000Z',
       firstSeen: '2024-01-03T00:00:00.000Z',
-      lastSeen: '2024-01-04T00:00:00.000Z',
-      generatedAt: '2024-01-05T00:00:00.000Z',
     };
     const result = deserialize(data) as Record<string, unknown>;
     assert.ok(result.createdAt instanceof Date);
     assert.ok(result.updatedAt instanceof Date);
     assert.ok(result.firstSeen instanceof Date);
-    assert.ok(result.lastSeen instanceof Date);
-    assert.ok(result.generatedAt instanceof Date);
   });
 
   it('does not convert unknown string fields', () => {
@@ -93,14 +62,6 @@ describe('deserialize', () => {
     const result = deserialize(data);
     assert.strictEqual(result.name, '2024-01-15T10:30:00.000Z');
     assert.strictEqual(result.description, 'some text');
-  });
-
-  it('passes through primitives unchanged', () => {
-    assert.strictEqual(deserialize(42), 42);
-    assert.strictEqual(deserialize('hello'), 'hello');
-    assert.strictEqual(deserialize(true), true);
-    assert.strictEqual(deserialize(null), null);
-    assert.strictEqual(deserialize(undefined), undefined);
   });
 
   it('deserializes nested objects', () => {

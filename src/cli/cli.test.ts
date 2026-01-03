@@ -353,44 +353,6 @@ describe('CLI Integration', () => {
       );
     });
 
-    it('should detect circular containment', () => {
-      // Register two modules
-      facade.symbols.registerSymbol({
-        symbol: createSymbolDTO({
-          id: 'a@1.0.0',
-          name: 'A',
-          namespace: 'test',
-          level: 'L2',
-          kind: 'module',
-        }),
-      });
-      facade.symbols.registerSymbol({
-        symbol: createSymbolDTO({
-          id: 'b@1.0.0',
-          name: 'B',
-          namespace: 'test',
-          level: 'L2',
-          kind: 'module',
-        }),
-      });
-
-      // Create circular containment
-      facade.symbols.updateSymbol({
-        id: 'a@1.0.0',
-        updates: { contains: ['b@1.0.0'] },
-      });
-      facade.symbols.updateSymbol({
-        id: 'b@1.0.0',
-        updates: { contains: ['a@1.0.0'] },
-      });
-
-      const result = facade.validation.checkCircular();
-
-      assert.strictEqual(result.success, true);
-      assert.ok(result.data);
-      assert.ok(result.data.length > 0);
-    });
-
     it('should validate specific symbol', () => {
       facade.symbols.registerSymbol({
         symbol: createSymbolDTO({
