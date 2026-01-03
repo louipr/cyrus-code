@@ -3,14 +3,24 @@
  *
  * Horizontal timeline showing steps within a task.
  * Steps are displayed as clickable nodes with action icons.
+ * Supports execution state highlighting during debug sessions.
  */
 
-import type { RecordingStep } from '../../../recordings/schema';
+import type { RecordingStep, StepResult } from '../../../recordings/schema';
+
+/** Execution state for a step */
+export type StepExecutionState = 'pending' | 'running' | 'success' | 'failed';
 
 interface StepTimelineProps {
   steps: RecordingStep[];
   selectedStepIndex: number | null;
   onStepClick: (index: number) => void;
+  /** Current step being executed (for running indicator) */
+  executingStepIndex?: number | null;
+  /** Results for completed steps, keyed by "taskIndex:stepIndex" */
+  stepResults?: Map<string, StepResult>;
+  /** Task index for looking up results */
+  taskIndex?: number;
 }
 
 const ACTION_ICONS: Record<string, string> = {
@@ -41,10 +51,70 @@ const ACTION_COLORS: Record<string, string> = {
   keyboard: '#dcdcaa',
 };
 
+/** Get execution state for a step */
+function getStepState(
+  stepIndex: number,
+  taskIndex: number | undefined,
+  executingStepIndex: number | null | undefined,
+  stepResults: Map<string, StepResult> | undefined
+): StepExecutionState {
+  if (executingStepIndex === stepIndex) {
+    return 'running';
+  }
+  if (stepResults && taskIndex !== undefined) {
+    const result = stepResults.get(`${taskIndex}:${stepIndex}`);
+    if (result) {
+      return result.success ? 'success' : 'failed';
+    }
+  }
+  return 'pending';
+}
+
+/** Get styles for execution state */
+function getStateStyles(state: StepExecutionState): React.CSSProperties {
+  switch (state) {
+    case 'running':
+      return {
+        backgroundColor: '#1e3a5f',
+        boxShadow: '0 0 12px rgba(79, 193, 255, 0.5)',
+        animation: 'pulse 1.5s ease-in-out infinite',
+      };
+    case 'success':
+      return {
+        backgroundColor: '#1a3a1a',
+        borderColor: '#89d185',
+      };
+    case 'failed':
+      return {
+        backgroundColor: '#3a1a1a',
+        borderColor: '#f48771',
+      };
+    default:
+      return {};
+  }
+}
+
+/** Get state indicator icon */
+function getStateIndicator(state: StepExecutionState): string | null {
+  switch (state) {
+    case 'running':
+      return '⏳';
+    case 'success':
+      return '✓';
+    case 'failed':
+      return '✕';
+    default:
+      return null;
+  }
+}
+
 export function StepTimeline({
   steps,
   selectedStepIndex,
   onStepClick,
+  executingStepIndex,
+  stepResults,
+  taskIndex,
 }: StepTimelineProps) {
   if (steps.length === 0) {
     return (
@@ -63,6 +133,9 @@ export function StepTimeline({
       {steps.map((step, idx) => {
         const isSelected = selectedStepIndex === idx;
         const actionColor = ACTION_COLORS[step.action] ?? '#808080';
+        const state = getStepState(idx, taskIndex, executingStepIndex, stepResults);
+        const stateStyles = getStateStyles(state);
+        const stateIndicator = getStateIndicator(state);
 
         return (
           <button
@@ -70,12 +143,24 @@ export function StepTimeline({
             style={{
               ...styles.step,
               ...(isSelected ? styles.stepSelected : {}),
-              borderColor: isSelected ? actionColor : 'transparent',
+              ...stateStyles,
+              borderColor: isSelected ? actionColor : stateStyles.borderColor ?? 'transparent',
             }}
             onClick={() => onStepClick(idx)}
             title={step.why}
             data-testid={`step-${idx}`}
           >
+            {/* State indicator */}
+            {stateIndicator && (
+              <span
+                style={{
+                  ...styles.stateIndicator,
+                  color: state === 'success' ? '#89d185' : state === 'failed' ? '#f48771' : '#4fc1ff',
+                }}
+              >
+                {stateIndicator}
+              </span>
+            )}
             <span style={styles.stepNumber}>{idx + 1}</span>
             <span style={styles.stepIcon}>{ACTION_ICONS[step.action] ?? '○'}</span>
             <span style={{ ...styles.stepAction, color: actionColor }}>{step.action}</span>
@@ -157,5 +242,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     width: '100%',
     textAlign: 'center',
+  },
+  stateIndicator: {
+    position: 'absolute',
+    top: '-10px',
+    left: '-10px',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    backgroundColor: '#1e1e1e',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    border: '2px solid currentColor',
   },
 };

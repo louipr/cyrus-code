@@ -24,35 +24,97 @@ export const componentActions = {
   },
 };
 
-export const graphActions = {
+export const symbolsActions = {
   /**
-   * Switch to graph view.
+   * Switch to symbols list view.
+   */
+  async switchToListView(page: Page): Promise<void> {
+    const toggle = page.locator(selectors.viewToggle);
+    const symbolsButton = toggle.locator('button:has-text("Symbols")');
+
+    // First click to switch to symbols mode or open dropdown
+    await symbolsButton.click();
+    await page.waitForTimeout(100);
+
+    // Check if dropdown is visible
+    let listViewOption = page.locator('button:has-text("List View")');
+    if (await listViewOption.isVisible()) {
+      await listViewOption.click();
+    } else {
+      // If we switched to symbols mode but need to change subview, click again to open dropdown
+      await symbolsButton.click();
+      await page.waitForTimeout(100);
+      listViewOption = page.locator('button:has-text("List View")');
+      if (await listViewOption.isVisible()) {
+        await listViewOption.click();
+      }
+    }
+    await page.waitForSelector(selectors.searchBar, { timeout: 5000 });
+  },
+
+  /**
+   * Switch to symbols graph view.
    */
   async switchToGraphView(page: Page): Promise<void> {
     const toggle = page.locator(selectors.viewToggle);
-    await toggle.locator('button:has-text("Graph")').click();
+    const symbolsButton = toggle.locator('button:has-text("Symbols")');
+
+    // First click to switch to symbols mode or open dropdown
+    await symbolsButton.click();
+    await page.waitForTimeout(100);
+
+    // Check if dropdown is visible
+    let graphViewOption = page.locator('button:has-text("Graph View")');
+    if (await graphViewOption.isVisible()) {
+      await graphViewOption.click();
+    } else {
+      // If we switched to symbols mode but need to change subview, click again to open dropdown
+      await symbolsButton.click();
+      await page.waitForTimeout(100);
+      graphViewOption = page.locator('button:has-text("Graph View")');
+      if (await graphViewOption.isVisible()) {
+        await graphViewOption.click();
+      }
+    }
     await page.waitForSelector(selectors.graphView, { timeout: 5000 });
   },
 
   /**
-   * Switch to browser view.
-   */
-  async switchToBrowserView(page: Page): Promise<void> {
-    const toggle = page.locator(selectors.viewToggle);
-    await toggle.locator('button:has-text("Browser")').click();
-    await page.waitForSelector(selectors.searchBar, { timeout: 5000 });
-  },
-};
-
-export const canvasActions = {
-  /**
-   * Switch to canvas view.
+   * Switch to symbols canvas view.
    */
   async switchToCanvasView(page: Page): Promise<void> {
     const toggle = page.locator(selectors.viewToggle);
-    await toggle.locator('button:has-text("Canvas")').click();
+    const symbolsButton = toggle.locator('button:has-text("Symbols")');
+
+    // First click to switch to symbols mode or open dropdown
+    await symbolsButton.click();
+    await page.waitForTimeout(100);
+
+    // Check if dropdown is visible
+    let canvasViewOption = page.locator('button:has-text("Canvas View")');
+    if (await canvasViewOption.isVisible()) {
+      await canvasViewOption.click();
+    } else {
+      // If we switched to symbols mode but need to change subview, click again to open dropdown
+      await symbolsButton.click();
+      await page.waitForTimeout(100);
+      canvasViewOption = page.locator('button:has-text("Canvas View")');
+      if (await canvasViewOption.isVisible()) {
+        await canvasViewOption.click();
+      }
+    }
     await page.waitForSelector(selectors.canvas, { timeout: 5000 });
   },
+};
+
+// Legacy aliases for backwards compatibility with existing tests
+export const graphActions = {
+  switchToGraphView: symbolsActions.switchToGraphView,
+  switchToBrowserView: symbolsActions.switchToListView,
+};
+
+export const canvasActions = {
+  switchToCanvasView: symbolsActions.switchToCanvasView,
 };
 
 export const diagramActions = {

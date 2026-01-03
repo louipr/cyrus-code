@@ -56,6 +56,9 @@ export interface RecordingStep {
   /** Expected value (for assert action) */
   expect?: unknown;
 
+  /** Whether element should exist (for assert action) */
+  exists?: boolean;
+
   /** Keyboard shortcut (for keyboard action) */
   key?: string;
 

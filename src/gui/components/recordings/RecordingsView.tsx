@@ -13,9 +13,10 @@ import { StepTimeline } from './StepTimeline';
 import { StepDetail } from './StepDetail';
 import { RecordingDetail } from './RecordingDetail';
 import { RecordingToolbar } from './RecordingToolbar';
-import { PlayRecordingDialog } from './PlayRecordingDialog';
+import { StepResultOverlay } from './StepResultOverlay';
+import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
 import type { RecordingIndex } from '../../../domain/recordings/index';
-import type { Recording, RecordingTask, RecordingStep } from '../../../recordings/schema';
+import type { Recording, RecordingTask, RecordingStep, StepResult } from '../../../recordings/schema';
 
 const styles = {
   container: {
@@ -35,6 +36,14 @@ const styles = {
     flexDirection: 'column' as const,
     overflow: 'hidden',
     position: 'relative' as const,
+  } as React.CSSProperties,
+  toolbarRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '8px',
+    borderBottom: '1px solid #333',
+    flexShrink: 0,
   } as React.CSSProperties,
   dagContainer: {
     flex: 1,
@@ -67,6 +76,19 @@ const styles = {
     fontStyle: 'italic' as const,
     fontSize: '13px',
   } as React.CSSProperties,
+  debugButton: {
+    padding: '6px 12px',
+    backgroundColor: '#0e639c',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  } as React.CSSProperties,
 };
 
 /**
@@ -85,7 +107,12 @@ export function RecordingsView() {
   const [loading, setLoading] = useState(true);
 
   // Dialog state
-  const [showPlayDialog, setShowPlayDialog] = useState(false);
+  const [showResultOverlay, setShowResultOverlay] = useState(false);
+  const [overlayResult, setOverlayResult] = useState<StepResult | null>(null);
+
+  // Debug session state from context (persists across view switches)
+  const debugSession = useDebugSessionContext();
+  const debugState = debugSession.state;
 
   // Load index on mount
   useEffect(() => {
@@ -156,9 +183,19 @@ export function RecordingsView() {
       if (selectedTask && selectedTask.steps[stepIdx]) {
         setSelectedStep(selectedTask.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
+
+        // Check if there's a result for this step and show overlay
+        const taskIndex = recording?.tasks.findIndex((t) => t.id === selectedTask.id) ?? -1;
+        if (taskIndex >= 0) {
+          const result = debugState.stepResults.get(`${taskIndex}:${stepIdx}`);
+          if (result) {
+            setOverlayResult(result);
+            setShowResultOverlay(true);
+          }
+        }
       }
     },
-    [selectedTask]
+    [selectedTask, recording, debugState.stepResults]
   );
 
   if (loading) {
@@ -197,12 +234,22 @@ export function RecordingsView() {
 
       {/* Main Content */}
       <div style={styles.main}>
-        {/* Recording Toolbar */}
-        <RecordingToolbar
-          recording={recording}
-          appId={selectedAppId}
-          onPlay={() => setShowPlayDialog(true)}
-        />
+        {/* Recording Toolbar - fixed height bar at top */}
+        <div style={styles.toolbarRow}>
+          <RecordingToolbar
+            recording={recording}
+            appId={selectedAppId}
+          />
+          {recording && selectedAppId && selectedRecordingId && !debugSession.state.sessionId && (
+            <button
+              style={styles.debugButton}
+              onClick={() => debugSession.startDebug(selectedAppId, selectedRecordingId, recording)}
+              title="Start debug session (requires dev mode: npm run electron:dev)"
+            >
+              🐞 Debug
+            </button>
+          )}
+        </div>
 
         {/* Task Dependency Graph */}
         <div style={styles.dagContainer}>
@@ -218,6 +265,8 @@ export function RecordingsView() {
                   setSelectedStepIndex(null);
                 }
               }}
+              executingTaskIndex={debugState.position?.taskIndex ?? null}
+              stepResults={debugState.stepResults}
             />
           ) : (
             <span style={styles.placeholder}>Select a recording to view task dependencies</span>
@@ -231,6 +280,13 @@ export function RecordingsView() {
               steps={selectedTask.steps}
               selectedStepIndex={selectedStepIndex}
               onStepClick={handleTimelineStepClick}
+              executingStepIndex={
+                debugState.position?.taskId === selectedTask.id
+                  ? debugState.position.stepIndex
+                  : null
+              }
+              stepResults={debugState.stepResults}
+              taskIndex={recording?.tasks.findIndex((t) => t.id === selectedTask.id) ?? 0}
             />
           ) : (
             <span style={styles.placeholder}>Select a task to view steps</span>
@@ -251,14 +307,16 @@ export function RecordingsView() {
         </div>
       </div>
 
-      {/* Play Dialog */}
-      {recording && selectedAppId && selectedRecordingId && (
-        <PlayRecordingDialog
-          isOpen={showPlayDialog}
-          onClose={() => setShowPlayDialog(false)}
-          recording={recording}
-          appId={selectedAppId}
-          recordingId={selectedRecordingId}
+      {/* Step Result Overlay */}
+      {showResultOverlay && selectedStep && overlayResult && selectedStepIndex !== null && (
+        <StepResultOverlay
+          step={selectedStep}
+          result={overlayResult}
+          stepIndex={selectedStepIndex}
+          onClose={() => {
+            setShowResultOverlay(false);
+            setOverlayResult(null);
+          }}
         />
       )}
     </div>

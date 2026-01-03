@@ -19,16 +19,39 @@ import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor } from './components/DrawioEditor';
 import { RecordingsView } from './components/recordings';
+import { DebugOverlay } from './components/recordings/DebugOverlay';
+import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
-type ViewMode = 'browser' | 'graph' | 'canvas' | 'diagram' | 'recordings';
+type ViewMode = 'symbols' | 'diagram' | 'recordings';
+type SymbolSubView = 'list' | 'graph' | 'canvas';
 
+/**
+ * Main App component with context provider.
+ */
 export default function App(): React.ReactElement {
+  return (
+    <DebugSessionProvider>
+      <AppContent />
+    </DebugSessionProvider>
+  );
+}
+
+/**
+ * Inner app content that can access debug session context.
+ */
+function AppContent(): React.ReactElement {
   const [selectedComponent, setSelectedComponent] = useState<ComponentSymbolDTO | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('browser');
+  const [viewMode, setViewMode] = useState<ViewMode>('symbols');
+  const [symbolSubView, setSymbolSubView] = useState<SymbolSubView>('list');
+  const [showSymbolsDropdown, setShowSymbolsDropdown] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+
+  // Debug session context - persists across view switches
+  const debugSession = useDebugSessionContext();
+
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [helpTopic, setHelpTopic] = useState<string | undefined>();
@@ -48,6 +71,21 @@ export default function App(): React.ReactElement {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showSymbolsDropdown) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-dropdown="symbols"]')) {
+        setShowSymbolsDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showSymbolsDropdown]);
 
   // Listen for help menu events from Electron
   useEffect(() => {
@@ -107,36 +145,68 @@ export default function App(): React.ReactElement {
         <h1 style={styles.title}>cyrus-code</h1>
         <span style={styles.subtitle}>Component Registry</span>
         <div style={styles.viewToggle} data-testid="view-toggle">
-          <button
-            style={{
-              ...styles.toggleButton,
-              ...(viewMode === 'browser' ? styles.toggleButtonActive : {}),
-            }}
-            onClick={() => setViewMode('browser')}
-            type="button"
-          >
-            Browser
-          </button>
-          <button
-            style={{
-              ...styles.toggleButton,
-              ...(viewMode === 'graph' ? styles.toggleButtonActive : {}),
-            }}
-            onClick={() => setViewMode('graph')}
-            type="button"
-          >
-            Graph
-          </button>
-          <button
-            style={{
-              ...styles.toggleButton,
-              ...(viewMode === 'canvas' ? styles.toggleButtonActive : {}),
-            }}
-            onClick={() => setViewMode('canvas')}
-            type="button"
-          >
-            Canvas
-          </button>
+          {/* Symbols Dropdown */}
+          <div style={styles.dropdownContainer} data-dropdown="symbols">
+            <button
+              style={{
+                ...styles.toggleButton,
+                ...(viewMode === 'symbols' ? styles.toggleButtonActive : {}),
+              }}
+              onClick={() => {
+                if (viewMode === 'symbols') {
+                  setShowSymbolsDropdown(!showSymbolsDropdown);
+                } else {
+                  setViewMode('symbols');
+                }
+              }}
+              type="button"
+            >
+              Symbols {viewMode === 'symbols' ? `(${symbolSubView})` : ''} ▾
+            </button>
+            {showSymbolsDropdown && viewMode === 'symbols' && (
+              <div style={styles.dropdown}>
+                <button
+                  style={{
+                    ...styles.dropdownItem,
+                    ...(symbolSubView === 'list' ? styles.dropdownItemActive : {}),
+                  }}
+                  onClick={() => {
+                    setSymbolSubView('list');
+                    setShowSymbolsDropdown(false);
+                  }}
+                  type="button"
+                >
+                  List View
+                </button>
+                <button
+                  style={{
+                    ...styles.dropdownItem,
+                    ...(symbolSubView === 'graph' ? styles.dropdownItemActive : {}),
+                  }}
+                  onClick={() => {
+                    setSymbolSubView('graph');
+                    setShowSymbolsDropdown(false);
+                  }}
+                  type="button"
+                >
+                  Graph View
+                </button>
+                <button
+                  style={{
+                    ...styles.dropdownItem,
+                    ...(symbolSubView === 'canvas' ? styles.dropdownItemActive : {}),
+                  }}
+                  onClick={() => {
+                    setSymbolSubView('canvas');
+                    setShowSymbolsDropdown(false);
+                  }}
+                  type="button"
+                >
+                  Canvas View
+                </button>
+              </div>
+            )}
+          </div>
           <button
             style={{
               ...styles.toggleButton,
@@ -147,38 +217,43 @@ export default function App(): React.ReactElement {
           >
             Diagram
           </button>
+        </div>
+
+        {/* Tool Buttons */}
+        <div style={styles.toolButtons}>
+          <button
+            style={styles.exportButton}
+            onClick={() => setShowExportDialog(true)}
+            type="button"
+            data-testid="export-all-button"
+          >
+            Export All
+          </button>
           <button
             style={{
-              ...styles.toggleButton,
-              ...(viewMode === 'recordings' ? styles.toggleButtonActive : {}),
+              ...styles.toolButton,
+              ...(viewMode === 'recordings' ? styles.toolButtonActive : {}),
             }}
             onClick={() => setViewMode('recordings')}
             type="button"
             data-testid="recordings-view-button"
+            title="Recordings - E2E Test Visualization"
           >
-            Recordings
+            📼
+          </button>
+          <button
+            style={styles.toolButton}
+            onClick={() => setShowHelpDialog(true)}
+            type="button"
+            data-testid="help-button"
+            title="Help (F1)"
+          >
+            ?
           </button>
         </div>
-        <button
-          style={styles.exportButton}
-          onClick={() => setShowExportDialog(true)}
-          type="button"
-          data-testid="export-all-button"
-        >
-          Export All
-        </button>
-        <button
-          style={styles.helpButton}
-          onClick={() => setShowHelpDialog(true)}
-          type="button"
-          data-testid="help-button"
-          title="Help (F1)"
-        >
-          ?
-        </button>
       </header>
 
-      {viewMode === 'browser' && (
+      {viewMode === 'symbols' && symbolSubView === 'list' && (
         <>
           <div style={styles.toolbar}>
             <SearchBar
@@ -212,7 +287,7 @@ export default function App(): React.ReactElement {
         </>
       )}
 
-      {viewMode === 'graph' && (
+      {viewMode === 'symbols' && symbolSubView === 'graph' && (
         <>
           <GraphStats />
           <main style={styles.graphMain}>
@@ -236,7 +311,7 @@ export default function App(): React.ReactElement {
         </>
       )}
 
-      {viewMode === 'canvas' && (
+      {viewMode === 'symbols' && symbolSubView === 'canvas' && (
         <>
           <GraphStats />
           <main style={styles.graphMain}>
@@ -296,6 +371,19 @@ export default function App(): React.ReactElement {
         isOpen={showAboutDialog}
         onClose={() => setShowAboutDialog(false)}
       />
+
+      {/* Global Debug Overlay - persists across view switches */}
+      {debugSession.state.sessionId && (
+        <DebugOverlay
+          state={debugSession.state}
+          commands={debugSession.commands}
+          recording={debugSession.recording}
+          appId={debugSession.appId}
+          recordingId={debugSession.recordingId}
+          onClose={debugSession.clearDebug}
+          onReturnToRecordings={() => setViewMode('recordings')}
+        />
+      )}
     </div>
   );
 }
@@ -310,9 +398,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   header: {
     display: 'flex',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: '12px',
-    padding: '16px 24px',
+    padding: '12px 24px',
     borderBottom: '1px solid #3c3c3c',
     backgroundColor: '#252526',
   },
@@ -334,6 +422,37 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
     padding: '2px',
   },
+  dropdownContainer: {
+    position: 'relative',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: '4px',
+    backgroundColor: '#2d2d2d',
+    border: '1px solid #3c3c3c',
+    borderRadius: '4px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+    zIndex: 1000,
+    minWidth: '120px',
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    display: 'block',
+    width: '100%',
+    padding: '8px 12px',
+    fontSize: '12px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#cccccc',
+    cursor: 'pointer',
+    textAlign: 'left',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#094771',
+    color: '#ffffff',
+  },
   toggleButton: {
     padding: '6px 12px',
     fontSize: '12px',
@@ -347,8 +466,13 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#094771',
     color: '#ffffff',
   },
-  exportButton: {
+  toolButtons: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
     marginLeft: '16px',
+  },
+  exportButton: {
     padding: '6px 14px',
     fontSize: '12px',
     border: 'none',
@@ -357,20 +481,23 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#ffffff',
     cursor: 'pointer',
   },
-  helpButton: {
-    marginLeft: '8px',
-    width: '28px',
-    height: '28px',
+  toolButton: {
+    width: '32px',
+    height: '32px',
     fontSize: '14px',
     fontWeight: 'bold',
     border: 'none',
-    borderRadius: '50%',
+    borderRadius: '4px',
     backgroundColor: '#3c3c3c',
     color: '#d4d4d4',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  toolButtonActive: {
+    backgroundColor: '#094771',
+    color: '#ffffff',
   },
   toolbar: {
     padding: '12px 24px',

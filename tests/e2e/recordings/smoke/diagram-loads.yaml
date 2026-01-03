@@ -23,19 +23,19 @@ tasks:
     name: Open diagram view
     steps:
       - action: click
-        selector: "[data-testid='view-toggle'] button:nth-child(4)"
-        why: Click the Diagram button (4th button in view toggle) to switch views.
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+        why: Click the Diagram button to switch to diagram view.
 
       - action: wait-for
-        selector: "iframe"
+        selector: "[data-testid='diagram-webview']"
         timeout: 10000
-        why: Wait for Draw.io iframe to appear.
+        why: Wait for Draw.io webview to appear.
 
-  - id: verify-iframe
-    name: Verify iframe loaded
+  - id: verify-webview
+    name: Verify webview loaded
     depends: [open-diagram]
     steps:
       - action: assert
-        selector: "iframe"
+        selector: "[data-testid='diagram-webview']"
         exists: true
-        why: Confirm the Draw.io iframe exists.
+        why: Confirm the Draw.io webview exists.

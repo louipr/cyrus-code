@@ -7,11 +7,14 @@
  */
 
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import type { RecordingTask } from '../../../recordings/schema';
+import type { RecordingTask, StepResult } from '../../../recordings/schema';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
 import { TASK_GRAPH_LAYOUT } from '../../constants/graph-layout';
 import { calculateGridPositions, type GridPosition } from '../../utils/calculate-grid-positions';
 import { EdgeLine } from '../shared/EdgeLine';
+
+/** Execution state for a task */
+export type TaskExecutionState = 'pending' | 'running' | 'success' | 'failed';
 
 /** Toolbar button with hover state */
 function ToolbarButton({
@@ -59,6 +62,10 @@ interface TaskDependencyGraphProps {
   tasks: RecordingTask[];
   selectedTaskId: string | null;
   onTaskClick: (taskId: string) => void;
+  /** Index of currently executing task */
+  executingTaskIndex?: number | null;
+  /** Step results keyed by "taskIndex:stepIndex" for determining task state */
+  stepResults?: Map<string, StepResult>;
 }
 
 const PADDING = TASK_GRAPH_LAYOUT.padding ?? 40;
@@ -106,6 +113,60 @@ function calculateTaskPositions(tasks: RecordingTask[]): Map<string, GridPositio
 }
 
 /**
+ * Get execution state for a task.
+ */
+function getTaskState(
+  taskIndex: number,
+  task: RecordingTask,
+  executingTaskIndex: number | null | undefined,
+  stepResults: Map<string, StepResult> | undefined
+): TaskExecutionState {
+  if (executingTaskIndex === taskIndex) {
+    return 'running';
+  }
+  if (stepResults) {
+    // Check if all steps in the task have results
+    let hasResults = false;
+    let allSuccess = true;
+    for (let stepIndex = 0; stepIndex < task.steps.length; stepIndex++) {
+      const result = stepResults.get(`${taskIndex}:${stepIndex}`);
+      if (result) {
+        hasResults = true;
+        if (!result.success) {
+          allSuccess = false;
+        }
+      }
+    }
+    if (hasResults) {
+      // If we have any results and all complete, return success/failed
+      const completedCount = task.steps.filter((_, i) =>
+        stepResults.has(`${taskIndex}:${i}`)
+      ).length;
+      if (completedCount === task.steps.length) {
+        return allSuccess ? 'success' : 'failed';
+      }
+    }
+  }
+  return 'pending';
+}
+
+/**
+ * Get colors for task execution state.
+ */
+function getTaskStateColors(state: TaskExecutionState): { fill: string; stroke: string } {
+  switch (state) {
+    case 'running':
+      return { fill: '#1e3a5f', stroke: '#4fc1ff' };
+    case 'success':
+      return { fill: '#1a3a1a', stroke: '#89d185' };
+    case 'failed':
+      return { fill: '#3a1a1a', stroke: '#f48771' };
+    default:
+      return { fill: '#2d2d2d', stroke: '#555' };
+  }
+}
+
+/**
  * Wrap text to fit within a given width (approximate).
  */
 function wrapText(text: string, maxChars: number): string[] {
@@ -137,6 +198,8 @@ export function TaskDependencyGraph({
   tasks,
   selectedTaskId,
   onTaskClick,
+  executingTaskIndex,
+  stepResults,
 }: TaskDependencyGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -239,12 +302,13 @@ export function TaskDependencyGraph({
           )}
 
           {/* Render nodes */}
-          {tasks.map((task) => (
+          {tasks.map((task, taskIdx) => (
             <TaskNode
               key={task.id}
               task={task}
               position={positions.get(task.id)!}
               isSelected={task.id === selectedTaskId}
+              executionState={getTaskState(taskIdx, task, executingTaskIndex, stepResults)}
               onClick={() => handleNodeClick(task.id)}
             />
           ))}
@@ -280,11 +344,17 @@ interface TaskNodeProps {
   task: RecordingTask;
   position: GridPosition;
   isSelected: boolean;
+  executionState: TaskExecutionState;
   onClick: () => void;
 }
 
-function TaskNode({ task, position, isSelected, onClick }: TaskNodeProps) {
+function TaskNode({ task, position, isSelected, executionState, onClick }: TaskNodeProps) {
   const lines = wrapText(task.name, 22);
+  const stateColors = getTaskStateColors(executionState);
+
+  // Override stroke if selected
+  const strokeColor = isSelected ? '#4fc1ff' : stateColors.stroke;
+  const strokeWidth = isSelected || executionState !== 'pending' ? 2 : 1;
 
   return (
     <g
@@ -295,16 +365,48 @@ function TaskNode({ task, position, isSelected, onClick }: TaskNodeProps) {
       }}
       style={{ cursor: 'pointer' }}
     >
+      {/* Glow effect for running state */}
+      {executionState === 'running' && (
+        <rect
+          x={position.x - 4}
+          y={position.y - 4}
+          width={position.width + 8}
+          height={position.height + 8}
+          fill="none"
+          stroke="#4fc1ff"
+          strokeWidth={2}
+          strokeOpacity={0.3}
+          rx={10}
+        >
+          <animate
+            attributeName="stroke-opacity"
+            values="0.3;0.7;0.3"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        </rect>
+      )}
       <rect
         x={position.x}
         y={position.y}
         width={position.width}
         height={position.height}
-        fill="#2d2d2d"
-        stroke={isSelected ? '#4fc1ff' : '#555'}
-        strokeWidth={isSelected ? 2 : 1}
+        fill={stateColors.fill}
+        stroke={strokeColor}
+        strokeWidth={strokeWidth}
         rx={6}
       />
+      {/* State indicator icon */}
+      {executionState !== 'pending' && (
+        <text
+          x={position.x + 10}
+          y={position.y + 14}
+          fill={stateColors.stroke}
+          fontSize={12}
+        >
+          {executionState === 'running' ? '⏳' : executionState === 'success' ? '✓' : '✕'}
+        </text>
+      )}
       {lines.map((line, i) => (
         <text
           key={i}
