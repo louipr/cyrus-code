@@ -300,7 +300,8 @@ export class RecordingPlayer {
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
-      const result = await this.page.evaluate(condition);
+      // Wrap condition in IIFE to support return statements
+      const result = await this.page.evaluate(`(function() { ${condition} })()`);
       if (result) {
         return true;
       }
