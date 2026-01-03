@@ -8,7 +8,7 @@
  * making migration to REST API trivial (just add Express routes).
  */
 
-import { ipcMain, dialog, BrowserWindow, app } from 'electron';
+import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { extractErrorMessage } from '../src/infrastructure/errors.js';
@@ -221,6 +221,87 @@ export function registerIpcHandlers(facade: Architecture): void {
 
     return { success: true, data: result.filePaths[0] };
   });
+
+  // ==========================================================================
+  // Shell Operations (File/Folder Actions)
+  // ==========================================================================
+
+  // Open a file with the system's default application
+  ipcMain.handle('shell:openPath', async (_event, filePath: string) => {
+    try {
+      const result = await shell.openPath(filePath);
+      if (result) {
+        // Non-empty string means error
+        return { success: false, error: { message: result } };
+      }
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Show a file in its containing folder (Reveal in Finder/Explorer)
+  ipcMain.handle('shell:showItemInFolder', async (_event, filePath: string) => {
+    try {
+      shell.showItemInFolder(filePath);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  // Save file with dialog - for exporting PNGs, etc.
+  ipcMain.handle(
+    'shell:saveFile',
+    async (
+      _event,
+      options: {
+        data: string; // base64 encoded data
+        defaultName?: string;
+        filters?: { name: string; extensions: string[] }[];
+        title?: string;
+      }
+    ) => {
+      const focusedWindow = BrowserWindow.getFocusedWindow();
+      const dialogOptions: Electron.SaveDialogOptions = {
+        title: options.title ?? 'Save File',
+        buttonLabel: 'Save',
+        filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
+      };
+      if (options.defaultName) {
+        dialogOptions.defaultPath = options.defaultName;
+      }
+      const result = await dialog.showSaveDialog(focusedWindow ?? (undefined as never), dialogOptions);
+
+      if (result.canceled || !result.filePath) {
+        return { success: true, data: null };
+      }
+
+      try {
+        // Decode base64 and write
+        const buffer = Buffer.from(options.data, 'base64');
+        fs.writeFileSync(result.filePath, buffer);
+        return {
+          success: true,
+          data: {
+            filePath: result.filePath,
+            size: buffer.length,
+          },
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: { message: extractErrorMessage(error) },
+        };
+      }
+    }
+  );
 
   // ==========================================================================
   // Help Operations

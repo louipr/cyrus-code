@@ -119,6 +119,17 @@ export interface CyrusAPI {
   dialog: {
     selectDirectory: () => Promise<ApiResponse<string | null>>;
   };
+  // Shell operations (file/folder actions)
+  shell: {
+    openPath: (filePath: string) => Promise<ApiResponse<void>>;
+    showItemInFolder: (filePath: string) => Promise<ApiResponse<void>>;
+    saveFile: (options: {
+      data: string;
+      defaultName?: string;
+      filters?: { name: string; extensions: string[] }[];
+      title?: string;
+    }) => Promise<ApiResponse<{ filePath: string; size: number } | null>>;
+  };
   // Help operations
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
@@ -219,6 +230,11 @@ const cyrusAPI: CyrusAPI = {
   },
   dialog: {
     selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
+  },
+  shell: {
+    openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+    showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
+    saveFile: (options) => ipcRenderer.invoke('shell:saveFile', options),
   },
   help: {
     getCategories: () => ipcRenderer.invoke('help:getCategories'),

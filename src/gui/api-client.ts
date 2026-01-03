@@ -115,6 +115,16 @@ interface CyrusAPI {
   dialog: {
     selectDirectory: () => Promise<ApiResponse<string | null>>;
   };
+  shell: {
+    openPath: (filePath: string) => Promise<ApiResponse<void>>;
+    showItemInFolder: (filePath: string) => Promise<ApiResponse<void>>;
+    saveFile: (options: {
+      data: string;
+      defaultName?: string;
+      filters?: { name: string; extensions: string[] }[];
+      title?: string;
+    }) => Promise<ApiResponse<{ filePath: string; size: number } | null>>;
+  };
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
     getGroups: () => Promise<ApiResponse<HelpGroup[]>>;
@@ -247,6 +257,11 @@ function createMockApi(): CyrusAPI {
     },
     dialog: {
       selectDirectory: () => mockResponse(null),
+    },
+    shell: {
+      openPath: () => mockError('Not connected to backend'),
+      showItemInFolder: () => mockError('Not connected to backend'),
+      saveFile: () => mockResponse(null),
     },
     help: {
       getCategories: () => mockResponse([]),
