@@ -1,0 +1,41 @@
+# Diagram Loads Smoke Test
+#
+# Opens diagram view and verifies the Draw.io iframe loads.
+
+name: Diagram Loads
+description: Open diagram view and verify the Draw.io iframe loads.
+
+metadata:
+  status: verified
+  reliability: high
+  tags: [smoke, diagram, drawio]
+  author: smoke-test
+  created: "2025-01-02"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+  waitFor: "[data-testid='search-bar']"
+
+tasks:
+  - id: open-diagram
+    name: Open diagram view
+    steps:
+      - action: click
+        selector: "[data-testid='view-toggle'] button:nth-child(4)"
+        why: Click the Diagram button (4th button in view toggle) to switch views.
+
+      - action: wait-for
+        selector: "iframe"
+        timeout: 10000
+        why: Wait for Draw.io iframe to appear.
+
+  - id: verify-iframe
+    name: Verify iframe loaded
+    depends: [open-diagram]
+    steps:
+      - action: assert
+        selector: "iframe"
+        exists: true
+        why: Confirm the Draw.io iframe exists.

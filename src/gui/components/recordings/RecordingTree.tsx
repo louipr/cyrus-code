@@ -159,7 +159,7 @@ function TreeNode({
           {hasChildren ? (isExpanded ? '▼' : '▶') : ' '}
         </span>
         <span style={styles.icon}>{icon}</span>
-        <span style={styles.label}>{label}</span>
+        <span style={styles.label} title={label}>{label}</span>
         {badge && <span style={styles.badge}>{badge}</span>}
       </button>
       {isExpanded && children}

@@ -11,6 +11,24 @@ description: |
 
 # Recordings by application/component
 recordings:
+  smoke:
+    description: Basic smoke tests for app functionality
+    context: smoke/_context.yaml
+    recordings:
+      - id: app-loads
+        file: smoke/app-loads.yaml
+        name: App Loads
+        description: Verify the app loads and shows the main UI elements
+        status: verified
+        tags: [smoke, basic]
+
+      - id: diagram-loads
+        file: smoke/diagram-loads.yaml
+        name: Diagram Loads
+        description: Open a diagram and verify the Draw.io editor loads
+        status: verified
+        tags: [smoke, diagram, drawio]
+
   drawio:
     description: Draw.io diagram editor interactions
     context: drawio/_context.yaml

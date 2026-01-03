@@ -6,9 +6,51 @@
  * Includes standard zoom controls (fit all, zoom in/out, reset).
  */
 
-import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import type { RecordingTask } from '../../../recordings/schema';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
+
+/** Toolbar button with hover state */
+function ToolbarButton({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      style={{
+        ...toolbarButtonStyle,
+        backgroundColor: hovered ? '#3c3c3c' : 'transparent',
+      }}
+      onClick={onClick}
+      title={title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+    </button>
+  );
+}
+
+const toolbarButtonStyle: React.CSSProperties = {
+  width: '28px',
+  height: '28px',
+  border: 'none',
+  borderRadius: '3px',
+  color: '#ccc',
+  fontSize: '16px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background-color 0.15s ease',
+};
 
 interface TaskDependencyGraphProps {
   tasks: RecordingTask[];
@@ -229,23 +271,19 @@ export function TaskDependencyGraph({
 
       {/* Zoom Controls */}
       <div style={styles.toolbar}>
-        <button
-          style={styles.toolbarButton}
-          onClick={handleFitAll}
-          title="Fit All (View entire graph)"
-        >
+        <ToolbarButton onClick={handleFitAll} title="Fit All (View entire graph)">
           ⊞
-        </button>
-        <button style={styles.toolbarButton} onClick={zoomIn} title="Zoom In">
+        </ToolbarButton>
+        <ToolbarButton onClick={zoomIn} title="Zoom In">
           +
-        </button>
+        </ToolbarButton>
         <span style={styles.zoomLabel}>{zoomPercent}%</span>
-        <button style={styles.toolbarButton} onClick={zoomOut} title="Zoom Out">
+        <ToolbarButton onClick={zoomOut} title="Zoom Out">
           −
-        </button>
-        <button style={styles.toolbarButton} onClick={reset} title="Reset View">
+        </ToolbarButton>
+        <ToolbarButton onClick={reset} title="Reset View">
           ↺
-        </button>
+        </ToolbarButton>
       </div>
 
       {/* Legend */}
@@ -377,19 +415,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(37, 37, 38, 0.95)',
     borderRadius: '4px',
     border: '1px solid #3c3c3c',
-  },
-  toolbarButton: {
-    width: '28px',
-    height: '28px',
-    border: 'none',
-    borderRadius: '3px',
-    backgroundColor: 'transparent',
-    color: '#ccc',
-    fontSize: '16px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   zoomLabel: {
     color: '#888',

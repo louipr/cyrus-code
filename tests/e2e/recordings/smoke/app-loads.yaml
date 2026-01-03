@@ -1,0 +1,33 @@
+# App Loads Smoke Test
+#
+# Simple verification that the app loads and basic UI elements appear.
+
+name: App Loads
+description: Verify the app loads and shows the main UI elements.
+
+metadata:
+  status: verified
+  reliability: high
+  tags: [smoke, basic]
+  author: smoke-test
+  created: "2025-01-02"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+  waitFor: "[data-testid='search-bar']"
+
+tasks:
+  - id: verify-app-loaded
+    name: Verify app loaded
+    steps:
+      - action: wait-for
+        selector: "[data-testid='search-bar']"
+        timeout: 10000
+        why: Search bar is the main indicator that the app has fully loaded.
+
+      - action: assert
+        selector: "[data-testid='search-bar']"
+        exists: true
+        why: Confirm search bar exists after waiting.

@@ -35,6 +35,26 @@ import type { Recording } from '../recordings/schema';
 import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
 
 /**
+ * Options for running a recording.
+ */
+export interface RunRecordingOptions {
+  /** Run with visible browser window */
+  headed?: boolean;
+  /** Pause after execution for inspection (requires headed) */
+  debugPause?: boolean;
+}
+
+/**
+ * Result of running a recording.
+ */
+export interface RunRecordingResultDTO {
+  exitCode: number | null;
+  success: boolean;
+  output: string;
+  error: string;
+}
+
+/**
  * Type definition for the cyrus API exposed via preload script.
  *
  * SYNC: This interface must match `CyrusAPI` in electron/preload.ts
@@ -121,6 +141,11 @@ interface CyrusAPI {
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
     get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
+    run: (
+      appId: string,
+      recordingId: string,
+      options?: RunRecordingOptions
+    ) => Promise<ApiResponse<RunRecordingResultDTO>>;
   };
 }
 
@@ -238,6 +263,7 @@ function createMockApi(): CyrusAPI {
       getByApp: () => mockResponse([]),
       get: () => mockResponse(null),
       getByPath: () => mockResponse(null),
+      run: () => mockError('Not connected to backend'),
     },
   };
 }

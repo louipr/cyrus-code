@@ -39,6 +39,26 @@ import type { Recording } from '../src/recordings/schema.js';
 import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
 
 /**
+ * Options for running a recording.
+ */
+export interface RunRecordingOptions {
+  /** Run with visible browser window */
+  headed?: boolean;
+  /** Pause after execution for inspection (requires headed) */
+  debugPause?: boolean;
+}
+
+/**
+ * Result of running a recording.
+ */
+export interface RunRecordingResultDTO {
+  exitCode: number | null;
+  success: boolean;
+  output: string;
+  error: string;
+}
+
+/**
  * Type definitions for the exposed API.
  *
  * SYNC: This interface must match `CyrusAPI` in src/gui/api-client.ts
@@ -128,6 +148,11 @@ export interface CyrusAPI {
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
     get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
+    run: (
+      appId: string,
+      recordingId: string,
+      options?: RunRecordingOptions
+    ) => Promise<ApiResponse<RunRecordingResultDTO>>;
   };
 }
 
@@ -223,6 +248,8 @@ const cyrusAPI: CyrusAPI = {
     getByApp: (appId) => ipcRenderer.invoke('recordings:byApp', appId),
     get: (appId, recordingId) => ipcRenderer.invoke('recordings:get', appId, recordingId),
     getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
+    run: (appId, recordingId, options) =>
+      ipcRenderer.invoke('recordings:run', appId, recordingId, options),
   },
 };
 

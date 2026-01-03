@@ -12,6 +12,8 @@ import { TaskDependencyGraph } from './TaskDependencyGraph';
 import { StepTimeline } from './StepTimeline';
 import { StepDetail } from './StepDetail';
 import { RecordingDetail } from './RecordingDetail';
+import { RecordingToolbar } from './RecordingToolbar';
+import { PlayRecordingDialog } from './PlayRecordingDialog';
 import type { RecordingIndex } from '../../../domain/recordings/index';
 import type { Recording, RecordingTask, RecordingStep } from '../../../recordings/schema';
 
@@ -22,7 +24,7 @@ const styles = {
     backgroundColor: '#1e1e1e',
   } as React.CSSProperties,
   sidebar: {
-    width: '250px',
+    width: '280px',
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column' as const,
@@ -32,6 +34,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
+    position: 'relative' as const,
   } as React.CSSProperties,
   dagContainer: {
     flex: 1,
@@ -45,14 +48,24 @@ const styles = {
   timelineContainer: {
     minHeight: '80px',
     borderBottom: '1px solid #333',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as React.CSSProperties,
   detailsContainer: {
-    height: '200px',
+    height: '240px',
     overflow: 'auto',
+  } as React.CSSProperties,
+  detailsPlaceholder: {
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as React.CSSProperties,
   placeholder: {
     color: '#666',
     fontStyle: 'italic' as const,
+    fontSize: '13px',
   } as React.CSSProperties,
 };
 
@@ -63,11 +76,16 @@ export function RecordingsView() {
   const [index, setIndex] = useState<RecordingIndex | null>(null);
   const [recording, setRecording] = useState<Recording | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectedTask, setSelectedTask] = useState<RecordingTask | null>(null);
   const [selectedStep, setSelectedStep] = useState<RecordingStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Dialog state
+  const [showPlayDialog, setShowPlayDialog] = useState(false);
 
   // Load index on mount
   useEffect(() => {
@@ -90,6 +108,8 @@ export function RecordingsView() {
       if (type === 'recording') {
         const appId = parts[0];
         const recordingId = parts[1];
+        setSelectedAppId(appId);
+        setSelectedRecordingId(recordingId);
         const result = await apiClient.recordings.get(appId, recordingId);
         if (result.success && result.data) {
           setRecording(result.data);
@@ -177,6 +197,13 @@ export function RecordingsView() {
 
       {/* Main Content */}
       <div style={styles.main}>
+        {/* Recording Toolbar */}
+        <RecordingToolbar
+          recording={recording}
+          appId={selectedAppId}
+          onPlay={() => setShowPlayDialog(true)}
+        />
+
         {/* Task Dependency Graph */}
         <div style={styles.dagContainer}>
           {recording ? (
@@ -217,10 +244,23 @@ export function RecordingsView() {
           ) : recording ? (
             <RecordingDetail recording={recording} />
           ) : (
-            <span style={styles.placeholder}>Select a recording or step to view details</span>
+            <div style={styles.detailsPlaceholder}>
+              <span style={styles.placeholder}>Select a recording or step to view details</span>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Play Dialog */}
+      {recording && selectedAppId && selectedRecordingId && (
+        <PlayRecordingDialog
+          isOpen={showPlayDialog}
+          onClose={() => setShowPlayDialog(false)}
+          recording={recording}
+          appId={selectedAppId}
+          recordingId={selectedRecordingId}
+        />
+      )}
     </div>
   );
 }

@@ -95,6 +95,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'auto',
     position: 'relative',
     minHeight: '80px',
+    width: '100%',
   },
   connectionLine: {
     position: 'absolute',

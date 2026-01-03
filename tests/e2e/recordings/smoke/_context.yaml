@@ -1,0 +1,6 @@
+# Smoke Test Context
+#
+# Basic app loading and verification tests.
+
+app: cyrus-code
+description: Smoke tests for basic app functionality
