@@ -53,7 +53,7 @@ npm run electron:dev   # Dev mode with hot reload
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
 | Draw.io Integration | EditorUi hook, PNG export | Diagram view, webview | ✅ Complete |
-| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder | - | ✅ Complete |
+| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder | Recording Visualization View | 🔄 Phase 1 ✅ |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -439,6 +439,58 @@ npm run electron:dev   # Dev mode with hot reload
 | E2E.12 | Create dialog handling recording | `tests/e2e/recordings/drawio/dialog-handling.yaml` | ⏳ |
 | E2E.13 | Demo RecordingBuilder in live exploration | - | ⏳ |
 
+### Phase 3: Recording Visualization View (Future)
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.14 | Recording Tree Navigator component | `src/gui/components/RecordingTreeView.tsx` | ⏳ |
+| E2E.15 | Task Dependency Graph (DAG visualization) | `src/gui/components/TaskDependencyGraph.tsx` | ⏳ |
+| E2E.16 | Step Timeline component (action sequence) | `src/gui/components/StepTimeline.tsx` | ⏳ |
+| E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/StepDetailsPanel.tsx` | ⏳ |
+| E2E.18 | Execution Status overlay (pass/fail indicators) | `src/gui/components/ExecutionStatus.tsx` | ⏳ |
+| E2E.19 | Context Panel (globals, selectors, prerequisites) | `src/gui/components/RecordingContext.tsx` | ⏳ |
+| E2E.20 | Recording comparison view (diff similar patterns) | `src/gui/components/RecordingComparison.tsx` | ⏳ |
+| E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ⏳ |
+| E2E.22 | IPC handlers for loading recordings | `electron/ipc-handlers.ts` | ⏳ |
+
+**View Layout Concept:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  [Browser] [Graph] [Canvas] [Diagram] [Recordings]              │
+├─────────────────┬───────────────────────────────────────────────┤
+│  Tree Navigator │  Task Dependency Graph                        │
+│  ├─ drawio/     │  ┌─────────┐     ┌─────────┐                  │
+│  │  ├─ export-  │  │ verify  │────▶│ start   │                  │
+│  │  │   png     │  │ editor  │     │ export  │                  │
+│  │  │  ├─ task1 │  └─────────┘     └────┬────┘                  │
+│  │  │  └─ task2 │                       │                       │
+│  │  └─ export-  │                       ▼                       │
+│  │      svg     │               ┌───────────────┐               │
+│  └─ _context    │               │ wait-for-     │               │
+│                 │               │ export        │               │
+│                 │               └───────────────┘               │
+├─────────────────┴───────────────────────────────────────────────┤
+│  Step Timeline                                                  │
+│  ○ wait-for ─── ○ evaluate ─── ○ poll ─── ● extract ───▶        │
+│  .geDiagram     check editor   window     png-data-url          │
+├─────────────────────────────────────────────────────────────────┤
+│  Step Details                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ action: evaluate                                            ││
+│  │ code: editor.exportToCanvas(...)                            ││
+│  │ why: exportToCanvas() is Draw.io's native export method...  ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key UX Features:**
+- Tree navigator with collapsible app contexts and recordings
+- Task DAG shows dependencies visually (similar to CI pipeline view)
+- Step timeline with action icons and status indicators
+- `why` field prominently displayed for LLM explanations
+- Click-through from tree → DAG → timeline → details
+- Execution status colors: ✅ green (pass), ❌ red (fail), ⏳ gray (pending)
+
 ### Deliverables
 
 - [x] Recording schema with tasks, steps, and `why` explanations
@@ -447,6 +499,7 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] First recordings capturing Draw.io export knowledge
 - [ ] Integration with existing E2E tests
 - [ ] Feedback/grading mechanism for recording quality
+- [ ] Recording Visualization View in GUI
 
 ---
 
