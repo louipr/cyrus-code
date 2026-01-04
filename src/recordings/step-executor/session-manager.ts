@@ -4,8 +4,8 @@
  * Singleton registry for managing debug sessions.
  * Provides the main interface for IPC handlers to create and control sessions.
  *
- * Uses InAppSession by default which executes against the current Electron window.
- * The Playwright-based StepExecutionSession is available for E2E tests.
+ * Uses InAppSession which executes recordings against the current Electron window
+ * via webContents.executeJavaScript().
  */
 
 import type { WebContents } from 'electron';

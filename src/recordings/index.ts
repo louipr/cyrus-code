@@ -5,5 +5,3 @@
  */
 
 export * from './schema';
-export { RecordingPlayer, type PlayerOptions } from './player';
-export { RecordingBuilder } from './builder';
