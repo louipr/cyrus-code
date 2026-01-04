@@ -5,6 +5,8 @@
  * Uses a Promise-based gate pattern to pause execution between steps.
  */
 
+import * as path from 'path';
+import * as fs from 'fs';
 import type { Page } from 'playwright';
 import type { Recording, RecordingStep, RecordingTask, StepResult, TaskResult } from '../schema.js';
 import { RecordingPlayer, type PlayerOptions } from '../player.js';
@@ -38,6 +40,9 @@ export interface StepExecutorOptions {
 
   /** Stop execution on first error */
   stopOnError?: boolean;
+
+  /** Base path for resolving relative file paths (e.g., screenshot outputs) */
+  basePath?: string;
 }
 
 /**
@@ -479,12 +484,26 @@ export class StepExecutor {
           break;
 
         case 'screenshot':
-          if (step.selector && step.returns) {
-            await this.page.locator(step.selector).screenshot({
-              path: step.returns,
-            });
-          } else if (step.returns) {
-            await this.page.screenshot({ path: step.returns });
+          if (step.returns) {
+            // Resolve relative paths against basePath
+            let screenshotPath = step.returns;
+            if (!path.isAbsolute(screenshotPath) && this.options.basePath) {
+              screenshotPath = path.join(this.options.basePath, screenshotPath);
+            }
+
+            // Ensure directory exists
+            const dir = path.dirname(screenshotPath);
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+
+            if (step.selector) {
+              await this.page.locator(step.selector).screenshot({
+                path: screenshotPath,
+              });
+            } else {
+              await this.page.screenshot({ path: screenshotPath });
+            }
           }
           break;
 

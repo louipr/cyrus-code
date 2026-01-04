@@ -5,7 +5,7 @@
  * Provides the main layout with component browser and dependency graph views.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { ComponentList } from './components/ComponentList';
 import { ComponentDetail } from './components/ComponentDetail';
@@ -17,10 +17,13 @@ import { ExportDialog } from './components/ExportDialog';
 import { GenerateButton } from './components/GenerateButton';
 import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
-import { DrawioEditor } from './components/DrawioEditor';
+import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { RecordingsView } from './components/recordings';
 import { DebugOverlay } from './components/recordings/DebugOverlay';
+import { DebugSidePanel } from './components/recordings/DebugSidePanel';
+import { ResizableDivider } from './components/shared/ResizableDivider';
 import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
+import { useResizablePanel } from './hooks/useResizablePanel';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
@@ -52,12 +55,28 @@ function AppContent(): React.ReactElement {
   // Debug session context - persists across view switches
   const debugSession = useDebugSessionContext();
 
+  // Resizable side panel for debug task graph
+  const {
+    width: panelWidth,
+    collapsed: panelCollapsed,
+    isDragging: isPanelDragging,
+    toggleCollapsed: togglePanelCollapsed,
+    dividerHandlers,
+  } = useResizablePanel({
+    storageKey: 'debug-panel-width',
+    defaultWidth: 280,
+    minWidth: 200,
+    maxWidth: 500,
+  });
+
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [helpTopic, setHelpTopic] = useState<string | undefined>();
   const [helpSearch, setHelpSearch] = useState<string | undefined>();
   const [, setDiagramXml] = useState<string | undefined>();
   const [currentDiagramPath, setCurrentDiagramPath] = useState<string | undefined>();
+
+  const drawioEditorRef = useRef<DrawioEditorRef>(null);
 
   // Listen for F1 keyboard shortcut
   useEffect(() => {
@@ -129,7 +148,25 @@ function AppContent(): React.ReactElement {
       setCurrentDiagramPath(path);
       setViewMode('diagram');
     });
-  }, []);
+
+    window.cyrus.diagram.onExportPng(() => {
+      // Switch to diagram view and trigger export
+      if (viewMode !== 'diagram') {
+        setViewMode('diagram');
+      }
+      // Use setTimeout to allow view switch to render
+      setTimeout(async () => {
+        if (drawioEditorRef.current?.isReady()) {
+          try {
+            await drawioEditorRef.current.openExportDialog();
+          } catch (error) {
+            console.error('[App] Failed to open export dialog from menu:', error);
+          }
+        }
+      }, 100);
+    });
+
+  }, [viewMode]);
 
   // Handle node click from graph view - fetch full component data
   const handleGraphNodeClick = useCallback(async (symbolId: string) => {
@@ -138,6 +175,30 @@ function AppContent(): React.ReactElement {
       setSelectedComponent(result.data);
     }
   }, []);
+
+  // Handle diagram export - opens Draw.io's native export dialog
+  const handleDiagramExport = useCallback(async () => {
+    if (!drawioEditorRef.current?.isReady()) {
+      return;
+    }
+
+    try {
+      await drawioEditorRef.current.openExportDialog();
+    } catch (error) {
+      console.error('[App] Failed to open export dialog:', error);
+    }
+  }, []);
+
+  // Handle task click from debug side panel - navigate to recordings view
+  const handleSidePanelTaskClick = useCallback((taskId: string) => {
+    // Navigate to recordings view so user can see full task details
+    setViewMode('recordings');
+    // The recordings view will handle showing the task
+    console.log('[App] Side panel task clicked:', taskId);
+  }, []);
+
+  // Check if debug side panel should be shown
+  const showDebugSidePanel = debugSession.state.sessionId && debugSession.recording;
 
   return (
     <div style={styles.container}>
@@ -253,107 +314,146 @@ function AppContent(): React.ReactElement {
         </div>
       </header>
 
-      {viewMode === 'symbols' && symbolSubView === 'list' && (
-        <>
-          <div style={styles.toolbar}>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
+      {/* Main content wrapper with optional debug side panel */}
+      <div style={styles.mainWithPanel}>
+        {/* Main content area */}
+        <div style={styles.mainContentWrapper}>
+          {viewMode === 'symbols' && symbolSubView === 'list' && (
+            <>
+              <div style={styles.toolbar}>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                />
+              </div>
+
+              <main style={styles.main}>
+                <aside style={styles.sidebar}>
+                  <ComponentList
+                    searchQuery={searchQuery}
+                    selectedId={selectedComponent?.id ?? null}
+                    onSelect={setSelectedComponent}
+                  />
+                </aside>
+
+                <section style={styles.content}>
+                  {selectedComponent ? (
+                    <>
+                      <ComponentDetail component={selectedComponent} />
+                      <GenerateButton component={selectedComponent} />
+                    </>
+                  ) : (
+                    <div style={styles.placeholder}>
+                      <p>Select a component to view details</p>
+                    </div>
+                  )}
+                </section>
+              </main>
+            </>
+          )}
+
+          {viewMode === 'symbols' && symbolSubView === 'graph' && (
+            <>
+              <GraphStats />
+              <main style={styles.graphMain}>
+                <aside style={styles.graphSidebar}>
+                  {selectedComponent ? (
+                    <ComponentDetail component={selectedComponent} />
+                  ) : (
+                    <div style={styles.placeholder}>
+                      <p>Click a node to view details</p>
+                    </div>
+                  )}
+                </aside>
+                <section style={styles.graphContent}>
+                  <DependencyGraph
+                    selectedSymbolId={selectedComponent?.id}
+                    onNodeClick={handleGraphNodeClick}
+                  />
+                  <ValidationOverlay onNodeClick={handleGraphNodeClick} />
+                </section>
+              </main>
+            </>
+          )}
+
+          {viewMode === 'symbols' && symbolSubView === 'canvas' && (
+            <>
+              <GraphStats />
+              <main style={styles.graphMain}>
+                <aside style={styles.graphSidebar}>
+                  {selectedComponent ? (
+                    <ComponentDetail component={selectedComponent} />
+                  ) : (
+                    <div style={styles.placeholder}>
+                      <p>Click a node to view details and relationships</p>
+                    </div>
+                  )}
+                </aside>
+                <section style={styles.graphContent}>
+                  <Canvas
+                    selectedSymbolId={selectedComponent?.id}
+                    onNodeClick={handleGraphNodeClick}
+                  />
+                  <ValidationOverlay onNodeClick={handleGraphNodeClick} />
+                </section>
+              </main>
+            </>
+          )}
+
+          {viewMode === 'diagram' && (
+            <main style={styles.diagramMain}>
+              <div style={styles.diagramToolbar}>
+                <button
+                  style={styles.diagramExportButton}
+                  onClick={handleDiagramExport}
+                  type="button"
+                  data-testid="diagram-export-button"
+                  title="Export diagram (PNG, SVG, PDF...)"
+                >
+                  Export...
+                </button>
+              </div>
+              <div style={styles.diagramContent}>
+                <DrawioEditor
+                  ref={drawioEditorRef}
+                  filePath={currentDiagramPath}
+                  onSave={(xml) => {
+                    setDiagramXml(xml);
+                    if (currentDiagramPath && window.cyrus?.diagram?.save) {
+                      window.cyrus.diagram.save(currentDiagramPath, xml);
+                    }
+                  }}
+                />
+              </div>
+            </main>
+          )}
+
+          {viewMode === 'recordings' && (
+            <main style={styles.diagramMain}>
+              <RecordingsView />
+            </main>
+          )}
+        </div>
+
+        {/* Debug side panel - appears during debug sessions */}
+        {showDebugSidePanel && (
+          <>
+            <ResizableDivider
+              isDragging={isPanelDragging}
+              onMouseDown={dividerHandlers.onMouseDown}
             />
-          </div>
-
-          <main style={styles.main}>
-            <aside style={styles.sidebar}>
-              <ComponentList
-                searchQuery={searchQuery}
-                selectedId={selectedComponent?.id ?? null}
-                onSelect={setSelectedComponent}
-              />
-            </aside>
-
-            <section style={styles.content}>
-              {selectedComponent ? (
-                <>
-                  <ComponentDetail component={selectedComponent} />
-                  <GenerateButton component={selectedComponent} />
-                </>
-              ) : (
-                <div style={styles.placeholder}>
-                  <p>Select a component to view details</p>
-                </div>
-              )}
-            </section>
-          </main>
-        </>
-      )}
-
-      {viewMode === 'symbols' && symbolSubView === 'graph' && (
-        <>
-          <GraphStats />
-          <main style={styles.graphMain}>
-            <aside style={styles.graphSidebar}>
-              {selectedComponent ? (
-                <ComponentDetail component={selectedComponent} />
-              ) : (
-                <div style={styles.placeholder}>
-                  <p>Click a node to view details</p>
-                </div>
-              )}
-            </aside>
-            <section style={styles.graphContent}>
-              <DependencyGraph
-                selectedSymbolId={selectedComponent?.id}
-                onNodeClick={handleGraphNodeClick}
-              />
-              <ValidationOverlay onNodeClick={handleGraphNodeClick} />
-            </section>
-          </main>
-        </>
-      )}
-
-      {viewMode === 'symbols' && symbolSubView === 'canvas' && (
-        <>
-          <GraphStats />
-          <main style={styles.graphMain}>
-            <aside style={styles.graphSidebar}>
-              {selectedComponent ? (
-                <ComponentDetail component={selectedComponent} />
-              ) : (
-                <div style={styles.placeholder}>
-                  <p>Click a node to view details and relationships</p>
-                </div>
-              )}
-            </aside>
-            <section style={styles.graphContent}>
-              <Canvas
-                selectedSymbolId={selectedComponent?.id}
-                onNodeClick={handleGraphNodeClick}
-              />
-              <ValidationOverlay onNodeClick={handleGraphNodeClick} />
-            </section>
-          </main>
-        </>
-      )}
-
-      {viewMode === 'diagram' && (
-        <main style={styles.diagramMain}>
-          <DrawioEditor
-            filePath={currentDiagramPath}
-            onSave={(xml) => {
-              setDiagramXml(xml);
-              if (currentDiagramPath && window.cyrus?.diagram?.save) {
-                window.cyrus.diagram.save(currentDiagramPath, xml);
-              }
-            }}
-          />
-        </main>
-      )}
-
-      {viewMode === 'recordings' && (
-        <main style={styles.diagramMain}>
-          <RecordingsView />
-        </main>
-      )}
+            <DebugSidePanel
+              width={panelWidth}
+              collapsed={panelCollapsed}
+              onToggleCollapse={togglePanelCollapsed}
+              recording={debugSession.recording!}
+              position={debugSession.state.position}
+              stepResults={debugSession.state.stepResults}
+              onTaskClick={handleSidePanelTaskClick}
+            />
+          </>
+        )}
+      </div>
 
       <ExportDialog
         isOpen={showExportDialog}
@@ -395,6 +495,17 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100vh',
     backgroundColor: '#1e1e1e',
     color: '#d4d4d4',
+  },
+  mainWithPanel: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  mainContentWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
   },
   header: {
     display: 'flex',
@@ -546,6 +657,29 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
   },
   diagramMain: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  diagramToolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 16px',
+    backgroundColor: '#252526',
+    borderBottom: '1px solid #3c3c3c',
+  },
+  diagramExportButton: {
+    padding: '6px 14px',
+    fontSize: '12px',
+    border: 'none',
+    borderRadius: '4px',
+    backgroundColor: '#0e639c',
+    color: '#ffffff',
+    cursor: 'pointer',
+  },
+  diagramContent: {
     flex: 1,
     overflow: 'hidden',
   },

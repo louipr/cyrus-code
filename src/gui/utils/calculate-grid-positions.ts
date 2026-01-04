@@ -14,6 +14,8 @@ export interface GridPosition {
   height: number;
 }
 
+export type LayoutDirection = 'horizontal' | 'vertical';
+
 /**
  * Calculate grid positions for items grouped by level.
  *
@@ -21,13 +23,15 @@ export interface GridPosition {
  * @param getLevel - Function to extract level (string or number) from an item
  * @param getId - Function to extract unique ID from an item
  * @param layout - Layout configuration (nodeWidth, nodeHeight, gapX, gapY, padding)
+ * @param direction - Layout direction: 'horizontal' (levels as columns) or 'vertical' (levels as rows)
  * @returns Map of item ID to position
  */
 export function calculateGridPositions<T>(
   items: T[],
   getLevel: (item: T) => string | number,
   getId: (item: T) => string,
-  layout: GraphLayoutConfig
+  layout: GraphLayoutConfig,
+  direction: LayoutDirection = 'horizontal'
 ): Map<string, GridPosition> {
   const positions = new Map<string, GridPosition>();
   const { nodeWidth, nodeHeight, gapX, gapY, padding = 0 } = layout;
@@ -48,16 +52,27 @@ export function calculateGridPositions<T>(
     return String(a).localeCompare(String(b));
   });
 
-  // Position each level column
+  // Position each level
   sortedLevels.forEach((level, levelIndex) => {
     const levelItems = levelGroups.get(level)!;
     levelItems.forEach((item, itemIndex) => {
-      positions.set(getId(item), {
-        x: padding + levelIndex * gapX,
-        y: padding + itemIndex * gapY,
-        width: nodeWidth,
-        height: nodeHeight,
-      });
+      if (direction === 'vertical') {
+        // Vertical: levels flow down (y), items at same level spread horizontally (x)
+        positions.set(getId(item), {
+          x: padding + itemIndex * gapX,
+          y: padding + levelIndex * gapY,
+          width: nodeWidth,
+          height: nodeHeight,
+        });
+      } else {
+        // Horizontal: levels flow right (x), items at same level stack vertically (y)
+        positions.set(getId(item), {
+          x: padding + levelIndex * gapX,
+          y: padding + itemIndex * gapY,
+          width: nodeWidth,
+          height: nodeHeight,
+        });
+      }
     });
   });
 

@@ -61,6 +61,11 @@ test.describe('Recording Runner', () => {
         if (!step.success && step.error) {
           console.log(`      Error: ${step.error}`);
         }
+        // Log step value for verification
+        if (step.value !== undefined) {
+          const valueStr = JSON.stringify(step.value, null, 2);
+          console.log(`      Value: ${valueStr.length > 200 ? valueStr.slice(0, 200) + '...' : valueStr}`);
+        }
       }
     }
 

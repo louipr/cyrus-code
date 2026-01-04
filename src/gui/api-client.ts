@@ -38,6 +38,10 @@ import type {
   DebugSessionSnapshot,
   DebugEvent,
 } from '../recordings/step-executor/schema';
+import type { ExportHistoryRecord } from '../repositories/export-history-repository';
+
+// Re-export for components that import from api-client
+export type { ExportHistoryRecord };
 
 /**
  * Options for running a recording.
@@ -123,7 +127,27 @@ interface CyrusAPI {
       defaultName?: string;
       filters?: { name: string; extensions: string[] }[];
       title?: string;
+      source?: 'ui' | 'test' | 'api';
+      sourcePath?: string;
     }) => Promise<ApiResponse<{ filePath: string; size: number } | null>>;
+    showSaveDialog: (options: {
+      defaultPath?: string;
+      filters?: { name: string; extensions: string[] }[];
+      title?: string;
+    }) => Promise<ApiResponse<string | null>>;
+    writeFile: (options: {
+      path: string;
+      data: string;
+      encoding?: 'utf-8' | 'base64';
+      source?: 'ui' | 'test' | 'api';
+      sourcePath?: string;
+    }) => Promise<ApiResponse<{ size: number }>>;
+  };
+  exportHistory: {
+    getRecent: (limit?: number) => Promise<ApiResponse<ExportHistoryRecord[]>>;
+    get: (id: number) => Promise<ApiResponse<ExportHistoryRecord | null>>;
+    delete: (id: number) => Promise<ApiResponse<boolean>>;
+    clear: () => Promise<ApiResponse<void>>;
   };
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;
@@ -149,6 +173,7 @@ interface CyrusAPI {
     saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
     onNew: (callback: () => void) => void;
     onOpen: (callback: (path: string, xml: string) => void) => void;
+    onExportPng: (callback: () => void) => void;
   };
   recordings: {
     getIndex: () => Promise<ApiResponse<RecordingIndex>>;
@@ -262,6 +287,14 @@ function createMockApi(): CyrusAPI {
       openPath: () => mockError('Not connected to backend'),
       showItemInFolder: () => mockError('Not connected to backend'),
       saveFile: () => mockResponse(null),
+      showSaveDialog: () => mockResponse(null),
+      writeFile: () => mockError('Not connected to backend'),
+    },
+    exportHistory: {
+      getRecent: () => mockResponse([]),
+      get: () => mockResponse(null),
+      delete: () => mockResponse(false),
+      clear: () => mockResponse(undefined),
     },
     help: {
       getCategories: () => mockResponse([]),
@@ -287,6 +320,7 @@ function createMockApi(): CyrusAPI {
       saveAs: () => mockResponse(null),
       onNew: () => {},
       onOpen: () => {},
+      onExportPng: () => {},
     },
     recordings: {
       getIndex: () => mockResponse({ version: '1.0', description: 'Mock', recordings: {} }),

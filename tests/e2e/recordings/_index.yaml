@@ -54,6 +54,13 @@ recordings:
         status: draft
         tags: [diagram, drawio, c4, architecture]
 
+      - id: export-dialog
+        file: drawio/export-dialog.yaml
+        name: Export Dialog UI Test
+        description: Test export dialog with preview and recent exports history
+        status: verified
+        tags: [export, dialog, history, ui]
+
 # How to use recordings:
 #
 # 1. In tests:

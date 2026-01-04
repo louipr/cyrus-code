@@ -10,7 +10,7 @@ import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react'
 import type { RecordingTask, StepResult } from '../../../recordings/schema';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
 import { TASK_GRAPH_LAYOUT } from '../../constants/graph-layout';
-import { calculateGridPositions, type GridPosition } from '../../utils/calculate-grid-positions';
+import { calculateGridPositions, type GridPosition, type LayoutDirection } from '../../utils/calculate-grid-positions';
 import { EdgeLine } from '../shared/EdgeLine';
 
 /** Execution state for a task */
@@ -68,7 +68,32 @@ interface TaskDependencyGraphProps {
   stepResults?: Map<string, StepResult>;
 }
 
-const PADDING = TASK_GRAPH_LAYOUT.padding ?? 40;
+const PADDING = TASK_GRAPH_LAYOUT.padding ?? 20;
+
+/** Default layout direction for task graphs - vertical flows better for sequential tasks */
+const LAYOUT_DIRECTION: LayoutDirection = 'vertical';
+
+/**
+ * Zoom constraints based on accessibility research:
+ * - Base font: 12px in nodes (WCAG minimum for body text)
+ * - Minimum readable: ~10px (WCAG guidance)
+ * - Therefore: MIN_SCALE = 10/12 ≈ 0.83
+ *
+ * At 85% zoom: 12px × 0.85 = 10.2px (acceptable)
+ * At 100% zoom: 12px (comfortable, WCAG compliant)
+ *
+ * Rather than shrinking to fit all content, we:
+ * 1. Start at 100% zoom
+ * 2. Allow user to pan/scroll to see more
+ * 3. Center on selected node
+ */
+const MIN_SCALE = 0.85;
+
+/** Maximum scale - don't over-enlarge */
+const MAX_SCALE = 1.2;
+
+/** Default scale - start at readable size */
+const DEFAULT_SCALE = 1.0;
 
 /**
  * Calculate topological levels for DAG layout.
@@ -108,7 +133,8 @@ function calculateTaskPositions(tasks: RecordingTask[]): Map<string, GridPositio
     tasks,
     (task) => levels.get(task.id) ?? 0,
     (task) => task.id,
-    TASK_GRAPH_LAYOUT
+    TASK_GRAPH_LAYOUT,
+    LAYOUT_DIRECTION
   );
 }
 
@@ -204,9 +230,12 @@ export function TaskDependencyGraph({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  const { transform, handlers, zoomIn, zoomOut, reset, fitToView } = useCanvasTransform({
+  const { transform, handlers, zoomIn, zoomOut, reset, fitToView, setTransform } = useCanvasTransform({
     initialX: PADDING,
     initialY: PADDING,
+    initialScale: DEFAULT_SCALE,
+    minScale: MIN_SCALE,
+    maxScale: MAX_SCALE,
   });
 
   const positions = useMemo(() => calculateTaskPositions(tasks), [tasks]);
@@ -240,12 +269,38 @@ export function TaskDependencyGraph({
     return () => observer.disconnect();
   }, []);
 
-  // Auto-fit on mount and when tasks change
+  // Center view horizontally when recording changes (don't auto-fit - keep readable)
   useEffect(() => {
-    if (containerSize.width > 0 && containerSize.height > 0 && tasks.length > 0) {
-      fitToView(bounds, containerSize);
+    if (tasks.length > 0 && containerSize.width > 0) {
+      // Calculate content width to center horizontally
+      const contentWidth = bounds.width * DEFAULT_SCALE;
+      const centerX = Math.max(PADDING, (containerSize.width - contentWidth) / 2);
+
+      setTransform({
+        x: centerX,
+        y: PADDING,
+        scale: DEFAULT_SCALE,
+      });
     }
-  }, [tasks.length, containerSize.width, containerSize.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tasks.length, containerSize.width, bounds.width, setTransform]); // Reset when tasks or container size changes
+
+  // Center on selected task when selection changes
+  useEffect(() => {
+    if (!selectedTaskId || containerSize.width === 0) return;
+
+    const pos = positions.get(selectedTaskId);
+    if (!pos) return;
+
+    // Calculate position to center the selected node
+    const centerX = containerSize.width / 2 - (pos.x + pos.width / 2) * transform.scale;
+    const centerY = containerSize.height / 2 - (pos.y + pos.height / 2) * transform.scale;
+
+    setTransform({
+      x: centerX,
+      y: centerY,
+      scale: transform.scale, // Keep current zoom level
+    });
+  }, [selectedTaskId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFitAll = useCallback(() => {
     if (containerSize.width > 0 && containerSize.height > 0) {
@@ -281,7 +336,7 @@ export function TaskDependencyGraph({
         onWheel={handlers.handleWheel}
       >
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
-          {/* Render edges */}
+          {/* Render edges - vertical layout: connect bottom to top */}
           {tasks.map((task) =>
             task.depends?.map((depId) => {
               const fromPos = positions.get(depId);
@@ -290,10 +345,10 @@ export function TaskDependencyGraph({
               return (
                 <EdgeLine
                   key={`${depId}-${task.id}`}
-                  x1={fromPos.x + fromPos.width}
-                  y1={fromPos.y + fromPos.height / 2}
-                  x2={toPos.x}
-                  y2={toPos.y + toPos.height / 2}
+                  x1={fromPos.x + fromPos.width / 2}
+                  y1={fromPos.y + fromPos.height}
+                  x2={toPos.x + toPos.width / 2}
+                  y2={toPos.y}
                   color="#4fc1ff"
                   opacity={0.6}
                 />
@@ -349,12 +404,16 @@ interface TaskNodeProps {
 }
 
 function TaskNode({ task, position, isSelected, executionState, onClick }: TaskNodeProps) {
-  const lines = wrapText(task.name, 22);
+  const lines = wrapText(task.name, 24);
   const stateColors = getTaskStateColors(executionState);
 
   // Override stroke if selected
   const strokeColor = isSelected ? '#4fc1ff' : stateColors.stroke;
   const strokeWidth = isSelected || executionState !== 'pending' ? 2 : 1;
+
+  // Calculate vertical centering for text
+  const totalTextHeight = lines.length * 14 + 10; // line height (14px for 12px font) + step count
+  const textStartY = position.y + (position.height - totalTextHeight) / 2 + 13;
 
   return (
     <g
@@ -368,15 +427,15 @@ function TaskNode({ task, position, isSelected, executionState, onClick }: TaskN
       {/* Glow effect for running state */}
       {executionState === 'running' && (
         <rect
-          x={position.x - 4}
-          y={position.y - 4}
-          width={position.width + 8}
-          height={position.height + 8}
+          x={position.x - 3}
+          y={position.y - 3}
+          width={position.width + 6}
+          height={position.height + 6}
           fill="none"
           stroke="#4fc1ff"
           strokeWidth={2}
           strokeOpacity={0.3}
-          rx={10}
+          rx={8}
         >
           <animate
             attributeName="stroke-opacity"
@@ -394,13 +453,13 @@ function TaskNode({ task, position, isSelected, executionState, onClick }: TaskN
         fill={stateColors.fill}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
-        rx={6}
+        rx={5}
       />
       {/* State indicator icon */}
       {executionState !== 'pending' && (
         <text
-          x={position.x + 10}
-          y={position.y + 14}
+          x={position.x + 8}
+          y={position.y + 15}
           fill={stateColors.stroke}
           fontSize={12}
         >
@@ -411,7 +470,7 @@ function TaskNode({ task, position, isSelected, executionState, onClick }: TaskN
         <text
           key={i}
           x={position.x + position.width / 2}
-          y={position.y + 18 + i * 14}
+          y={textStartY + i * 14}
           textAnchor="middle"
           fill="#ffffff"
           fontSize={12}
@@ -422,9 +481,9 @@ function TaskNode({ task, position, isSelected, executionState, onClick }: TaskN
       ))}
       <text
         x={position.x + position.width / 2}
-        y={position.y + position.height - 8}
+        y={position.y + position.height - 6}
         textAnchor="middle"
-        fill="#808080"
+        fill="#707070"
         fontSize={10}
       >
         {task.steps.length} step{task.steps.length !== 1 ? 's' : ''}
@@ -469,8 +528,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   zoomLabel: {
     color: '#888',
-    fontSize: '11px',
-    minWidth: '36px',
+    fontSize: '12px',
+    minWidth: '40px',
     textAlign: 'center',
   },
   legend: {
@@ -480,7 +539,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '4px 8px',
     backgroundColor: 'rgba(37, 37, 38, 0.9)',
     borderRadius: '4px',
-    fontSize: '11px',
+    fontSize: '12px',
     color: '#888',
   },
   legendLabel: {

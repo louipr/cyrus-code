@@ -2,14 +2,16 @@
  * Draw.io Webview Preload Script
  *
  * This preload script runs before Draw.io loads in the webview.
- * In standalone mode (non-embed), we simply watch for Draw.io's
- * editor to become available and can optionally hook into save events.
+ * Provides the `electron.request` API that Draw.io's ElectronApp.js expects,
+ * enabling native File > Open, File > Save, and File > Export functionality.
  *
  * Supports:
+ * - electron.request API for Draw.io native integration
  * - Ready detection (notifies when Draw.io editor is loaded)
  * - Export to PNG (returns base64-encoded image data)
  *
  * @see https://www.electronjs.org/docs/latest/api/webview-tag#preload
+ * @see assets/drawio/src/main/webapp/js/diagramly/ElectronApp.js
  */
 
 import { ipcRenderer, contextBridge } from 'electron';
@@ -186,12 +188,66 @@ async function exportToPng(): Promise<string | null> {
 }
 
 /**
- * Inject a script into the page context to hook into App.main.
- * This is necessary because context isolation separates preload and page contexts.
+ * Send an electron.request to the main process.
+ * This is called from the injected script via postMessage.
  */
-function injectHookScript(): void {
+function handleElectronRequest(msg: any, requestId: number): void {
+  ipcRenderer.sendToHost('drawio:electron-request', { requestId, msg });
+}
+
+/**
+ * Inject a script into the page context that provides window.electron.
+ * This is necessary because context isolation separates preload and page contexts.
+ * Draw.io's ElectronApp.js expects window.electron.request to be available.
+ */
+function injectElectronBridge(): void {
+  // Set up message listener for requests from the injected script
+  (window as any).addEventListener('message', (event: any) => {
+    if (event.data?.type === 'cyrus-electron-request') {
+      handleElectronRequest(event.data.msg, event.data.requestId);
+    }
+  });
+
+  // Listen for responses from the host (via ipc-message)
+  // The host will send these back via webview.send
+  ipcRenderer.on('drawio:electron-response', (_event, { requestId, data, error }) => {
+    // Forward to the page context via postMessage
+    (window as any).postMessage({ type: 'cyrus-electron-response', requestId, data, error }, '*');
+  });
+
   const script = `
     (function() {
+      // Request ID counter and pending requests map
+      var requestIdCounter = 0;
+      var pendingRequests = {};
+
+      // Listen for responses from preload script
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'cyrus-electron-response') {
+          var pending = pendingRequests[event.data.requestId];
+          if (pending) {
+            delete pendingRequests[event.data.requestId];
+            if (event.data.error) {
+              if (pending.error) pending.error(event.data.error);
+            } else {
+              if (pending.success) pending.success(event.data.data);
+            }
+          }
+        }
+      });
+
+      // Create the electron object that Draw.io expects
+      window.electron = {
+        request: function(msg, success, error) {
+          var requestId = ++requestIdCounter;
+          pendingRequests[requestId] = { success: success, error: error };
+          window.postMessage({ type: 'cyrus-electron-request', requestId: requestId, msg: msg }, '*');
+        }
+      };
+
+      console.log('[DrawioBridge] Exposed window.electron.request API');
+
+      // Also hook into App.main to capture EditorUi instance
       var hookInterval = setInterval(function() {
         if (window.App && typeof window.App.main === 'function' && !window.__cyrusHooked) {
           window.__cyrusHooked = true;
@@ -225,7 +281,7 @@ function injectHookScript(): void {
   scriptElement.textContent = script;
   (document.head || document.documentElement).appendChild(scriptElement);
   scriptElement.remove();
-  console.log('[DrawioPreload] Injected hook script into page context');
+  console.log('[DrawioPreload] Injected electron bridge and hook script');
 }
 
 /**
@@ -234,8 +290,8 @@ function injectHookScript(): void {
  * We watch for the editor to be ready and notify the host.
  */
 function setupBridge(): void {
-  // Inject hook script into page context to capture EditorUi instance
-  injectHookScript();
+  // Inject electron bridge and hook script into page context
+  injectElectronBridge();
 
   // Poll for Draw.io editor to be ready
   const checkReady = setInterval(() => {

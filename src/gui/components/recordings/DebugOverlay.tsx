@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import type { DebugSessionHookState, DebugSessionCommands } from '../../hooks/useDebugSession';
-import type { Recording } from '../../../recordings/schema';
+import type { Recording, RecordingStep } from '../../../recordings/schema';
 
 interface DebugOverlayProps {
   state: DebugSessionHookState;
@@ -156,16 +156,67 @@ export function DebugOverlay({
           <span style={styles.infoValue}>{recording?.name || 'Unknown'}</span>
         </div>
 
-        {/* Status */}
+        {/* Status with progress */}
         <div style={styles.statusRow}>
           <span style={getStatusDotStyle(state.state)} />
           <span style={styles.statusText}>{getStatusLabel(state.state)}</span>
-          {state.position && (
+          {state.position && recording && (
             <span style={styles.positionText}>
-              Task {state.position.taskIndex + 1}, Step {state.position.stepIndex + 1}
+              {state.position.taskIndex + 1}/{recording.tasks.length}
             </span>
           )}
         </div>
+
+        {/* Task progress bar */}
+        {recording && recording.tasks.length > 0 && (
+          <div style={styles.progressSection}>
+            <div style={styles.progressBar}>
+              {recording.tasks.map((task, idx) => {
+                const isComplete = state.position ? idx < state.position.taskIndex : false;
+                const isCurrent = state.position ? idx === state.position.taskIndex : false;
+                const hasFailed = Array.from(state.stepResults.entries()).some(
+                  ([key, result]) => key.startsWith(`${idx}:`) && !result.success
+                );
+                return (
+                  <div
+                    key={task.id}
+                    style={{
+                      ...styles.progressSegment,
+                      backgroundColor: hasFailed
+                        ? '#f48771'
+                        : isComplete
+                          ? '#89d185'
+                          : isCurrent
+                            ? '#4fc1ff'
+                            : '#3c3c3c',
+                      opacity: isCurrent ? 1 : 0.7,
+                    }}
+                    title={task.name}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Current task/step details */}
+        {state.position && recording && (
+          <div style={styles.currentStepSection}>
+            <div style={styles.taskNameRow}>
+              <span style={styles.currentTaskName}>
+                {recording.tasks[state.position.taskIndex]?.name || `Task ${state.position.taskIndex + 1}`}
+              </span>
+            </div>
+            <div style={styles.stepDetailRow}>
+              <span style={styles.stepBadge}>
+                Step {state.position.stepIndex + 1}/{recording.tasks[state.position.taskIndex]?.steps.length || '?'}
+              </span>
+              <span style={styles.stepDescription}>
+                {formatStepDescription(recording.tasks[state.position.taskIndex]?.steps[state.position.stepIndex])}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Control buttons */}
         <div style={styles.buttons}>
@@ -274,6 +325,57 @@ function getStatusDotStyle(sessionState: string): React.CSSProperties {
   };
 }
 
+/**
+ * Format a step into a concise description.
+ * Shows action type and key details (selector, text, etc.)
+ */
+function formatStepDescription(step: RecordingStep | undefined): string {
+  if (!step) return 'Unknown step';
+
+  switch (step.action) {
+    case 'click':
+      return `Click ${truncateSelector(step.selector)}`;
+    case 'type':
+      return `Type "${truncate(step.text || '', 20)}"`;
+    case 'wait-for':
+      return `Wait for ${truncateSelector(step.selector)}`;
+    case 'wait-hidden':
+      return `Wait until hidden: ${truncateSelector(step.selector)}`;
+    case 'evaluate':
+      return 'Execute JavaScript';
+    case 'poll':
+      return 'Poll for condition';
+    case 'extract':
+      return `Extract ${step.variable || 'value'}`;
+    case 'assert':
+      return `Assert ${truncateSelector(step.selector)}`;
+    case 'screenshot':
+      return 'Capture screenshot';
+    case 'hover':
+      return `Hover ${truncateSelector(step.selector)}`;
+    case 'keyboard':
+      return `Press ${step.key || 'key'}`;
+    default:
+      return step.action;
+  }
+}
+
+function truncateSelector(selector: string | undefined): string {
+  if (!selector) return '(no selector)';
+  // Extract meaningful part from selector
+  const match = selector.match(/text=['"]([^'"]+)['"]/);
+  if (match) return `"${truncate(match[1], 20)}"`;
+  // For data-testid selectors, show the testid
+  const testIdMatch = selector.match(/data-testid=['"]([^'"]+)['"]/);
+  if (testIdMatch) return `[${truncate(testIdMatch[1], 20)}]`;
+  return truncate(selector, 25);
+}
+
+function truncate(str: string, maxLen: number): string {
+  if (str.length <= maxLen) return str;
+  return str.slice(0, maxLen - 1) + '…';
+}
+
 const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
@@ -353,6 +455,56 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     color: '#888888',
     fontFamily: 'monospace',
+  },
+  progressSection: {
+    padding: '8px 14px',
+    borderBottom: '1px solid #3c3c3c',
+  },
+  progressBar: {
+    display: 'flex',
+    gap: '3px',
+    height: '6px',
+    borderRadius: '3px',
+    overflow: 'hidden',
+  },
+  progressSegment: {
+    flex: 1,
+    borderRadius: '2px',
+    transition: 'background-color 0.2s ease',
+  },
+  currentStepSection: {
+    padding: '10px 14px',
+    borderBottom: '1px solid #3c3c3c',
+    backgroundColor: '#252526',
+  },
+  taskNameRow: {
+    marginBottom: '6px',
+  },
+  currentTaskName: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#4fc1ff',
+  },
+  stepDetailRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  stepBadge: {
+    fontSize: '10px',
+    color: '#888',
+    backgroundColor: '#3c3c3c',
+    padding: '2px 6px',
+    borderRadius: '3px',
+    fontFamily: 'monospace',
+    flexShrink: 0,
+  },
+  stepDescription: {
+    fontSize: '11px',
+    color: '#cccccc',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   buttons: {
     display: 'flex',

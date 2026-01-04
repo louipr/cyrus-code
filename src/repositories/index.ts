@@ -10,10 +10,15 @@ export {
   getDatabase,
   closeDatabase,
   initMemoryDatabase,
-  clearAllData,
   type DatabaseType,
 } from './persistence.js';
 
 // Repository classes
 export { SqliteSymbolRepository } from './symbol-repository.js';
 export { JsonHelpRepository } from './help-repository.js';
+export {
+  SqliteExportHistoryRepository,
+  type ExportHistoryEntry,
+  type ExportHistoryRecord,
+  type ExportHistoryRepository,
+} from './export-history-repository.js';

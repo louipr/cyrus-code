@@ -30,8 +30,12 @@ import {
   type DebugEvent,
 } from '../src/recordings/step-executor/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
-import { SqliteSymbolRepository } from '../src/repositories/symbol-repository.js';
-import { getDatabase } from '../src/repositories/persistence.js';
+import {
+  SqliteSymbolRepository,
+  SqliteExportHistoryRepository,
+  type ExportHistoryEntry,
+  getDatabase,
+} from '../src/repositories/index.js';
 
 export function registerIpcHandlers(facade: Architecture): void {
   // ==========================================================================
@@ -226,6 +230,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Shell Operations (File/Folder Actions)
   // ==========================================================================
 
+  // Export history repository - lazy initialized
+  const getExportHistoryRepo = () => new SqliteExportHistoryRepository(getDatabase());
+
   // Open a file with the system's default application
   ipcMain.handle('shell:openPath', async (_event, filePath: string) => {
     try {
@@ -257,6 +264,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Save file with dialog - for exporting PNGs, etc.
+  // Automatically records to export history
   ipcMain.handle(
     'shell:saveFile',
     async (
@@ -266,6 +274,8 @@ export function registerIpcHandlers(facade: Architecture): void {
         defaultName?: string;
         filters?: { name: string; extensions: string[] }[];
         title?: string;
+        source?: 'ui' | 'test' | 'api'; // for export history tracking
+        sourcePath?: string; // original source file path
       }
     ) => {
       const focusedWindow = BrowserWindow.getFocusedWindow();
@@ -287,6 +297,18 @@ export function registerIpcHandlers(facade: Architecture): void {
         // Decode base64 and write
         const buffer = Buffer.from(options.data, 'base64');
         fs.writeFileSync(result.filePath, buffer);
+
+        // Auto-record to export history
+        const exportEntry: ExportHistoryEntry = {
+          filePath: result.filePath,
+          fileName: path.basename(result.filePath),
+          fileSize: buffer.length,
+          source: options.source ?? 'ui',
+          sourcePath: options.sourcePath,
+        };
+        const historyRepo = getExportHistoryRepo();
+        historyRepo.add(exportEntry);
+
         return {
           success: true,
           data: {
@@ -302,6 +324,137 @@ export function registerIpcHandlers(facade: Architecture): void {
       }
     }
   );
+
+  // Show save dialog and return path only (for Draw.io native integration)
+  ipcMain.handle(
+    'shell:showSaveDialog',
+    async (
+      _event,
+      options: {
+        defaultPath?: string;
+        filters?: { name: string; extensions: string[] }[];
+        title?: string;
+      }
+    ) => {
+      const focusedWindow = BrowserWindow.getFocusedWindow();
+      const dialogOptions: Electron.SaveDialogOptions = {
+        title: options.title ?? 'Save File',
+        buttonLabel: 'Save',
+        filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
+      };
+      if (options.defaultPath) {
+        dialogOptions.defaultPath = options.defaultPath;
+      }
+      const result = await dialog.showSaveDialog(focusedWindow ?? (undefined as never), dialogOptions);
+
+      if (result.canceled || !result.filePath) {
+        return { success: true, data: null };
+      }
+
+      return { success: true, data: result.filePath };
+    }
+  );
+
+  // Write file to a specific path (for Draw.io native integration)
+  // Records to export history for image exports
+  ipcMain.handle(
+    'shell:writeFile',
+    async (
+      _event,
+      options: {
+        path: string;
+        data: string;
+        encoding?: 'utf-8' | 'base64';
+        source?: 'ui' | 'test' | 'api';
+        sourcePath?: string;
+      }
+    ) => {
+      try {
+        const encoding = options.encoding ?? 'utf-8';
+        const buffer =
+          encoding === 'base64'
+            ? Buffer.from(options.data, 'base64')
+            : Buffer.from(options.data, 'utf-8');
+
+        fs.writeFileSync(options.path, buffer);
+
+        // Auto-record to export history for image files
+        const ext = path.extname(options.path).toLowerCase();
+        if (['.png', '.jpg', '.jpeg', '.svg', '.pdf'].includes(ext)) {
+          const exportEntry: ExportHistoryEntry = {
+            filePath: options.path,
+            fileName: path.basename(options.path),
+            fileSize: buffer.length,
+            source: options.source ?? 'ui',
+            sourcePath: options.sourcePath,
+          };
+          const historyRepo = getExportHistoryRepo();
+          historyRepo.add(exportEntry);
+        }
+
+        return { success: true, data: { size: buffer.length } };
+      } catch (error) {
+        return {
+          success: false,
+          error: { message: extractErrorMessage(error) },
+        };
+      }
+    }
+  );
+
+  // ==========================================================================
+  // Export History Operations
+  // ==========================================================================
+
+  ipcMain.handle('exportHistory:getRecent', async (_event, limit?: number) => {
+    try {
+      const repo = getExportHistoryRepo();
+      return { success: true, data: repo.getRecent(limit ?? 10) };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('exportHistory:get', async (_event, id: number) => {
+    try {
+      const repo = getExportHistoryRepo();
+      return { success: true, data: repo.get(id) };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('exportHistory:delete', async (_event, id: number) => {
+    try {
+      const repo = getExportHistoryRepo();
+      const deleted = repo.delete(id);
+      return { success: true, data: deleted };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
+
+  ipcMain.handle('exportHistory:clear', async () => {
+    try {
+      const repo = getExportHistoryRepo();
+      repo.clear();
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: extractErrorMessage(error) },
+      };
+    }
+  });
 
   // ==========================================================================
   // Help Operations

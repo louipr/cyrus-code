@@ -42,6 +42,7 @@ import type {
   DebugSessionSnapshot,
   DebugEvent,
 } from '../src/recordings/step-executor/index.js';
+import type { ExportHistoryRecord } from '../src/repositories/index.js';
 
 /**
  * Options for running a recording.
@@ -128,7 +129,28 @@ export interface CyrusAPI {
       defaultName?: string;
       filters?: { name: string; extensions: string[] }[];
       title?: string;
+      source?: 'ui' | 'test' | 'api';
+      sourcePath?: string;
     }) => Promise<ApiResponse<{ filePath: string; size: number } | null>>;
+    showSaveDialog: (options: {
+      defaultPath?: string;
+      filters?: { name: string; extensions: string[] }[];
+      title?: string;
+    }) => Promise<ApiResponse<string | null>>;
+    writeFile: (options: {
+      path: string;
+      data: string;
+      encoding?: 'utf-8' | 'base64';
+      source?: 'ui' | 'test' | 'api';
+      sourcePath?: string;
+    }) => Promise<ApiResponse<{ size: number }>>;
+  };
+  // Export history operations
+  exportHistory: {
+    getRecent: (limit?: number) => Promise<ApiResponse<ExportHistoryRecord[]>>;
+    get: (id: number) => Promise<ApiResponse<ExportHistoryRecord | null>>;
+    delete: (id: number) => Promise<ApiResponse<boolean>>;
+    clear: () => Promise<ApiResponse<void>>;
   };
   // Help operations
   help: {
@@ -156,6 +178,7 @@ export interface CyrusAPI {
     saveAs: (xml: string) => Promise<ApiResponse<string | null>>;
     onNew: (callback: () => void) => void;
     onOpen: (callback: (path: string, xml: string) => void) => void;
+    onExportPng: (callback: () => void) => void;
   };
   // Recording operations
   recordings: {
@@ -235,6 +258,14 @@ const cyrusAPI: CyrusAPI = {
     openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
     showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
     saveFile: (options) => ipcRenderer.invoke('shell:saveFile', options),
+    showSaveDialog: (options) => ipcRenderer.invoke('shell:showSaveDialog', options),
+    writeFile: (options) => ipcRenderer.invoke('shell:writeFile', options),
+  },
+  exportHistory: {
+    getRecent: (limit) => ipcRenderer.invoke('exportHistory:getRecent', limit),
+    get: (id) => ipcRenderer.invoke('exportHistory:get', id),
+    delete: (id) => ipcRenderer.invoke('exportHistory:delete', id),
+    clear: () => ipcRenderer.invoke('exportHistory:clear'),
   },
   help: {
     getCategories: () => ipcRenderer.invoke('help:getCategories'),
@@ -273,6 +304,9 @@ const cyrusAPI: CyrusAPI = {
     },
     onOpen: (callback) => {
       ipcRenderer.on('diagram:open-file', (_event, path: string, xml: string) => callback(path, xml));
+    },
+    onExportPng: (callback) => {
+      ipcRenderer.on('diagram:export-png', callback);
     },
   },
   recordings: {

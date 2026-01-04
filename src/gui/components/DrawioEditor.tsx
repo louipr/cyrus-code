@@ -13,7 +13,7 @@
  * @see electron/drawio-preload.ts
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { apiClient } from '../api-client';
 
 /**
@@ -21,11 +21,28 @@ import { apiClient } from '../api-client';
  */
 const DRAWIO_CHANNEL = 'drawio:message';
 
+/**
+ * IPC channel for electron.request API - must match drawio-preload.ts
+ */
+const ELECTRON_REQUEST_CHANNEL = 'drawio:electron-request';
+
 interface DrawioEditorProps {
   /** File path to load (served via local HTTP server) */
   filePath?: string;
   /** Callback when diagram is saved (reserved for future use) */
   onSave?: (xml: string) => void;
+}
+
+/**
+ * Methods exposed via ref for external control
+ */
+export interface DrawioEditorRef {
+  /** Export the current diagram as PNG data URL */
+  exportPng: () => Promise<string | null>;
+  /** Open Draw.io's native export dialog */
+  openExportDialog: () => Promise<void>;
+  /** Check if editor is ready */
+  isReady: () => boolean;
 }
 
 interface DrawioMessage {
@@ -41,6 +58,7 @@ interface WebviewElement extends HTMLElement {
   src: string;
   preload: string;
   send(channel: string, ...args: unknown[]): void;
+  executeJavaScript(code: string): Promise<unknown>;
 }
 
 /**
@@ -51,10 +69,8 @@ interface IpcMessageEvent {
   args: unknown[];
 }
 
-export function DrawioEditor({
-  filePath,
-  onSave,
-}: DrawioEditorProps): React.ReactElement {
+export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
+  function DrawioEditor({ filePath, onSave }, ref): React.ReactElement {
   const [webviewElement, setWebviewElement] = useState<WebviewElement | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +78,111 @@ export function DrawioEditor({
   const [drawioUrl, setDrawioUrl] = useState<string | null>(null);
   const [baseDrawioUrl, setBaseDrawioUrl] = useState<string | null>(null);
   const [preloadPath, setPreloadPath] = useState<string | null>(null);
+
+  // Expose methods via ref for external control
+  useImperativeHandle(ref, () => ({
+    exportPng: async (): Promise<string | null> => {
+      if (!webviewElement || !isReady) {
+        console.warn('[DrawioEditor] Cannot export: editor not ready');
+        return null;
+      }
+
+      try {
+        // Execute JavaScript in the webview to export as PNG
+        // Draw.io's EditorUi is captured by our preload script in __cyrusEditorUi
+        const dataUrl = await webviewElement.executeJavaScript(`
+          (async function() {
+            const editorUi = window.__cyrusEditorUi || window.editorUi || window.DRAWIO_UI;
+            if (!editorUi) {
+              throw new Error('Draw.io editor not found');
+            }
+
+            return new Promise((resolve, reject) => {
+              try {
+                const graph = editorUi.editor.graph;
+                if (!graph) {
+                  reject(new Error('No graph found in editor'));
+                  return;
+                }
+
+                // Check if exportImage is available, fall back to exportToCanvas
+                if (typeof editorUi.exportImage !== 'function') {
+                  if (typeof editorUi.editor.exportToCanvas === 'function') {
+                    editorUi.editor.exportToCanvas(
+                      function(canvas) {
+                        try {
+                          resolve(canvas.toDataURL('image/png'));
+                        } catch (e) {
+                          reject(e);
+                        }
+                      },
+                      null, null, '#ffffff',
+                      function(e) { reject(e || new Error('Export failed')); },
+                      null, true, 1, false, false, null, null, 10, true
+                    );
+                  } else {
+                    reject(new Error('No export method available'));
+                  }
+                  return;
+                }
+
+                // Use Draw.io's built-in PNG export
+                editorUi.exportImage(
+                  1, '#ffffff', true,
+                  function(dataUrl) { resolve(dataUrl); },
+                  function(err) { reject(err || new Error('Export failed')); },
+                  'png'
+                );
+              } catch (err) {
+                reject(err);
+              }
+            });
+          })()
+        `);
+
+        console.log('[DrawioEditor] PNG export successful');
+        return dataUrl as string;
+      } catch (err) {
+        console.error('[DrawioEditor] PNG export failed:', err);
+        return null;
+      }
+    },
+    openExportDialog: async (): Promise<void> => {
+      if (!webviewElement || !isReady) {
+        console.warn('[DrawioEditor] Cannot open export dialog: editor not ready');
+        return;
+      }
+
+      try {
+        // Trigger Draw.io's native export dialog via the actions system
+        await webviewElement.executeJavaScript(`
+          (function() {
+            const editorUi = window.__cyrusEditorUi || window.editorUi || window.DRAWIO_UI;
+            if (!editorUi) {
+              throw new Error('Draw.io editor not found');
+            }
+
+            // Draw.io has an actions system - trigger the export action
+            // 'exportPng' opens the PNG export dialog with options
+            if (editorUi.actions && editorUi.actions.get('exportPng')) {
+              editorUi.actions.get('exportPng').funct();
+            } else if (editorUi.showExportDialog) {
+              // Fallback: some versions have showExportDialog directly
+              editorUi.showExportDialog('png');
+            } else {
+              // Last resort: use saveLocalFile which triggers the save dialog
+              throw new Error('Export dialog not available - use File menu instead');
+            }
+          })()
+        `);
+        console.log('[DrawioEditor] Export dialog opened');
+      } catch (err) {
+        console.error('[DrawioEditor] Failed to open export dialog:', err);
+        throw err;
+      }
+    },
+    isReady: () => isReady,
+  }), [webviewElement, isReady]);
 
   // Fetch Draw.io URL and preload path from main process
   useEffect(() => {
@@ -143,11 +264,107 @@ export function DrawioEditor({
     [onSave]
   );
 
+  // Handle electron.request calls from Draw.io
+  const handleElectronRequest = useCallback(
+    async (requestId: number, msg: { action: string; [key: string]: unknown }) => {
+      console.log('[DrawioEditor] Handling electron.request:', msg.action, msg);
+
+      try {
+        let responseData: unknown = null;
+
+        switch (msg.action) {
+          case 'getDocumentsFolder':
+            // Return a reasonable default - Draw.io uses this for default save location
+            responseData = '/tmp';
+            break;
+
+          case 'dirname': {
+            // Extract directory from path
+            const pathStr = msg.path as string;
+            const lastSlash = pathStr.lastIndexOf('/');
+            responseData = lastSlash > 0 ? pathStr.substring(0, lastSlash) : '/';
+            break;
+          }
+
+          case 'showSaveDialog': {
+            // Show save dialog and return the chosen path
+            const defaultPath = msg.defaultPath as string || '/tmp/diagram.png';
+
+            const result = await apiClient.shell.showSaveDialog({
+              defaultPath: defaultPath,
+              filters: msg.filters as { name: string; extensions: string[] }[] | undefined,
+              title: 'Export Diagram',
+            });
+
+            if (result.success && result.data) {
+              responseData = result.data;
+            } else {
+              responseData = null; // User cancelled
+            }
+            break;
+          }
+
+          case 'showOpenDialog': {
+            // Use dialog API for opening files
+            const result = await apiClient.diagram.open();
+            if (result.success && result.data) {
+              responseData = [result.data.path];
+            } else {
+              responseData = undefined; // User cancelled
+            }
+            break;
+          }
+
+          case 'writeFile': {
+            // Write file data to the specified path
+            const filePath = msg.path as string;
+            const data = msg.data as string;
+            const encoding = (msg.enc as string) === 'base64' ? 'base64' : 'utf-8';
+
+            const result = await apiClient.shell.writeFile({
+              path: filePath,
+              data: data,
+              encoding: encoding,
+              source: 'ui',
+            });
+
+            if (!result.success) {
+              throw new Error(result.error?.message || 'Failed to write file');
+            }
+            responseData = true;
+            break;
+          }
+
+          case 'readFile': {
+            // For now, return error - files should be loaded via URL
+            throw new Error('readFile not implemented - use URL loading');
+          }
+
+          default:
+            console.warn('[DrawioEditor] Unhandled electron.request action:', msg.action);
+            throw new Error(`Unknown action: ${msg.action}`);
+        }
+
+        // Send success response
+        webviewElement?.send('drawio:electron-response', { requestId, data: responseData });
+      } catch (error) {
+        console.error('[DrawioEditor] electron.request error:', error);
+        // Send error response
+        webviewElement?.send('drawio:electron-response', {
+          requestId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+    [webviewElement]
+  );
+
   // Set up webview event handlers
   useEffect(() => {
     if (!webviewElement) return;
 
     const handleIpcMessage = (evt: IpcMessageEvent) => {
+      // Handle drawio:message channel (ready, save events)
       if (evt.channel === DRAWIO_CHANNEL && evt.args.length > 0) {
         const data = evt.args[0];
         if (typeof data === 'string') {
@@ -158,6 +375,12 @@ export function DrawioEditor({
             console.error('[DrawioEditor] Failed to parse message:', data);
           }
         }
+      }
+
+      // Handle drawio:electron-request channel (native Draw.io API)
+      if (evt.channel === ELECTRON_REQUEST_CHANNEL && evt.args.length > 0) {
+        const { requestId, msg } = evt.args[0] as { requestId: number; msg: { action: string } };
+        handleElectronRequest(requestId, msg);
       }
     };
 
@@ -175,7 +398,7 @@ export function DrawioEditor({
       webviewElement.removeEventListener('ipc-message', handleIpcMessage as unknown as EventListener);
       webviewElement.removeEventListener('did-fail-load', handleDidFailLoad as unknown as EventListener);
     };
-  }, [webviewElement, handleDrawioMessage]);
+  }, [webviewElement, handleDrawioMessage, handleElectronRequest]);
 
   // Callback ref to capture the webview element
   const webviewRefCallback = useCallback((node: HTMLElement | null) => {
@@ -222,7 +445,7 @@ export function DrawioEditor({
       )}
     </div>
   );
-}
+});
 
 const styles: Record<string, React.CSSProperties> = {
   container: {

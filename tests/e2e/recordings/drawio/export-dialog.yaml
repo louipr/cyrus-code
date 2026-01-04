@@ -1,0 +1,408 @@
+# Draw.io Export Dialog Recording
+#
+# Tests Draw.io's native export dialog UI including:
+# - Opening the export dialog via our Export button
+# - Verifying the native Image export dialog appears
+# - Testing export options (zoom, background, etc.)
+# - Closing the dialog
+
+name: Draw.io Export Dialog
+description: |
+  Test Draw.io's native export dialog. Verifies the Export button
+  triggers Draw.io's built-in Image export dialog with all options.
+
+metadata:
+  status: verified
+  reliability: high
+  tags: [export, dialog, drawio, native]
+  author: AI exploration session
+  created: "2025-01-03"
+  modified: "2025-01-03"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+    - Main UI is visible
+  waitFor: "[data-testid='search-bar']"
+
+tasks:
+  - id: open-diagram
+    name: Open diagram view
+    steps:
+      - action: click
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+        why: Click the Diagram button to switch to diagram view.
+
+      - action: wait-for
+        selector: "[data-testid='diagram-webview']"
+        timeout: 10000
+        why: Wait for Draw.io webview to appear.
+
+  - id: wait-for-drawio
+    name: Wait for Draw.io editor to be ready
+    depends: [open-diagram]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Poll for Draw.io readiness
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            try {
+              const ready = await webview.executeJavaScript(`
+                (function() {
+                  const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+                  return !!(ui && ui.editor && ui.editor.graph);
+                })()
+              `);
+              if (ready) {
+                return { ready: true, attempts: i + 1 };
+              }
+            } catch (e) {
+              // Continue polling
+            }
+          }
+          throw new Error('Draw.io editor not ready after 15 seconds');
+        timeout: 20000
+        why: Wait for Draw.io's editor API to be available before export.
+
+  - id: wait-for-editor-ready
+    name: Wait for editor to be fully ready
+    depends: [wait-for-drawio]
+    steps:
+      - action: evaluate
+        code: |
+          // Wait for the loading indicator to disappear
+          for (let i = 0; i < 50; i++) {
+            await new Promise(r => setTimeout(r, 200));
+            const loading = document.querySelector('[data-testid="diagram-loading"]');
+            if (!loading) {
+              return { ready: true, attempts: i + 1 };
+            }
+          }
+          throw new Error('Editor loading indicator did not disappear after 10 seconds');
+        timeout: 15000
+        why: |
+          The React component sets isReady=true when it receives the IPC 'ready' message.
+          Wait for the loading indicator to disappear.
+
+  - id: create-test-diagram
+    name: Create test diagram content
+    depends: [wait-for-editor-ready]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (!ui || !ui.editor || !ui.editor.graph) {
+                return { error: 'Editor not ready' };
+              }
+
+              const graph = ui.editor.graph;
+              const model = graph.getModel();
+              const parent = graph.getDefaultParent();
+
+              model.beginUpdate();
+              try {
+                graph.removeCells(graph.getChildCells(parent, true, true));
+
+                const boxStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;';
+                const arrowStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;';
+
+                const box1 = graph.insertVertex(parent, null, 'Component A', 100, 100, 120, 60, boxStyle);
+                const box2 = graph.insertVertex(parent, null, 'Component B', 300, 100, 120, 60, boxStyle);
+                graph.insertEdge(parent, null, 'uses', box1, box2, arrowStyle);
+
+                graph.fit();
+
+                return { success: true, cells: 3 };
+              } catch (e) {
+                return { error: e.message };
+              } finally {
+                model.endUpdate();
+              }
+            })()
+          `);
+
+          if (result.error) throw new Error('Failed to create diagram: ' + result.error);
+          return result;
+        timeout: 10000
+        why: Create a simple test diagram with two components and a connection.
+
+  - id: verify-export-button
+    name: Verify export button exists
+    depends: [create-test-diagram]
+    steps:
+      - action: wait-for
+        selector: "[data-testid='diagram-export-button']"
+        timeout: 5000
+        why: The Export button should be visible in the diagram toolbar.
+
+  - id: trigger-export-dialog
+    name: Trigger PNG export and open native dialog
+    depends: [verify-export-button]
+    steps:
+      - action: evaluate
+        code: |
+          // Trigger Draw.io's native export dialog via the actions system
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          await webview.executeJavaScript(`
+            (function() {
+              const editorUi = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (!editorUi) {
+                throw new Error('Draw.io editor not found');
+              }
+
+              // Trigger the exportPng action which opens the native dialog
+              if (editorUi.actions && editorUi.actions.get('exportPng')) {
+                editorUi.actions.get('exportPng').funct();
+                return { triggered: true };
+              } else {
+                throw new Error('exportPng action not available');
+              }
+            })()
+          `);
+
+          return { dialogTriggered: true };
+        timeout: 10000
+        why: Trigger Draw.io's native export dialog via the exportPng action.
+
+      - action: evaluate
+        code: |
+          // Wait for Draw.io's native export dialog to appear
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Poll for the dialog
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 200));
+
+            const hasDialog = await webview.executeJavaScript(`
+              (function() {
+                // Draw.io's export dialog has class 'geDialog'
+                const dialogs = document.querySelectorAll('.geDialog');
+                for (const dialog of dialogs) {
+                  // Look for "Image" title or export-related content
+                  if (dialog.textContent.includes('Zoom') ||
+                      dialog.textContent.includes('Border Width') ||
+                      dialog.querySelector('input[type="checkbox"]')) {
+                    return true;
+                  }
+                }
+                return false;
+              })()
+            `);
+
+            if (hasDialog) {
+              return { dialogFound: true, attempts: i + 1 };
+            }
+          }
+          throw new Error('Draw.io export dialog did not appear');
+        timeout: 10000
+        why: Wait for Draw.io's native export dialog to appear.
+
+      - action: screenshot
+        returns: tests/e2e/screenshots/export-dialog/01-dialog-opened.png
+        why: Capture screenshot of Draw.io's native export dialog.
+
+  - id: verify-dialog-options
+    name: Verify export dialog has expected options
+    depends: [trigger-export-dialog]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          const dialogInfo = await webview.executeJavaScript(`
+            (function() {
+              const dialogs = document.querySelectorAll('.geDialog');
+              for (const dialog of dialogs) {
+                if (dialog.textContent.includes('Zoom') ||
+                    dialog.textContent.includes('Border Width')) {
+
+                  // Check for expected elements
+                  const hasZoom = dialog.textContent.includes('Zoom');
+                  const hasBorderWidth = dialog.textContent.includes('Border Width');
+                  const hasSize = dialog.textContent.includes('Size');
+                  const hasTransparent = dialog.textContent.includes('Transparent');
+                  const hasAppearance = dialog.textContent.includes('Appearance');
+
+                  // Check for buttons
+                  const buttons = dialog.querySelectorAll('button');
+                  const buttonTexts = Array.from(buttons).map(b => b.textContent);
+                  const hasExportButton = buttonTexts.some(t => t.includes('Export'));
+                  const hasCancelButton = buttonTexts.some(t => t.includes('Cancel'));
+
+                  // Check for checkboxes
+                  const checkboxes = dialog.querySelectorAll('input[type="checkbox"]');
+
+                  return {
+                    found: true,
+                    hasZoom,
+                    hasBorderWidth,
+                    hasSize,
+                    hasTransparent,
+                    hasAppearance,
+                    hasExportButton,
+                    hasCancelButton,
+                    checkboxCount: checkboxes.length,
+                    buttonTexts
+                  };
+                }
+              }
+              return { found: false };
+            })()
+          `);
+
+          if (!dialogInfo.found) {
+            throw new Error('Export dialog not found');
+          }
+
+          return dialogInfo;
+        timeout: 5000
+        why: Verify Draw.io's native export dialog has the expected options.
+
+  - id: click-export
+    name: Click Export button
+    depends: [verify-dialog-options]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Click Export button to start export
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const dialogs = document.querySelectorAll('.geDialog');
+              for (const dialog of dialogs) {
+                const buttons = dialog.querySelectorAll('button');
+                for (const btn of buttons) {
+                  const text = btn.textContent.trim();
+                  // Click Export button (not Cancel)
+                  if (text === 'Export') {
+                    btn.click();
+                    return { clicked: true, buttonText: text };
+                  }
+                }
+              }
+              return { clicked: false };
+            })()
+          `);
+
+          if (!result.clicked) throw new Error('Export button not found');
+          return result;
+        timeout: 5000
+        why: Click Export to proceed with the export.
+
+      - action: screenshot
+        returns: /tmp/export-dialog-after-export-click.png
+        why: Screenshot after clicking Export button.
+
+  - id: wait-for-save-dialog
+    name: Wait for Save As dialog
+    depends: [click-export]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Wait for Save As dialog to appear
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 200));
+            const hasSaveDialog = await webview.executeJavaScript(`
+              (function() {
+                const dialogs = document.querySelectorAll('.geDialog');
+                for (const d of dialogs) {
+                  if (d.textContent.includes('Save as') || d.textContent.includes('Where')) {
+                    return true;
+                  }
+                }
+                return false;
+              })()
+            `);
+            if (hasSaveDialog) return { saveDialogFound: true, attempts: i + 1 };
+          }
+          throw new Error('Save As dialog did not appear');
+        timeout: 10000
+        why: Wait for Draw.io Save As dialog to appear.
+
+      - action: screenshot
+        returns: /tmp/export-dialog-save-as.png
+        why: Screenshot of Save As dialog.
+
+  - id: set-filename-and-save
+    name: Set filename and click Save
+    depends: [wait-for-save-dialog]
+    steps:
+      - action: evaluate
+        code: |
+          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          if (!webview) throw new Error('Webview not found');
+
+          // Set filename and click Save
+          const result = await webview.executeJavaScript(`
+            (function() {
+              const dialogs = document.querySelectorAll('.geDialog');
+              for (const dialog of dialogs) {
+                // Find the filename input
+                const inputs = dialog.querySelectorAll('input[type="text"]');
+                for (const input of inputs) {
+                  if (input.value && input.value.includes('.png')) {
+                    // Set our filename
+                    input.value = 'test-export-from-recording.png';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    break;
+                  }
+                }
+
+                // Find and click Save button
+                const buttons = dialog.querySelectorAll('button');
+                for (const btn of buttons) {
+                  if (btn.textContent.trim() === 'Save') {
+                    btn.click();
+                    return { saved: true };
+                  }
+                }
+              }
+              return { saved: false };
+            })()
+          `);
+
+          if (!result.saved) throw new Error('Could not click Save button');
+          return result;
+        timeout: 5000
+        why: Set filename and click Save to export.
+
+      - action: evaluate
+        code: |
+          // Wait for save to complete
+          await new Promise(r => setTimeout(r, 2000));
+          return { waitedForSave: true };
+        timeout: 5000
+        why: Wait for file to be saved.
+
+      - action: screenshot
+        returns: /tmp/export-dialog-after-save.png
+        why: Screenshot after clicking Save.
+
+# Usage example in tests:
+#
+# const player = new RecordingPlayer(page);
+# const result = await player.run('drawio/export-dialog');
+#
+# // All tasks should complete successfully
+# expect(result.success).toBe(true);
+# expect(result.taskResults['verify-dialog-options'].hasExportButton).toBe(true);

@@ -163,9 +163,12 @@ export class InAppSession {
       this.recording = this.loadRecording();
 
       // Create executor
+      // basePath is the project root (3 levels up from recordings dir: tests/e2e/recordings)
+      const basePath = path.resolve(this.recordingsDir, '..', '..', '..');
       const executorOptions: InAppExecutorOptions = {
         pauseOnStart: this.config.pauseOnStart ?? true,
         stopOnError: true,
+        basePath,
       };
       if (this.config.timeoutMultiplier !== undefined) {
         executorOptions.timeoutMultiplier = this.config.timeoutMultiplier;

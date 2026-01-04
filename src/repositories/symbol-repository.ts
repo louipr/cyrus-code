@@ -1,11 +1,13 @@
 /**
  * Symbol Repository
  *
+ * Self-contained SQLite repository for symbol table operations.
  * UML-First Design: Uses JSON blob storage for nested data.
  * Queryable fields (namespace, level, kind, status, origin) are columns.
  * UML relationships (composes, aggregates, dependencies) live in JSON.
  */
 
+import type { Statement } from 'better-sqlite3';
 import type { DatabaseType } from './persistence.js';
 import type {
   ComponentSymbol,
@@ -15,12 +17,84 @@ import type {
   SymbolOrigin,
   SymbolRepository as ISymbolRepository,
 } from '../domain/symbol/index.js';
-import {
-  type PreparedStatements,
-  type SymbolRow,
-  createPreparedStatements,
-  transaction,
-} from './persistence.js';
+import { registerSchema, transaction } from './persistence.js';
+
+// ============================================================================
+// Schema Registration
+// ============================================================================
+
+registerSchema('symbols', `
+  -- Main symbols table: queryable fields + JSON blob
+  CREATE TABLE IF NOT EXISTS symbols (
+    id TEXT PRIMARY KEY,
+    namespace TEXT NOT NULL,
+    name TEXT NOT NULL,
+    level TEXT NOT NULL CHECK (level IN ('L0', 'L1', 'L2', 'L3', 'L4')),
+    kind TEXT NOT NULL CHECK (kind IN ('type', 'enum', 'constant', 'function', 'class', 'service', 'module', 'subsystem', 'contract')),
+    language TEXT NOT NULL CHECK (language IN ('typescript')),
+    status TEXT NOT NULL DEFAULT 'declared' CHECK (status IN ('declared', 'referenced', 'tested', 'executed')),
+    origin TEXT NOT NULL DEFAULT 'manual' CHECK (origin IN ('generated', 'manual', 'external')),
+    extends TEXT REFERENCES symbols(id) ON DELETE SET NULL,
+    data TEXT NOT NULL  -- JSON blob for all nested data
+  );
+
+  -- Tags for tag-based queries
+  CREATE TABLE IF NOT EXISTS tags (
+    symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+    tag TEXT NOT NULL,
+    PRIMARY KEY (symbol_id, tag)
+  );
+
+  -- Implements for interface lookups
+  CREATE TABLE IF NOT EXISTS implements (
+    symbol_id TEXT NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+    interface_id TEXT NOT NULL,
+    PRIMARY KEY (symbol_id, interface_id)
+  );
+
+  -- Indexes for queryable fields
+  CREATE INDEX IF NOT EXISTS idx_symbols_namespace ON symbols(namespace);
+  CREATE INDEX IF NOT EXISTS idx_symbols_level ON symbols(level);
+  CREATE INDEX IF NOT EXISTS idx_symbols_kind ON symbols(kind);
+  CREATE INDEX IF NOT EXISTS idx_symbols_status ON symbols(status);
+  CREATE INDEX IF NOT EXISTS idx_symbols_origin ON symbols(origin);
+  CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name);
+  CREATE INDEX IF NOT EXISTS idx_symbols_extends ON symbols(extends);
+
+  CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
+  CREATE INDEX IF NOT EXISTS idx_implements_interface ON implements(interface_id);
+`);
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface SymbolRow {
+  id: string;
+  namespace: string;
+  name: string;
+  level: string;
+  kind: string;
+  language: string;
+  status: string;
+  origin: string;
+  extends: string | null;
+  data: string;
+}
+
+interface SymbolStatements {
+  insertSymbol: Statement;
+  getSymbol: Statement;
+  updateSymbol: Statement;
+  deleteSymbol: Statement;
+  listSymbols: Statement;
+  insertTag: Statement;
+  getTagsBySymbol: Statement;
+  deleteTagsBySymbol: Statement;
+  insertImplements: Statement;
+  getImplementsBySymbol: Statement;
+  deleteImplementsBySymbol: Statement;
+}
 
 /**
  * JSON-serializable symbol data (everything not in queryable columns).
@@ -38,19 +112,57 @@ interface SymbolData {
   generationMeta?: Omit<NonNullable<ComponentSymbol['generationMeta']>, 'generatedAt'> & {
     generatedAt: string;
   };
-  // UML Relationships
   composes?: ComponentSymbol['composes'];
   aggregates?: ComponentSymbol['aggregates'];
   dependencies?: ComponentSymbol['dependencies'];
 }
 
+// ============================================================================
+// Repository Implementation
+// ============================================================================
+
 export class SqliteSymbolRepository implements ISymbolRepository {
   private db: DatabaseType;
-  private stmts: PreparedStatements;
+  private stmts: SymbolStatements;
 
   constructor(database: DatabaseType) {
     this.db = database;
-    this.stmts = createPreparedStatements(database);
+    this.stmts = this.createStatements();
+  }
+
+  private createStatements(): SymbolStatements {
+    return {
+      insertSymbol: this.db.prepare(`
+        INSERT INTO symbols (id, namespace, name, level, kind, language, status, origin, extends, data)
+        VALUES (@id, @namespace, @name, @level, @kind, @language, @status, @origin, @extends, @data)
+      `),
+      getSymbol: this.db.prepare('SELECT * FROM symbols WHERE id = ?'),
+      updateSymbol: this.db.prepare(`
+        UPDATE symbols SET
+          namespace = @namespace,
+          name = @name,
+          level = @level,
+          kind = @kind,
+          language = @language,
+          status = @status,
+          origin = @origin,
+          extends = @extends,
+          data = @data
+        WHERE id = @id
+      `),
+      deleteSymbol: this.db.prepare('DELETE FROM symbols WHERE id = ?'),
+      listSymbols: this.db.prepare('SELECT * FROM symbols ORDER BY namespace, name'),
+      insertTag: this.db.prepare('INSERT OR IGNORE INTO tags (symbol_id, tag) VALUES (?, ?)'),
+      getTagsBySymbol: this.db.prepare('SELECT tag FROM tags WHERE symbol_id = ?'),
+      deleteTagsBySymbol: this.db.prepare('DELETE FROM tags WHERE symbol_id = ?'),
+      insertImplements: this.db.prepare(
+        'INSERT OR IGNORE INTO implements (symbol_id, interface_id) VALUES (?, ?)'
+      ),
+      getImplementsBySymbol: this.db.prepare(
+        'SELECT interface_id FROM implements WHERE symbol_id = ?'
+      ),
+      deleteImplementsBySymbol: this.db.prepare('DELETE FROM implements WHERE symbol_id = ?'),
+    };
   }
 
   // ==========================================================================
@@ -163,7 +275,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
   }
 
   findContainedBy(id: string): string | undefined {
-    // Search all symbols to find one that contains this ID
     const stmt = this.db.prepare(`
       SELECT id FROM symbols
       WHERE json_extract(data, '$.contains') LIKE ?
@@ -194,8 +305,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
   }
 
   findDependents(id: string): ComponentSymbol[] {
-    // Find symbols that have this id in their dependencies array (stored in JSON)
-    // Escape special LIKE pattern characters in the ID to prevent SQL injection
     const escapedId = id.replace(/[%_\\]/g, '\\$&');
     const stmt = this.db.prepare(`
       SELECT * FROM symbols
@@ -241,7 +350,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
         generatedAt: generatedAt.toISOString(),
       };
     }
-    // UML Relationships
     if (symbol.composes?.length) {
       data.composes = symbol.composes;
     }
@@ -314,7 +422,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
         generatedAt: new Date(data.generationMeta.generatedAt),
       };
     }
-    // UML Relationships
     if (data.composes?.length) {
       symbol.composes = data.composes;
     }

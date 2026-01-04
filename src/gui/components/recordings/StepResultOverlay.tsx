@@ -64,8 +64,35 @@ export function StepResultOverlay({ step, result, stepIndex, onClose }: StepResu
             </div>
           )}
 
-          {/* Result value if any */}
-          {result.value !== undefined && (
+          {/* Screenshot result - show path prominently with reveal button */}
+          {step.action === 'screenshot' && isScreenshotResult(result.value) && (() => {
+            const screenshotValue = result.value as ScreenshotResultValue;
+            return (
+              <div style={styles.section}>
+                <div style={styles.sectionLabel}>Screenshot Saved</div>
+                <div style={styles.screenshotResult}>
+                  <code style={styles.screenshotPath}>{screenshotValue.path}</code>
+                  <button
+                    style={styles.revealButton}
+                    onClick={() => {
+                      if (window.cyrus?.shell?.showItemInFolder) {
+                        window.cyrus.shell.showItemInFolder(screenshotValue.path);
+                      }
+                    }}
+                    title="Show in Finder/Explorer"
+                  >
+                    Reveal
+                  </button>
+                </div>
+                <div style={styles.screenshotMeta}>
+                  {formatFileSize(screenshotValue.size)} saved
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Result value if any (skip for screenshot since we show it above) */}
+          {result.value !== undefined && !(step.action === 'screenshot' && isScreenshotResult(result.value)) && (
             <div style={styles.section}>
               <div style={styles.sectionLabel}>Return Value</div>
               <code style={styles.code}>
@@ -96,6 +123,28 @@ function getStatusStyle(success: boolean): React.CSSProperties {
     color: success ? '#89d185' : '#f48771',
     marginRight: '8px',
   };
+}
+
+interface ScreenshotResultValue {
+  captured: boolean;
+  path: string;
+  size: number;
+}
+
+function isScreenshotResult(value: unknown): value is ScreenshotResultValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'captured' in value &&
+    'path' in value &&
+    'size' in value
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -208,5 +257,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     fontFamily: 'monospace',
     whiteSpace: 'pre-wrap',
+  },
+  screenshotResult: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#1e1e1e',
+    borderRadius: '4px',
+    padding: '8px 12px',
+  },
+  screenshotPath: {
+    flex: 1,
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    color: '#4fc1ff',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  revealButton: {
+    padding: '4px 10px',
+    backgroundColor: '#0e639c',
+    border: 'none',
+    borderRadius: '3px',
+    color: '#fff',
+    fontSize: '11px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  screenshotMeta: {
+    marginTop: '6px',
+    fontSize: '11px',
+    color: '#888',
   },
 };

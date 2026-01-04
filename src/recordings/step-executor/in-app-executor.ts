@@ -9,6 +9,8 @@
  */
 
 import type { WebContents } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Recording, RecordingStep, StepResult } from '../schema.js';
 import type {
   DebugEvent,
@@ -26,6 +28,8 @@ export interface InAppExecutorOptions {
   pauseOnStart?: boolean;
   /** Stop execution on first error */
   stopOnError?: boolean;
+  /** Base path for resolving relative file paths (e.g., screenshot outputs) */
+  basePath?: string;
 }
 
 /**
@@ -326,6 +330,9 @@ export class InAppExecutor {
       case 'assert':
         return this.executeAssert(step.selector!, step.exists ?? true, timeout);
 
+      case 'screenshot':
+        return this.executeScreenshot(step.returns, step.selector);
+
       default:
         throw new Error(`Unsupported action: ${step.action}`);
     }
@@ -613,5 +620,68 @@ export class InAppExecutor {
     `;
 
     return this.webContents.executeJavaScript(script);
+  }
+
+  /**
+   * Execute a screenshot action.
+   * Uses webContents.capturePage() for full-page or element-specific screenshots.
+   */
+  private async executeScreenshot(
+    outputPath?: string,
+    selector?: string
+  ): Promise<unknown> {
+    if (!outputPath) {
+      return { skipped: true, reason: 'No output path specified' };
+    }
+
+    // Resolve relative paths against basePath
+    let screenshotPath = outputPath;
+    if (!path.isAbsolute(screenshotPath) && this.options.basePath) {
+      screenshotPath = path.join(this.options.basePath, screenshotPath);
+    }
+
+    // Ensure directory exists
+    const dir = path.dirname(screenshotPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    let image: Electron.NativeImage;
+
+    if (selector) {
+      // Get element bounds and capture that region
+      const bounds = await this.webContents.executeJavaScript(`
+        (function() {
+          const el = document.querySelector(${JSON.stringify(selector)});
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height)
+          };
+        })()
+      `);
+
+      if (!bounds) {
+        throw new Error(`Element not found for screenshot: ${selector}`);
+      }
+
+      image = await this.webContents.capturePage(bounds);
+    } else {
+      // Full page screenshot
+      image = await this.webContents.capturePage();
+    }
+
+    // Write the PNG to disk
+    const pngBuffer = image.toPNG();
+    fs.writeFileSync(screenshotPath, pngBuffer);
+
+    return {
+      captured: true,
+      path: screenshotPath,
+      size: pngBuffer.length,
+    };
   }
 }

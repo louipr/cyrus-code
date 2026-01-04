@@ -2,10 +2,79 @@
  * Electron Application Menu
  *
  * Defines the application menu including the Help menu with topic shortcuts.
+ * Supports dynamic Recent Exports submenu populated from export history.
  */
 
 import { Menu, shell, app, BrowserWindow, dialog } from 'electron';
 import * as fs from 'fs';
+import {
+  SqliteExportHistoryRepository,
+  getDatabase,
+} from '../src/repositories/index.js';
+
+/**
+ * Format file size for display (e.g., "12.5 KB")
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Build the Recent Exports submenu dynamically from export history.
+ * Returns menu items for recent exports with Open and Reveal actions.
+ */
+function buildRecentExportsSubmenu(
+  mainWindow: BrowserWindow | null
+): Electron.MenuItemConstructorOptions[] {
+  try {
+    const db = getDatabase();
+    const repo = new SqliteExportHistoryRepository(db);
+    const recentExports = repo.getRecent(10);
+
+    if (recentExports.length === 0) {
+      return [{ label: 'No Recent Exports', enabled: false }];
+    }
+
+    const items: Electron.MenuItemConstructorOptions[] = recentExports.map((entry) => ({
+      label: `${entry.fileName} (${formatFileSize(entry.fileSize)})`,
+      submenu: [
+        {
+          label: 'Open',
+          click: async () => {
+            await shell.openPath(entry.filePath);
+          },
+        },
+        {
+          label: 'Reveal in Finder',
+          click: () => {
+            shell.showItemInFolder(entry.filePath);
+          },
+        },
+      ],
+    }));
+
+    // Add separator and Clear History option
+    items.push({ type: 'separator' });
+    items.push({
+      label: 'Clear Export History',
+      click: () => {
+        repo.clear();
+        // Refresh menu to show empty state
+        if (mainWindow) {
+          const menu = createApplicationMenu(mainWindow);
+          Menu.setApplicationMenu(menu);
+        }
+      },
+    });
+
+    return items;
+  } catch {
+    // Database may not be initialized yet during app startup
+    return [{ label: 'No Recent Exports', enabled: false }];
+  }
+}
 
 /**
  * Create the application menu.
@@ -64,6 +133,18 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): Menu {
               mainWindow?.webContents.send('diagram:open-file', filePath, content);
             }
           },
+        },
+        { type: 'separator' },
+        {
+          label: 'Export PNG...',
+          accelerator: isMac ? 'Cmd+Shift+E' : 'Ctrl+Shift+E',
+          click: () => {
+            mainWindow?.webContents.send('diagram:export-png');
+          },
+        },
+        {
+          label: 'Recent Exports',
+          submenu: buildRecentExportsSubmenu(mainWindow),
         },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
@@ -185,4 +266,13 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): Menu {
   ];
 
   return Menu.buildFromTemplate(template);
+}
+
+/**
+ * Refresh the application menu to update dynamic content (e.g., Recent Exports).
+ * Call this after operations that change menu state.
+ */
+export function refreshApplicationMenu(mainWindow: BrowserWindow | null): void {
+  const menu = createApplicationMenu(mainWindow);
+  Menu.setApplicationMenu(menu);
 }
