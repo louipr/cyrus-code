@@ -21,7 +21,6 @@ import type {
   RegisterSymbolRequest,
 } from '../src/api/types.js';
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
-import { spawn } from 'child_process';
 import { createHelpContentService } from '../src/services/help-content/index.js';
 import { createRecordingContentService } from '../src/services/recording-content/index.js';
 import {
@@ -706,94 +705,6 @@ export function registerIpcHandlers(facade: Architecture): void {
       };
     }
   });
-
-  // Run a recording directly via the runner spec
-  // Options: headed (visible browser), debugPause (keep open after run)
-  ipcMain.handle(
-    'recordings:run',
-    async (
-      _event,
-      appId: string,
-      recordingId: string,
-      options?: { headed?: boolean; debugPause?: boolean }
-    ) => {
-      try {
-        const recording = recordingService.getRecording(appId, recordingId);
-        if (!recording) {
-          return {
-            success: false,
-            error: { message: `Recording not found: ${appId}/${recordingId}` },
-          };
-        }
-
-        const recordingPath = `${appId}/${recordingId}`;
-        const headed = options?.headed ?? false;
-        const debugPause = options?.debugPause ?? false;
-
-        return new Promise((resolve) => {
-          const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-          // Create clean env without ELECTRON_RUN_AS_NODE which interferes with Playwright
-          const cleanEnv = { ...process.env };
-          delete cleanEnv.ELECTRON_RUN_AS_NODE;
-
-          // Build playwright args
-          const args = ['playwright', 'test', 'tests/e2e/run-recording.spec.ts', '--reporter=list'];
-
-          // Add headed mode if requested
-          if (headed) {
-            args.push('--headed');
-          }
-
-          // Longer timeout for debug mode
-          args.push(debugPause ? '--timeout=0' : '--timeout=60000');
-
-          const child = spawn(npx, args, {
-            cwd: helpProjectRoot,
-            env: {
-              ...cleanEnv,
-              RECORDING_PATH: recordingPath,
-              DEBUG_PAUSE: debugPause ? 'true' : '',
-            },
-          });
-
-          let stdout = '';
-          let stderr = '';
-
-          child.stdout?.on('data', (data) => {
-            stdout += data.toString();
-          });
-
-          child.stderr?.on('data', (data) => {
-            stderr += data.toString();
-          });
-
-          child.on('close', (code) => {
-            resolve({
-              success: true,
-              data: {
-                exitCode: code,
-                success: code === 0,
-                output: stdout,
-                error: stderr,
-              },
-            });
-          });
-
-          child.on('error', (err) => {
-            resolve({
-              success: false,
-              error: { message: `Failed to run recording: ${err.message}` },
-            });
-          });
-        });
-      } catch (error) {
-        return {
-          success: false,
-          error: { message: extractErrorMessage(error) },
-        };
-      }
-    }
-  );
 
   // ==========================================================================
   // Debug Session Handlers (Step-through Debugger)
