@@ -5,7 +5,7 @@
  * Unlike the Playwright-based session, this runs entirely within the app.
  */
 
-import type { BrowserWindow, WebContents } from 'electron';
+import type { WebContents } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';

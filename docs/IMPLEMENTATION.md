@@ -521,21 +521,21 @@ Interactive step-by-step execution of recordings with real-time GUI feedback.
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Main Process                                                       │
-│    StepExecutionSession ───► Manages Playwright + execution state  │
-│    StepExecutor ───► Wraps RecordingPlayer with pause/resume       │
+│    InAppSession ───► Manages execution state via webContents       │
+│    InAppExecutor ───► Executes steps via executeJavaScript()       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 4.1 Backend: StepExecutor Core
+#### 4.1 Backend: InAppExecutor Core
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | E2E.23 | Define debug session types | `src/recordings/step-executor/schema.ts` | ✅ |
-| E2E.24 | Create StepExecutor class | `src/recordings/step-executor/step-executor.ts` | ✅ |
-| E2E.25 | Implement pause/resume flow | `src/recordings/step-executor/step-executor.ts` | ✅ |
-| E2E.26 | Create StepExecutionSession | `src/recordings/step-executor/session.ts` | ✅ |
+| E2E.24 | Create InAppExecutor class | `src/recordings/step-executor/in-app-executor.ts` | ✅ |
+| E2E.25 | Implement pause/resume flow | `src/recordings/step-executor/in-app-executor.ts` | ✅ |
+| E2E.26 | Create InAppSession | `src/recordings/step-executor/in-app-session.ts` | ✅ |
 | E2E.27 | Session manager (singleton) | `src/recordings/step-executor/session-manager.ts` | ✅ |
-| E2E.28 | Unit tests | `src/recordings/step-executor/step-executor.test.ts` | ✅ |
+| E2E.28 | E2E tests | `tests/e2e/in-app-debug.spec.ts` | ✅ |
 
 #### 4.2 IPC Layer: Real-time Streaming
 
