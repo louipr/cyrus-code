@@ -5,7 +5,7 @@
  * Shows metadata, context, and status information.
  */
 
-import type { Recording } from '../../../recordings/schema';
+import type { Recording } from '../../../recordings';
 
 interface RecordingDetailProps {
   recording: Recording;

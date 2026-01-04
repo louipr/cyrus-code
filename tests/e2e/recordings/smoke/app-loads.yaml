@@ -11,6 +11,7 @@ metadata:
   tags: [smoke, basic]
   author: smoke-test
   created: "2025-01-02"
+  modified: "2025-01-04"
 
 context:
   app: cyrus-code
@@ -31,3 +32,10 @@ tasks:
         selector: "[data-testid='search-bar']"
         exists: true
         why: Confirm search bar exists after waiting.
+
+# Usage example in tests:
+#
+# const player = new RecordingPlayer(webContents, recording);
+# const result = await player.play();
+#
+# expect(result.success).toBe(true);

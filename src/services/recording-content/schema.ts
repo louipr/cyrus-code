@@ -4,7 +4,7 @@
  * Interfaces for the recording content service.
  */
 
-import type { Recording } from '../../recordings/schema.js';
+import type { Recording } from '../../recordings/index.js';
 import type {
   RecordingIndex,
   RecordingEntry,

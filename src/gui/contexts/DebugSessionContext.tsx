@@ -8,7 +8,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useDebugSession } from '../hooks/useDebugSession';
 import type { DebugSessionHookState, DebugSessionCommands } from '../hooks/useDebugSession';
-import type { Recording } from '../../recordings/schema';
+import type { Recording } from '../../recordings';
 
 /**
  * Extended context that includes recording metadata.

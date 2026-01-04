@@ -31,13 +31,13 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../domain/help/index';
-import type { Recording } from '../recordings/schema';
 import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
 import type {
-  DebugSessionConfig,
-  DebugSessionSnapshot,
-  DebugEvent,
-} from '../recordings/step-executor/schema';
+  Recording,
+  PlaybackConfig,
+  PlaybackSnapshot,
+  PlaybackEvent,
+} from '../recordings';
 import type { ExportHistoryRecord } from '../repositories/export-history-repository';
 
 // Re-export for components that import from api-client
@@ -162,15 +162,15 @@ interface CyrusAPI {
     get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
     debug: {
-      create: (config: DebugSessionConfig) => Promise<ApiResponse<{ sessionId: string }>>;
+      create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;
       step: (sessionId: string) => Promise<ApiResponse<void>>;
       pause: (sessionId: string) => Promise<ApiResponse<void>>;
       resume: (sessionId: string) => Promise<ApiResponse<void>>;
       stop: (sessionId: string) => Promise<ApiResponse<void>>;
-      snapshot: (sessionId: string) => Promise<ApiResponse<DebugSessionSnapshot>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<PlaybackSnapshot>>;
       subscribe: () => Promise<ApiResponse<void>>;
-      onEvent: (callback: (data: { sessionId: string; event: DebugEvent }) => void) => void;
+      onEvent: (callback: (data: { sessionId: string; event: PlaybackEvent }) => void) => void;
     };
   };
 }

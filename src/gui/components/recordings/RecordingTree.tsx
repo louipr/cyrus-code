@@ -5,7 +5,7 @@
  */
 
 import type { RecordingIndex, RecordingEntry } from '../../../domain/recordings/index';
-import type { Recording, RecordingTask, RecordingStep } from '../../../recordings/schema';
+import type { Recording, RecordingTask, RecordingStep } from '../../../recordings';
 
 interface RecordingTreeProps {
   /** The recordings index */

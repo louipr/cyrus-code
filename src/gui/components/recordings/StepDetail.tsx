@@ -5,7 +5,7 @@
  * Shows action type, selector, code, and the reasoning (why) field.
  */
 
-import type { RecordingStep } from '../../../recordings/schema';
+import type { RecordingStep } from '../../../recordings';
 
 interface StepDetailProps {
   step: RecordingStep;

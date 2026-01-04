@@ -5,8 +5,7 @@
  * Shows success/failure status, duration, value, and error details.
  */
 
-import type { StepResult } from '../../../recordings/schema';
-import type { RecordingStep } from '../../../recordings/schema';
+import type { StepResult, RecordingStep } from '../../../recordings';
 
 interface StepResultOverlayProps {
   step: RecordingStep;

@@ -7,7 +7,7 @@
  */
 
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import type { RecordingTask, StepResult } from '../../../recordings/schema';
+import type { RecordingTask, StepResult } from '../../../recordings';
 import { useCanvasTransform } from '../../hooks/useCanvasTransform';
 import { TASK_GRAPH_MINI_LAYOUT } from '../../constants/graph-layout';
 import { calculateGridPositions, type GridPosition, type LayoutDirection } from '../../utils/calculate-grid-positions';

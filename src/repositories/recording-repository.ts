@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import type { Recording } from '../recordings/schema.js';
+import type { Recording } from '../recordings/index.js';
 import type {
   RecordingIndex,
   RecordingEntry,

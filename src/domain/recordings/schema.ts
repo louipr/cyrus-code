@@ -3,7 +3,7 @@
  *
  * GUI-specific types for the Recording View.
  * Base recording types (Recording, RecordingTask, etc.) should be imported
- * directly from 'recordings/schema'.
+ * directly from 'recordings'.
  */
 
 /**
@@ -74,7 +74,7 @@ export interface RecordingTreeNode {
   children?: RecordingTreeNode[];
 
   /** Associated data */
-  data?: RecordingEntry | import('../../recordings/schema.js').RecordingTask | import('../../recordings/schema.js').RecordingStep;
+  data?: RecordingEntry | import('../../recordings/index.js').RecordingTask | import('../../recordings/index.js').RecordingStep;
 }
 
 /**
@@ -91,10 +91,10 @@ export interface IRecordingRepository {
   getRecordingsByApp(appId: string): RecordingEntry[];
 
   /** Get a specific recording */
-  getRecording(appId: string, recordingId: string): import('../../recordings/schema.js').Recording | null;
+  getRecording(appId: string, recordingId: string): import('../../recordings/index.js').Recording | null;
 
   /** Get recording by file path */
-  getRecordingByPath(filePath: string): import('../../recordings/schema.js').Recording | null;
+  getRecordingByPath(filePath: string): import('../../recordings/index.js').Recording | null;
 
   /** Clear cached data */
   clearCache(): void;

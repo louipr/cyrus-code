@@ -1,32 +1,30 @@
 /**
- * In-App Step Executor
+ * Recording Player
  *
- * Executes recording steps directly within the current Electron app
- * using webContents.executeJavaScript() instead of Playwright.
- *
- * This allows debugging recordings against the running app without
- * launching external browsers.
+ * Plays back recordings by executing steps via webContents.executeJavaScript().
+ * Supports pause/resume/step-through like a video player.
  */
 
 import type { WebContents } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { Recording, RecordingStep, StepResult } from '../schema.js';
+import type { Recording, RecordingStep } from './recording-types.js';
 import type {
-  DebugEvent,
-  DebugSessionState,
-  ExecutionPosition,
-} from './schema.js';
+  PlaybackEvent,
+  PlaybackState,
+  PlaybackPosition,
+  StepResult,
+} from './playback-types.js';
 
 /**
- * Options for InAppExecutor.
+ * Options for RecordingPlayer.
  */
-export interface InAppExecutorOptions {
+export interface PlayerOptions {
   /** Timeout multiplier for slow environments */
   timeoutMultiplier?: number;
   /** Whether to pause before first step */
   pauseOnStart?: boolean;
-  /** Stop execution on first error */
+  /** Stop playback on first error */
   stopOnError?: boolean;
   /** Base path for resolving relative file paths (e.g., screenshot outputs) */
   basePath?: string;
@@ -41,26 +39,26 @@ interface PauseGate {
 }
 
 /**
- * Executor that runs recording steps in the current Electron window.
+ * Plays recordings in the current Electron window.
  */
-export class InAppExecutor {
+export class RecordingPlayer {
   private webContents: WebContents;
   private recording: Recording;
-  private options: InAppExecutorOptions;
+  private options: PlayerOptions;
 
-  private state: DebugSessionState = 'idle';
-  private position: ExecutionPosition | null = null;
+  private state: PlaybackState = 'idle';
+  private position: PlaybackPosition | null = null;
   private pauseGate: PauseGate | null = null;
   private shouldPauseAfterStep = false;
   private stopRequested = false;
 
-  private eventListeners: Array<(event: DebugEvent) => void> = [];
+  private eventListeners: Array<(event: PlaybackEvent) => void> = [];
   private stepResults: Map<string, StepResult> = new Map();
 
   constructor(
     webContents: WebContents,
     recording: Recording,
-    options: InAppExecutorOptions = {}
+    options: PlayerOptions = {}
   ) {
     this.webContents = webContents;
     this.recording = recording;
@@ -68,9 +66,9 @@ export class InAppExecutor {
   }
 
   /**
-   * Register an event listener for debug events.
+   * Register an event listener for playback events.
    */
-  on(listener: (event: DebugEvent) => void): () => void {
+  on(listener: (event: PlaybackEvent) => void): () => void {
     this.eventListeners.push(listener);
     return () => {
       const index = this.eventListeners.indexOf(listener);
@@ -83,7 +81,7 @@ export class InAppExecutor {
   /**
    * Emit an event to all listeners.
    */
-  private emit(event: DebugEvent): void {
+  private emit(event: PlaybackEvent): void {
     for (const listener of this.eventListeners) {
       try {
         listener(event);
@@ -94,16 +92,16 @@ export class InAppExecutor {
   }
 
   /**
-   * Get current session state.
+   * Get current playback state.
    */
-  getState(): DebugSessionState {
+  getState(): PlaybackState {
     return this.state;
   }
 
   /**
-   * Get current execution position.
+   * Get current playback position.
    */
-  getPosition(): ExecutionPosition | null {
+  getPosition(): PlaybackPosition | null {
     return this.position;
   }
 
@@ -128,21 +126,21 @@ export class InAppExecutor {
   /**
    * Set state and emit event.
    */
-  private setState(state: DebugSessionState): void {
+  private setState(state: PlaybackState): void {
     this.state = state;
-    const event: DebugEvent = {
+    const event: PlaybackEvent = {
       type: 'session-state',
       state,
       timestamp: Date.now(),
     };
     if (this.position) {
-      (event as { position?: ExecutionPosition }).position = this.position;
+      (event as { position?: PlaybackPosition }).position = this.position;
     }
     this.emit(event);
   }
 
   /**
-   * Pause execution.
+   * Pause playback.
    */
   pause(): void {
     if (this.state === 'running') {
@@ -151,7 +149,7 @@ export class InAppExecutor {
   }
 
   /**
-   * Resume execution.
+   * Resume playback.
    */
   resume(): void {
     if (this.state === 'paused' && this.pauseGate) {
@@ -167,7 +165,6 @@ export class InAppExecutor {
    */
   step(): void {
     if (this.state === 'paused' && this.pauseGate) {
-      // Execute one step then pause again
       this.shouldPauseAfterStep = true;
       this.pauseGate.resolve();
       this.pauseGate = null;
@@ -176,7 +173,7 @@ export class InAppExecutor {
   }
 
   /**
-   * Stop execution.
+   * Stop playback.
    */
   stop(): void {
     this.stopRequested = true;
@@ -187,9 +184,9 @@ export class InAppExecutor {
   }
 
   /**
-   * Execute the recording.
+   * Play the recording.
    */
-  async execute(): Promise<{ success: boolean; duration: number }> {
+  async play(): Promise<{ success: boolean; duration: number }> {
     const startTime = Date.now();
     this.stopRequested = false;
     this.stepResults.clear();
@@ -340,10 +337,8 @@ export class InAppExecutor {
 
   /**
    * Execute a click action.
-   * Supports Playwright-style :has-text() pseudo-selector.
    */
   private async executeClick(selector: string, timeout: number): Promise<unknown> {
-    // Parse Playwright-style :has-text() selector
     const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
 
     let script: string;
@@ -478,7 +473,6 @@ export class InAppExecutor {
    * Execute an evaluate action.
    */
   private async executeEvaluate(code: string, _timeout: number): Promise<unknown> {
-    // Wrap the code in a function to capture return value
     const wrappedScript = `
       (async function() {
         ${code}
@@ -624,7 +618,6 @@ export class InAppExecutor {
 
   /**
    * Execute a screenshot action.
-   * Uses webContents.capturePage() for full-page or element-specific screenshots.
    */
   private async executeScreenshot(
     outputPath?: string,
@@ -634,13 +627,11 @@ export class InAppExecutor {
       return { skipped: true, reason: 'No output path specified' };
     }
 
-    // Resolve relative paths against basePath
     let screenshotPath = outputPath;
     if (!path.isAbsolute(screenshotPath) && this.options.basePath) {
       screenshotPath = path.join(this.options.basePath, screenshotPath);
     }
 
-    // Ensure directory exists
     const dir = path.dirname(screenshotPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -649,7 +640,6 @@ export class InAppExecutor {
     let image: Electron.NativeImage;
 
     if (selector) {
-      // Get element bounds and capture that region
       const bounds = await this.webContents.executeJavaScript(`
         (function() {
           const el = document.querySelector(${JSON.stringify(selector)});
@@ -670,11 +660,9 @@ export class InAppExecutor {
 
       image = await this.webContents.capturePage(bounds);
     } else {
-      // Full page screenshot
       image = await this.webContents.capturePage();
     }
 
-    // Write the PNG to disk
     const pngBuffer = image.toPNG();
     fs.writeFileSync(screenshotPath, pngBuffer);
 

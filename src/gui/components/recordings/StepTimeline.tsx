@@ -6,7 +6,7 @@
  * Supports execution state highlighting during debug sessions.
  */
 
-import type { RecordingStep, StepResult } from '../../../recordings/schema';
+import type { RecordingStep, StepResult } from '../../../recordings';
 
 /** Execution state for a step */
 export type StepExecutionState = 'pending' | 'running' | 'success' | 'failed';

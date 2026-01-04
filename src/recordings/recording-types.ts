@@ -1,8 +1,8 @@
 /**
- * Recording Schema Types
+ * Recording Types
  *
- * Defines the structure for AI-recordable GUI exploration recordings.
- * Designed for LLM readability with explicit reasoning (`why` fields).
+ * Defines the structure of a Recording document.
+ * A Recording is a replayable script of GUI interactions.
  */
 
 /**
@@ -153,58 +153,4 @@ export interface Recording {
 
   /** Tasks to execute */
   tasks: RecordingTask[];
-}
-
-/**
- * Result from executing a step.
- */
-export interface StepResult {
-  /** Whether the step succeeded */
-  success: boolean;
-
-  /** Error message if failed */
-  error?: string;
-
-  /** Value returned by the step */
-  value?: unknown;
-
-  /** Duration in milliseconds */
-  duration: number;
-}
-
-/**
- * Result from executing a task.
- */
-export interface TaskResult {
-  /** Task ID */
-  taskId: string;
-
-  /** Whether the task succeeded */
-  success: boolean;
-
-  /** Results for each step */
-  steps: StepResult[];
-
-  /** Total duration in milliseconds */
-  duration: number;
-}
-
-/**
- * Result from executing a recording.
- */
-export interface RecordingResult {
-  /** Recording name */
-  name: string;
-
-  /** Whether the recording succeeded */
-  success: boolean;
-
-  /** Results for each task */
-  tasks: TaskResult[];
-
-  /** Total duration in milliseconds */
-  duration: number;
-
-  /** Any extracted values */
-  extracts: Record<string, unknown>;
 }

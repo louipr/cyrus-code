@@ -4,7 +4,7 @@
  * Service layer for recording data access and operations.
  */
 
-import type { Recording } from '../../recordings/schema.js';
+import type { Recording } from '../../recordings/index.js';
 import type {
   RecordingIndex,
   RecordingEntry,

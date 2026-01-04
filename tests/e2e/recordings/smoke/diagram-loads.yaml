@@ -11,6 +11,7 @@ metadata:
   tags: [smoke, diagram, drawio]
   author: smoke-test
   created: "2025-01-02"
+  modified: "2025-01-04"
 
 context:
   app: cyrus-code
@@ -39,3 +40,10 @@ tasks:
         selector: "[data-testid='diagram-webview']"
         exists: true
         why: Confirm the Draw.io webview exists.
+
+# Usage example in tests:
+#
+# const player = new RecordingPlayer(webContents, recording);
+# const result = await player.play();
+#
+# expect(result.success).toBe(true);

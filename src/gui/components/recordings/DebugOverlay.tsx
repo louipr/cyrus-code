@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import type { DebugSessionHookState, DebugSessionCommands } from '../../hooks/useDebugSession';
-import type { Recording, RecordingStep } from '../../../recordings/schema';
+import type { Recording, RecordingStep } from '../../../recordings';
 
 interface DebugOverlayProps {
   state: DebugSessionHookState;

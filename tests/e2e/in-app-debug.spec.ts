@@ -1,7 +1,7 @@
 /**
  * E2E test for in-app debug functionality.
  *
- * Tests the InAppExecutor path by clicking Debug in the Recordings UI
+ * Tests the RecordingPlayer path by clicking Debug in the Recordings UI
  * and running through the recording via the debug overlay.
  */
 

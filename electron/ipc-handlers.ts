@@ -24,10 +24,10 @@ import type { GenerationOptions } from '../src/services/code-generation/index.js
 import { createHelpContentService } from '../src/services/help-content/index.js';
 import { createRecordingContentService } from '../src/services/recording-content/index.js';
 import {
-  getSessionManager,
-  type DebugSessionConfig,
-  type DebugEvent,
-} from '../src/recordings/step-executor/index.js';
+  getSessionRegistry,
+  type PlaybackConfig,
+  type PlaybackEvent,
+} from '../src/recordings/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import {
   SqliteSymbolRepository,
@@ -710,13 +710,13 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Debug Session Handlers (Step-through Debugger)
   // ==========================================================================
 
-  const sessionManager = getSessionManager();
-  let debugEventListener: ((sessionId: string, event: DebugEvent) => void) | null = null;
+  const sessionRegistry = getSessionRegistry();
+  let debugEventListener: ((sessionId: string, event: PlaybackEvent) => void) | null = null;
 
   // Create a new debug session (runs in current Electron window)
   ipcMain.handle(
     'recordings:debug:create',
-    async (_event, config: DebugSessionConfig) => {
+    async (_event, config: PlaybackConfig) => {
       try {
         // Get the main window's webContents for in-app execution
         const mainWindow = BrowserWindow.getAllWindows()[0];
@@ -724,10 +724,10 @@ export function registerIpcHandlers(facade: Architecture): void {
           throw new Error('No window available for debug session');
         }
 
-        // Set the webContents for the session manager
-        sessionManager.setWebContents(mainWindow.webContents);
+        // Set the webContents for the session registry
+        sessionRegistry.setWebContents(mainWindow.webContents);
 
-        const sessionId = await sessionManager.createSession(config);
+        const sessionId = await sessionRegistry.createSession(config);
         return { success: true, data: { sessionId } };
       } catch (error) {
         return {
@@ -743,7 +743,7 @@ export function registerIpcHandlers(facade: Architecture): void {
     try {
       // Start in background and return immediately
       // Results will be streamed via events
-      sessionManager.startSession(sessionId).catch((err) => {
+      sessionRegistry.startSession(sessionId).catch((err) => {
         // Send error event if start fails
         const mainWindow = BrowserWindow.getAllWindows()[0];
         if (mainWindow) {
@@ -770,7 +770,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Execute single step
   ipcMain.handle('recordings:debug:step', async (_event, sessionId: string) => {
     try {
-      sessionManager.stepSession(sessionId);
+      sessionRegistry.stepSession(sessionId);
       return { success: true };
     } catch (error) {
       return {
@@ -783,7 +783,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Pause execution
   ipcMain.handle('recordings:debug:pause', async (_event, sessionId: string) => {
     try {
-      sessionManager.pauseSession(sessionId);
+      sessionRegistry.pauseSession(sessionId);
       return { success: true };
     } catch (error) {
       return {
@@ -796,7 +796,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Resume execution
   ipcMain.handle('recordings:debug:resume', async (_event, sessionId: string) => {
     try {
-      sessionManager.resumeSession(sessionId);
+      sessionRegistry.resumeSession(sessionId);
       return { success: true };
     } catch (error) {
       return {
@@ -809,7 +809,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Stop debug session
   ipcMain.handle('recordings:debug:stop', async (_event, sessionId: string) => {
     try {
-      await sessionManager.stopSession(sessionId);
+      await sessionRegistry.stopSession(sessionId);
       return { success: true };
     } catch (error) {
       return {
@@ -822,7 +822,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Get session snapshot
   ipcMain.handle('recordings:debug:snapshot', async (_event, sessionId: string) => {
     try {
-      const snapshot = sessionManager.getSessionSnapshot(sessionId);
+      const snapshot = sessionRegistry.getSessionSnapshot(sessionId);
       if (!snapshot) {
         return {
           success: false,
@@ -843,12 +843,12 @@ export function registerIpcHandlers(facade: Architecture): void {
     try {
       // Remove existing listener if any
       if (debugEventListener) {
-        // Can't unsubscribe since SessionManager.onEvent returns void
+        // Can't unsubscribe since SessionRegistry.onEvent returns void
         // This is a known limitation - we rely on single subscriber model
       }
 
       // Set up event forwarding to renderer
-      debugEventListener = (sessionId: string, event: DebugEvent) => {
+      debugEventListener = (sessionId: string, event: PlaybackEvent) => {
         const mainWindow = BrowserWindow.getAllWindows()[0];
         if (mainWindow) {
           mainWindow.webContents.send('recordings:debug:event', {
@@ -858,7 +858,7 @@ export function registerIpcHandlers(facade: Architecture): void {
         }
       };
 
-      sessionManager.onEvent(debugEventListener);
+      sessionRegistry.onEvent(debugEventListener);
       return { success: true };
     } catch (error) {
       return {

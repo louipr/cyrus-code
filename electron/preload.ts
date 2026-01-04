@@ -35,13 +35,13 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../src/domain/help/index.js';
-import type { Recording } from '../src/recordings/schema.js';
-import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
 import type {
-  DebugSessionConfig,
-  DebugSessionSnapshot,
-  DebugEvent,
-} from '../src/recordings/step-executor/index.js';
+  Recording,
+  PlaybackConfig,
+  PlaybackSnapshot,
+  PlaybackEvent,
+} from '../src/recordings/index.js';
+import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
 import type { ExportHistoryRecord } from '../src/repositories/index.js';
 
 /**
@@ -169,15 +169,15 @@ export interface CyrusAPI {
     getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
     // Debug session operations
     debug: {
-      create: (config: DebugSessionConfig) => Promise<ApiResponse<{ sessionId: string }>>;
+      create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;
       step: (sessionId: string) => Promise<ApiResponse<void>>;
       pause: (sessionId: string) => Promise<ApiResponse<void>>;
       resume: (sessionId: string) => Promise<ApiResponse<void>>;
       stop: (sessionId: string) => Promise<ApiResponse<void>>;
-      snapshot: (sessionId: string) => Promise<ApiResponse<DebugSessionSnapshot>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<PlaybackSnapshot>>;
       subscribe: () => Promise<ApiResponse<void>>;
-      onEvent: (callback: (data: { sessionId: string; event: DebugEvent }) => void) => void;
+      onEvent: (callback: (data: { sessionId: string; event: PlaybackEvent }) => void) => void;
     };
   };
 }

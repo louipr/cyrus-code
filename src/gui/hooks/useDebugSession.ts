@@ -8,11 +8,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type {
-  DebugSessionState,
-  DebugEvent,
-  ExecutionPosition,
+  PlaybackState,
+  PlaybackEvent,
+  PlaybackPosition,
   StepResult,
-} from '../../recordings/step-executor/schema';
+} from '../../recordings';
 import { apiClient } from '../api-client';
 
 /**
@@ -23,10 +23,10 @@ export interface DebugSessionHookState {
   sessionId: string | null;
 
   /** Current session state */
-  state: DebugSessionState;
+  state: PlaybackState;
 
   /** Current execution position */
-  position: ExecutionPosition | null;
+  position: PlaybackPosition | null;
 
   /** Results for completed steps */
   stepResults: Map<string, StepResult>;
@@ -72,8 +72,8 @@ export interface DebugSessionCommands {
  */
 export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands] {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [state, setState] = useState<DebugSessionState>('idle');
-  const [position, setPosition] = useState<ExecutionPosition | null>(null);
+  const [state, setState] = useState<PlaybackState>('idle');
+  const [position, setPosition] = useState<PlaybackPosition | null>(null);
   const [stepResults, setStepResults] = useState<Map<string, StepResult>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
@@ -96,7 +96,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   }, []);
 
   // Handle incoming debug events
-  const handleEvent = useCallback((eventSessionId: string, event: DebugEvent) => {
+  const handleEvent = useCallback((eventSessionId: string, event: PlaybackEvent) => {
     // Only process events for our session
     setSessionId((currentId) => {
       if (currentId !== eventSessionId) return currentId;

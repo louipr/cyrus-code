@@ -5,7 +5,7 @@
  * Rendered inline in the toolbar row.
  */
 
-import type { Recording } from '../../../recordings/schema';
+import type { Recording } from '../../../recordings';
 
 interface RecordingToolbarProps {
   recording: Recording | null;

@@ -6,8 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import type { Recording, StepResult } from '../../../recordings/schema';
-import type { ExecutionPosition } from '../../../recordings/step-executor/schema';
+import type { Recording, StepResult, PlaybackPosition } from '../../../recordings';
 import { DebugTaskGraphPanel } from './DebugTaskGraphPanel';
 
 interface DebugSidePanelProps {
@@ -20,7 +19,7 @@ interface DebugSidePanelProps {
   /** Current recording being debugged */
   recording: Recording;
   /** Current execution position */
-  position: ExecutionPosition | null;
+  position: PlaybackPosition | null;
   /** Step results map */
   stepResults: Map<string, StepResult>;
   /** Callback when a task is clicked */

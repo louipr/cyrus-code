@@ -16,7 +16,7 @@ import { RecordingToolbar } from './RecordingToolbar';
 import { StepResultOverlay } from './StepResultOverlay';
 import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
 import type { RecordingIndex } from '../../../domain/recordings/index';
-import type { Recording, RecordingTask, RecordingStep, StepResult } from '../../../recordings/schema';
+import type { Recording, RecordingTask, RecordingStep, StepResult } from '../../../recordings';
 
 const styles = {
   container: {

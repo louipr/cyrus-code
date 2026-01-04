@@ -1,30 +1,81 @@
 /**
- * Step Executor Schema Types
+ * Playback Types
  *
- * Types for step-by-step debug execution of recordings.
- * Enables pause/resume/step-through debugging in the GUI.
+ * Types for playing back recordings with step-through capability.
+ * Like a video player: play, pause, step-through, stop.
  */
 
-import type { RecordingStep, RecordingTask, StepResult, TaskResult } from '../schema.js';
-
-// Re-export for convenience
-export type { StepResult };
+import type { RecordingStep, RecordingTask } from './recording-types.js';
 
 /**
- * Debug session lifecycle states.
+ * Result from executing a step.
  */
-export type DebugSessionState =
+export interface StepResult {
+  /** Whether the step succeeded */
+  success: boolean;
+
+  /** Error message if failed */
+  error?: string;
+
+  /** Value returned by the step */
+  value?: unknown;
+
+  /** Duration in milliseconds */
+  duration: number;
+}
+
+/**
+ * Result from executing a task.
+ */
+export interface TaskResult {
+  /** Task ID */
+  taskId: string;
+
+  /** Whether the task succeeded */
+  success: boolean;
+
+  /** Results for each step */
+  steps: StepResult[];
+
+  /** Total duration in milliseconds */
+  duration: number;
+}
+
+/**
+ * Result from executing a recording.
+ */
+export interface RecordingResult {
+  /** Recording name */
+  name: string;
+
+  /** Whether the recording succeeded */
+  success: boolean;
+
+  /** Results for each task */
+  tasks: TaskResult[];
+
+  /** Total duration in milliseconds */
+  duration: number;
+
+  /** Any extracted values */
+  extracts: Record<string, unknown>;
+}
+
+/**
+ * Playback session lifecycle states.
+ */
+export type PlaybackState =
   | 'idle' // No session active
-  | 'ready' // Session created, browser launched, waiting to start
+  | 'ready' // Session created, waiting to start
   | 'running' // Currently executing a step
   | 'paused' // Paused between steps, waiting for user action
   | 'completed' // All tasks/steps finished
   | 'error'; // Unrecoverable error occurred
 
 /**
- * Current position in the recording execution.
+ * Current position in the recording playback.
  */
-export interface ExecutionPosition {
+export interface PlaybackPosition {
   /** Index of current task (0-based) */
   taskIndex: number;
 
@@ -40,7 +91,7 @@ export interface ExecutionPosition {
  */
 export interface StepStartEvent {
   type: 'step-start';
-  position: ExecutionPosition;
+  position: PlaybackPosition;
   step: RecordingStep;
   timestamp: number;
 }
@@ -50,7 +101,7 @@ export interface StepStartEvent {
  */
 export interface StepCompleteEvent {
   type: 'step-complete';
-  position: ExecutionPosition;
+  position: PlaybackPosition;
   step: RecordingStep;
   result: StepResult;
   timestamp: number;
@@ -82,8 +133,8 @@ export interface TaskCompleteEvent {
  */
 export interface SessionStateEvent {
   type: 'session-state';
-  state: DebugSessionState;
-  position?: ExecutionPosition;
+  state: PlaybackState;
+  position?: PlaybackPosition;
   error?: string;
   timestamp: number;
 }
@@ -98,9 +149,9 @@ export interface SessionReadyEvent {
 }
 
 /**
- * Event emitted when execution completes.
+ * Event emitted when playback completes.
  */
-export interface ExecutionCompleteEvent {
+export interface PlaybackCompleteEvent {
   type: 'execution-complete';
   success: boolean;
   duration: number;
@@ -108,33 +159,33 @@ export interface ExecutionCompleteEvent {
 }
 
 /**
- * Union of all debug events that can be emitted.
+ * Union of all playback events.
  */
-export type DebugEvent =
+export type PlaybackEvent =
   | StepStartEvent
   | StepCompleteEvent
   | TaskStartEvent
   | TaskCompleteEvent
   | SessionStateEvent
   | SessionReadyEvent
-  | ExecutionCompleteEvent;
+  | PlaybackCompleteEvent;
 
 /**
- * Commands that can be sent to control execution.
+ * Commands to control playback.
  */
-export type DebugCommand =
-  | { type: 'start' } // Begin execution from current position
+export type PlaybackCommand =
+  | { type: 'start' } // Begin playback from current position
   | { type: 'pause' } // Pause after current step
-  | { type: 'resume' } // Continue execution
+  | { type: 'resume' } // Continue playback
   | { type: 'step' } // Execute single step then pause
   | { type: 'step-over' } // Execute current task to completion then pause
-  | { type: 'stop' } // Stop execution and cleanup
+  | { type: 'stop' } // Stop playback and cleanup
   | { type: 'restart' }; // Reset to beginning
 
 /**
- * Configuration for creating a debug session.
+ * Configuration for creating a playback session.
  */
-export interface DebugSessionConfig {
+export interface PlaybackConfig {
   /** App ID for the recording */
   appId: string;
 
@@ -152,25 +203,25 @@ export interface DebugSessionConfig {
 }
 
 /**
- * Snapshot of debug session state for serialization.
+ * Snapshot of playback session state for serialization.
  */
-export interface DebugSessionSnapshot {
+export interface PlaybackSnapshot {
   /** Unique session ID */
   sessionId: string;
 
   /** Current state */
-  state: DebugSessionState;
+  state: PlaybackState;
 
-  /** Current position in execution */
-  position: ExecutionPosition | null;
+  /** Current position in playback */
+  position: PlaybackPosition | null;
 
-  /** Recording being executed */
+  /** Recording being played */
   appId: string;
   recordingId: string;
 
   /** Results collected so far */
   completedSteps: Array<{
-    position: ExecutionPosition;
+    position: PlaybackPosition;
     result: StepResult;
   }>;
 

@@ -12,6 +12,7 @@ metadata:
   tags: [smoke, diagram, drawio, c4, architecture]
   author: smoke-test
   created: "2025-01-03"
+  modified: "2025-01-04"
 
 context:
   app: cyrus-code
@@ -54,9 +55,29 @@ tasks:
         timeout: 20000
         why: Wait for Draw.io's editor API to be available.
 
+  - id: wait-for-editor-ready
+    name: Wait for editor to be fully ready
+    depends: [wait-for-drawio]
+    steps:
+      - action: evaluate
+        code: |
+          // Wait for the loading indicator to disappear
+          for (let i = 0; i < 50; i++) {
+            await new Promise(r => setTimeout(r, 200));
+            const loading = document.querySelector('[data-testid="diagram-loading"]');
+            if (!loading) {
+              return { ready: true, attempts: i + 1 };
+            }
+          }
+          throw new Error('Editor loading indicator did not disappear after 10 seconds');
+        timeout: 15000
+        why: |
+          The React component sets isReady=true when it receives the IPC 'ready' message.
+          Wait for the loading indicator to disappear.
+
   - id: create-c4-diagram
     name: Create C4 Context diagram
-    depends: [wait-for-drawio]
+    depends: [wait-for-editor-ready]
     steps:
       - action: evaluate
         code: |
@@ -140,3 +161,11 @@ tasks:
           return result;
         timeout: 5000
         why: Verify the C4 diagram has the expected elements.
+
+# Usage example in tests:
+#
+# const player = new RecordingPlayer(webContents, recording);
+# const result = await player.play();
+#
+# expect(result.success).toBe(true);
+# // C4 diagram now contains 5 elements and 3 connections

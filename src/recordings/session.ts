@@ -1,45 +1,45 @@
 /**
- * In-App Step Execution Session
+ * Playback Session
  *
- * Manages a debug session that executes against the current Electron window.
- * Unlike the Playwright-based session, this runs entirely within the app.
+ * Manages a single playback session with lifecycle (initialize, start, pause, resume, stop).
+ * Wraps RecordingPlayer with session state and event forwarding.
  */
 
 import type { WebContents } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import type { Recording } from '../schema.js';
-import { InAppExecutor, type InAppExecutorOptions } from './in-app-executor.js';
+import type { Recording } from './recording-types.js';
+import { RecordingPlayer, type PlayerOptions } from './player.js';
 import type {
-  DebugEvent,
-  DebugSessionConfig,
-  DebugSessionSnapshot,
-  DebugSessionState,
-  ExecutionPosition,
+  PlaybackEvent,
+  PlaybackConfig,
+  PlaybackSnapshot,
+  PlaybackState,
+  PlaybackPosition,
   StepResult,
-} from './schema.js';
+} from './playback-types.js';
 
 /**
- * Session for in-app debugging.
+ * Manages a playback session.
  */
-export class InAppSession {
+export class PlaybackSession {
   private readonly sessionId: string;
-  private readonly config: DebugSessionConfig;
+  private readonly config: PlaybackConfig;
   private readonly recordingsDir: string;
   private readonly webContents: WebContents;
 
-  private executor: InAppExecutor | null = null;
+  private player: RecordingPlayer | null = null;
   private recording: Recording | null = null;
 
-  private state: DebugSessionState = 'idle';
+  private state: PlaybackState = 'idle';
   private createdAt: number;
   private error: string | undefined;
 
-  private eventListeners: Array<(event: DebugEvent) => void> = [];
+  private eventListeners: Array<(event: PlaybackEvent) => void> = [];
 
   constructor(
-    config: DebugSessionConfig,
+    config: PlaybackConfig,
     webContents: WebContents,
     recordingsDir?: string
   ) {
@@ -57,7 +57,7 @@ export class InAppSession {
   private generateSessionId(): string {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
-    return `inapp-${timestamp}-${random}`;
+    return `playback-${timestamp}-${random}`;
   }
 
   /**
@@ -70,15 +70,15 @@ export class InAppSession {
   /**
    * Get current session state.
    */
-  getState(): DebugSessionState {
+  getState(): PlaybackState {
     return this.state;
   }
 
   /**
-   * Get current execution position.
+   * Get current playback position.
    */
-  getPosition(): ExecutionPosition | null {
-    return this.executor?.getPosition() ?? null;
+  getPosition(): PlaybackPosition | null {
+    return this.player?.getPosition() ?? null;
   }
 
   /**
@@ -91,7 +91,7 @@ export class InAppSession {
   /**
    * Register an event listener.
    */
-  on(listener: (event: DebugEvent) => void): () => void {
+  on(listener: (event: PlaybackEvent) => void): () => void {
     this.eventListeners.push(listener);
     return () => {
       const index = this.eventListeners.indexOf(listener);
@@ -104,7 +104,7 @@ export class InAppSession {
   /**
    * Emit an event to all listeners.
    */
-  private emit(event: DebugEvent): void {
+  private emit(event: PlaybackEvent): void {
     for (const listener of this.eventListeners) {
       try {
         listener(event);
@@ -117,17 +117,17 @@ export class InAppSession {
   /**
    * Update internal state and emit state event.
    */
-  private setState(state: DebugSessionState, error?: string): void {
+  private setState(state: PlaybackState, error?: string): void {
     this.state = state;
     this.error = error;
-    const event: DebugEvent = {
+    const event: PlaybackEvent = {
       type: 'session-state',
       state,
       timestamp: Date.now(),
     };
     const position = this.getPosition();
     if (position) {
-      (event as { position?: ExecutionPosition }).position = position;
+      (event as { position?: PlaybackPosition }).position = position;
     }
     if (error) {
       (event as { error?: string }).error = error;
@@ -151,7 +151,7 @@ export class InAppSession {
   }
 
   /**
-   * Initialize the session - load recording and create executor.
+   * Initialize the session - load recording and create player.
    */
   async initialize(): Promise<void> {
     if (this.state !== 'idle') {
@@ -162,26 +162,25 @@ export class InAppSession {
       // Load recording
       this.recording = this.loadRecording();
 
-      // Create executor
-      // basePath is the project root (3 levels up from recordings dir: tests/e2e/recordings)
+      // Create player
       const basePath = path.resolve(this.recordingsDir, '..', '..', '..');
-      const executorOptions: InAppExecutorOptions = {
+      const playerOptions: PlayerOptions = {
         pauseOnStart: this.config.pauseOnStart ?? true,
         stopOnError: true,
         basePath,
       };
       if (this.config.timeoutMultiplier !== undefined) {
-        executorOptions.timeoutMultiplier = this.config.timeoutMultiplier;
+        playerOptions.timeoutMultiplier = this.config.timeoutMultiplier;
       }
 
-      this.executor = new InAppExecutor(
+      this.player = new RecordingPlayer(
         this.webContents,
         this.recording,
-        executorOptions
+        playerOptions
       );
 
-      // Forward executor events
-      this.executor.on((event) => {
+      // Forward player events
+      this.player.on((event) => {
         if (event.type === 'session-state') {
           this.state = event.state;
         }
@@ -202,15 +201,15 @@ export class InAppSession {
   }
 
   /**
-   * Start or resume execution.
+   * Start or resume playback.
    */
   async start(): Promise<{ success: boolean; duration: number }> {
-    if (!this.executor) {
+    if (!this.player) {
       throw new Error('Session not initialized');
     }
 
     if (this.state === 'paused') {
-      this.executor.resume();
+      this.player.resume();
       return new Promise((resolve) => {
         const unsubscribe = this.on((event) => {
           if (event.type === 'execution-complete') {
@@ -225,35 +224,35 @@ export class InAppSession {
       throw new Error(`Cannot start session in state: ${this.state}`);
     }
 
-    return this.executor.execute();
+    return this.player.play();
   }
 
   /**
-   * Pause execution after current step.
+   * Pause playback after current step.
    */
   pause(): void {
-    this.executor?.pause();
+    this.player?.pause();
   }
 
   /**
    * Resume from paused state.
    */
   resume(): void {
-    this.executor?.resume();
+    this.player?.resume();
   }
 
   /**
    * Execute single step and pause.
    */
   step(): void {
-    this.executor?.step();
+    this.player?.step();
   }
 
   /**
-   * Stop execution.
+   * Stop playback.
    */
   async stop(): Promise<void> {
-    this.executor?.stop();
+    this.player?.stop();
     this.setState('idle');
   }
 
@@ -261,15 +260,15 @@ export class InAppSession {
    * Get step results.
    */
   getStepResults(): Map<string, StepResult> {
-    return this.executor?.getStepResults() ?? new Map();
+    return this.player?.getStepResults() ?? new Map();
   }
 
   /**
    * Get a snapshot of the current session state.
    */
-  getSnapshot(): DebugSessionSnapshot {
-    const results = this.executor?.getStepResults() ?? new Map();
-    const completedSteps: DebugSessionSnapshot['completedSteps'] = [];
+  getSnapshot(): PlaybackSnapshot {
+    const results = this.player?.getStepResults() ?? new Map();
+    const completedSteps: PlaybackSnapshot['completedSteps'] = [];
 
     results.forEach((result, key) => {
       const [taskIndex, stepIndex] = key.split(':').map(Number);
@@ -282,7 +281,7 @@ export class InAppSession {
       }
     });
 
-    const snapshot: DebugSessionSnapshot = {
+    const snapshot: PlaybackSnapshot = {
       sessionId: this.sessionId,
       state: this.state,
       position: this.getPosition(),
@@ -301,7 +300,7 @@ export class InAppSession {
    * Dispose the session.
    */
   async dispose(): Promise<void> {
-    this.executor = null;
+    this.player = null;
     this.eventListeners = [];
   }
 }

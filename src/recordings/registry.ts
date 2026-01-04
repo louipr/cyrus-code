@@ -1,24 +1,28 @@
 /**
- * Session Manager
+ * Session Registry
  *
- * Singleton registry for managing debug sessions.
+ * Singleton registry for managing multiple playback sessions.
  * Provides the main interface for IPC handlers to create and control sessions.
- *
- * Uses InAppSession which executes recordings against the current Electron window
- * via webContents.executeJavaScript().
  */
 
 import type { WebContents } from 'electron';
-import { InAppSession } from './in-app-session.js';
-import type { DebugEvent, DebugSessionConfig, DebugSessionSnapshot } from './schema.js';
+import { PlaybackSession } from './session.js';
+import type {
+  PlaybackEvent,
+  PlaybackConfig,
+  PlaybackSnapshot,
+  PlaybackState,
+  PlaybackPosition,
+  StepResult,
+} from './playback-types.js';
 
-/** Common session interface */
+/** Session interface for registry */
 interface ISession {
   getId(): string;
-  getState(): import('./schema.js').DebugSessionState;
-  getPosition(): import('./schema.js').ExecutionPosition | null;
-  getSnapshot(): DebugSessionSnapshot;
-  on(listener: (event: DebugEvent) => void): () => void;
+  getState(): PlaybackState;
+  getPosition(): PlaybackPosition | null;
+  getSnapshot(): PlaybackSnapshot;
+  on(listener: (event: PlaybackEvent) => void): () => void;
   initialize(): Promise<void>;
   start(): Promise<{ success: boolean; duration: number }>;
   pause(): void;
@@ -26,17 +30,17 @@ interface ISession {
   step(): void;
   stop(): Promise<void>;
   dispose(): Promise<void>;
-  getStepResults(): Map<string, import('./schema.js').StepResult>;
+  getStepResults(): Map<string, StepResult>;
 }
 
 /**
- * Manages multiple debug sessions.
+ * Manages multiple playback sessions.
  */
-export class SessionManager {
-  private static instance: SessionManager | null = null;
+export class SessionRegistry {
+  private static instance: SessionRegistry | null = null;
 
   private sessions: Map<string, ISession> = new Map();
-  private globalListeners: Array<(sessionId: string, event: DebugEvent) => void> = [];
+  private globalListeners: Array<(sessionId: string, event: PlaybackEvent) => void> = [];
   private webContents: WebContents | null = null;
 
   private constructor() {
@@ -46,25 +50,25 @@ export class SessionManager {
   /**
    * Get the singleton instance.
    */
-  static getInstance(): SessionManager {
-    if (!SessionManager.instance) {
-      SessionManager.instance = new SessionManager();
+  static getInstance(): SessionRegistry {
+    if (!SessionRegistry.instance) {
+      SessionRegistry.instance = new SessionRegistry();
     }
-    return SessionManager.instance;
+    return SessionRegistry.instance;
   }
 
   /**
    * Reset the singleton (for testing).
    */
   static resetInstance(): void {
-    if (SessionManager.instance) {
-      SessionManager.instance.disposeAll().catch(() => {});
-      SessionManager.instance = null;
+    if (SessionRegistry.instance) {
+      SessionRegistry.instance.disposeAll().catch(() => {});
+      SessionRegistry.instance = null;
     }
   }
 
   /**
-   * Set the webContents for in-app session execution.
+   * Set the webContents for session execution.
    * Must be called before creating sessions.
    */
   setWebContents(webContents: WebContents): void {
@@ -72,14 +76,14 @@ export class SessionManager {
   }
 
   /**
-   * Create a new debug session (in-app execution).
+   * Create a new playback session.
    */
-  async createSession(config: DebugSessionConfig): Promise<string> {
+  async createSession(config: PlaybackConfig): Promise<string> {
     if (!this.webContents) {
       throw new Error('WebContents not set. Call setWebContents() first.');
     }
 
-    const session = new InAppSession(config, this.webContents);
+    const session = new PlaybackSession(config, this.webContents);
 
     // Forward events to global listeners
     session.on((event) => {
@@ -116,14 +120,14 @@ export class SessionManager {
   /**
    * Get snapshots of all sessions.
    */
-  getAllSnapshots(): DebugSessionSnapshot[] {
+  getAllSnapshots(): PlaybackSnapshot[] {
     return Array.from(this.sessions.values()).map((s) => s.getSnapshot());
   }
 
   /**
    * Register a global event listener for all sessions.
    */
-  onEvent(listener: (sessionId: string, event: DebugEvent) => void): () => void {
+  onEvent(listener: (sessionId: string, event: PlaybackEvent) => void): () => void {
     this.globalListeners.push(listener);
     return () => {
       const index = this.globalListeners.indexOf(listener);
@@ -134,7 +138,7 @@ export class SessionManager {
   }
 
   /**
-   * Start execution for a session.
+   * Start playback for a session.
    */
   async startSession(sessionId: string): Promise<{ success: boolean; duration: number }> {
     const session = this.sessions.get(sessionId);
@@ -213,15 +217,15 @@ export class SessionManager {
   /**
    * Get session snapshot.
    */
-  getSessionSnapshot(sessionId: string): DebugSessionSnapshot | null {
+  getSessionSnapshot(sessionId: string): PlaybackSnapshot | null {
     const session = this.sessions.get(sessionId);
     return session?.getSnapshot() ?? null;
   }
 }
 
 /**
- * Get the global session manager instance.
+ * Get the global session registry instance.
  */
-export function getSessionManager(): SessionManager {
-  return SessionManager.getInstance();
+export function getSessionRegistry(): SessionRegistry {
+  return SessionRegistry.getInstance();
 }
