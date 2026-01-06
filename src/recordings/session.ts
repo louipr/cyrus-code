@@ -147,7 +147,16 @@ export class PlaybackSession {
     }
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    return yaml.parse(content) as TestSuite;
+    const raw = yaml.parse(content) as Record<string, unknown>;
+
+    // Transform YAML snake_case to TypeScript camelCase
+    return {
+      name: raw.name as string,
+      description: raw.description as string,
+      metadata: raw.metadata as TestSuite['metadata'],
+      context: raw.context as TestSuite['context'],
+      testCases: (raw.test_cases as TestSuite['testCases']) ?? [],
+    };
   }
 
   /**
