@@ -2,7 +2,7 @@
  * Grid Position Calculator
  *
  * Shared utility for calculating node positions in a level-based grid layout.
- * Used by Canvas, DependencyGraph, and TaskDependencyGraph components.
+ * Used by Canvas, DependencyGraph, and TaskGraph components.
  */
 
 import type { GraphLayoutConfig } from '../constants/graph-layout';

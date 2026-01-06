@@ -19,8 +19,7 @@ import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { RecordingsView } from './components/recordings';
-import { DebugOverlay } from './components/recordings/DebugOverlay';
-import { DebugSidePanel } from './components/recordings/DebugSidePanel';
+import { DebugOverlay, DebugSidePanel } from './components/debug';
 import { ResizableDivider } from './components/shared/ResizableDivider';
 import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
 import { useResizablePanel } from './hooks/useResizablePanel';
@@ -64,9 +63,9 @@ function AppContent(): React.ReactElement {
     dividerHandlers,
   } = useResizablePanel({
     storageKey: 'debug-panel-width',
-    defaultWidth: 280,
-    minWidth: 200,
-    maxWidth: 500,
+    defaultWidth: 230,
+    minWidth: 210,
+    maxWidth: 400,
   });
 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
@@ -189,16 +188,16 @@ function AppContent(): React.ReactElement {
     }
   }, []);
 
-  // Handle task click from debug side panel - navigate to recordings view
-  const handleSidePanelTaskClick = useCallback((taskId: string) => {
-    // Navigate to recordings view so user can see full task details
+  // Handle test case click from debug side panel - navigate to recordings view
+  const handleSidePanelTestCaseClick = useCallback((testCaseId: string) => {
+    // Navigate to recordings view so user can see full test case details
     setViewMode('recordings');
-    // The recordings view will handle showing the task
-    console.log('[App] Side panel task clicked:', taskId);
+    // The recordings view will handle showing the test case
+    console.log('[App] Side panel test case clicked:', testCaseId);
   }, []);
 
-  // Check if debug side panel should be shown
-  const showDebugSidePanel = debugSession.state.sessionId && debugSession.recording;
+  // Show debug side panel only when NOT in recordings view (it already has the task graph)
+  const showDebugSidePanel = debugSession.state.sessionId && debugSession.testSuite && viewMode !== 'recordings';
 
   return (
     <div style={styles.container}>
@@ -275,6 +274,7 @@ function AppContent(): React.ReactElement {
             }}
             onClick={() => setViewMode('diagram')}
             type="button"
+            data-testid="diagram-view-button"
           >
             Diagram
           </button>
@@ -446,10 +446,14 @@ function AppContent(): React.ReactElement {
               width={panelWidth}
               collapsed={panelCollapsed}
               onToggleCollapse={togglePanelCollapsed}
-              recording={debugSession.recording!}
-              position={debugSession.state.position}
+              testCases={debugSession.testSuite!.testCases}
+              executingTestCaseIndex={debugSession.state.position?.testCaseIndex ?? null}
               stepResults={debugSession.state.stepResults}
-              onTaskClick={handleSidePanelTaskClick}
+              onTestCaseClick={handleSidePanelTestCaseClick}
+              debugState={debugSession.state}
+              debugCommands={debugSession.commands}
+              testSuite={debugSession.testSuite}
+              onDebugClose={debugSession.clearDebug}
             />
           </>
         )}
@@ -472,16 +476,15 @@ function AppContent(): React.ReactElement {
         onClose={() => setShowAboutDialog(false)}
       />
 
-      {/* Global Debug Overlay - persists across view switches */}
-      {debugSession.state.sessionId && (
+      {/* Global Debug Overlay - only show when sidebar is not visible or collapsed */}
+      {debugSession.state.sessionId && (!showDebugSidePanel || panelCollapsed) && (
         <DebugOverlay
           state={debugSession.state}
           commands={debugSession.commands}
-          recording={debugSession.recording}
-          appId={debugSession.appId}
-          recordingId={debugSession.recordingId}
+          testSuite={debugSession.testSuite}
           onClose={debugSession.clearDebug}
           onReturnToRecordings={() => setViewMode('recordings')}
+          rightOffset={showDebugSidePanel && panelCollapsed ? 44 : 20}
         />
       )}
     </div>

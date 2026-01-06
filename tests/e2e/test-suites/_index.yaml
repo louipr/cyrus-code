@@ -1,29 +1,29 @@
-# Recordings Index
+# Test Suites Index
 #
-# Registry of all available recordings with metadata.
+# Registry of all available test suites with metadata.
 # Used by AI agents to discover available patterns.
 
 version: "1.0"
 description: |
-  AI-recordable GUI exploration recordings for E2E tests.
-  Each recording captures knowledge about how to interact with
+  AI-recordable GUI exploration test suites for E2E tests.
+  Each test suite captures knowledge about how to interact with
   specific parts of the application.
 
-# Recordings by application/component
+# Test suites by application/component
 recordings:
   smoke:
     description: Basic smoke tests for app functionality
     context: smoke/_context.yaml
     recordings:
       - id: app-loads
-        file: smoke/app-loads.yaml
+        file: smoke/app-loads.suite.yaml
         name: App Loads
         description: Verify the app loads and shows the main UI elements
         status: verified
         tags: [smoke, basic]
 
       - id: diagram-loads
-        file: smoke/diagram-loads.yaml
+        file: smoke/diagram-loads.suite.yaml
         name: Diagram Loads
         description: Open a diagram and verify the Draw.io editor loads
         status: verified
@@ -34,50 +34,50 @@ recordings:
     context: drawio/_context.yaml
     recordings:
       - id: export-png
-        file: drawio/export-png.yaml
+        file: drawio/export-png.suite.yaml
         name: Draw.io PNG Export
         description: Export diagram to PNG using native exportToCanvas
         status: verified
         tags: [export, png]
 
       - id: create-architecture-diagram
-        file: drawio/create-architecture-diagram.yaml
+        file: drawio/create-architecture-diagram.suite.yaml
         name: Create Architecture Diagram
         description: Create a 3-tier architecture diagram (Frontend/API/Database)
         status: draft
         tags: [diagram, drawio, uml, architecture]
 
       - id: create-c4-context
-        file: drawio/create-c4-context.yaml
+        file: drawio/create-c4-context.suite.yaml
         name: Create C4 Context Diagram
         description: Create a C4 Context diagram for cyrus-code system
         status: draft
         tags: [diagram, drawio, c4, architecture]
 
       - id: export-dialog
-        file: drawio/export-dialog.yaml
+        file: drawio/export-dialog.suite.yaml
         name: Export Dialog UI Test
         description: Test export dialog with preview and recent exports history
         status: verified
         tags: [export, dialog, history, ui]
 
-# How to use recordings:
+# How to use test suites:
 #
 # 1. In tests:
-#    import { RecordingPlayer } from './recordings/lib';
-#    const player = new RecordingPlayer(page);
+#    import { TestSuitePlayer } from './recordings/lib';
+#    const player = new TestSuitePlayer(page);
 #    const result = await player.run('drawio/export-png');
 #
-# 2. To create new recordings:
-#    import { RecordingBuilder } from './recordings/lib';
-#    const builder = new RecordingBuilder('my-feature')
+# 2. To create new test suites:
+#    import { TestSuiteBuilder } from './recordings/lib';
+#    const builder = new TestSuiteBuilder('my-feature')
 #      .setContext({ app: 'my-app' })
-#      .addTask('step-1', 'First step')
+#      .addTestCase('step-1', 'First step')
 #        .click('.button', 'Click the button to start')
 #        .waitFor('.result', 'Wait for result to appear')
-#      .save('my-app/my-feature.yaml');
+#      .save('my-app/my-feature.suite.yaml');
 #
 # 3. For AI agents exploring:
 #    - Read this index to discover available patterns
-#    - Use RecordingPlayer to replay known patterns
-#    - Use RecordingBuilder to capture new knowledge
+#    - Use TestSuitePlayer to replay known patterns
+#    - Use TestSuiteBuilder to capture new knowledge

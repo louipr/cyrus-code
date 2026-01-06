@@ -33,7 +33,7 @@ import type {
 } from '../domain/help/index';
 import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
 import type {
-  Recording,
+  TestSuite,
   PlaybackConfig,
   PlaybackSnapshot,
   PlaybackEvent,
@@ -159,8 +159,8 @@ interface CyrusAPI {
     getIndex: () => Promise<ApiResponse<RecordingIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
-    get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
-    getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
+    get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
     debug: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;

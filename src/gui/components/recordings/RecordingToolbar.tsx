@@ -1,15 +1,14 @@
 /**
  * RecordingToolbar Component
  *
- * Toolbar segment for recording name and play button.
+ * Toolbar segment for test suite name and play button.
  * Rendered inline in the toolbar row.
  */
 
-import type { Recording } from '../../../recordings';
+import type { TestSuite } from '../../../recordings';
 
 interface RecordingToolbarProps {
-  recording: Recording | null;
-  appId: string | null;
+  testSuite: TestSuite | null;
 }
 
 const styles = {
@@ -31,16 +30,14 @@ const styles = {
 };
 
 export function RecordingToolbar({
-  recording,
-  appId: _appId,
+  testSuite,
 }: RecordingToolbarProps) {
-  void _appId; // Reserved for future use
-  const recordingName = recording?.name || 'No recording';
+  const testSuiteName = testSuite?.name || 'No test suite';
 
   return (
     <div style={styles.toolbar} data-testid="recording-toolbar">
-      <span style={styles.label} title={recordingName}>
-        {recording ? truncate(recordingName, 20) : 'Select recording'}
+      <span style={styles.label} title={testSuiteName}>
+        {testSuite ? truncate(testSuiteName, 20) : 'Select test suite'}
       </span>
     </div>
   );

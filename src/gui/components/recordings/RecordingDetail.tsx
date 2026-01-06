@@ -1,14 +1,14 @@
 /**
  * RecordingDetail Component
  *
- * Displays detailed information about a selected recording.
+ * Displays detailed information about a selected test suite.
  * Shows metadata, context, and status information.
  */
 
-import type { Recording } from '../../../recordings';
+import type { TestSuite } from '../../../recordings';
 
 interface RecordingDetailProps {
-  recording: Recording;
+  testSuite: TestSuite;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,56 +24,56 @@ const RELIABILITY_COLORS: Record<string, string> = {
   unknown: '#808080',
 };
 
-export function RecordingDetail({ recording }: RecordingDetailProps) {
-  const statusColor = STATUS_COLORS[recording.metadata.status] ?? '#808080';
-  const reliabilityColor = RELIABILITY_COLORS[recording.metadata.reliability] ?? '#808080';
+export function RecordingDetail({ testSuite }: RecordingDetailProps) {
+  const statusColor = STATUS_COLORS[testSuite.metadata.status] ?? '#808080';
+  const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata.reliability] ?? '#808080';
 
   return (
     <div style={styles.container} data-testid="recording-detail">
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.title}>{recording.name}</span>
+        <span style={styles.title}>{testSuite.name}</span>
         <span style={{ ...styles.statusBadge, color: statusColor, borderColor: statusColor }}>
-          {recording.metadata.status}
+          {testSuite.metadata.status}
         </span>
       </div>
 
       {/* Description */}
-      <div style={styles.description}>{recording.description}</div>
+      <div style={styles.description}>{testSuite.description}</div>
 
       {/* Metadata */}
       <div style={styles.metadataGrid}>
         <div style={styles.metadataItem}>
           <span style={styles.label}>App</span>
-          <span style={styles.value}>{recording.context.app}</span>
+          <span style={styles.value}>{testSuite.context.app}</span>
         </div>
 
         <div style={styles.metadataItem}>
-          <span style={styles.label}>Tasks</span>
-          <span style={styles.value}>{recording.tasks.length}</span>
+          <span style={styles.label}>Test Cases</span>
+          <span style={styles.value}>{testSuite.testCases.length}</span>
         </div>
 
         <div style={styles.metadataItem}>
           <span style={styles.label}>Reliability</span>
           <span style={{ ...styles.value, color: reliabilityColor }}>
-            {recording.metadata.reliability}
+            {testSuite.metadata.reliability}
           </span>
         </div>
 
-        {recording.metadata.successRate !== undefined && (
+        {testSuite.metadata.successRate !== undefined && (
           <div style={styles.metadataItem}>
             <span style={styles.label}>Success Rate</span>
-            <span style={styles.value}>{recording.metadata.successRate}%</span>
+            <span style={styles.value}>{testSuite.metadata.successRate}%</span>
           </div>
         )}
       </div>
 
       {/* Tags */}
-      {recording.metadata.tags && recording.metadata.tags.length > 0 && (
+      {testSuite.metadata.tags && testSuite.metadata.tags.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Tags</div>
           <div style={styles.tagList}>
-            {recording.metadata.tags.map((tag, idx) => (
+            {testSuite.metadata.tags.map((tag: string, idx: number) => (
               <span key={idx} style={styles.tag}>
                 {tag}
               </span>
@@ -83,11 +83,11 @@ export function RecordingDetail({ recording }: RecordingDetailProps) {
       )}
 
       {/* Prerequisites */}
-      {recording.context.prerequisites && recording.context.prerequisites.length > 0 && (
+      {testSuite.context.prerequisites && testSuite.context.prerequisites.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Prerequisites</div>
           <ul style={styles.prereqList}>
-            {recording.context.prerequisites.map((prereq, idx) => (
+            {testSuite.context.prerequisites.map((prereq: string, idx: number) => (
               <li key={idx} style={styles.prereqItem}>
                 {prereq}
               </li>
@@ -97,23 +97,23 @@ export function RecordingDetail({ recording }: RecordingDetailProps) {
       )}
 
       {/* Wait For */}
-      {recording.context.waitFor && (
+      {testSuite.context.waitFor && (
         <div style={styles.section}>
           <div style={styles.label}>Wait For</div>
-          <div style={styles.codeBlock}>{recording.context.waitFor}</div>
+          <div style={styles.codeBlock}>{testSuite.context.waitFor}</div>
         </div>
       )}
 
       {/* Author & Dates */}
       <div style={styles.footer}>
-        {recording.metadata.author && (
-          <span style={styles.footerItem}>By: {recording.metadata.author}</span>
+        {testSuite.metadata.author && (
+          <span style={styles.footerItem}>By: {testSuite.metadata.author}</span>
         )}
-        {recording.metadata.created && (
-          <span style={styles.footerItem}>Created: {recording.metadata.created}</span>
+        {testSuite.metadata.created && (
+          <span style={styles.footerItem}>Created: {testSuite.metadata.created}</span>
         )}
-        {recording.metadata.lastRun && (
-          <span style={styles.footerItem}>Last run: {recording.metadata.lastRun}</span>
+        {testSuite.metadata.lastRun && (
+          <span style={styles.footerItem}>Last run: {testSuite.metadata.lastRun}</span>
         )}
       </div>
     </div>

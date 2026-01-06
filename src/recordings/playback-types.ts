@@ -1,11 +1,11 @@
 /**
  * Playback Types
  *
- * Types for playing back recordings with step-through capability.
+ * Types for playing back test suites with step-through capability.
  * Like a video player: play, pause, step-through, stop.
  */
 
-import type { RecordingStep, RecordingTask } from './recording-types.js';
+import type { TestStep, TestCase } from './recording-types.js';
 
 /**
  * Result from executing a step.
@@ -25,13 +25,13 @@ export interface StepResult {
 }
 
 /**
- * Result from executing a task.
+ * Result from executing a test case.
  */
-export interface TaskResult {
-  /** Task ID */
-  taskId: string;
+export interface TestCaseResult {
+  /** Test case ID */
+  testCaseId: string;
 
-  /** Whether the task succeeded */
+  /** Whether the test case succeeded */
   success: boolean;
 
   /** Results for each step */
@@ -42,17 +42,17 @@ export interface TaskResult {
 }
 
 /**
- * Result from executing a recording.
+ * Result from executing a test suite.
  */
-export interface RecordingResult {
-  /** Recording name */
+export interface TestSuiteResult {
+  /** Test suite name */
   name: string;
 
-  /** Whether the recording succeeded */
+  /** Whether the test suite succeeded */
   success: boolean;
 
-  /** Results for each task */
-  tasks: TaskResult[];
+  /** Results for each test case */
+  testCases: TestCaseResult[];
 
   /** Total duration in milliseconds */
   duration: number;
@@ -73,17 +73,17 @@ export type PlaybackState =
   | 'error'; // Unrecoverable error occurred
 
 /**
- * Current position in the recording playback.
+ * Current position in the test suite playback.
  */
 export interface PlaybackPosition {
-  /** Index of current task (0-based) */
-  taskIndex: number;
+  /** Index of current test case (0-based) */
+  testCaseIndex: number;
 
-  /** Index of current step within task (0-based) */
+  /** Index of current step within test case (0-based) */
   stepIndex: number;
 
-  /** Task ID for reference */
-  taskId: string;
+  /** Test case ID for reference */
+  testCaseId: string;
 }
 
 /**
@@ -92,7 +92,7 @@ export interface PlaybackPosition {
 export interface StepStartEvent {
   type: 'step-start';
   position: PlaybackPosition;
-  step: RecordingStep;
+  step: TestStep;
   timestamp: number;
 }
 
@@ -102,29 +102,29 @@ export interface StepStartEvent {
 export interface StepCompleteEvent {
   type: 'step-complete';
   position: PlaybackPosition;
-  step: RecordingStep;
+  step: TestStep;
   result: StepResult;
   timestamp: number;
 }
 
 /**
- * Event emitted when a task starts.
+ * Event emitted when a test case starts.
  */
-export interface TaskStartEvent {
-  type: 'task-start';
-  taskIndex: number;
-  task: RecordingTask;
+export interface TestCaseStartEvent {
+  type: 'test-case-start';
+  testCaseIndex: number;
+  testCase: TestCase;
   timestamp: number;
 }
 
 /**
- * Event emitted when a task completes.
+ * Event emitted when a test case completes.
  */
-export interface TaskCompleteEvent {
-  type: 'task-complete';
-  taskIndex: number;
-  task: RecordingTask;
-  result: TaskResult;
+export interface TestCaseCompleteEvent {
+  type: 'test-case-complete';
+  testCaseIndex: number;
+  testCase: TestCase;
+  result: TestCaseResult;
   timestamp: number;
 }
 
@@ -164,8 +164,8 @@ export interface PlaybackCompleteEvent {
 export type PlaybackEvent =
   | StepStartEvent
   | StepCompleteEvent
-  | TaskStartEvent
-  | TaskCompleteEvent
+  | TestCaseStartEvent
+  | TestCaseCompleteEvent
   | SessionStateEvent
   | SessionReadyEvent
   | PlaybackCompleteEvent;
@@ -186,11 +186,11 @@ export type PlaybackCommand =
  * Configuration for creating a playback session.
  */
 export interface PlaybackConfig {
-  /** App ID for the recording */
+  /** App ID for the test suite */
   appId: string;
 
-  /** Recording ID */
-  recordingId: string;
+  /** Test suite ID */
+  testSuiteId: string;
 
   /** Whether to run browser in headed mode */
   headed?: boolean;
@@ -215,9 +215,9 @@ export interface PlaybackSnapshot {
   /** Current position in playback */
   position: PlaybackPosition | null;
 
-  /** Recording being played */
+  /** Test suite being played */
   appId: string;
-  recordingId: string;
+  testSuiteId: string;
 
   /** Results collected so far */
   completedSteps: Array<{

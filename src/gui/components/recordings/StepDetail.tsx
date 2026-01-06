@@ -5,10 +5,10 @@
  * Shows action type, selector, code, and the reasoning (why) field.
  */
 
-import type { RecordingStep } from '../../../recordings';
+import type { TestStep } from '../../../recordings';
 
 interface StepDetailProps {
-  step: RecordingStep;
+  step: TestStep;
   stepIndex: number;
 }
 

@@ -1,37 +1,37 @@
 /**
- * Recording Content Service Schema
+ * Test Suite Content Service Schema
  *
- * Interfaces for the recording content service.
+ * Interfaces for the test suite content service.
  */
 
-import type { Recording } from '../../recordings/index.js';
+import type { TestSuite } from '../../recordings/index.js';
 import type {
   RecordingIndex,
   RecordingEntry,
-  IRecordingRepository,
+  TestSuiteRepository,
 } from '../../domain/recordings/index.js';
 
 /**
- * Recording Content Service Interface
+ * Test Suite Content Service Interface
  */
-export interface IRecordingContentService {
+export interface TestSuiteContentService {
   /** The underlying repository */
-  readonly repository: IRecordingRepository;
+  readonly repository: TestSuiteRepository;
 
-  /** Get the recordings index */
+  /** Get the test suites index */
   getIndex(): RecordingIndex;
 
   /** Get list of app IDs */
   getApps(): string[];
 
-  /** Get recordings for a specific app */
-  getRecordingsByApp(appId: string): RecordingEntry[];
+  /** Get test suites for a specific app */
+  getTestSuitesByApp(appId: string): RecordingEntry[];
 
-  /** Get a specific recording */
-  getRecording(appId: string, recordingId: string): Recording | null;
+  /** Get a specific test suite */
+  getTestSuite(appId: string, testSuiteId: string): TestSuite | null;
 
-  /** Get recording by file path */
-  getRecordingByPath(filePath: string): Recording | null;
+  /** Get test suite by file path */
+  getTestSuiteByPath(filePath: string): TestSuite | null;
 
   /** Clear cached data */
   clearCache(): void;

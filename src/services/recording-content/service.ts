@@ -1,29 +1,29 @@
 /**
- * Recording Content Service
+ * Test Suite Content Service
  *
- * Service layer for recording data access and operations.
+ * Service layer for test suite data access and operations.
  */
 
-import type { Recording } from '../../recordings/index.js';
+import type { TestSuite } from '../../recordings/index.js';
 import type {
   RecordingIndex,
   RecordingEntry,
-  IRecordingRepository,
+  TestSuiteRepository,
 } from '../../domain/recordings/index.js';
-import type { IRecordingContentService } from './schema.js';
+import type { TestSuiteContentService as TestSuiteContentServiceInterface } from './schema.js';
 
 /**
- * Recording Content Service - orchestrates recording operations.
+ * Test Suite Content Service - orchestrates test suite operations.
  */
-export class RecordingContentService implements IRecordingContentService {
-  readonly repository: IRecordingRepository;
+export class TestSuiteContentService implements TestSuiteContentServiceInterface {
+  readonly repository: TestSuiteRepository;
 
-  constructor(repository: IRecordingRepository) {
+  constructor(repository: TestSuiteRepository) {
     this.repository = repository;
   }
 
   /**
-   * Get the recordings index.
+   * Get the test suites index.
    */
   getIndex(): RecordingIndex {
     return this.repository.getIndex();
@@ -37,24 +37,24 @@ export class RecordingContentService implements IRecordingContentService {
   }
 
   /**
-   * Get recordings for a specific app.
+   * Get test suites for a specific app.
    */
-  getRecordingsByApp(appId: string): RecordingEntry[] {
-    return this.repository.getRecordingsByApp(appId);
+  getTestSuitesByApp(appId: string): RecordingEntry[] {
+    return this.repository.getTestSuitesByApp(appId);
   }
 
   /**
-   * Get a specific recording.
+   * Get a specific test suite.
    */
-  getRecording(appId: string, recordingId: string): Recording | null {
-    return this.repository.getRecording(appId, recordingId);
+  getTestSuite(appId: string, testSuiteId: string): TestSuite | null {
+    return this.repository.getTestSuite(appId, testSuiteId);
   }
 
   /**
-   * Get recording by file path.
+   * Get test suite by file path.
    */
-  getRecordingByPath(filePath: string): Recording | null {
-    return this.repository.getRecordingByPath(filePath);
+  getTestSuiteByPath(filePath: string): TestSuite | null {
+    return this.repository.getTestSuiteByPath(filePath);
   }
 
   /**

@@ -2,15 +2,15 @@
  * Playback Session
  *
  * Manages a single playback session with lifecycle (initialize, start, pause, resume, stop).
- * Wraps RecordingPlayer with session state and event forwarding.
+ * Wraps TestSuitePlayer with session state and event forwarding.
  */
 
 import type { WebContents } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import type { Recording } from './recording-types.js';
-import { RecordingPlayer, type PlayerOptions } from './player.js';
+import type { TestSuite } from './recording-types.js';
+import { TestSuitePlayer, type PlayerOptions } from './player.js';
 import type {
   PlaybackEvent,
   PlaybackConfig,
@@ -26,11 +26,11 @@ import type {
 export class PlaybackSession {
   private readonly sessionId: string;
   private readonly config: PlaybackConfig;
-  private readonly recordingsDir: string;
+  private readonly testSuitesDir: string;
   private readonly webContents: WebContents;
 
-  private player: RecordingPlayer | null = null;
-  private recording: Recording | null = null;
+  private player: TestSuitePlayer | null = null;
+  private testSuite: TestSuite | null = null;
 
   private state: PlaybackState = 'idle';
   private createdAt: number;
@@ -41,14 +41,14 @@ export class PlaybackSession {
   constructor(
     config: PlaybackConfig,
     webContents: WebContents,
-    recordingsDir?: string
+    testSuitesDir?: string
   ) {
     this.sessionId = this.generateSessionId();
     this.config = config;
     this.webContents = webContents;
     this.createdAt = Date.now();
-    this.recordingsDir =
-      recordingsDir || path.join(process.cwd(), 'tests', 'e2e', 'recordings');
+    this.testSuitesDir =
+      testSuitesDir || path.join(process.cwd(), 'tests', 'e2e', 'test-suites');
   }
 
   /**
@@ -82,10 +82,10 @@ export class PlaybackSession {
   }
 
   /**
-   * Get the loaded recording.
+   * Get the loaded test suite.
    */
-  getRecording(): Recording | null {
-    return this.recording;
+  getTestSuite(): TestSuite | null {
+    return this.testSuite;
   }
 
   /**
@@ -136,22 +136,22 @@ export class PlaybackSession {
   }
 
   /**
-   * Load recording from disk.
+   * Load test suite from disk.
    */
-  private loadRecording(): Recording {
-    const { appId, recordingId } = this.config;
-    const filePath = path.join(this.recordingsDir, appId, `${recordingId}.yaml`);
+  private loadTestSuite(): TestSuite {
+    const { appId, testSuiteId } = this.config;
+    const filePath = path.join(this.testSuitesDir, appId, `${testSuiteId}.suite.yaml`);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`Recording not found: ${filePath}`);
+      throw new Error(`Test suite not found: ${filePath}`);
     }
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    return yaml.parse(content) as Recording;
+    return yaml.parse(content) as TestSuite;
   }
 
   /**
-   * Initialize the session - load recording and create player.
+   * Initialize the session - load test suite and create player.
    */
   async initialize(): Promise<void> {
     if (this.state !== 'idle') {
@@ -159,11 +159,11 @@ export class PlaybackSession {
     }
 
     try {
-      // Load recording
-      this.recording = this.loadRecording();
+      // Load test suite
+      this.testSuite = this.loadTestSuite();
 
       // Create player
-      const basePath = path.resolve(this.recordingsDir, '..', '..', '..');
+      const basePath = path.resolve(this.testSuitesDir, '..', '..', '..');
       const playerOptions: PlayerOptions = {
         pauseOnStart: this.config.pauseOnStart ?? true,
         stopOnError: true,
@@ -173,9 +173,9 @@ export class PlaybackSession {
         playerOptions.timeoutMultiplier = this.config.timeoutMultiplier;
       }
 
-      this.player = new RecordingPlayer(
+      this.player = new TestSuitePlayer(
         this.webContents,
-        this.recording,
+        this.testSuite,
         playerOptions
       );
 
@@ -271,11 +271,11 @@ export class PlaybackSession {
     const completedSteps: PlaybackSnapshot['completedSteps'] = [];
 
     results.forEach((result, key) => {
-      const [taskIndex, stepIndex] = key.split(':').map(Number);
-      const task = this.recording?.tasks[taskIndex];
-      if (task) {
+      const [testCaseIndex, stepIndex] = key.split(':').map(Number);
+      const testCase = this.testSuite?.testCases[testCaseIndex];
+      if (testCase) {
         completedSteps.push({
-          position: { taskIndex, stepIndex, taskId: task.id },
+          position: { testCaseIndex, stepIndex, testCaseId: testCase.id },
           result,
         });
       }
@@ -286,7 +286,7 @@ export class PlaybackSession {
       state: this.state,
       position: this.getPosition(),
       appId: this.config.appId,
-      recordingId: this.config.recordingId,
+      testSuiteId: this.config.testSuiteId,
       completedSteps,
       createdAt: this.createdAt,
     };

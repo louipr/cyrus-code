@@ -1,23 +1,23 @@
 /**
- * Recording Content Service Factory
+ * Test Suite Content Service Factory
  *
- * Creates configured instances of the recording content service.
+ * Creates configured instances of the test suite content service.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { YamlRecordingRepository } from '../../repositories/recording-repository.js';
-import { RecordingContentService } from './service.js';
-import type { IRecordingContentService } from './schema.js';
+import { YamlTestSuiteRepository } from '../../repositories/recording-repository.js';
+import { TestSuiteContentService } from './service.js';
+import type { TestSuiteContentService as TestSuiteContentServiceInterface } from './schema.js';
 
 /**
- * Find the project root by looking for package.json or recordings directory.
+ * Find the project root by looking for package.json or test-suites directory.
  */
 function findProjectRoot(): string {
   let dir = process.cwd();
   while (dir !== path.dirname(dir)) {
     if (
-      fs.existsSync(path.join(dir, 'tests', 'e2e', 'recordings', '_index.yaml')) ||
+      fs.existsSync(path.join(dir, 'tests', 'e2e', 'test-suites', '_index.yaml')) ||
       fs.existsSync(path.join(dir, 'package.json'))
     ) {
       return dir;
@@ -28,15 +28,15 @@ function findProjectRoot(): string {
 }
 
 /**
- * Create a configured RecordingContentService instance.
+ * Create a configured TestSuiteContentService instance.
  *
  * @param projectRoot - Optional project root path. If not provided, will be auto-detected.
- * @returns Configured RecordingContentService instance
+ * @returns Configured TestSuiteContentService instance
  */
-export function createRecordingContentService(
+export function createTestSuiteContentService(
   projectRoot?: string
-): IRecordingContentService {
+): TestSuiteContentServiceInterface {
   const root = projectRoot ?? findProjectRoot();
-  const repository = new YamlRecordingRepository(root);
-  return new RecordingContentService(repository);
+  const repository = new YamlTestSuiteRepository(root);
+  return new TestSuiteContentService(repository);
 }

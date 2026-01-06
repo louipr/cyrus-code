@@ -36,7 +36,7 @@ import type {
   DocumentHeading,
 } from '../src/domain/help/index.js';
 import type {
-  Recording,
+  TestSuite,
   PlaybackConfig,
   PlaybackSnapshot,
   PlaybackEvent,
@@ -165,8 +165,8 @@ export interface CyrusAPI {
     getIndex: () => Promise<ApiResponse<RecordingIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
-    get: (appId: string, recordingId: string) => Promise<ApiResponse<Recording | null>>;
-    getByPath: (filePath: string) => Promise<ApiResponse<Recording | null>>;
+    get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
     // Debug session operations
     debug: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
@@ -288,7 +288,7 @@ const cyrusAPI: CyrusAPI = {
     getIndex: () => ipcRenderer.invoke('recordings:index'),
     getApps: () => ipcRenderer.invoke('recordings:apps'),
     getByApp: (appId) => ipcRenderer.invoke('recordings:byApp', appId),
-    get: (appId, recordingId) => ipcRenderer.invoke('recordings:get', appId, recordingId),
+    get: (appId, testSuiteId) => ipcRenderer.invoke('recordings:get', appId, testSuiteId),
     getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
     debug: {
       create: (config) => ipcRenderer.invoke('recordings:debug:create', config),

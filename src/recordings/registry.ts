@@ -17,7 +17,7 @@ import type {
 } from './playback-types.js';
 
 /** Session interface for registry */
-interface ISession {
+interface Session {
   getId(): string;
   getState(): PlaybackState;
   getPosition(): PlaybackPosition | null;
@@ -39,7 +39,7 @@ interface ISession {
 export class SessionRegistry {
   private static instance: SessionRegistry | null = null;
 
-  private sessions: Map<string, ISession> = new Map();
+  private sessions: Map<string, Session> = new Map();
   private globalListeners: Array<(sessionId: string, event: PlaybackEvent) => void> = [];
   private webContents: WebContents | null = null;
 
@@ -106,7 +106,7 @@ export class SessionRegistry {
   /**
    * Get a session by ID.
    */
-  getSession(sessionId: string): ISession | undefined {
+  getSession(sessionId: string): Session | undefined {
     return this.sessions.get(sessionId);
   }
 

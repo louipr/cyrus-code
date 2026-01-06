@@ -37,8 +37,8 @@ npm run electron:dev   # Dev mode with hot reload
 | Category | Count | Location |
 |----------|-------|----------|
 | Unit tests | 343 | `src/**/*.test.ts` |
-| E2E tests | 19 tests (9 specs) | `tests/e2e/*.spec.ts` |
-| **Total** | **362** | |
+| E2E tests | 24 tests (6 specs) | `tests/e2e/*.spec.ts` |
+| **Total** | **367** | |
 
 ---
 
@@ -53,7 +53,7 @@ npm run electron:dev   # Dev mode with hot reload
 | Documentation | C4 diagrams | - | ✅ Complete |
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
 | Draw.io Integration | EditorUi hook, PNG export | Diagram view, webview | ✅ Complete |
-| E2E Testing Infrastructure | RecordingPlayer, RecordingBuilder, StepExecutor | Recording Visualization View, Step-Through Debugger | ✅ Phase 1-4 Complete |
+| E2E Testing Infrastructure | TestSuitePlayer, PlaybackSession | Test Suite Visualization View, Step-Through Debugger | ✅ Phase 1-6 Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -150,7 +150,7 @@ npm run electron:dev   # Dev mode with hot reload
 |----|------|------|--------|
 | 2.V1 | `npm run build && npm test` passes | Agent | ✅ |
 | 2.V2 | `npm run test:e2e` passes (view tests) | Agent | ✅ |
-| 2.V3 | Manual: Canvas view, drag nodes, view toggle works | User | ⏳ |
+| 2.V3 | Manual: Canvas view, drag nodes, view toggle works | User | ✅ |
 
 ### Deliverables
 
@@ -195,7 +195,7 @@ npm run electron:dev   # Dev mode with hot reload
 | 3.V1 | `npm run build && npm test` passes | Agent | ✅ |
 | 3.V2 | `npm run test:e2e` passes (generation tests) | Agent | ✅ |
 | 3.V3 | Manual: Generate button, preview modal, code display works | User | ✅ |
-| 3.V4 | Manual: Export All button, export dialog, browse directory, file tree | User | ⏳ |
+| 3.V4 | Manual: Export All button, export dialog, browse directory, file tree | User | ✅ |
 
 ### Deliverables
 
@@ -418,52 +418,52 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.1 | Recording schema types | `src/recordings/schema.ts` | ✅ |
-| E2E.2 | RecordingPlayer (executes YAML recordings) | `src/recordings/player.ts` | ✅ |
-| E2E.3 | RecordingBuilder (fluent API for creating recordings) | `src/recordings/builder.ts` | ✅ |
-| E2E.4 | Draw.io export-png recording | `tests/e2e/recordings/drawio/export-png.yaml` | ✅ |
-| E2E.5 | Draw.io SVG fallback recording | `tests/e2e/recordings/drawio/export-svg-fallback.yaml` | ✅ |
-| E2E.6 | Draw.io context documentation | `tests/e2e/recordings/drawio/_context.yaml` | ✅ |
-| E2E.7 | Recording index | `tests/e2e/recordings/_index.yaml` | ✅ |
-| E2E.8 | Unit tests for RecordingBuilder | `src/recordings/recording-builder.test.ts` | ✅ |
+| E2E.1 | Test suite schema types | `src/recordings/recording-types.ts` | ✅ |
+| E2E.2 | TestSuitePlayer (executes YAML test suites) | `src/recordings/player.ts` | ✅ |
+| E2E.3 | PlaybackSession (manages test execution) | `src/recordings/session.ts` | ✅ |
+| E2E.4 | Draw.io export-png test suite | `tests/e2e/test-suites/drawio/export-png.suite.yaml` | ✅ |
+| E2E.5 | Draw.io SVG fallback test suite | `tests/e2e/test-suites/drawio/export-svg-fallback.suite.yaml` | ✅ |
+| E2E.6 | Draw.io context documentation | `tests/e2e/test-suites/drawio/_context.yaml` | ✅ |
+| E2E.7 | Test suite index | `tests/e2e/test-suites/_index.yaml` | ✅ |
+| E2E.8 | Unit tests for playback system | `src/recordings/*.test.ts` | ✅ |
 
-**Summary**: AI-recordable GUI exploration system for E2E tests. Recordings are YAML files with tree-structured tasks and LLM-optimized `why` fields explaining each step's purpose. Supports 10 action types: click, type, wait-for, evaluate, poll, extract, assert, keyboard, hover, screenshot.
+**Summary**: AI-recordable GUI exploration system for E2E tests. Test suites are YAML files with tree-structured test cases and LLM-optimized `why` fields explaining each step's purpose. Supports 10 action types: click, type, wait-for, evaluate, poll, extract, assert, keyboard, hover, screenshot.
 
-### Phase 2: Recording System Integration (Future)
+### Phase 2: Test Suite System Integration (Future)
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.9 | Integrate RecordingPlayer into diagram-comparison test | `tests/e2e/diagram-comparison.spec.ts` | ⏳ |
+| E2E.9 | Integrate TestSuitePlayer into diagram-comparison test | `tests/e2e/diagram-comparison.spec.ts` | ⏳ |
 | E2E.10 | Add feedback/grading mechanism (success rates from CI) | `src/recordings/` | ⏳ |
-| E2E.11 | Create menu navigation recording | `tests/e2e/recordings/drawio/menu-navigation.yaml` | ⏳ |
-| E2E.12 | Create dialog handling recording | `tests/e2e/recordings/drawio/dialog-handling.yaml` | ⏳ |
-| E2E.13 | Demo RecordingBuilder in live exploration | - | ⏳ |
+| E2E.11 | Create menu navigation test suite | `tests/e2e/test-suites/drawio/menu-navigation.suite.yaml` | ⏳ |
+| E2E.12 | Create dialog handling test suite | `tests/e2e/test-suites/drawio/dialog-handling.suite.yaml` | ⏳ |
+| E2E.13 | Demo test suite builder in live exploration | - | ⏳ |
 
-### Phase 3: Recording Visualization View
+### Phase 3: Test Suite Visualization View
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.14 | Recording Tree Navigator component | `src/gui/components/recordings/RecordingTree.tsx` | ✅ |
-| E2E.15 | Task Dependency Graph (DAG visualization) | `src/gui/components/recordings/TaskDependencyGraph.tsx` | ✅ |
+| E2E.14 | Test Suite Tree Navigator component | `src/gui/components/recordings/RecordingTree.tsx` | ✅ |
+| E2E.15 | Test Case Dependency Graph (DAG visualization) | `src/gui/components/recordings/TaskGraph.tsx` | ✅ |
 | E2E.16 | Step Timeline component (action sequence) | `src/gui/components/recordings/StepTimeline.tsx` | ✅ |
 | E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/recordings/StepDetail.tsx` | ✅ |
-| E2E.18 | Recording Detail view (combined task/step view) | `src/gui/components/recordings/RecordingDetail.tsx` | ✅ |
-| E2E.19 | Play Recording Dialog (execution UI) | `src/gui/components/recordings/PlayRecordingDialog.tsx` | ✅ |
-| E2E.20 | Recording Toolbar (actions) | `src/gui/components/recordings/RecordingToolbar.tsx` | ✅ |
+| E2E.18 | Test Suite Detail view (combined test case/step view) | `src/gui/components/recordings/RecordingDetail.tsx` | ✅ |
+| E2E.19 | Play Test Suite Dialog (execution UI) | `src/gui/components/recordings/PlayRecordingDialog.tsx` | ✅ |
+| E2E.20 | Test Suite Toolbar (actions) | `src/gui/components/recordings/RecordingToolbar.tsx` | ✅ |
 | E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ✅ |
-| E2E.22 | IPC handlers for loading/running recordings | `electron/ipc-handlers.ts` | ✅ |
+| E2E.22 | IPC handlers for loading/running test suites | `electron/ipc-handlers.ts` | ✅ |
 
 **View Layout Concept:**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  [Browser] [Graph] [Canvas] [Diagram] [Recordings]              │
 ├─────────────────┬───────────────────────────────────────────────┤
-│  Tree Navigator │  Task Dependency Graph                        │
+│  Tree Navigator │  Test Case Dependency Graph                   │
 │  ├─ drawio/     │  ┌─────────┐     ┌─────────┐                  │
 │  │  ├─ export-  │  │ verify  │────▶│ start   │                  │
 │  │  │   png     │  │ editor  │     │ export  │                  │
-│  │  │  ├─ task1 │  └─────────┘     └────┬────┘                  │
-│  │  │  └─ task2 │                       │                       │
+│  │  │  ├─ case1 │  └─────────┘     └────┬────┘                  │
+│  │  │  └─ case2 │                       │                       │
 │  │  └─ export-  │                       ▼                       │
 │  │      svg     │               ┌───────────────┐               │
 │  └─ _context    │               │ wait-for-     │               │
@@ -484,8 +484,8 @@ npm run electron:dev   # Dev mode with hot reload
 ```
 
 **Key UX Features:**
-- Tree navigator with collapsible app contexts and recordings
-- Task DAG shows dependencies visually (similar to CI pipeline view)
+- Tree navigator with collapsible app contexts and test suites
+- Test case DAG shows dependencies visually (similar to CI pipeline view)
 - Step timeline with action icons and status indicators
 - `why` field prominently displayed for LLM explanations
 - Click-through from tree → DAG → timeline → details
@@ -493,21 +493,22 @@ npm run electron:dev   # Dev mode with hot reload
 
 ### Deliverables
 
-- [x] Recording schema with tasks, steps, and `why` explanations
-- [x] RecordingPlayer for executing YAML recordings against Playwright
-- [x] RecordingBuilder fluent API for AI agents to create recordings
-- [x] First recordings capturing Draw.io export knowledge
+- [x] Test suite schema with test cases, steps, and `why` explanations
+- [x] TestSuitePlayer for executing YAML test suites against Playwright
+- [x] PlaybackSession for managing test execution state
+- [x] First test suites capturing Draw.io export knowledge
 - [x] Integration with existing E2E tests (run-recording.spec.ts)
-- [x] Recording Visualization View in GUI (RecordingsView with tree, DAG, timeline, details)
+- [x] Test Suite Visualization View in GUI (RecordingsView with tree, DAG, timeline, details)
 - [x] Step-through debugger with pause/resume/step controls (Phase 4)
 - [x] Timeline highlighting with execution state indicators
 - [x] Step result overlay with value/error display
 - [x] E2E tests for step-through debugger (recordings-debug.spec.ts)
-- [ ] Feedback/grading mechanism for recording quality (future)
+- [x] Debug UI/UX refinements (Phase 5): sidebar integration, Test Suite panel, code cleanup
+- [ ] Feedback/grading mechanism for test suite quality (future)
 
 ### Phase 4: Step-Through Debugger
 
-Interactive step-by-step execution of recordings with real-time GUI feedback.
+Interactive step-by-step execution of test suites with real-time GUI feedback.
 
 **Architecture:**
 ```
@@ -554,7 +555,7 @@ Interactive step-by-step execution of recordings with real-time GUI feedback.
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.33 | Create DebugControls component | `src/gui/components/recordings/DebugControls.tsx` | ✅ |
+| E2E.33 | Create DebugControls (inline in RecordingsView) | `src/gui/components/recordings/RecordingsView.tsx` | ✅ |
 | E2E.34 | Add useDebugSession hook | `src/gui/hooks/useDebugSession.ts` | ✅ |
 | E2E.35 | Integrate into RecordingsView | `RecordingsView.tsx` | ✅ |
 
@@ -564,7 +565,7 @@ Interactive step-by-step execution of recordings with real-time GUI feedback.
 |----|------|---------|--------|
 | E2E.36 | Add execution state to StepTimeline | `StepTimeline.tsx` | ✅ |
 | E2E.37 | Visual status indicators (spinner, colors) | `StepTimeline.tsx` | ✅ |
-| E2E.38 | Add execution state to TaskDependencyGraph | `TaskDependencyGraph.tsx` | ✅ |
+| E2E.38 | Add execution state to TaskGraph | `TaskGraph.tsx` | ✅ |
 
 #### 4.5 GUI: Step Result Overlay
 
@@ -594,6 +595,70 @@ Interactive step-by-step execution of recordings with real-time GUI feedback.
 | E2E.V6 | Zoom controls work in task graph | E2E | ✅ |
 
 > **Note**: E2E tests require a display environment (Electron can't run headless). Use `xvfb-run npx playwright test` on headless CI.
+
+### Phase 5: Debug UI/UX Refinements
+
+Improvements to debug session interface for better usability.
+
+#### 5.1 Component Organization
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.45 | Move DebugOverlay to debug/ directory | `src/gui/components/debug/DebugOverlay.tsx` | ✅ |
+| E2E.46 | Create DebugControls component (sidebar footer) | `src/gui/components/debug/DebugControls.tsx` | ✅ |
+| E2E.47 | Create DebugSidePanel (Test Suite + Controls) | `src/gui/components/debug/DebugSidePanel.tsx` | ✅ |
+| E2E.48 | Update debug module exports | `src/gui/components/debug/index.ts` | ✅ |
+
+#### 5.2 Layout & Navigation
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.49 | Side-by-side layout (TaskGraph left, Details right) | `RecordingsView.tsx` | ✅ |
+| E2E.50 | Create TaskDetail component | `src/gui/components/recordings/TaskDetail.tsx` | ✅ |
+| E2E.51 | Add expand/collapse all to TaskGraph toolbar | `TaskGraph.tsx` | ✅ |
+| E2E.52 | Reduce TaskGraph vertical spacing (gapY: 24px) | `src/gui/constants/graph-layout.ts` | ✅ |
+
+#### 5.3 Debug Overlay Behavior
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.53 | Hide floating overlay when sidebar expanded | `App.tsx` | ✅ |
+| E2E.54 | Add rightOffset prop to DebugOverlay | `DebugOverlay.tsx` | ✅ |
+| E2E.55 | Rename "DEBUG TASKS" to "TEST SUITE" | `DebugSidePanel.tsx` | ✅ |
+
+#### 5.4 Code Cleanup
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.56 | Remove unused appId/testSuiteId from DebugOverlay | `DebugOverlay.tsx` | ✅ |
+| E2E.57 | Remove unused appId from RecordingToolbar | `RecordingToolbar.tsx` | ✅ |
+
+**Summary**: Refactored debug UI/UX for better organization and usability. Debug controls now integrated into sidebar footer when sidebar is expanded, with floating overlay only shown when sidebar is collapsed or hidden. Component organization improved with dedicated `debug/` directory.
+
+### Phase 6: Terminology Alignment
+
+Industry-standard test automation terminology applied throughout the codebase.
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.58 | Rename Recording → TestSuite in types | `src/recordings/recording-types.ts` | ✅ |
+| E2E.59 | Rename RecordingTask → TestCase | `src/recordings/recording-types.ts` | ✅ |
+| E2E.60 | Rename RecordingStep → TestStep | `src/recordings/recording-types.ts` | ✅ |
+| E2E.61 | Rename RecordingPlayer → TestSuitePlayer | `src/recordings/player.ts` | ✅ |
+| E2E.62 | Update playback types (taskIndex → testCaseIndex) | `src/recordings/playback-types.ts` | ✅ |
+| E2E.63 | Rename directory recordings/ → test-suites/ | `tests/e2e/test-suites/` | ✅ |
+| E2E.64 | Rename .yaml → .suite.yaml extensions | `tests/e2e/test-suites/**/*.suite.yaml` | ✅ |
+| E2E.65 | Update YAML content (tasks: → test_cases:) | All `.suite.yaml` files | ✅ |
+| E2E.66 | Update repository and service layers | `src/repositories/`, `src/services/` | ✅ |
+| E2E.67 | Update GUI components for new terminology | `src/gui/components/` | ✅ |
+| E2E.68 | Update panel header "TASK FLOW" → "TEST SUITE" | `DebugSidePanel.tsx` | ✅ |
+
+**Terminology mapping:**
+- Recording → TestSuite (YAML file with test cases)
+- RecordingTask → TestCase (individual test case with steps)
+- RecordingStep → TestStep (single action within a test case)
+- tasks: → test_cases: (YAML key, snake_case convention)
+- recordingId → testSuiteId (identifier references)
 
 ---
 

@@ -1,22 +1,22 @@
 /**
- * Recording Library
+ * Test Suite Library
  *
- * Recordings are replayable scripts of GUI interactions.
+ * Test suites are replayable scripts of GUI interactions.
  * This module provides:
- * - Recording types (Recording, Task, Step)
+ * - Test suite types (TestSuite, TestCase, TestStep)
  * - Playback types (events, state, results)
- * - RecordingPlayer (plays recordings)
+ * - TestSuitePlayer (plays test suites)
  * - PlaybackSession (session with lifecycle)
  * - SessionRegistry (manages multiple sessions)
  */
 
-// Recording definition types
+// Test suite definition types
 export * from './recording-types.js';
 
 // Playback types (events, state, results)
 export * from './playback-types.js';
 
 // Playback implementation
-export { RecordingPlayer, type PlayerOptions } from './player.js';
+export { TestSuitePlayer, type PlayerOptions } from './player.js';
 export { PlaybackSession } from './session.js';
 export { SessionRegistry, getSessionRegistry } from './registry.js';

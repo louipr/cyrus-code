@@ -8,10 +8,10 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useDebugSession } from '../hooks/useDebugSession';
 import type { DebugSessionHookState, DebugSessionCommands } from '../hooks/useDebugSession';
-import type { Recording } from '../../recordings';
+import type { TestSuite } from '../../recordings';
 
 /**
- * Extended context that includes recording metadata.
+ * Extended context that includes test suite metadata.
  */
 interface DebugSessionContextValue {
   /** Debug session state */
@@ -20,17 +20,17 @@ interface DebugSessionContextValue {
   /** Debug session commands */
   commands: DebugSessionCommands;
 
-  /** Currently debugging recording */
-  recording: Recording | null;
+  /** Currently debugging test suite */
+  testSuite: TestSuite | null;
 
   /** App ID for current debug session */
   appId: string | null;
 
-  /** Recording ID for current debug session */
-  recordingId: string | null;
+  /** Test suite ID for current debug session */
+  testSuiteId: string | null;
 
-  /** Start a debug session for a recording */
-  startDebug: (appId: string, recordingId: string, recording: Recording) => Promise<void>;
+  /** Start a debug session for a test suite */
+  startDebug: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<void>;
 
   /** Clear the current debug session */
   clearDebug: () => void;
@@ -43,32 +43,32 @@ const DebugSessionContext = createContext<DebugSessionContextValue | null>(null)
  */
 export function DebugSessionProvider({ children }: { children: React.ReactNode }) {
   const [state, commands] = useDebugSession();
-  const [recording, setRecording] = useState<Recording | null>(null);
+  const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
-  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [testSuiteId, setTestSuiteId] = useState<string | null>(null);
 
   const startDebug = useCallback(
-    async (newAppId: string, newRecordingId: string, newRecording: Recording) => {
+    async (newAppId: string, newTestSuiteId: string, newTestSuite: TestSuite) => {
       setAppId(newAppId);
-      setRecordingId(newRecordingId);
-      setRecording(newRecording);
-      await commands.create(newAppId, newRecordingId, true);
+      setTestSuiteId(newTestSuiteId);
+      setTestSuite(newTestSuite);
+      await commands.create(newAppId, newTestSuiteId, true);
     },
     [commands]
   );
 
   const clearDebug = useCallback(() => {
-    setRecording(null);
+    setTestSuite(null);
     setAppId(null);
-    setRecordingId(null);
+    setTestSuiteId(null);
   }, []);
 
   const value: DebugSessionContextValue = {
     state,
     commands,
-    recording,
+    testSuite,
     appId,
-    recordingId,
+    testSuiteId,
     startDebug,
     clearDebug,
   };

@@ -7,30 +7,26 @@
 
 import React, { useState } from 'react';
 import type { DebugSessionHookState, DebugSessionCommands } from '../../hooks/useDebugSession';
-import type { Recording, RecordingStep } from '../../../recordings';
+import type { TestSuite, TestStep } from '../../../recordings';
 
 interface DebugOverlayProps {
   state: DebugSessionHookState;
   commands: DebugSessionCommands;
-  recording: Recording | null;
-  appId: string | null;
-  recordingId: string | null;
+  testSuite: TestSuite | null;
   onClose: () => void;
   onReturnToRecordings?: () => void;
+  /** Offset from right edge to avoid overlapping side panels */
+  rightOffset?: number;
 }
 
 export function DebugOverlay({
   state,
   commands,
-  recording,
-  appId: _appId,
-  recordingId: _recordingId,
+  testSuite,
   onClose,
   onReturnToRecordings,
+  rightOffset = 20,
 }: DebugOverlayProps) {
-  // _appId and _recordingId reserved for future use (e.g., displaying path info)
-  void _appId;
-  void _recordingId;
   const [minimized, setMinimized] = useState(false);
 
   const { isActive, isRunning, isPaused, error, sessionId } = state;
@@ -55,11 +51,17 @@ export function DebugOverlay({
   const hasFailedSteps = Array.from(state.stepResults.values()).some((r) => !r.success);
   const executionStatus = hasFailedSteps ? 'FAILED' : allStepsPassed ? 'PASSED' : 'INCOMPLETE';
 
+  // Dynamic overlay style to avoid overlapping side panels
+  const overlayStyle: React.CSSProperties = {
+    ...styles.overlay,
+    right: rightOffset,
+  };
+
   // Show completion state - expanded panel with clear actions
   if (state.state === 'completed' && sessionId) {
     const isPassed = executionStatus === 'PASSED';
     return (
-      <div style={styles.overlay} data-testid="debug-overlay">
+      <div style={overlayStyle} data-testid="debug-overlay">
         <div style={{ ...styles.completedPanel, borderColor: isPassed ? '#2d5a2d' : '#5a2d2d' }}>
           {/* Header */}
           <div style={{ ...styles.completedHeader, backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a' }}>
@@ -71,9 +73,9 @@ export function DebugOverlay({
             </span>
           </div>
 
-          {/* Recording name */}
+          {/* Test Suite name */}
           <div style={styles.completedInfo}>
-            <span style={styles.completedRecording}>{recording?.name || 'Recording'}</span>
+            <span style={styles.completedRecording}>{testSuite?.name || 'Test Suite'}</span>
             <span
               style={{
                 ...styles.completedStatus,
@@ -115,7 +117,7 @@ export function DebugOverlay({
   // Minimized view
   if (minimized) {
     return (
-      <div style={styles.overlay} data-testid="debug-overlay">
+      <div style={overlayStyle} data-testid="debug-overlay">
         <div style={styles.minimizedContainer}>
           <span style={getStatusDotStyle(state.state)} />
           <span style={styles.minimizedText}>
@@ -134,7 +136,7 @@ export function DebugOverlay({
   }
 
   return (
-    <div style={styles.overlay} data-testid="debug-overlay">
+    <div style={overlayStyle} data-testid="debug-overlay">
       <div style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
@@ -150,36 +152,36 @@ export function DebugOverlay({
           </div>
         </div>
 
-        {/* Recording Info */}
+        {/* Test Suite Info */}
         <div style={styles.infoRow}>
-          <span style={styles.infoLabel}>Recording:</span>
-          <span style={styles.infoValue}>{recording?.name || 'Unknown'}</span>
+          <span style={styles.infoLabel}>Test Suite:</span>
+          <span style={styles.infoValue}>{testSuite?.name || 'Unknown'}</span>
         </div>
 
         {/* Status with progress */}
         <div style={styles.statusRow}>
           <span style={getStatusDotStyle(state.state)} />
           <span style={styles.statusText}>{getStatusLabel(state.state)}</span>
-          {state.position && recording && (
+          {state.position && testSuite && (
             <span style={styles.positionText}>
-              {state.position.taskIndex + 1}/{recording.tasks.length}
+              {state.position.testCaseIndex + 1}/{testSuite.testCases.length}
             </span>
           )}
         </div>
 
-        {/* Task progress bar */}
-        {recording && recording.tasks.length > 0 && (
+        {/* Test case progress bar */}
+        {testSuite && testSuite.testCases.length > 0 && (
           <div style={styles.progressSection}>
             <div style={styles.progressBar}>
-              {recording.tasks.map((task, idx) => {
-                const isComplete = state.position ? idx < state.position.taskIndex : false;
-                const isCurrent = state.position ? idx === state.position.taskIndex : false;
+              {testSuite.testCases.map((testCase, idx) => {
+                const isComplete = state.position ? idx < state.position.testCaseIndex : false;
+                const isCurrent = state.position ? idx === state.position.testCaseIndex : false;
                 const hasFailed = Array.from(state.stepResults.entries()).some(
                   ([key, result]) => key.startsWith(`${idx}:`) && !result.success
                 );
                 return (
                   <div
-                    key={task.id}
+                    key={testCase.id}
                     style={{
                       ...styles.progressSegment,
                       backgroundColor: hasFailed
@@ -191,7 +193,7 @@ export function DebugOverlay({
                             : '#3c3c3c',
                       opacity: isCurrent ? 1 : 0.7,
                     }}
-                    title={task.name}
+                    title={testCase.name}
                   />
                 );
               })}
@@ -199,20 +201,20 @@ export function DebugOverlay({
           </div>
         )}
 
-        {/* Current task/step details */}
-        {state.position && recording && (
+        {/* Current test case/step details */}
+        {state.position && testSuite && (
           <div style={styles.currentStepSection}>
             <div style={styles.taskNameRow}>
               <span style={styles.currentTaskName}>
-                {recording.tasks[state.position.taskIndex]?.name || `Task ${state.position.taskIndex + 1}`}
+                {testSuite.testCases[state.position.testCaseIndex]?.name || `Test Case ${state.position.testCaseIndex + 1}`}
               </span>
             </div>
             <div style={styles.stepDetailRow}>
               <span style={styles.stepBadge}>
-                Step {state.position.stepIndex + 1}/{recording.tasks[state.position.taskIndex]?.steps.length || '?'}
+                Step {state.position.stepIndex + 1}/{testSuite.testCases[state.position.testCaseIndex]?.steps.length || '?'}
               </span>
               <span style={styles.stepDescription}>
-                {formatStepDescription(recording.tasks[state.position.taskIndex]?.steps[state.position.stepIndex])}
+                {formatStepDescription(testSuite.testCases[state.position.testCaseIndex]?.steps[state.position.stepIndex])}
               </span>
             </div>
           </div>
@@ -329,7 +331,7 @@ function getStatusDotStyle(sessionState: string): React.CSSProperties {
  * Format a step into a concise description.
  * Shows action type and key details (selector, text, etc.)
  */
-function formatStepDescription(step: RecordingStep | undefined): string {
+function formatStepDescription(step: TestStep | undefined): string {
   if (!step) return 'Unknown step';
 
   switch (step.action) {

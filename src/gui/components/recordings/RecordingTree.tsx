@@ -1,18 +1,18 @@
 /**
  * RecordingTree Component
  *
- * Hierarchical tree navigator for recordings: apps → recordings → tasks → steps
+ * Hierarchical tree navigator for recordings: apps → recordings → test cases → steps
  */
 
 import type { RecordingIndex, RecordingEntry } from '../../../domain/recordings/index';
-import type { Recording, RecordingTask, RecordingStep } from '../../../recordings';
+import type { TestSuite, TestCase, TestStep } from '../../../recordings';
 
 interface RecordingTreeProps {
   /** The recordings index */
   index: RecordingIndex;
-  /** Currently loaded recording (for showing tasks/steps) */
-  recording: Recording | null;
-  /** Selected path: "appId" | "appId/recordingId" | "appId/recordingId/taskId" | "appId/recordingId/taskId/stepIndex" */
+  /** Currently loaded test suite (for showing test cases/steps) */
+  testSuite: TestSuite | null;
+  /** Selected path: "appId" | "appId/testSuiteId" | "appId/testSuiteId/testCaseId" | "appId/testSuiteId/testCaseId/stepIndex" */
   selectedPath: string | null;
   /** Expanded node IDs */
   expandedNodes: Set<string>;
@@ -172,7 +172,7 @@ function TreeNode({
  */
 export function RecordingTree({
   index,
-  recording,
+  testSuite,
   selectedPath,
   expandedNodes,
   onSelect,
@@ -191,8 +191,8 @@ export function RecordingTree({
 
   const selectedParts = selectedPath?.split('/') || [];
   const selectedAppId = selectedParts[0];
-  const selectedRecordingId = selectedParts[1];
-  const selectedTaskId = selectedParts[2];
+  const selectedTestSuiteId = selectedParts[1];
+  const selectedTestCaseId = selectedParts[2];
   const selectedStepIndex = selectedParts[3];
 
   return (
@@ -202,7 +202,7 @@ export function RecordingTree({
         {apps.map((appId) => {
           const app = index.recordings[appId];
           const isAppExpanded = expandedNodes.has(appId);
-          const isAppSelected = selectedAppId === appId && !selectedRecordingId;
+          const isAppSelected = selectedAppId === appId && !selectedTestSuiteId;
 
           return (
             <TreeNode
@@ -220,65 +220,65 @@ export function RecordingTree({
               onToggle={() => onToggle(appId)}
             >
               {app.recordings.map((entry: RecordingEntry) => {
-                const recordingPath = `${appId}/${entry.id}`;
-                const isRecordingExpanded = expandedNodes.has(recordingPath);
-                const isRecordingSelected =
+                const testSuitePath = `${appId}/${entry.id}`;
+                const isTestSuiteExpanded = expandedNodes.has(testSuitePath);
+                const isTestSuiteSelected =
                   selectedAppId === appId &&
-                  selectedRecordingId === entry.id &&
-                  !selectedTaskId;
+                  selectedTestSuiteId === entry.id &&
+                  !selectedTestCaseId;
 
-                // Show tasks if this recording is loaded and expanded
-                const showTasks =
-                  isRecordingExpanded &&
-                  recording?.name === entry.name;
+                // Show test cases if this test suite is loaded and expanded
+                const showTestCases =
+                  isTestSuiteExpanded &&
+                  testSuite?.name === entry.name;
 
                 return (
                   <TreeNode
-                    key={recordingPath}
-                    id={recordingPath}
+                    key={testSuitePath}
+                    id={testSuitePath}
                     label={entry.name}
                     type="recording"
                     icon={ICONS.recording}
                     depth={1}
-                    isExpanded={isRecordingExpanded}
-                    isSelected={isRecordingSelected}
+                    isExpanded={isTestSuiteExpanded}
+                    isSelected={isTestSuiteSelected}
                     hasChildren={true}
                     badge={entry.status === 'verified' ? '✓' : undefined}
-                    onSelect={() => onSelect(recordingPath, 'recording')}
-                    onToggle={() => onToggle(recordingPath)}
+                    onSelect={() => onSelect(testSuitePath, 'recording')}
+                    onToggle={() => onToggle(testSuitePath)}
                   >
-                    {showTasks &&
-                      recording.tasks.map((task: RecordingTask) => {
-                        const taskPath = `${recordingPath}/${task.id}`;
-                        const isTaskExpanded = expandedNodes.has(taskPath);
-                        const isTaskSelected =
+                    {showTestCases &&
+                      testSuite.testCases.map((testCase: TestCase) => {
+                        const testCasePath = `${testSuitePath}/${testCase.id}`;
+                        const isTestCaseExpanded = expandedNodes.has(testCasePath);
+                        const isTestCaseSelected =
                           selectedAppId === appId &&
-                          selectedRecordingId === entry.id &&
-                          selectedTaskId === task.id &&
+                          selectedTestSuiteId === entry.id &&
+                          selectedTestCaseId === testCase.id &&
                           !selectedStepIndex;
 
                         return (
                           <TreeNode
-                            key={taskPath}
-                            id={taskPath}
-                            label={task.name}
+                            key={testCasePath}
+                            id={testCasePath}
+                            label={testCase.name}
                             type="task"
                             icon={ICONS.task}
                             depth={2}
-                            isExpanded={isTaskExpanded}
-                            isSelected={isTaskSelected}
-                            hasChildren={task.steps.length > 0}
-                            badge={`${task.steps.length}`}
-                            onSelect={() => onSelect(taskPath, 'task')}
-                            onToggle={() => onToggle(taskPath)}
+                            isExpanded={isTestCaseExpanded}
+                            isSelected={isTestCaseSelected}
+                            hasChildren={testCase.steps.length > 0}
+                            badge={`${testCase.steps.length}`}
+                            onSelect={() => onSelect(testCasePath, 'task')}
+                            onToggle={() => onToggle(testCasePath)}
                           >
-                            {isTaskExpanded &&
-                              task.steps.map((step: RecordingStep, stepIdx: number) => {
-                                const stepPath = `${taskPath}/${stepIdx}`;
+                            {isTestCaseExpanded &&
+                              testCase.steps.map((step: TestStep, stepIdx: number) => {
+                                const stepPath = `${testCasePath}/${stepIdx}`;
                                 const isStepSelected =
                                   selectedAppId === appId &&
-                                  selectedRecordingId === entry.id &&
-                                  selectedTaskId === task.id &&
+                                  selectedTestSuiteId === entry.id &&
+                                  selectedTestCaseId === testCase.id &&
                                   selectedStepIndex === String(stepIdx);
 
                                 return (

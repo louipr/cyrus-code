@@ -6,21 +6,21 @@
  * Supports execution state highlighting during debug sessions.
  */
 
-import type { RecordingStep, StepResult } from '../../../recordings';
+import type { TestStep, StepResult } from '../../../recordings';
 
 /** Execution state for a step */
 export type StepExecutionState = 'pending' | 'running' | 'success' | 'failed';
 
 interface StepTimelineProps {
-  steps: RecordingStep[];
+  steps: TestStep[];
   selectedStepIndex: number | null;
   onStepClick: (index: number) => void;
   /** Current step being executed (for running indicator) */
   executingStepIndex?: number | null;
-  /** Results for completed steps, keyed by "taskIndex:stepIndex" */
+  /** Results for completed steps, keyed by "testCaseIndex:stepIndex" */
   stepResults?: Map<string, StepResult>;
-  /** Task index for looking up results */
-  taskIndex?: number;
+  /** Test case index for looking up results */
+  testCaseIndex?: number;
 }
 
 const ACTION_ICONS: Record<string, string> = {
@@ -54,15 +54,15 @@ const ACTION_COLORS: Record<string, string> = {
 /** Get execution state for a step */
 function getStepState(
   stepIndex: number,
-  taskIndex: number | undefined,
+  testCaseIndex: number | undefined,
   executingStepIndex: number | null | undefined,
   stepResults: Map<string, StepResult> | undefined
 ): StepExecutionState {
   if (executingStepIndex === stepIndex) {
     return 'running';
   }
-  if (stepResults && taskIndex !== undefined) {
-    const result = stepResults.get(`${taskIndex}:${stepIndex}`);
+  if (stepResults && testCaseIndex !== undefined) {
+    const result = stepResults.get(`${testCaseIndex}:${stepIndex}`);
     if (result) {
       return result.success ? 'success' : 'failed';
     }
@@ -114,12 +114,12 @@ export function StepTimeline({
   onStepClick,
   executingStepIndex,
   stepResults,
-  taskIndex,
+  testCaseIndex,
 }: StepTimelineProps) {
   if (steps.length === 0) {
     return (
       <div style={styles.container}>
-        <span style={styles.placeholder}>No steps in this task</span>
+        <span style={styles.placeholder}>No steps in this test case</span>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export function StepTimeline({
       {steps.map((step, idx) => {
         const isSelected = selectedStepIndex === idx;
         const actionColor = ACTION_COLORS[step.action] ?? '#808080';
-        const state = getStepState(idx, taskIndex, executingStepIndex, stepResults);
+        const state = getStepState(idx, testCaseIndex, executingStepIndex, stepResults);
         const stateStyles = getStateStyles(state);
         const stateIndicator = getStateIndicator(state);
 

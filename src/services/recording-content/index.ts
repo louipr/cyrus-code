@@ -1,6 +1,6 @@
 /**
- * Recording Content Service Exports
+ * Test Suite Content Service Exports
  */
-export { RecordingContentService } from './service.js';
-export { createRecordingContentService } from './factory.js';
-export type { IRecordingContentService } from './schema.js';
+export { TestSuiteContentService } from './service.js';
+export { createTestSuiteContentService } from './factory.js';
+export type { TestSuiteContentService as TestSuiteContentServiceInterface } from './schema.js';

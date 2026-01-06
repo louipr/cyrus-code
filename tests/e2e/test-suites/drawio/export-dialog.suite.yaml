@@ -26,7 +26,7 @@ context:
     - Main UI is visible
   waitFor: "[data-testid='search-bar']"
 
-tasks:
+test_cases:
   - id: open-diagram
     name: Open diagram view
     steps:

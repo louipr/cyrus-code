@@ -5,10 +5,10 @@
  * Shows success/failure status, duration, value, and error details.
  */
 
-import type { StepResult, RecordingStep } from '../../../recordings';
+import type { StepResult, TestStep } from '../../../recordings';
 
 interface StepResultOverlayProps {
-  step: RecordingStep;
+  step: TestStep;
   result: StepResult;
   stepIndex: number;
   onClose: () => void;

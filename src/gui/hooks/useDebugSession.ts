@@ -49,7 +49,7 @@ export interface DebugSessionHookState {
  */
 export interface DebugSessionCommands {
   /** Create and start a new debug session */
-  create: (appId: string, recordingId: string, headed?: boolean) => Promise<void>;
+  create: (appId: string, testSuiteId: string, headed?: boolean) => Promise<void>;
 
   /** Start execution */
   start: () => Promise<void>;
@@ -124,7 +124,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
           setPosition(event.position);
           setStepResults((prev) => {
             const next = new Map(prev);
-            const key = `${event.position.taskIndex}:${event.position.stepIndex}`;
+            const key = `${event.position.testCaseIndex}:${event.position.stepIndex}`;
             next.set(key, event.result);
             return next;
           });
@@ -141,7 +141,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
 
   // Commands
   const create = useCallback(
-    async (appId: string, recordingId: string, headed = true) => {
+    async (appId: string, testSuiteId: string, headed = true) => {
       try {
         setError(null);
         setStepResults(new Map());
@@ -150,7 +150,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
 
         const response = await apiClient.recordings.debug.create({
           appId,
-          recordingId,
+          testSuiteId,
           headed,
           pauseOnStart: true,
         });

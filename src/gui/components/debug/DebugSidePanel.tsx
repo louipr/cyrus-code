@@ -1,80 +1,86 @@
 /**
  * DebugSidePanel Component
  *
- * Container component for the debug task graph side panel.
- * Provides header with title and collapse toggle, wraps DebugTaskGraphPanel.
+ * Collapsible side panel showing TaskGraph with debug controls footer.
+ * Used in non-recordings views during debug sessions.
  */
 
 import React, { useState } from 'react';
-import type { Recording, StepResult, PlaybackPosition } from '../../../recordings';
-import { DebugTaskGraphPanel } from './DebugTaskGraphPanel';
+import type { TestCase, StepResult, TestSuite } from '../../../recordings';
+import type { DebugSessionHookState, DebugSessionCommands } from '../../hooks/useDebugSession';
+import { TaskGraph } from '../recordings/TaskGraph';
+import { DebugControls } from './DebugControls';
 
 interface DebugSidePanelProps {
-  /** Panel width in pixels */
   width: number;
-  /** Whether panel is collapsed */
   collapsed: boolean;
-  /** Toggle collapsed state */
   onToggleCollapse: () => void;
-  /** Current recording being debugged */
-  recording: Recording;
-  /** Current execution position */
-  position: PlaybackPosition | null;
-  /** Step results map */
+  testCases: TestCase[];
+  executingTestCaseIndex: number | null;
   stepResults: Map<string, StepResult>;
-  /** Callback when a task is clicked */
-  onTaskClick?: (taskId: string) => void;
+  onTestCaseClick?: (testCaseId: string) => void;
+  // Debug session props for controls footer
+  debugState: DebugSessionHookState;
+  debugCommands: DebugSessionCommands;
+  testSuite: TestSuite | null;
+  onDebugClose: () => void;
 }
 
 export function DebugSidePanel({
   width,
   collapsed,
   onToggleCollapse,
-  recording,
-  position,
+  testCases,
+  executingTestCaseIndex,
   stepResults,
-  onTaskClick,
+  onTestCaseClick,
+  debugState,
+  debugCommands,
+  testSuite,
+  onDebugClose,
 }: DebugSidePanelProps) {
-  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
-
-  const executingTaskIndex = position?.taskIndex ?? null;
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
 
   if (collapsed) {
     return (
       <div
         style={styles.collapsedPanel}
         onClick={onToggleCollapse}
-        title="Expand Debug Tasks"
+        title="Expand Test Suite"
       >
-        <span style={styles.collapsedLabel}>Debug Tasks</span>
+        <span style={styles.collapsedLabel}>Test Suite</span>
       </div>
     );
   }
 
   return (
     <div style={{ ...styles.panel, width }} data-testid="debug-side-panel">
-      <div
-        style={{
-          ...styles.header,
-          backgroundColor: isHeaderHovered ? '#2d2d30' : '#252526',
-        }}
-        onClick={onToggleCollapse}
-        onMouseEnter={() => setIsHeaderHovered(true)}
-        onMouseLeave={() => setIsHeaderHovered(false)}
-      >
-        <span style={styles.headerTitle}>Debug Tasks</span>
-        <span style={styles.collapseIcon} title="Collapse">
-          {'\u00BB'}
-        </span>
+      {/* Header */}
+      <div style={styles.header} onClick={onToggleCollapse}>
+        <span style={styles.headerTitle}>Test Suite</span>
+        <span style={styles.collapseIcon} title="Collapse">{'\u00BB'}</span>
       </div>
+
+      {/* Task Graph content */}
       <div style={styles.content}>
-        <DebugTaskGraphPanel
-          tasks={recording.tasks}
-          executingTaskIndex={executingTaskIndex}
+        <TaskGraph
+          testCases={testCases}
+          executingTestCaseIndex={executingTestCaseIndex}
           stepResults={stepResults}
-          onTaskClick={onTaskClick}
+          onTestCaseClick={onTestCaseClick}
+          showToolbar={false}
         />
       </div>
+
+      {/* Debug Controls footer */}
+      <DebugControls
+        state={debugState}
+        commands={debugCommands}
+        testSuite={testSuite}
+        onClose={onDebugClose}
+        collapsed={controlsCollapsed}
+        onToggleCollapse={() => setControlsCollapsed(!controlsCollapsed)}
+      />
     </div>
   );
 }
@@ -95,8 +101,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 12px',
     borderBottom: '1px solid #3c3c3c',
     cursor: 'pointer',
-    transition: 'background-color 0.1s ease',
     userSelect: 'none',
+    backgroundColor: '#252526',
   },
   headerTitle: {
     fontSize: '11px',
@@ -112,6 +118,7 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     flex: 1,
     overflow: 'hidden',
+    position: 'relative',
   },
   collapsedPanel: {
     width: '24px',

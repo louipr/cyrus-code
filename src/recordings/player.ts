@@ -1,14 +1,14 @@
 /**
- * Recording Player
+ * Test Suite Player
  *
- * Plays back recordings by executing steps via webContents.executeJavaScript().
+ * Plays back test suites by executing steps via webContents.executeJavaScript().
  * Supports pause/resume/step-through like a video player.
  */
 
 import type { WebContents } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { Recording, RecordingStep } from './recording-types.js';
+import type { TestSuite, TestStep } from './recording-types.js';
 import type {
   PlaybackEvent,
   PlaybackState,
@@ -17,7 +17,7 @@ import type {
 } from './playback-types.js';
 
 /**
- * Options for RecordingPlayer.
+ * Options for TestSuitePlayer.
  */
 export interface PlayerOptions {
   /** Timeout multiplier for slow environments */
@@ -39,11 +39,11 @@ interface PauseGate {
 }
 
 /**
- * Plays recordings in the current Electron window.
+ * Plays test suites in the current Electron window.
  */
-export class RecordingPlayer {
+export class TestSuitePlayer {
   private webContents: WebContents;
-  private recording: Recording;
+  private testSuite: TestSuite;
   private options: PlayerOptions;
 
   private state: PlaybackState = 'idle';
@@ -57,11 +57,11 @@ export class RecordingPlayer {
 
   constructor(
     webContents: WebContents,
-    recording: Recording,
+    testSuite: TestSuite,
     options: PlayerOptions = {}
   ) {
     this.webContents = webContents;
-    this.recording = recording;
+    this.testSuite = testSuite;
     this.options = options;
   }
 
@@ -184,7 +184,7 @@ export class RecordingPlayer {
   }
 
   /**
-   * Play the recording.
+   * Play the test suite.
    */
   async play(): Promise<{ success: boolean; duration: number }> {
     const startTime = Date.now();
@@ -205,26 +205,26 @@ export class RecordingPlayer {
     this.setState('running');
     let success = true;
 
-    for (let taskIndex = 0; taskIndex < this.recording.tasks.length; taskIndex++) {
+    for (let testCaseIndex = 0; testCaseIndex < this.testSuite.testCases.length; testCaseIndex++) {
       if (this.stopRequested) break;
 
-      const task = this.recording.tasks[taskIndex];
-      if (!task) continue;
+      const testCase = this.testSuite.testCases[testCaseIndex];
+      if (!testCase) continue;
 
       this.emit({
-        type: 'task-start',
-        taskIndex,
-        task,
+        type: 'test-case-start',
+        testCaseIndex,
+        testCase,
         timestamp: Date.now(),
       });
 
-      for (let stepIndex = 0; stepIndex < task.steps.length; stepIndex++) {
+      for (let stepIndex = 0; stepIndex < testCase.steps.length; stepIndex++) {
         if (this.stopRequested) break;
 
-        const step = task.steps[stepIndex];
+        const step = testCase.steps[stepIndex];
         if (!step) continue;
 
-        this.position = { taskIndex, stepIndex, taskId: task.id };
+        this.position = { testCaseIndex, stepIndex, testCaseId: testCase.id };
 
         this.emit({
           type: 'step-start',
@@ -253,7 +253,7 @@ export class RecordingPlayer {
           success = false;
         }
 
-        const resultKey = `${taskIndex}:${stepIndex}`;
+        const resultKey = `${testCaseIndex}:${stepIndex}`;
         this.stepResults.set(resultKey, result);
 
         this.emit({
@@ -299,7 +299,7 @@ export class RecordingPlayer {
   /**
    * Execute a single step using webContents.executeJavaScript.
    */
-  private async executeStep(step: RecordingStep): Promise<unknown> {
+  private async executeStep(step: TestStep): Promise<unknown> {
     const timeout = (step.timeout ?? 5000) * (this.options.timeoutMultiplier ?? 1);
 
     switch (step.action) {

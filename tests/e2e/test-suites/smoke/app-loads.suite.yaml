@@ -19,7 +19,7 @@ context:
     - App is launched
   waitFor: "[data-testid='search-bar']"
 
-tasks:
+test_cases:
   - id: verify-app-loaded
     name: Verify app loaded
     steps:

@@ -2,21 +2,21 @@
  * RecordingsView Component
  *
  * Main container for the Recordings visualization view.
- * Layout: Tree navigator | Task DAG | Step Timeline | Details
+ * Layout: Tree navigator | Task DAG (expandable) | Details
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api-client';
 import { RecordingTree } from './RecordingTree';
-import { TaskDependencyGraph } from './TaskDependencyGraph';
-import { StepTimeline } from './StepTimeline';
+import { TaskGraph } from './TaskGraph';
 import { StepDetail } from './StepDetail';
+import { TaskDetail } from './TaskDetail';
 import { RecordingDetail } from './RecordingDetail';
 import { RecordingToolbar } from './RecordingToolbar';
 import { StepResultOverlay } from './StepResultOverlay';
 import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
 import type { RecordingIndex } from '../../../domain/recordings/index';
-import type { Recording, RecordingTask, RecordingStep, StepResult } from '../../../recordings';
+import type { TestSuite, TestCase, TestStep, StepResult } from '../../../recordings';
 
 const styles = {
   container: {
@@ -45,31 +45,38 @@ const styles = {
     borderBottom: '1px solid #333',
     flexShrink: 0,
   } as React.CSSProperties,
+  contentArea: {
+    flex: 1,
+    display: 'flex',
+    overflow: 'hidden',
+  } as React.CSSProperties,
   dagContainer: {
     flex: 1,
-    borderBottom: '1px solid #333',
+    overflow: 'hidden',
+    position: 'relative',
+  } as React.CSSProperties,
+  dagPlaceholder: {
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: '#888',
     fontSize: '14px',
   } as React.CSSProperties,
-  timelineContainer: {
-    minHeight: '80px',
-    borderBottom: '1px solid #333',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as React.CSSProperties,
-  detailsContainer: {
-    height: '240px',
+  detailsPanel: {
+    width: '320px',
+    flexShrink: 0,
+    borderLeft: '1px solid #333',
     overflow: 'auto',
+    backgroundColor: '#1e1e1e',
   } as React.CSSProperties,
   detailsPlaceholder: {
     height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: '20px',
+    textAlign: 'center' as const,
   } as React.CSSProperties,
   placeholder: {
     color: '#666',
@@ -96,13 +103,13 @@ const styles = {
  */
 export function RecordingsView() {
   const [index, setIndex] = useState<RecordingIndex | null>(null);
-  const [recording, setRecording] = useState<Recording | null>(null);
+  const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
+  const [selectedTestSuiteId, setSelectedTestSuiteId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [selectedTask, setSelectedTask] = useState<RecordingTask | null>(null);
-  const [selectedStep, setSelectedStep] = useState<RecordingStep | null>(null);
+  const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
+  const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -134,34 +141,34 @@ export function RecordingsView() {
 
       if (type === 'recording') {
         const appId = parts[0];
-        const recordingId = parts[1];
+        const testSuiteId = parts[1];
         setSelectedAppId(appId);
-        setSelectedRecordingId(recordingId);
-        const result = await apiClient.recordings.get(appId, recordingId);
+        setSelectedTestSuiteId(testSuiteId);
+        const result = await apiClient.recordings.get(appId, testSuiteId);
         if (result.success && result.data) {
-          setRecording(result.data);
-          setSelectedTask(null);
+          setTestSuite(result.data);
+          setSelectedTestCase(null);
           setSelectedStep(null);
           setSelectedStepIndex(null);
         }
-      } else if (type === 'task' && recording) {
-        const taskId = parts[2];
-        const task = recording.tasks.find((t) => t.id === taskId);
-        setSelectedTask(task || null);
+      } else if (type === 'task' && testSuite) {
+        const testCaseId = parts[2];
+        const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
+        setSelectedTestCase(testCase || null);
         setSelectedStep(null);
         setSelectedStepIndex(null);
-      } else if (type === 'step' && recording) {
-        const taskId = parts[2];
+      } else if (type === 'step' && testSuite) {
+        const testCaseId = parts[2];
         const stepIdx = parseInt(parts[3], 10);
-        const task = recording.tasks.find((t) => t.id === taskId);
-        if (task && task.steps[stepIdx]) {
-          setSelectedTask(task);
-          setSelectedStep(task.steps[stepIdx]);
+        const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
+        if (testCase && testCase.steps[stepIdx]) {
+          setSelectedTestCase(testCase);
+          setSelectedStep(testCase.steps[stepIdx]);
           setSelectedStepIndex(stepIdx);
         }
       }
     },
-    [recording]
+    [testSuite]
   );
 
   // Handle node toggle
@@ -177,17 +184,19 @@ export function RecordingsView() {
     });
   }, []);
 
-  // Handle step click in timeline
-  const handleTimelineStepClick = useCallback(
-    (stepIdx: number) => {
-      if (selectedTask && selectedTask.steps[stepIdx]) {
-        setSelectedStep(selectedTask.steps[stepIdx]);
+  // Handle step click from TaskGraph
+  const handleStepClick = useCallback(
+    (testCaseId: string, stepIdx: number) => {
+      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      if (testCase && testCase.steps[stepIdx]) {
+        setSelectedTestCase(testCase);
+        setSelectedStep(testCase.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
 
         // Check if there's a result for this step and show overlay
-        const taskIndex = recording?.tasks.findIndex((t) => t.id === selectedTask.id) ?? -1;
-        if (taskIndex >= 0) {
-          const result = debugState.stepResults.get(`${taskIndex}:${stepIdx}`);
+        const testCaseIndex = testSuite?.testCases.findIndex((t) => t.id === testCaseId) ?? -1;
+        if (testCaseIndex >= 0) {
+          const result = debugState.stepResults.get(`${testCaseIndex}:${stepIdx}`);
           if (result) {
             setOverlayResult(result);
             setShowResultOverlay(true);
@@ -195,7 +204,7 @@ export function RecordingsView() {
         }
       }
     },
-    [selectedTask, recording, debugState.stepResults]
+    [testSuite, debugState.stepResults]
   );
 
   if (loading) {
@@ -224,7 +233,7 @@ export function RecordingsView() {
       <div style={styles.sidebar}>
         <RecordingTree
           index={index}
-          recording={recording}
+          testSuite={testSuite}
           selectedPath={selectedPath}
           expandedNodes={expandedNodes}
           onSelect={handleSelect}
@@ -236,14 +245,11 @@ export function RecordingsView() {
       <div style={styles.main}>
         {/* Recording Toolbar - fixed height bar at top */}
         <div style={styles.toolbarRow}>
-          <RecordingToolbar
-            recording={recording}
-            appId={selectedAppId}
-          />
-          {recording && selectedAppId && selectedRecordingId && !debugSession.state.sessionId && (
+          <RecordingToolbar testSuite={testSuite} />
+          {testSuite && selectedAppId && selectedTestSuiteId && !debugSession.state.sessionId && (
             <button
               style={styles.debugButton}
-              onClick={() => debugSession.startDebug(selectedAppId, selectedRecordingId, recording)}
+              onClick={() => debugSession.startDebug(selectedAppId, selectedTestSuiteId, testSuite)}
               title="Start debug session (requires dev mode: npm run electron:dev)"
             >
               🐞 Debug
@@ -251,59 +257,53 @@ export function RecordingsView() {
           )}
         </div>
 
-        {/* Task Dependency Graph */}
-        <div style={styles.dagContainer}>
-          {recording ? (
-            <TaskDependencyGraph
-              tasks={recording.tasks}
-              selectedTaskId={selectedTask?.id ?? null}
-              onTaskClick={(taskId) => {
-                const task = recording.tasks.find((t) => t.id === taskId);
-                if (task) {
-                  setSelectedTask(task);
-                  setSelectedStep(null);
-                  setSelectedStepIndex(null);
-                }
-              }}
-              executingTaskIndex={debugState.position?.taskIndex ?? null}
-              stepResults={debugState.stepResults}
-            />
-          ) : (
-            <span style={styles.placeholder}>Select a recording to view task dependencies</span>
-          )}
-        </div>
+        {/* Content Area - TaskGraph left, Details right */}
+        <div style={styles.contentArea}>
+          {/* Task Dependency Graph (expandable nodes) */}
+          <div style={styles.dagContainer}>
+            {testSuite ? (
+              <TaskGraph
+                testCases={testSuite.testCases}
+                selectedTestCaseId={selectedTestCase?.id ?? null}
+                selectedStepIndex={selectedStepIndex}
+                onTestCaseClick={(testCaseId) => {
+                  const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
+                  if (testCase) {
+                    setSelectedTestCase(testCase);
+                    setSelectedStep(null);
+                    setSelectedStepIndex(null);
+                  }
+                }}
+                onStepClick={handleStepClick}
+                executingTestCaseIndex={debugState.position?.testCaseIndex ?? null}
+                executingStepIndex={debugState.position?.stepIndex ?? null}
+                stepResults={debugState.stepResults}
+              />
+            ) : (
+              <div style={styles.dagPlaceholder}>
+                <span style={styles.placeholder}>Select a test suite to view test cases</span>
+              </div>
+            )}
+          </div>
 
-        {/* Step Timeline */}
-        <div style={styles.timelineContainer}>
-          {selectedTask ? (
-            <StepTimeline
-              steps={selectedTask.steps}
-              selectedStepIndex={selectedStepIndex}
-              onStepClick={handleTimelineStepClick}
-              executingStepIndex={
-                debugState.position?.taskId === selectedTask.id
-                  ? debugState.position.stepIndex
-                  : null
-              }
-              stepResults={debugState.stepResults}
-              taskIndex={recording?.tasks.findIndex((t) => t.id === selectedTask.id) ?? 0}
-            />
-          ) : (
-            <span style={styles.placeholder}>Select a task to view steps</span>
-          )}
-        </div>
-
-        {/* Details Panel */}
-        <div style={styles.detailsContainer}>
-          {selectedStep && selectedStepIndex !== null ? (
-            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
-          ) : recording ? (
-            <RecordingDetail recording={recording} />
-          ) : (
-            <div style={styles.detailsPlaceholder}>
-              <span style={styles.placeholder}>Select a recording or step to view details</span>
-            </div>
-          )}
+          {/* Details Panel - right side */}
+          <div style={styles.detailsPanel}>
+            {selectedStep && selectedStepIndex !== null ? (
+              <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
+            ) : selectedTestCase && testSuite ? (
+              <TaskDetail
+                testCase={selectedTestCase}
+                testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
+                allTestCases={testSuite.testCases}
+              />
+            ) : testSuite ? (
+              <RecordingDetail testSuite={testSuite} />
+            ) : (
+              <div style={styles.detailsPlaceholder}>
+                <span style={styles.placeholder}>Select a test suite, test case, or step to view details</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

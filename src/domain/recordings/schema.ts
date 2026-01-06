@@ -1,8 +1,8 @@
 /**
- * Recording Domain Types for GUI Visualization
+ * Test Suite Domain Types for GUI Visualization
  *
- * GUI-specific types for the Recording View.
- * Base recording types (Recording, RecordingTask, etc.) should be imported
+ * GUI-specific types for the Test Suite View.
+ * Base test suite types (TestSuite, TestCase, etc.) should be imported
  * directly from 'recordings'.
  */
 
@@ -60,41 +60,41 @@ export interface RecordingIndex {
 /**
  * Tree node for hierarchical display.
  */
-export interface RecordingTreeNode {
-  /** Unique node ID (path-based: "app/recording/task/step-index") */
+export interface TestSuiteTreeNode {
+  /** Unique node ID (path-based: "app/test-suite/test-case/step-index") */
   id: string;
 
   /** Node type */
-  type: 'app' | 'recording' | 'task' | 'step';
+  type: 'app' | 'test-suite' | 'test-case' | 'step';
 
   /** Display label */
   label: string;
 
   /** Child nodes */
-  children?: RecordingTreeNode[];
+  children?: TestSuiteTreeNode[];
 
   /** Associated data */
-  data?: RecordingEntry | import('../../recordings/index.js').RecordingTask | import('../../recordings/index.js').RecordingStep;
+  data?: RecordingEntry | import('../../recordings/index.js').TestCase | import('../../recordings/index.js').TestStep;
 }
 
 /**
- * Repository interface for loading recordings.
+ * Repository interface for loading test suites.
  */
-export interface IRecordingRepository {
-  /** Get the recordings index */
+export interface TestSuiteRepository {
+  /** Get the test suites index */
   getIndex(): RecordingIndex;
 
   /** Get list of app IDs */
   getApps(): string[];
 
-  /** Get recordings for a specific app */
-  getRecordingsByApp(appId: string): RecordingEntry[];
+  /** Get test suites for a specific app */
+  getTestSuitesByApp(appId: string): RecordingEntry[];
 
-  /** Get a specific recording */
-  getRecording(appId: string, recordingId: string): import('../../recordings/index.js').Recording | null;
+  /** Get a specific test suite */
+  getTestSuite(appId: string, testSuiteId: string): import('../../recordings/index.js').TestSuite | null;
 
-  /** Get recording by file path */
-  getRecordingByPath(filePath: string): import('../../recordings/index.js').Recording | null;
+  /** Get test suite by file path */
+  getTestSuiteByPath(filePath: string): import('../../recordings/index.js').TestSuite | null;
 
   /** Clear cached data */
   clearCache(): void;

@@ -1,14 +1,14 @@
 /**
- * Recording Types
+ * Test Suite Types
  *
- * Defines the structure of a Recording document.
- * A Recording is a replayable script of GUI interactions.
+ * Defines the structure of a TestSuite document.
+ * A TestSuite is a collection of TestCases for GUI automation testing.
  */
 
 /**
- * Recording status indicating quality/reliability.
+ * Test suite status indicating quality/reliability.
  */
-export type RecordingStatus = 'draft' | 'verified' | 'deprecated';
+export type TestSuiteStatus = 'draft' | 'verified' | 'deprecated';
 
 /**
  * Reliability level based on test runs.
@@ -32,9 +32,9 @@ export type ActionType =
   | 'keyboard';
 
 /**
- * A single step within a task.
+ * A single step within a test case.
  */
-export interface RecordingStep {
+export interface TestStep {
   /** Action to perform */
   action: ActionType;
 
@@ -76,26 +76,26 @@ export interface RecordingStep {
 }
 
 /**
- * A task containing multiple steps.
+ * A test case containing multiple steps.
  */
-export interface RecordingTask {
-  /** Unique identifier for this task */
+export interface TestCase {
+  /** Unique identifier for this test case */
   id: string;
 
   /** Human-readable name */
   name: string;
 
-  /** Task IDs this task depends on */
+  /** Test case IDs this test case depends on */
   depends?: string[];
 
   /** Steps to execute in order */
-  steps: RecordingStep[];
+  steps: TestStep[];
 }
 
 /**
- * Context describing when a recording applies.
+ * Context describing when a test suite applies.
  */
-export interface RecordingContext {
+export interface TestSuiteContext {
   /** Application or component this applies to */
   app: string;
 
@@ -107,11 +107,11 @@ export interface RecordingContext {
 }
 
 /**
- * Metadata for tracking recording quality.
+ * Metadata for tracking test suite quality.
  */
-export interface RecordingMetadata {
+export interface TestSuiteMetadata {
   /** Current status */
-  status: RecordingStatus;
+  status: TestSuiteStatus;
 
   /** Reliability based on test runs */
   reliability: ReliabilityLevel;
@@ -136,21 +136,21 @@ export interface RecordingMetadata {
 }
 
 /**
- * Complete recording structure.
+ * Complete test suite structure.
  */
-export interface Recording {
-  /** Recording name */
+export interface TestSuite {
+  /** Test suite name */
   name: string;
 
-  /** Description of what this recording does */
+  /** Description of what this test suite does */
   description: string;
 
   /** Metadata for quality tracking */
-  metadata: RecordingMetadata;
+  metadata: TestSuiteMetadata;
 
-  /** Context for when this recording applies */
-  context: RecordingContext;
+  /** Context for when this test suite applies */
+  context: TestSuiteContext;
 
-  /** Tasks to execute */
-  tasks: RecordingTask[];
+  /** Test cases to execute */
+  testCases: TestCase[];
 }
