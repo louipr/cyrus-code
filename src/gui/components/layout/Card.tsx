@@ -55,7 +55,8 @@ export function Card({
   }, [id, title, collapsible, defaultCollapsed, registerCard]);
 
   const cardState = getCardState(id);
-  const isCollapsed = cardState?.collapsed ?? defaultCollapsed;
+  // When collapsible=false, force expanded regardless of state
+  const isCollapsed = collapsible ? (cardState?.collapsed ?? defaultCollapsed) : false;
 
   const handleToggle = () => {
     if (collapsible) {
