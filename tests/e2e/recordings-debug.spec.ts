@@ -5,8 +5,28 @@
  * Verifies that graph and details panel are both visible.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
+
+/**
+ * Helper to navigate to recordings view and select a recording
+ */
+async function selectRecording(page: Page) {
+  // Navigate to Recordings view
+  await page.click('[data-testid="recordings-view-button"]');
+  await page.waitForTimeout(300);
+
+  // Expand first tree node (app folder)
+  const firstNode = page.locator('[data-testid^="recording-tree-"]').first();
+  await expect(firstNode).toBeVisible();
+  await firstNode.click();
+  await page.waitForTimeout(300);
+
+  // Select second node (a recording)
+  const allNodes = page.locator('[data-testid^="recording-tree-"]');
+  await allNodes.nth(1).click();
+  await page.waitForTimeout(500);
+}
 
 test.describe('Recordings Debug View', () => {
   let context: AppContext;
@@ -55,7 +75,9 @@ test.describe('Recordings Debug View', () => {
   test('shows both graph AND details panel (two-column layout)', async () => {
     const { page } = context;
 
-    // Should still have recording loaded from previous test
+    // Setup: ensure recording is selected
+    await selectRecording(page);
+
     // Main panel must be visible
     const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
     await expect(mainPanel).toBeVisible();
@@ -63,6 +85,13 @@ test.describe('Recordings Debug View', () => {
     // Graph must be visible
     const graph = page.locator('[data-testid="test-case-graph"]');
     await expect(graph).toBeVisible();
+
+    // Ensure Details column is expanded
+    const collapsedColumn = page.locator('[data-testid="column-details-collapsed"]');
+    if (await collapsedColumn.isVisible()) {
+      await collapsedColumn.click();
+      await page.waitForTimeout(300);
+    }
 
     // At least one detail view must be visible (recording, test case, or step)
     const recordingDetail = page.locator('[data-testid="recording-detail"]');
@@ -82,6 +111,9 @@ test.describe('Recordings Debug View', () => {
 
   test('details panel is positioned to the right of graph in right panel', async () => {
     const { page } = context;
+
+    // Setup: ensure recording is selected
+    await selectRecording(page);
 
     // Ensure Details column is expanded (might be collapsed from previous test runs)
     const collapsedColumn = page.locator('[data-testid="column-details-collapsed"]');
@@ -132,8 +164,10 @@ test.describe('Recordings Debug View', () => {
   test('Debug button is visible when recording loaded', async () => {
     const { page } = context;
 
-    // Recording should already be loaded from previous tests
-    // Just verify the graph is visible (recording is loaded)
+    // Setup: ensure recording is selected
+    await selectRecording(page);
+
+    // Verify the graph is visible (recording is loaded)
     const graph = page.locator('[data-testid="test-case-graph"]');
     await expect(graph).toBeVisible();
 
