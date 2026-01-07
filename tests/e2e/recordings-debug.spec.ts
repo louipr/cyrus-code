@@ -83,6 +83,13 @@ test.describe('Recordings Debug View', () => {
   test('details panel is positioned to the right of graph in right panel', async () => {
     const { page } = context;
 
+    // Ensure Details column is expanded (might be collapsed from previous test runs)
+    const collapsedColumn = page.locator('[data-testid="column-details-collapsed"]');
+    if (await collapsedColumn.isVisible()) {
+      await collapsedColumn.click();
+      await page.waitForTimeout(300);
+    }
+
     // Get the right panel which contains both graph and details
     const rightPanel = page.locator('[data-testid="recordings-right-panel"]');
     await expect(rightPanel).toBeVisible();
@@ -116,7 +123,8 @@ test.describe('Recordings Debug View', () => {
     // hover() will fail if element is covered by another element
     await graphHeader.hover({ timeout: 1000 });
 
-    const detailsHeader = detailsCard.locator('text=DETAILS');
+    // Details header is now on the Column, not the Card
+    const detailsHeader = page.locator('[data-testid="column-details-header"]');
     await expect(detailsHeader).toBeVisible();
     await detailsHeader.hover({ timeout: 1000 });
   });

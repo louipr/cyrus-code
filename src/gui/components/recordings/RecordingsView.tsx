@@ -269,9 +269,9 @@ export function RecordingsView() {
             )}
           </Column>
 
-          {/* Column 2: Details (full height) */}
-          <Column id="details" width={{ default: 320, min: 200, max: 500 }}>
-            <Card id="details" title="Details" fill testId="details-card">
+          {/* Column 2: Details (full height, horizontally collapsible) */}
+          <Column id="details" width={{ default: 320, min: 200, max: 500 }} collapsible title="Details">
+            <Card id="details" title="Details" fill testId="details-card" collapsible={false} showHeader={false}>
               {selectedStep && selectedStepIndex !== null ? (
                 <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
               ) : selectedTestCase && testSuite ? (

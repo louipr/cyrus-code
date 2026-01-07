@@ -63,6 +63,10 @@ export interface ColumnConfig {
   width?: SizeConstraint;
   /** Cards in this column collapse together if true */
   stitched?: boolean;
+  /** Whether the column can be horizontally collapsed */
+  collapsible?: boolean;
+  /** Initial collapsed state */
+  defaultCollapsed?: boolean;
 }
 
 /**

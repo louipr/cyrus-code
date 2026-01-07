@@ -104,7 +104,7 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
           ...state.columns,
           [config.id]: {
             width: config.width?.default ?? 0,
-            collapsed: false,
+            collapsed: config.defaultCollapsed ?? false,
           },
         },
       };

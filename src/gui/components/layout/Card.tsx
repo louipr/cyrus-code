@@ -24,6 +24,8 @@ export interface CardProps {
   testId?: string;
   /** Whether to fill available vertical space (flex: 1) */
   fill?: boolean;
+  /** Whether to show the header (default: true, set false when Column provides header) */
+  showHeader?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export function Card({
   children,
   testId,
   fill = false,
+  showHeader = true,
 }: CardProps) {
   const { dispatch, registerCard, getCardState } = usePanelContext();
 
@@ -69,21 +72,23 @@ export function Card({
       }}
       data-testid={testId || `card-${id}`}
     >
-      {/* Card Header */}
-      <div
-        style={{
-          ...styles.header,
-          ...(collapsible ? styles.headerClickable : {}),
-        }}
-        onClick={collapsible ? handleToggle : undefined}
-      >
-        {collapsible && (
-          <span style={styles.chevron}>
-            {isCollapsed ? '▶' : '▼'}
-          </span>
-        )}
-        <span style={styles.title}>{title}</span>
-      </div>
+      {/* Card Header (optional when Column provides header) */}
+      {showHeader && (
+        <div
+          style={{
+            ...styles.header,
+            ...(collapsible ? styles.headerClickable : {}),
+          }}
+          onClick={collapsible ? handleToggle : undefined}
+        >
+          {collapsible && (
+            <span style={styles.chevron}>
+              {isCollapsed ? '▶' : '▼'}
+            </span>
+          )}
+          <span style={styles.title}>{title}</span>
+        </div>
+      )}
 
       {/* Card Content */}
       {!isCollapsed && (
