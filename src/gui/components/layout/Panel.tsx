@@ -61,7 +61,7 @@ export function Panel({
         style={styles.collapsedPanel}
         onClick={() => togglePanel(id)}
         title={`Expand ${title ?? id}`}
-        data-testid={testId ?? `panel-${id}-collapsed`}
+        data-testid={testId ? `${testId}-collapsed` : `panel-${id}-collapsed`}
       >
         <span style={styles.collapsedLabel}>{title ?? id}</span>
       </div>
@@ -88,6 +88,7 @@ export function Panel({
           style={styles.header}
           onClick={() => togglePanel(id)}
           title={`Collapse ${title}`}
+          data-testid={testId ? `${testId}-header` : `panel-${id}-header`}
         >
           <span style={styles.headerTitle}>{title}</span>
           <span style={styles.collapseIcon}>{position === 'left' ? '\u00AB' : '\u00BB'}</span>

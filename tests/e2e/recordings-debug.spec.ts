@@ -150,15 +150,15 @@ test.describe('Recordings Debug View', () => {
 
     // ACTIONABILITY TEST: Verify elements are actually clickable (not obscured)
     // This catches the case where DOM elements exist but are covered by an overlay
-    // Both headers are now on the Column, not the Card (for horizontal collapse)
-    const graphHeader = page.locator('[data-testid="column-graph-debug-header"]');
-    await expect(graphHeader).toBeVisible();
+    // Headers are now on Panels (not Columns) for proper collapse behavior
+    const graphPanel = page.locator('[data-testid="recordings-right-panel"]');
+    await expect(graphPanel).toBeVisible();
     // hover() will fail if element is covered by another element
-    await graphHeader.hover({ timeout: 1000 });
+    await graphPanel.hover({ timeout: 1000 });
 
-    const detailsHeader = page.locator('[data-testid="column-details-header"]');
-    await expect(detailsHeader).toBeVisible();
-    await detailsHeader.hover({ timeout: 1000 });
+    const detailsPanel = page.locator('[data-testid="details-panel"]');
+    await expect(detailsPanel).toBeVisible();
+    await detailsPanel.hover({ timeout: 1000 });
   });
 
   test('Debug button is visible when recording loaded', async () => {

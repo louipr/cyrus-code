@@ -220,78 +220,89 @@ export function RecordingsView() {
 
       <ResizeHandle
         orientation="horizontal"
-        targetId="right"
+        targetId="graph"
         targetType="panel"
-        constraints={{ default: 600, min: 400, max: 900 }}
+        constraints={{ default: 280, min: 200, max: 500 }}
       />
 
-      {/* Right Panel - Graph, Debug Controls, and Details */}
+      {/* Graph Panel - Test Case Graph + Debug Controls */}
       <Panel
-        id="right"
+        id="graph"
         position="right"
-        size={{ default: 600, min: 400, max: 900 }}
-        title="Test Details"
+        size={{ default: 280, min: 200, max: 500 }}
+        title="Test Case Graph"
         testId="recordings-right-panel"
+        collapsible
       >
-        {/* Two-column layout: Graph+Debug | Details */}
-        <div style={styles.rightPanelContent}>
-          {/* Column 1: Graph + Debug Controls (stitched vertically, horizontally collapsible) */}
-          <Column id="graph-debug" stitched fill collapsible title="Test Case Graph">
-            <Card id="graph" title="Test Case Graph" fill testId="test-case-graph-card" showHeader={false} collapsible={false}>
-              {testSuite ? (
-                <TestCaseGraph
-                  testCases={testSuite.testCases}
-                  selectedTestCaseId={selectedTestCase?.id ?? null}
-                  selectedStepIndex={selectedStepIndex}
-                  onTestCaseClick={handleTestCaseClick}
-                  onStepClick={handleStepClick}
-                  executingTestCaseIndex={debugState.position?.testCaseIndex ?? null}
-                  executingStepIndex={debugState.position?.stepIndex ?? null}
-                  stepResults={debugState.stepResults}
-                />
-              ) : (
-                <div style={styles.graphPlaceholder}>
-                  <span style={styles.placeholder}>Select a test suite to view test cases</span>
-                </div>
-              )}
-            </Card>
-
-            {/* Debug Controls Card - only shown during debug session */}
-            {debugSession.state.sessionId && (
-              <Card id="debug" title="Debug Session" testId="debug-controls-card">
-                <DebugControls
-                  state={debugSession.state}
-                  commands={debugSession.commands}
-                  testSuite={debugSession.testSuite}
-                  onClose={debugSession.clearDebug}
-                />
-              </Card>
+        <Column id="graph-debug" stitched fill>
+          <Card id="graph-card" title="Test Case Graph" fill testId="test-case-graph-card" showHeader={false} collapsible={false}>
+            {testSuite ? (
+              <TestCaseGraph
+                testCases={testSuite.testCases}
+                selectedTestCaseId={selectedTestCase?.id ?? null}
+                selectedStepIndex={selectedStepIndex}
+                onTestCaseClick={handleTestCaseClick}
+                onStepClick={handleStepClick}
+                executingTestCaseIndex={debugState.position?.testCaseIndex ?? null}
+                executingStepIndex={debugState.position?.stepIndex ?? null}
+                stepResults={debugState.stepResults}
+              />
+            ) : (
+              <div style={styles.graphPlaceholder}>
+                <span style={styles.placeholder}>Select a test suite to view test cases</span>
+              </div>
             )}
-          </Column>
+          </Card>
 
-          {/* Column 2: Details (full height, horizontally collapsible) */}
-          <Column id="details" width={{ default: 320, min: 200, max: 500 }} collapsible title="Details">
-            <Card id="details-content" title="Details" fill testId="details-card" collapsible={false} showHeader={false}>
-              {selectedStep && selectedStepIndex !== null ? (
-                <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
-              ) : selectedTestCase && testSuite ? (
-                <TestCaseDetail
-                  testCase={selectedTestCase}
-                  testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
-                  allTestCases={testSuite.testCases}
-                />
-              ) : testSuite ? (
-                <RecordingDetail testSuite={testSuite} />
-              ) : (
-                <div style={styles.detailsPlaceholder}>
-                  <span style={styles.placeholder}>
-                    Select a test suite, test case, or step to view details
-                  </span>
-                </div>
-              )}
+          {/* Debug Controls Card - only shown during debug session */}
+          {debugSession.state.sessionId && (
+            <Card id="debug" title="Debug Session" testId="debug-controls-card">
+              <DebugControls
+                state={debugSession.state}
+                commands={debugSession.commands}
+                testSuite={debugSession.testSuite}
+                onClose={debugSession.clearDebug}
+              />
             </Card>
-          </Column>
-        </div>
+          )}
+        </Column>
+      </Panel>
+
+      <ResizeHandle
+        orientation="horizontal"
+        targetId="details"
+        targetType="panel"
+        constraints={{ default: 320, min: 200, max: 500 }}
+      />
+
+      {/* Details Panel - Recording/TestCase/Step details */}
+      <Panel
+        id="details"
+        position="right"
+        size={{ default: 320, min: 200, max: 500 }}
+        title="Details"
+        testId="details-panel"
+        collapsible
+      >
+        <Card id="details-content" title="Details" fill testId="details-card" showHeader={false} collapsible={false}>
+          {selectedStep && selectedStepIndex !== null ? (
+            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
+          ) : selectedTestCase && testSuite ? (
+            <TestCaseDetail
+              testCase={selectedTestCase}
+              testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
+              allTestCases={testSuite.testCases}
+            />
+          ) : testSuite ? (
+            <RecordingDetail testSuite={testSuite} />
+          ) : (
+            <div style={styles.detailsPlaceholder}>
+              <span style={styles.placeholder}>
+                Select a test suite, test case, or step to view details
+              </span>
+            </div>
+          )}
+        </Card>
       </Panel>
 
       {/* Step Result Overlay */}
@@ -338,12 +349,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1e1e1e',
-  },
-  rightPanelContent: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'row',
-    overflow: 'hidden',
   },
   graphPlaceholder: {
     height: '100%',

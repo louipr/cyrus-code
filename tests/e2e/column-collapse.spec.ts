@@ -1,13 +1,14 @@
 /**
- * Column Collapse E2E Tests
+ * Panel Collapse E2E Tests
  *
- * Tests the horizontal column collapse behavior.
+ * Tests the horizontal panel collapse behavior.
+ * When a panel collapses, the main panel should expand into that space.
  */
 
 import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 
-test.describe('Column Collapse', () => {
+test.describe('Panel Collapse', () => {
   let context: AppContext;
 
   test.beforeAll(async () => {
@@ -20,7 +21,7 @@ test.describe('Column Collapse', () => {
     }
   });
 
-  test('Details column can collapse and expand', async () => {
+  test('Details panel can collapse and expand', async () => {
     const { page } = context;
 
     // Navigate to Recordings view and select a recording
@@ -35,56 +36,54 @@ test.describe('Column Collapse', () => {
     await allNodes.nth(1).click();
     await page.waitForTimeout(500);
 
-    // Screenshot 1: Before collapse - Details column visible
+    // Screenshot 1: Before collapse - Details panel visible
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/01-before-collapse.png',
       fullPage: true,
     });
 
-    // Find and measure the graph card before collapse
-    const graphCard = page.locator('[data-testid="test-case-graph-card"]');
-    await expect(graphCard).toBeVisible();
-    const graphBoxBefore = await graphCard.boundingBox();
-    expect(graphBoxBefore).not.toBeNull();
+    // Find and measure the main panel before collapse
+    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
+    await expect(mainPanel).toBeVisible();
+    const mainBoxBefore = await mainPanel.boundingBox();
+    expect(mainBoxBefore).not.toBeNull();
 
-    // Find the Details column header and click to collapse
-    const detailsHeader = page.locator('[data-testid="column-details-header"]');
+    // Find the Details panel header and click to collapse
+    const detailsHeader = page.locator('[data-testid="details-panel-header"]');
     await expect(detailsHeader).toBeVisible();
     await detailsHeader.click();
     await page.waitForTimeout(300);
 
-    // Screenshot 2: After collapse - Details column collapsed
+    // Screenshot 2: After collapse - Details panel collapsed
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/02-after-collapse.png',
       fullPage: true,
     });
 
-    // Measure graph card after collapse - should be wider
-    const graphBoxAfter = await graphCard.boundingBox();
-    expect(graphBoxAfter).not.toBeNull();
+    // Main panel should have expanded (wider than before)
+    const mainBoxAfter = await mainPanel.boundingBox();
+    expect(mainBoxAfter).not.toBeNull();
+    expect(mainBoxAfter!.width).toBeGreaterThan(mainBoxBefore!.width);
 
-    // Graph should have expanded (wider than before)
-    expect(graphBoxAfter!.width).toBeGreaterThan(graphBoxBefore!.width);
-
-    // Click the collapsed column to expand - MUST be visible after collapse
-    const collapsedColumn = page.locator('[data-testid="column-details-collapsed"]');
-    await expect(collapsedColumn).toBeVisible();
-    await collapsedColumn.click();
+    // Click the collapsed panel to expand - MUST be visible after collapse
+    const collapsedPanel = page.locator('[data-testid="details-panel-collapsed"]');
+    await expect(collapsedPanel).toBeVisible();
+    await collapsedPanel.click();
     await page.waitForTimeout(300);
 
-    // Screenshot 3: After expand - Details column visible again
+    // Screenshot 3: After expand - Details panel visible again
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/03-after-expand.png',
       fullPage: true,
     });
 
-    // Graph should be back to original size
-    const graphBoxExpanded = await graphCard.boundingBox();
-    expect(graphBoxExpanded).not.toBeNull();
-    expect(graphBoxExpanded!.width).toBeCloseTo(graphBoxBefore!.width, -1);
+    // Main panel should be back to original size
+    const mainBoxExpanded = await mainPanel.boundingBox();
+    expect(mainBoxExpanded).not.toBeNull();
+    expect(mainBoxExpanded!.width).toBeCloseTo(mainBoxBefore!.width, -1);
   });
 
-  test('Test Case Graph column can collapse and expand', async () => {
+  test('Graph panel can collapse and expand', async () => {
     const { page } = context;
 
     // Navigate to Recordings view and select a recording
@@ -99,52 +98,50 @@ test.describe('Column Collapse', () => {
     await allNodes.nth(1).click();
     await page.waitForTimeout(500);
 
-    // Screenshot 1: Before collapse - Graph column visible
+    // Screenshot 1: Before collapse - Graph panel visible
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/04-graph-before-collapse.png',
       fullPage: true,
     });
 
-    // Find and measure the details card before collapse
-    const detailsCard = page.locator('[data-testid="details-card"]');
-    await expect(detailsCard).toBeVisible();
-    const detailsBoxBefore = await detailsCard.boundingBox();
-    expect(detailsBoxBefore).not.toBeNull();
+    // Find and measure the main panel before collapse
+    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
+    await expect(mainPanel).toBeVisible();
+    const mainBoxBefore = await mainPanel.boundingBox();
+    expect(mainBoxBefore).not.toBeNull();
 
-    // Find the Graph column header and click to collapse
-    const graphHeader = page.locator('[data-testid="column-graph-debug-header"]');
+    // Find the Graph panel header and click to collapse
+    const graphHeader = page.locator('[data-testid="recordings-right-panel-header"]');
     await expect(graphHeader).toBeVisible();
     await graphHeader.click();
     await page.waitForTimeout(300);
 
-    // Screenshot 2: After collapse - Graph column collapsed
+    // Screenshot 2: After collapse - Graph panel collapsed
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/05-graph-after-collapse.png',
       fullPage: true,
     });
 
-    // The collapsed column should be visible
-    const collapsedColumn = page.locator('[data-testid="column-graph-debug-collapsed"]');
-    await expect(collapsedColumn).toBeVisible();
+    // The collapsed panel should be visible
+    const collapsedPanel = page.locator('[data-testid="recordings-right-panel-collapsed"]');
+    await expect(collapsedPanel).toBeVisible();
 
-    // Details should have expanded (wider than before or moved left)
-    const detailsBoxAfter = await detailsCard.boundingBox();
-    expect(detailsBoxAfter).not.toBeNull();
+    // Main panel should have expanded (wider than before)
+    const mainBoxAfter = await mainPanel.boundingBox();
+    expect(mainBoxAfter).not.toBeNull();
+    expect(mainBoxAfter!.width).toBeGreaterThan(mainBoxBefore!.width);
 
-    // Details card should have moved left (x is smaller) since graph collapsed
-    expect(detailsBoxAfter!.x).toBeLessThan(detailsBoxBefore!.x);
-
-    // Click the collapsed column to expand
-    await collapsedColumn.click();
+    // Click the collapsed panel to expand
+    await collapsedPanel.click();
     await page.waitForTimeout(300);
 
-    // Screenshot 3: After expand - Graph column visible again
+    // Screenshot 3: After expand - Graph panel visible again
     await page.screenshot({
       path: 'tests/e2e/screenshots/column-collapse/06-graph-after-expand.png',
       fullPage: true,
     });
 
-    // Graph column header should be visible again
+    // Graph panel header should be visible again
     await expect(graphHeader).toBeVisible();
   });
 });
