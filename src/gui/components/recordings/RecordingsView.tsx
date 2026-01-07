@@ -4,12 +4,11 @@
  * Main container for the Recordings visualization view.
  * Uses the panel layout system for flexible resizing.
  *
- * Layout:
- *   LeftPanel (Recordings) | MainPanel (Canvas) | RightPanel (Graph + Details)
+ * Layout (all panels are independently collapsible):
+ *   LeftPanel (Recordings) | MainPanel (Canvas) | GraphPanel | DetailsPanel
  *
- * RightPanel structure:
- *   - Column 1 (stitched): TestCaseGraph Card + DebugControls Card
- *   - Column 2: Details Card
+ * All panels use consistent composition: Panel > Card > Content
+ * When any right-side panel collapses, the main panel expands.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -178,15 +177,18 @@ export function RecordingsView() {
         size={{ default: 280, min: 200, max: 400 }}
         title="Recordings"
         testId="recordings-tree-panel"
+        collapsible
       >
-        <RecordingTree
-          index={index}
-          testSuite={testSuite}
-          selectedPath={selectedPath}
-          expandedNodes={expandedNodes}
-          onSelect={handleSelect}
-          onToggle={handleToggle}
-        />
+        <Card id="recordings-tree" title="Recordings" fill testId="recordings-tree-card" showHeader={false} collapsible={false}>
+          <RecordingTree
+            index={index}
+            testSuite={testSuite}
+            selectedPath={selectedPath}
+            expandedNodes={expandedNodes}
+            onSelect={handleSelect}
+            onToggle={handleToggle}
+          />
+        </Card>
       </Panel>
 
       <ResizeHandle
