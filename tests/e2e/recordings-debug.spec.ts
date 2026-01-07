@@ -1,8 +1,8 @@
 /**
  * Recordings Debug View E2E Tests
  *
- * Tests the step-through debugger UI in the Recordings view.
- * Verifies debug controls, timeline highlighting, and result overlay.
+ * Tests the recordings view layout and two-column structure.
+ * Verifies that graph and details panel are both visible.
  */
 
 import { test, expect } from '@playwright/test';
@@ -21,147 +21,122 @@ test.describe('Recordings Debug View', () => {
     }
   });
 
-  test('navigates to Recordings view', async () => {
+  test('displays recording tree and allows selection', async () => {
     const { page } = context;
 
-    // Click on Recordings tool button (📼)
+    // Navigate to Recordings view
     await page.click('[data-testid="recordings-view-button"]');
+    await page.waitForTimeout(300);
 
-    // Wait for the Recordings view to be visible (either loading, tree, or placeholder)
-    const recordingsView = page
-      .locator('[data-testid="recording-tree"]')
-      .or(page.locator('text=No recordings found'))
-      .or(page.locator('text=Select a recording'));
-    await expect(recordingsView.first()).toBeVisible({ timeout: 5000 });
-  });
-
-  test('displays recording tree with apps and recordings', async () => {
-    const { page } = context;
-
-    // Look for the recording tree structure
+    // Recording tree must be visible
     const tree = page.locator('[data-testid="recording-tree"]');
+    await expect(tree).toBeVisible();
 
-    // If no recordings exist, we should see empty state
-    // Otherwise, we should see app folders
-    const hasRecordings = await tree.isVisible().catch(() => false);
+    // Click on first tree node (app folder) to expand
+    const firstNode = page.locator('[data-testid^="recording-tree-"]').first();
+    await expect(firstNode).toBeVisible();
+    await firstNode.click();
+    await page.waitForTimeout(300);
 
-    if (hasRecordings) {
-      // Verify tree is visible
-      await expect(tree).toBeVisible();
-    }
+    // After expanding, more nodes should be visible
+    const allNodes = page.locator('[data-testid^="recording-tree-"]');
+    const nodeCount = await allNodes.count();
+    expect(nodeCount).toBeGreaterThan(1);
+
+    // Click on second node (a recording) to load it
+    await allNodes.nth(1).click();
+    await page.waitForTimeout(500);
+
+    // Graph should now be visible
+    const graph = page.locator('[data-testid="test-case-graph"]');
+    await expect(graph).toBeVisible();
   });
 
-  test('shows Debug button when recording is selected', async () => {
+  test('shows both graph AND details panel (two-column layout)', async () => {
     const { page } = context;
 
-    // Try to find and click on a recording in the tree
-    const recordingItems = page.locator('[data-testid^="tree-recording-"]');
-    const count = await recordingItems.count();
+    // Should still have recording loaded from previous test
+    // Main panel must be visible
+    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
+    await expect(mainPanel).toBeVisible();
 
-    if (count > 0) {
-      // Click the first recording
-      await recordingItems.first().click();
+    // Graph must be visible
+    const graph = page.locator('[data-testid="test-case-graph"]');
+    await expect(graph).toBeVisible();
 
-      // Wait for recording to load
-      await page.waitForTimeout(500);
+    // At least one detail view must be visible (recording, test case, or step)
+    const recordingDetail = page.locator('[data-testid="recording-detail"]');
+    const testCaseDetail = page.locator('[data-testid="test-case-detail"]');
+    const stepDetail = page.locator('[data-testid="step-detail"]');
 
-      // Debug button should appear (in DebugControls)
-      const debugButton = page.locator('button:has-text("Debug")');
-      await expect(debugButton).toBeVisible({ timeout: 3000 });
-    }
+    const hasRecordingDetail = await recordingDetail.isVisible();
+    const hasTestCaseDetail = await testCaseDetail.isVisible();
+    const hasStepDetail = await stepDetail.isVisible();
+
+    // Take screenshot for manual verification
+    await page.screenshot({ path: 'tests/e2e/screenshots/recordings-debug/two-column-layout.png' });
+
+    // CRITICAL: At least one details view must be visible alongside the graph
+    expect(hasRecordingDetail || hasTestCaseDetail || hasStepDetail).toBe(true);
   });
 
-  test('displays task dependency graph when recording selected', async () => {
+  test('details panel is positioned to the right of graph in right panel', async () => {
     const { page } = context;
 
-    // Check if task dependency graph is visible
-    const graph = page.locator('[data-testid="task-dependency-graph"]');
-    const isVisible = await graph.isVisible().catch(() => false);
+    // Get the right panel which contains both graph and details
+    const rightPanel = page.locator('[data-testid="recordings-right-panel"]');
+    await expect(rightPanel).toBeVisible();
+    const rightBox = await rightPanel.boundingBox();
+    expect(rightBox).not.toBeNull();
 
-    if (isVisible) {
-      // Verify graph container exists
-      await expect(graph).toBeVisible();
+    // Get the graph card (now in right panel)
+    const graphCard = page.locator('[data-testid="test-case-graph-card"]');
+    await expect(graphCard).toBeVisible();
+    const graphBox = await graphCard.boundingBox();
+    expect(graphBox).not.toBeNull();
 
-      // Check for task nodes
-      const taskNodes = page.locator('[data-testid^="task-node-"]');
-      const nodeCount = await taskNodes.count();
+    // Get the details card (should be to the right of graph)
+    const detailsCard = page.locator('[data-testid="details-card"]');
+    await expect(detailsCard).toBeVisible();
+    const detailsBox = await detailsCard.boundingBox();
+    expect(detailsBox).not.toBeNull();
 
-      // If we have a recording selected, we should have at least one task
-      expect(nodeCount).toBeGreaterThanOrEqual(0);
-    }
+    // Details card should be to the right of graph card
+    expect(detailsBox!.x).toBeGreaterThan(graphBox!.x);
+
+    // Right panel should contain both columns (graph column + details column)
+    // The total width should be approximately equal to right panel width
+    const graphRight = graphBox!.x + graphBox!.width;
+    expect(detailsBox!.x).toBeGreaterThanOrEqual(graphRight - 10); // Allow for borders
+
+    // ACTIONABILITY TEST: Verify elements are actually clickable (not obscured)
+    // This catches the case where DOM elements exist but are covered by an overlay
+    const graphHeader = graphCard.locator('text=TEST CASE GRAPH');
+    await expect(graphHeader).toBeVisible();
+    // hover() will fail if element is covered by another element
+    await graphHeader.hover({ timeout: 1000 });
+
+    const detailsHeader = detailsCard.locator('text=DETAILS');
+    await expect(detailsHeader).toBeVisible();
+    await detailsHeader.hover({ timeout: 1000 });
   });
 
-  test('shows step timeline when task is clicked', async () => {
+  test('Debug button is visible when recording loaded', async () => {
     const { page } = context;
 
-    // Try to click on a task node
-    const taskNodes = page.locator('[data-testid^="task-node-"]');
-    const count = await taskNodes.count();
+    // Recording should already be loaded from previous tests
+    // Just verify the graph is visible (recording is loaded)
+    const graph = page.locator('[data-testid="test-case-graph"]');
+    await expect(graph).toBeVisible();
 
-    if (count > 0) {
-      // Click the first task
-      await taskNodes.first().click();
+    // Take screenshot to debug
+    await page.screenshot({ path: 'tests/e2e/screenshots/recordings-debug/debug-button.png' });
 
-      // Wait for timeline to update
-      await page.waitForTimeout(300);
-
-      // Check for step timeline
-      const timeline = page.locator('[data-testid="step-timeline"]');
-      const isVisible = await timeline.isVisible().catch(() => false);
-
-      if (isVisible) {
-        await expect(timeline).toBeVisible();
-
-        // Check for step buttons
-        const steps = page.locator('[data-testid^="step-"]');
-        const stepCount = await steps.count();
-        expect(stepCount).toBeGreaterThanOrEqual(0);
-      }
-    }
+    // Debug button must be visible in main panel toolbar (contains emoji)
+    // The button is in recordings-main-panel's toolbar
+    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
+    const debugButton = mainPanel.locator('button').filter({ hasText: /Debug/ });
+    await expect(debugButton).toBeVisible();
   });
 
-  test('debug controls show correct initial state', async () => {
-    const { page } = context;
-
-    // Look for debug controls container
-    const debugControls = page.locator('button:has-text("Debug")');
-    const isVisible = await debugControls.isVisible().catch(() => false);
-
-    if (isVisible) {
-      // Before starting debug, only Debug button should be visible
-      await expect(debugControls).toBeVisible();
-
-      // Stop button should not be visible yet
-      const stopButton = page.locator('button:has-text("Stop")');
-      await expect(stopButton).not.toBeVisible();
-    }
-  });
-
-  test('zoom controls work in task graph', async () => {
-    const { page } = context;
-
-    // Look for zoom controls
-    const zoomIn = page.locator('button[title="Zoom In"]');
-    const zoomOut = page.locator('button[title="Zoom Out"]');
-    const fitAll = page.locator('button[title*="Fit"]');
-
-    const hasZoomControls = await zoomIn.isVisible().catch(() => false);
-
-    if (hasZoomControls) {
-      // Get initial zoom percentage
-      const zoomLabel = page.locator('span:has-text("%")');
-      const initialZoom = await zoomLabel.textContent();
-
-      // Click zoom in
-      await zoomIn.click();
-      await page.waitForTimeout(100);
-
-      // Verify zoom changed
-      const newZoom = await zoomLabel.textContent();
-      expect(newZoom).not.toBe(initialZoom);
-
-      // Click fit all to reset
-      await fitAll.click();
-    }
-  });
 });

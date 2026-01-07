@@ -74,7 +74,7 @@ flowchart TB
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
 | **CLI** | Node.js | Primary interface for all operations | ✅ |
-| **GUI** | Electron + React | Visual component editing, diagram view (see [ADR-009](../adr/009-electron-gui-framework.md)) | ✅ |
+| **GUI** | Electron + React | Visual component editing, diagram view (see [ADR-009](../adr/009-electron-gui-framework.md), [Panel System](component-gui-panel.md)) | ✅ |
 | **Language Server** | TypeScript | IDE integration (LSP protocol) | 🔮 |
 
 ### Core Services

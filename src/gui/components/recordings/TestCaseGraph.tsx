@@ -1,8 +1,8 @@
 /**
- * TaskGraph Component
+ * TestCaseGraph Component
  *
- * Task DAG visualization with expandable nodes showing steps inline.
- * Click a task to expand/collapse and reveal its steps.
+ * Test case DAG visualization with expandable nodes showing steps inline.
+ * Click a test case to expand/collapse and reveal its steps.
  */
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
@@ -13,7 +13,7 @@ import { EdgeLine } from '../shared/EdgeLine';
 type TestCaseState = 'pending' | 'running' | 'success' | 'failed';
 type StepState = 'pending' | 'running' | 'success' | 'failed';
 
-interface TaskGraphProps {
+interface TestCaseGraphProps {
   testCases: TestCase[];
   onTestCaseClick?: (testCaseId: string) => void;
   onStepClick?: (testCaseId: string, stepIndex: number) => void;
@@ -181,7 +181,7 @@ function calculatePositions(
   return positions;
 }
 
-export function TaskGraph({
+export function TestCaseGraph({
   testCases,
   onTestCaseClick,
   onStepClick,
@@ -191,7 +191,7 @@ export function TaskGraph({
   executingStepIndex,
   stepResults,
   showToolbar = true,
-}: TaskGraphProps) {
+}: TestCaseGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, SVGGElement>>(new Map());
   const [scale, setScale] = useState(ZOOM.default);
@@ -289,7 +289,7 @@ export function TaskGraph({
   const scaledHeight = bounds.height * scale;
 
   return (
-    <div style={styles.wrapper} data-testid="task-dependency-graph">
+    <div style={styles.wrapper} data-testid="test-case-graph">
       <div style={styles.scrollArea} ref={containerRef} onWheel={handleWheel}>
         <svg width={scaledWidth} height={scaledHeight} style={styles.svg}>
           <g transform={`scale(${scale}) translate(${bounds.offsetX}, ${PADDING})`}>

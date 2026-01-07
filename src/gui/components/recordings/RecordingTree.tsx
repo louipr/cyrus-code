@@ -17,7 +17,7 @@ interface RecordingTreeProps {
   /** Expanded node IDs */
   expandedNodes: Set<string>;
   /** Called when an item is selected */
-  onSelect: (path: string, type: 'app' | 'recording' | 'task' | 'step') => void;
+  onSelect: (path: string, type: 'app' | 'recording' | 'testCase' | 'step') => void;
   /** Called when a node is toggled */
   onToggle: (nodeId: string) => void;
 }
@@ -93,7 +93,7 @@ const styles = {
 const ICONS = {
   app: '📁',
   recording: '📋',
-  task: '⚡',
+  testCase: '⚡',
   step: '○',
   'step-click': '👆',
   'step-type': '⌨️',
@@ -128,7 +128,7 @@ function TreeNode({
 }: {
   id: string;
   label: string;
-  type: 'app' | 'recording' | 'task' | 'step';
+  type: 'app' | 'recording' | 'testCase' | 'step';
   icon: string;
   depth: number;
   isExpanded: boolean;
@@ -196,7 +196,7 @@ export function RecordingTree({
   const selectedStepIndex = selectedParts[3];
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} data-testid="recording-tree">
       <div style={styles.header}>Recordings</div>
       <div style={styles.tree}>
         {apps.map((appId) => {
@@ -262,14 +262,14 @@ export function RecordingTree({
                             key={testCasePath}
                             id={testCasePath}
                             label={testCase.name}
-                            type="task"
-                            icon={ICONS.task}
+                            type="testCase"
+                            icon={ICONS.testCase}
                             depth={2}
                             isExpanded={isTestCaseExpanded}
                             isSelected={isTestCaseSelected}
                             hasChildren={testCase.steps.length > 0}
                             badge={`${testCase.steps.length}`}
-                            onSelect={() => onSelect(testCasePath, 'task')}
+                            onSelect={() => onSelect(testCasePath, 'testCase')}
                             onToggle={() => onToggle(testCasePath)}
                           >
                             {isTestCaseExpanded &&

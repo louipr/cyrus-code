@@ -8,7 +8,8 @@
       "c4-component-help",
       "c4-component-dependency-graph",
       "c4-component-facade",
-      "c4-component-diagram-pipeline"
+      "c4-component-diagram-pipeline",
+      "c4-component-gui-panel"
     ],
     "Dynamic": ["c4-dynamic"]
   },
@@ -63,6 +64,11 @@
     {
       "id": "diagram-pipeline",
       "label": "C4 Diagram Pipeline",
+      "category": "architecture"
+    },
+    {
+      "id": "gui-panel",
+      "label": "C4 GUI Panel",
       "category": "architecture"
     }
   ],
@@ -185,6 +191,15 @@
       "category": "architecture",
       "group": "diagram-pipeline",
       "keywords": ["C4", "component", "diagram", "drawio", "mermaid", "parser", "pipeline"]
+    },
+    {
+      "id": "c4-component-gui-panel",
+      "title": "GUI Panel System",
+      "summary": "Composable panel layout - PanelLayout, Panel, PanelGrid, PanelCell",
+      "path": "docs/c4/component-gui-panel.md",
+      "category": "architecture",
+      "group": "gui-panel",
+      "keywords": ["C4", "component", "GUI", "panel", "layout", "grid", "sidebar", "collapse"]
     },
     {
       "id": "c4-dynamic",

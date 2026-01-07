@@ -1,5 +1,5 @@
 /**
- * TaskDetail Component
+ * TestCaseDetail Component
  *
  * Displays detailed information about a selected test case.
  * Shows test case name, dependencies, and step summary.
@@ -7,7 +7,7 @@
 
 import type { TestCase } from '../../../recordings';
 
-interface TaskDetailProps {
+interface TestCaseDetailProps {
   testCase: TestCase;
   testCaseIndex: number;
   allTestCases: TestCase[];
@@ -41,7 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
   keyboard: '#dcdcaa',
 };
 
-export function TaskDetail({ testCase, testCaseIndex, allTestCases }: TaskDetailProps) {
+export function TestCaseDetail({ testCase, testCaseIndex, allTestCases }: TestCaseDetailProps) {
   // Count step types
   const stepCounts = testCase.steps.reduce(
     (acc: Record<string, number>, step) => {
@@ -57,10 +57,10 @@ export function TaskDetail({ testCase, testCaseIndex, allTestCases }: TaskDetail
     .filter(Boolean);
 
   return (
-    <div style={styles.container} data-testid="task-detail">
+    <div style={styles.container} data-testid="test-case-detail">
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.taskNumber}>Test Case {testCaseIndex + 1}</span>
+        <span style={styles.testCaseNumber}>Test Case {testCaseIndex + 1}</span>
         <span style={styles.title}>{testCase.name}</span>
       </div>
 
@@ -130,7 +130,7 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     marginBottom: '16px',
   },
-  taskNumber: {
+  testCaseNumber: {
     fontSize: '10px',
     fontWeight: 600,
     color: '#888',

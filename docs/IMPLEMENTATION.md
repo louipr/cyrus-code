@@ -54,6 +54,7 @@ npm run electron:dev   # Dev mode with hot reload
 | C4 Diagram Generator | C4DiagramGenerator | Preprocessor integration | ✅ Complete |
 | Draw.io Integration | EditorUi hook, PNG export | Diagram view, webview | ✅ Complete |
 | E2E Testing Infrastructure | TestSuitePlayer, PlaybackSession | Test Suite Visualization View, Step-Through Debugger | ✅ Phase 1-6 Complete |
+| GUI Panel Architecture | PanelLayout, PanelGrid, PanelCell | Composable panel system | ⏳ Phase 7 Planned |
 | 4: Analysis | Static Analyzer | Status, Dead Code | ❌ Deferred |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | ⏳ Not Started |
 
@@ -659,6 +660,124 @@ Industry-standard test automation terminology applied throughout the codebase.
 - RecordingStep → TestStep (single action within a test case)
 - tasks: → test_cases: (YAML key, snake_case convention)
 - recordingId → testSuiteId (identifier references)
+
+### Phase 7: Panel Architecture
+
+Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](../adr/014-panel-architecture.md) and [C4 Component Diagram](../c4/component-gui-panel.md).
+
+**Architecture Overview:**
+```
+┌─────────────┬─────────────────────────────┬─────────────────────────┐
+│ LeftPanel   │         MainPanel           │       RightPanel        │
+│ (collapsible│                             │ ┌───────────┬──────────┐│
+│  sidebar)   │                             │ │ Column A  │ Column B ││
+│             │      <Content Area>         │ ├───────────┼──────────┤│
+│ RecordingTree│                            │ │ TestCase  │ Details  ││
+│             │                             │ │ Graph     │          ││
+│             │                             │ ├───────────┤          ││
+│             │                             │ │ Debug     │          ││
+│             │                             │ │ Controls  │          ││
+└─────────────┴─────────────────────────────┴─────────────┴──────────┘
+```
+
+#### 7.1 Core Panel Components
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.69 | Create layout directory structure | `src/gui/components/layout/` | ✅ |
+| E2E.70 | Define panel type definitions | `src/gui/components/layout/types.ts` | ✅ |
+| E2E.71 | Implement PanelContext (state + reducer) | `src/gui/components/layout/PanelContext.tsx` | ✅ |
+| E2E.72 | Implement PanelLayout root container | `src/gui/components/layout/PanelLayout.tsx` | ✅ |
+| E2E.73 | Implement Panel component | `src/gui/components/layout/Panel.tsx` | ✅ |
+| E2E.74 | Implement PanelGrid component | `src/gui/components/layout/PanelGrid.tsx` | ✅ |
+| E2E.75 | Implement PanelColumn component | `src/gui/components/layout/PanelColumn.tsx` | ✅ |
+| E2E.76 | Implement PanelCell component | `src/gui/components/layout/PanelCell.tsx` | ✅ |
+| E2E.77 | Implement ResizeHandle component | `src/gui/components/layout/ResizeHandle.tsx` | ✅ |
+| E2E.78 | Implement localStorage persistence | `src/gui/components/layout/persistence.ts` | ✅ |
+| E2E.79 | Create barrel exports | `src/gui/components/layout/index.ts` | ✅ |
+
+#### 7.2 CSS Grid Layout
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.80 | CSS Grid styles for PanelLayout | `src/gui/components/layout/styles.ts` | ⏳ |
+| E2E.81 | Resize handle cursor feedback | `src/gui/components/layout/ResizeHandle.tsx` | ⏳ |
+| E2E.82 | Collapse animation styles | `src/gui/components/layout/Panel.tsx` | ⏳ |
+| E2E.83 | Panel header styles (optional) | `src/gui/components/layout/PanelCell.tsx` | ⏳ |
+
+#### 7.3 Migration: RecordingsView
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.84 | Refactor RecordingsView to use PanelLayout | `src/gui/components/recordings/RecordingsView.tsx` | ✅ |
+| E2E.85 | Extract RecordingTree to LeftPanel | `RecordingsView.tsx` | ✅ |
+| E2E.86 | Configure RightPanel with PanelGrid (2 columns) | `RecordingsView.tsx` | ⏳ |
+| E2E.87 | Move TestCaseGraph to RightPanel Column A, Row 1 | `RecordingsView.tsx` | ⏳ |
+| E2E.88 | Move DebugControls to RightPanel Column A, Row 2 | `RecordingsView.tsx` | ⏳ |
+| E2E.89 | Move StepDetail/TestCaseDetail to RightPanel Column B | `RecordingsView.tsx` | ⏳ |
+| E2E.90 | Remove legacy inline styles from RecordingsView | `RecordingsView.tsx` | ⏳ |
+
+#### 7.4 Migration: App.tsx
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.91 | Replace manual flex layout with PanelLayout | `src/gui/App.tsx` | ✅ |
+| E2E.92 | Remove TestSuitePanel from App.tsx (now in RightPanel) | `App.tsx` | ⏳ |
+| E2E.93 | Configure LeftPanel default collapse by view mode | `App.tsx` | ⏳ |
+| E2E.94 | Remove useResizablePanel from App.tsx | `App.tsx` | ✅ |
+| E2E.95 | Clean up view-specific conditional rendering | `App.tsx` | ⏳ |
+
+#### 7.5 Migration: Diagram View
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.96 | Configure Diagram view LeftPanel default collapsed | `App.tsx` | ⏳ (infra ready via `defaultState` prop) |
+| E2E.97 | Ensure RightPanel visible during debug in Diagram view | `App.tsx` | ✅ (already works) |
+
+#### 7.6 Cleanup & Code Quality
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.98 | Remove TestSuitePanel.tsx (replaced by PanelGrid) | `src/gui/components/recordings/TestSuitePanel.tsx` | ⏳ |
+| E2E.99 | Remove DebugSidePanel.tsx (replaced by PanelLayout) | `src/gui/components/debug/DebugSidePanel.tsx` | N/A (never existed) |
+| E2E.100 | Remove ResizableDivider.tsx (replaced by ResizeHandle) | `src/gui/components/shared/ResizableDivider.tsx` | ✅ |
+| E2E.101 | Remove useResizablePanel hook | `src/gui/hooks/useResizablePanel.ts` | ✅ |
+| E2E.102 | Update barrel exports in recordings/ | `src/gui/components/recordings/index.ts` | ⏳ |
+| E2E.103 | Update barrel exports in debug/ | `src/gui/components/debug/index.ts` | ⏳ |
+
+#### 7.7 E2E Tests
+
+| ID | Task | File(s) | Status |
+|----|------|---------|--------|
+| E2E.104 | Panel structure test | `tests/e2e/panel-layout.spec.ts` | ✅ |
+| E2E.105 | Panel resize test | `tests/e2e/panel-layout.spec.ts` | ✅ |
+| E2E.106 | Panel min/max constraint tests | `tests/e2e/panel-layout.spec.ts` | ✅ |
+| E2E.107 | Main panel layout test | `tests/e2e/panel-layout.spec.ts` | ✅ |
+| E2E.108 | View-specific panel defaults test | `tests/e2e/panel-layout.spec.ts` | ⏳ |
+| E2E.109 | Update test selectors for new testids | `tests/e2e/helpers/selectors.ts` | ✅ |
+
+#### Verification Tasks
+
+| ID | Task | Type | Status |
+|----|------|------|--------|
+| E2E.V7 | `npm run build && npm test` passes | Agent | ✅ |
+| E2E.V8 | `npm run test:e2e` passes (panel tests) | Agent | ✅ |
+| E2E.V9 | Manual: Panel resize works smoothly | User | ⏳ |
+| E2E.V10 | Manual: Panel collapse animation | User | ⏳ |
+| E2E.V11 | Manual: Panel state persists across app restart | User | ⏳ |
+| E2E.V12 | Manual: RightPanel grid layout correct | User | ⏳ |
+
+#### Deliverables
+
+- [x] Composable panel system (PanelLayout, Panel, PanelGrid, PanelColumn, PanelCell)
+- [x] Flexbox-based layout with resize handles
+- [x] localStorage persistence for panel state
+- [ ] Smooth collapse animations
+- [x] RecordingsView migrated to panel system
+- [x] App.tsx simplified (removed ad-hoc panel logic)
+- [ ] TestSuitePanel replaced by composable grid
+- [x] E2E tests for panel interactions
+- [x] Documentation: ADR-014, C4 Component diagram
 
 ---
 

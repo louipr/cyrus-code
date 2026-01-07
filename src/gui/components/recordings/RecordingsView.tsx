@@ -2,101 +2,30 @@
  * RecordingsView Component
  *
  * Main container for the Recordings visualization view.
- * Layout: Tree navigator | Task DAG (expandable) | Details
+ * Uses the panel layout system for flexible resizing.
+ *
+ * Layout:
+ *   LeftPanel (Recordings) | MainPanel (Canvas) | RightPanel (Graph + Details)
+ *
+ * RightPanel structure:
+ *   - Column 1 (stitched): TestCaseGraph Card + DebugControls Card
+ *   - Column 2: Details Card
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api-client';
 import { RecordingTree } from './RecordingTree';
-import { TaskGraph } from './TaskGraph';
+import { TestCaseGraph } from './TestCaseGraph';
 import { StepDetail } from './StepDetail';
-import { TaskDetail } from './TaskDetail';
+import { TestCaseDetail } from './TestCaseDetail';
 import { RecordingDetail } from './RecordingDetail';
 import { RecordingToolbar } from './RecordingToolbar';
 import { StepResultOverlay } from './StepResultOverlay';
+import { DebugControls } from '../debug/DebugControls';
 import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
+import { PanelLayout, Panel, ResizeHandle, Column, Card } from '../layout';
 import type { RecordingIndex } from '../../../domain/recordings/index';
 import type { TestSuite, TestCase, TestStep, StepResult } from '../../../recordings';
-
-const styles = {
-  container: {
-    display: 'flex',
-    height: '100%',
-    backgroundColor: '#1e1e1e',
-  } as React.CSSProperties,
-  sidebar: {
-    width: '280px',
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column' as const,
-  } as React.CSSProperties,
-  main: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    overflow: 'hidden',
-    position: 'relative' as const,
-  } as React.CSSProperties,
-  toolbarRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '8px',
-    borderBottom: '1px solid #333',
-    flexShrink: 0,
-  } as React.CSSProperties,
-  contentArea: {
-    flex: 1,
-    display: 'flex',
-    overflow: 'hidden',
-  } as React.CSSProperties,
-  dagContainer: {
-    flex: 1,
-    overflow: 'hidden',
-    position: 'relative',
-  } as React.CSSProperties,
-  dagPlaceholder: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#888',
-    fontSize: '14px',
-  } as React.CSSProperties,
-  detailsPanel: {
-    width: '320px',
-    flexShrink: 0,
-    borderLeft: '1px solid #333',
-    overflow: 'auto',
-    backgroundColor: '#1e1e1e',
-  } as React.CSSProperties,
-  detailsPlaceholder: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    textAlign: 'center' as const,
-  } as React.CSSProperties,
-  placeholder: {
-    color: '#666',
-    fontStyle: 'italic' as const,
-    fontSize: '13px',
-  } as React.CSSProperties,
-  debugButton: {
-    padding: '6px 12px',
-    backgroundColor: '#0e639c',
-    border: 'none',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '12px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  } as React.CSSProperties,
-};
 
 /**
  * RecordingsView - Main recordings visualization view
@@ -135,7 +64,7 @@ export function RecordingsView() {
 
   // Handle node selection
   const handleSelect = useCallback(
-    async (path: string, type: 'app' | 'recording' | 'task' | 'step') => {
+    async (path: string, type: 'app' | 'recording' | 'testCase' | 'step') => {
       setSelectedPath(path);
       const parts = path.split('/');
 
@@ -151,7 +80,7 @@ export function RecordingsView() {
           setSelectedStep(null);
           setSelectedStepIndex(null);
         }
-      } else if (type === 'task' && testSuite) {
+      } else if (type === 'testCase' && testSuite) {
         const testCaseId = parts[2];
         const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
         setSelectedTestCase(testCase || null);
@@ -184,7 +113,7 @@ export function RecordingsView() {
     });
   }, []);
 
-  // Handle step click from TaskGraph
+  // Handle step click from TestCaseGraph
   const handleStepClick = useCallback(
     (testCaseId: string, stepIdx: number) => {
       const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
@@ -207,10 +136,23 @@ export function RecordingsView() {
     [testSuite, debugState.stepResults]
   );
 
+  // Handle test case click from TestCaseGraph
+  const handleTestCaseClick = useCallback(
+    (testCaseId: string) => {
+      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      if (testCase) {
+        setSelectedTestCase(testCase);
+        setSelectedStep(null);
+        setSelectedStepIndex(null);
+      }
+    },
+    [testSuite]
+  );
+
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={{ ...styles.main, alignItems: 'center', justifyContent: 'center' }}>
+        <div style={styles.centered}>
           <span style={styles.placeholder}>Loading recordings...</span>
         </div>
       </div>
@@ -220,7 +162,7 @@ export function RecordingsView() {
   if (!index) {
     return (
       <div style={styles.container}>
-        <div style={{ ...styles.main, alignItems: 'center', justifyContent: 'center' }}>
+        <div style={styles.centered}>
           <span style={styles.placeholder}>No recordings found</span>
         </div>
       </div>
@@ -228,9 +170,15 @@ export function RecordingsView() {
   }
 
   return (
-    <div style={styles.container}>
-      {/* Tree Navigator */}
-      <div style={styles.sidebar}>
+    <PanelLayout storageKey="recordings-layout" testId="recordings-view">
+      {/* Left Panel - Recording Tree */}
+      <Panel
+        id="left"
+        position="left"
+        size={{ default: 280, min: 200, max: 400 }}
+        title="Recordings"
+        testId="recordings-tree-panel"
+      >
         <RecordingTree
           index={index}
           testSuite={testSuite}
@@ -239,11 +187,18 @@ export function RecordingsView() {
           onSelect={handleSelect}
           onToggle={handleToggle}
         />
-      </div>
+      </Panel>
 
-      {/* Main Content */}
-      <div style={styles.main}>
-        {/* Recording Toolbar - fixed height bar at top */}
+      <ResizeHandle
+        orientation="horizontal"
+        targetId="left"
+        targetType="panel"
+        constraints={{ default: 280, min: 200, max: 400 }}
+      />
+
+      {/* Main Panel - Canvas area (toolbar + placeholder, draw.io goes here) */}
+      <Panel id="main" position="main" testId="recordings-main-panel">
+        {/* Toolbar Row */}
         <div style={styles.toolbarRow}>
           <RecordingToolbar testSuite={testSuite} />
           {testSuite && selectedAppId && selectedTestSuiteId && !debugSession.state.sessionId && (
@@ -257,55 +212,87 @@ export function RecordingsView() {
           )}
         </div>
 
-        {/* Content Area - TaskGraph left, Details right */}
-        <div style={styles.contentArea}>
-          {/* Task Dependency Graph (expandable nodes) */}
-          <div style={styles.dagContainer}>
-            {testSuite ? (
-              <TaskGraph
-                testCases={testSuite.testCases}
-                selectedTestCaseId={selectedTestCase?.id ?? null}
-                selectedStepIndex={selectedStepIndex}
-                onTestCaseClick={(testCaseId) => {
-                  const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
-                  if (testCase) {
-                    setSelectedTestCase(testCase);
-                    setSelectedStep(null);
-                    setSelectedStepIndex(null);
-                  }
-                }}
-                onStepClick={handleStepClick}
-                executingTestCaseIndex={debugState.position?.testCaseIndex ?? null}
-                executingStepIndex={debugState.position?.stepIndex ?? null}
-                stepResults={debugState.stepResults}
-              />
-            ) : (
-              <div style={styles.dagPlaceholder}>
-                <span style={styles.placeholder}>Select a test suite to view test cases</span>
-              </div>
-            )}
-          </div>
-
-          {/* Details Panel - right side */}
-          <div style={styles.detailsPanel}>
-            {selectedStep && selectedStepIndex !== null ? (
-              <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
-            ) : selectedTestCase && testSuite ? (
-              <TaskDetail
-                testCase={selectedTestCase}
-                testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
-                allTestCases={testSuite.testCases}
-              />
-            ) : testSuite ? (
-              <RecordingDetail testSuite={testSuite} />
-            ) : (
-              <div style={styles.detailsPlaceholder}>
-                <span style={styles.placeholder}>Select a test suite, test case, or step to view details</span>
-              </div>
-            )}
-          </div>
+        {/* Canvas placeholder - draw.io will render here in diagram mode */}
+        <div style={styles.canvasPlaceholder}>
+          <span style={styles.placeholder}>Select a recording to view details in the right panel</span>
         </div>
-      </div>
+      </Panel>
+
+      <ResizeHandle
+        orientation="horizontal"
+        targetId="right"
+        targetType="panel"
+        constraints={{ default: 600, min: 400, max: 900 }}
+      />
+
+      {/* Right Panel - Graph, Debug Controls, and Details */}
+      <Panel
+        id="right"
+        position="right"
+        size={{ default: 600, min: 400, max: 900 }}
+        title="Test Details"
+        testId="recordings-right-panel"
+      >
+        {/* Two-column layout: Graph+Debug | Details */}
+        <div style={styles.rightPanelContent}>
+          {/* Column 1: Graph + Debug Controls (stitched vertically) */}
+          <Column id="graph-debug" stitched fill>
+            <Card id="graph" title="Test Case Graph" fill testId="test-case-graph-card">
+              {testSuite ? (
+                <TestCaseGraph
+                  testCases={testSuite.testCases}
+                  selectedTestCaseId={selectedTestCase?.id ?? null}
+                  selectedStepIndex={selectedStepIndex}
+                  onTestCaseClick={handleTestCaseClick}
+                  onStepClick={handleStepClick}
+                  executingTestCaseIndex={debugState.position?.testCaseIndex ?? null}
+                  executingStepIndex={debugState.position?.stepIndex ?? null}
+                  stepResults={debugState.stepResults}
+                />
+              ) : (
+                <div style={styles.graphPlaceholder}>
+                  <span style={styles.placeholder}>Select a test suite to view test cases</span>
+                </div>
+              )}
+            </Card>
+
+            {/* Debug Controls Card - only shown during debug session */}
+            {debugSession.state.sessionId && (
+              <Card id="debug" title="Debug Session" testId="debug-controls-card">
+                <DebugControls
+                  state={debugSession.state}
+                  commands={debugSession.commands}
+                  testSuite={debugSession.testSuite}
+                  onClose={debugSession.clearDebug}
+                />
+              </Card>
+            )}
+          </Column>
+
+          {/* Column 2: Details (full height) */}
+          <Column id="details" width={{ default: 320, min: 200, max: 500 }}>
+            <Card id="details" title="Details" fill testId="details-card">
+              {selectedStep && selectedStepIndex !== null ? (
+                <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
+              ) : selectedTestCase && testSuite ? (
+                <TestCaseDetail
+                  testCase={selectedTestCase}
+                  testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
+                  allTestCases={testSuite.testCases}
+                />
+              ) : testSuite ? (
+                <RecordingDetail testSuite={testSuite} />
+              ) : (
+                <div style={styles.detailsPlaceholder}>
+                  <span style={styles.placeholder}>
+                    Select a test suite, test case, or step to view details
+                  </span>
+                </div>
+              )}
+            </Card>
+          </Column>
+        </div>
+      </Panel>
 
       {/* Step Result Overlay */}
       {showResultOverlay && selectedStep && overlayResult && selectedStepIndex !== null && (
@@ -319,6 +306,77 @@ export function RecordingsView() {
           }}
         />
       )}
-    </div>
+    </PanelLayout>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    height: '100%',
+    backgroundColor: '#1e1e1e',
+  },
+  centered: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '8px',
+    borderBottom: '1px solid #333',
+    flexShrink: 0,
+    position: 'relative',
+    zIndex: 1,
+  },
+  canvasPlaceholder: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1e1e1e',
+  },
+  rightPanelContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  graphPlaceholder: {
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#888',
+    fontSize: '14px',
+  },
+  detailsPlaceholder: {
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px',
+    textAlign: 'center',
+  },
+  placeholder: {
+    color: '#666',
+    fontStyle: 'italic',
+    fontSize: '13px',
+  },
+  debugButton: {
+    padding: '6px 12px',
+    backgroundColor: '#0e639c',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+};

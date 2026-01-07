@@ -18,11 +18,9 @@ import { GenerateButton } from './components/GenerateButton';
 import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
-import { RecordingsView } from './components/recordings';
-import { DebugOverlay, DebugSidePanel } from './components/debug';
-import { ResizableDivider } from './components/shared/ResizableDivider';
+import { RecordingsView, TestSuitePanel } from './components/recordings';
 import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
-import { useResizablePanel } from './hooks/useResizablePanel';
+import { PanelLayout, Panel, ResizeHandle } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
@@ -53,20 +51,6 @@ function AppContent(): React.ReactElement {
 
   // Debug session context - persists across view switches
   const debugSession = useDebugSessionContext();
-
-  // Resizable side panel for debug task graph
-  const {
-    width: panelWidth,
-    collapsed: panelCollapsed,
-    isDragging: isPanelDragging,
-    toggleCollapsed: togglePanelCollapsed,
-    dividerHandlers,
-  } = useResizablePanel({
-    storageKey: 'debug-panel-width',
-    defaultWidth: 230,
-    minWidth: 210,
-    maxWidth: 400,
-  });
 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
@@ -188,16 +172,8 @@ function AppContent(): React.ReactElement {
     }
   }, []);
 
-  // Handle test case click from debug side panel - navigate to recordings view
-  const handleSidePanelTestCaseClick = useCallback((testCaseId: string) => {
-    // Navigate to recordings view so user can see full test case details
-    setViewMode('recordings');
-    // The recordings view will handle showing the test case
-    console.log('[App] Side panel test case clicked:', testCaseId);
-  }, []);
-
-  // Show debug side panel only when NOT in recordings view (it already has the task graph)
-  const showDebugSidePanel = debugSession.state.sessionId && debugSession.testSuite && viewMode !== 'recordings';
+  // Show test suite panel in non-recordings views during debug (recordings view has its own layout)
+  const showTestSuitePanel = !!debugSession.state.sessionId && !!debugSession.testSuite && viewMode !== 'recordings';
 
   return (
     <div style={styles.container}>
@@ -315,9 +291,9 @@ function AppContent(): React.ReactElement {
       </header>
 
       {/* Main content wrapper with optional debug side panel */}
-      <div style={styles.mainWithPanel}>
+      <PanelLayout storageKey="main-layout" testId="main-panel-layout">
         {/* Main content area */}
-        <div style={styles.mainContentWrapper}>
+        <Panel id="main-content" position="main" testId="main-content-panel">
           {viewMode === 'symbols' && symbolSubView === 'list' && (
             <>
               <div style={styles.toolbar}>
@@ -433,31 +409,35 @@ function AppContent(): React.ReactElement {
               <RecordingsView />
             </main>
           )}
-        </div>
+        </Panel>
 
-        {/* Debug side panel - appears during debug sessions */}
-        {showDebugSidePanel && (
+        {/* Test suite panel - appears during debug sessions in non-recordings views */}
+        {showTestSuitePanel && (
           <>
-            <ResizableDivider
-              isDragging={isPanelDragging}
-              onMouseDown={dividerHandlers.onMouseDown}
+            <ResizeHandle
+              orientation="horizontal"
+              targetId="debug-panel"
+              targetType="panel"
+              constraints={{ default: 450, min: 350, max: 700 }}
             />
-            <DebugSidePanel
-              width={panelWidth}
-              collapsed={panelCollapsed}
-              onToggleCollapse={togglePanelCollapsed}
-              testCases={debugSession.testSuite!.testCases}
-              executingTestCaseIndex={debugSession.state.position?.testCaseIndex ?? null}
-              stepResults={debugSession.state.stepResults}
-              onTestCaseClick={handleSidePanelTestCaseClick}
-              debugState={debugSession.state}
-              debugCommands={debugSession.commands}
-              testSuite={debugSession.testSuite}
-              onDebugClose={debugSession.clearDebug}
-            />
+            <Panel
+              id="debug-panel"
+              position="right"
+              size={{ default: 450, min: 350, max: 700 }}
+              title="Test Suite"
+              testId="debug-panel"
+            >
+              <TestSuitePanel
+                showHeader={false}
+                testSuite={debugSession.testSuite}
+                debugState={debugSession.state}
+                debugCommands={debugSession.commands}
+                onDebugClose={debugSession.clearDebug}
+              />
+            </Panel>
           </>
         )}
-      </div>
+      </PanelLayout>
 
       <ExportDialog
         isOpen={showExportDialog}
@@ -476,17 +456,6 @@ function AppContent(): React.ReactElement {
         onClose={() => setShowAboutDialog(false)}
       />
 
-      {/* Global Debug Overlay - only show when sidebar is not visible or collapsed */}
-      {debugSession.state.sessionId && (!showDebugSidePanel || panelCollapsed) && (
-        <DebugOverlay
-          state={debugSession.state}
-          commands={debugSession.commands}
-          testSuite={debugSession.testSuite}
-          onClose={debugSession.clearDebug}
-          onReturnToRecordings={() => setViewMode('recordings')}
-          rightOffset={showDebugSidePanel && panelCollapsed ? 44 : 20}
-        />
-      )}
     </div>
   );
 }
@@ -499,17 +468,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#1e1e1e',
     color: '#d4d4d4',
   },
-  mainWithPanel: {
-    display: 'flex',
-    flex: 1,
-    overflow: 'hidden',
-  },
-  mainContentWrapper: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
   header: {
     display: 'flex',
     alignItems: 'center',
@@ -517,6 +475,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 24px',
     borderBottom: '1px solid #3c3c3c',
     backgroundColor: '#252526',
+    position: 'relative',
+    zIndex: 10,
   },
   title: {
     fontSize: '20px',

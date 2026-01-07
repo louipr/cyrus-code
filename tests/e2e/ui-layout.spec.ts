@@ -87,28 +87,13 @@ test.describe('UI Layout', () => {
     await expect(page.locator(selectors.diagramWebview)).toBeAttached({ timeout: 10000 });
   });
 
-  test('Recordings tool button opens Recordings view', async () => {
-    const { page } = context;
-
-    // Click the 📼 button
-    const recordingsButton = page.locator('[data-testid="recordings-view-button"]');
-    await recordingsButton.click();
-
-    // Recordings view should appear
-    const recordingsView = page
-      .locator('[data-testid="recording-tree"]')
-      .or(page.locator('text=No recordings found'))
-      .or(page.locator('text=Select a recording'));
-    await expect(recordingsView.first()).toBeVisible({ timeout: 5000 });
-  });
-
-  test('can navigate back to Symbols from other views', async () => {
+  test('can navigate back to Symbols from Diagram view', async () => {
     const { page } = context;
 
     const toggle = page.locator('[data-testid="view-toggle"]');
     const symbolsButton = toggle.locator('button:has-text("Symbols")');
 
-    // We're on Recordings view, click Symbols to go back
+    // We're on Diagram view from previous test, click Symbols to go back
     await symbolsButton.click();
 
     // Should show Symbols list view (default sub-view)
