@@ -115,6 +115,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     overflow: 'hidden',
     flexShrink: 0,
+    height: '100%', // Fill parent height in flex row
   },
   columnFill: {
     flex: 1,
