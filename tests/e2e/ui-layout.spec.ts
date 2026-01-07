@@ -91,9 +91,14 @@ test.describe('UI Layout', () => {
     const { page } = context;
 
     const toggle = page.locator('[data-testid="view-toggle"]');
+    const diagramButton = toggle.locator('button:has-text("Diagram")');
     const symbolsButton = toggle.locator('button:has-text("Symbols")');
 
-    // We're on Diagram view from previous test, click Symbols to go back
+    // First navigate to Diagram view (self-contained setup)
+    await diagramButton.click();
+    await expect(page.locator(selectors.diagramEditor)).toBeVisible({ timeout: 10000 });
+
+    // Now click Symbols to go back
     await symbolsButton.click();
 
     // Should show Symbols list view (default sub-view)

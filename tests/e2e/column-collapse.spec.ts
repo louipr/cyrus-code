@@ -45,7 +45,7 @@ test.describe('Column Collapse', () => {
     const graphCard = page.locator('[data-testid="test-case-graph-card"]');
     await expect(graphCard).toBeVisible();
     const graphBoxBefore = await graphCard.boundingBox();
-    console.log('Graph card width before collapse:', graphBoxBefore?.width);
+    expect(graphBoxBefore).not.toBeNull();
 
     // Find the Details column header and click to collapse
     const detailsHeader = page.locator('[data-testid="column-details-header"]');
@@ -61,27 +61,26 @@ test.describe('Column Collapse', () => {
 
     // Measure graph card after collapse - should be wider
     const graphBoxAfter = await graphCard.boundingBox();
-    console.log('Graph card width after collapse:', graphBoxAfter?.width);
+    expect(graphBoxAfter).not.toBeNull();
 
     // Graph should have expanded (wider than before)
     expect(graphBoxAfter!.width).toBeGreaterThan(graphBoxBefore!.width);
 
-    // Click the collapsed column to expand
+    // Click the collapsed column to expand - MUST be visible after collapse
     const collapsedColumn = page.locator('[data-testid="column-details-collapsed"]');
-    if (await collapsedColumn.isVisible()) {
-      await collapsedColumn.click();
-      await page.waitForTimeout(300);
+    await expect(collapsedColumn).toBeVisible();
+    await collapsedColumn.click();
+    await page.waitForTimeout(300);
 
-      // Screenshot 3: After expand - Details column visible again
-      await page.screenshot({
-        path: 'tests/e2e/screenshots/column-collapse/03-after-expand.png',
-        fullPage: true,
-      });
+    // Screenshot 3: After expand - Details column visible again
+    await page.screenshot({
+      path: 'tests/e2e/screenshots/column-collapse/03-after-expand.png',
+      fullPage: true,
+    });
 
-      // Graph should be back to original size
-      const graphBoxExpanded = await graphCard.boundingBox();
-      console.log('Graph card width after expand:', graphBoxExpanded?.width);
-      expect(graphBoxExpanded!.width).toBeCloseTo(graphBoxBefore!.width, -1);
-    }
+    // Graph should be back to original size
+    const graphBoxExpanded = await graphCard.boundingBox();
+    expect(graphBoxExpanded).not.toBeNull();
+    expect(graphBoxExpanded!.width).toBeCloseTo(graphBoxBefore!.width, -1);
   });
 });
