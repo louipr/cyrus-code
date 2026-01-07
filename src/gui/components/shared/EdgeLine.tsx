@@ -2,7 +2,7 @@
  * EdgeLine Component
  *
  * Shared SVG edge rendering with bezier curves and arrowheads.
- * Used by DependencyGraph and TaskGraph components.
+ * Used by DependencyGraph and TestCaseGraph components.
  */
 
 import React from 'react';

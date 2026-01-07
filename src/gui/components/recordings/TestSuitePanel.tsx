@@ -1,7 +1,7 @@
 /**
  * TestSuitePanel Component
  *
- * Reusable panel showing TaskGraph + Details + DebugControls in two-column layout.
+ * Reusable panel showing TestCaseGraph + Details + DebugControls in two-column layout.
  * Used in RecordingsView and as a sidebar during debugging in other views.
  */
 

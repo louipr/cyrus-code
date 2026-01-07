@@ -33,15 +33,15 @@ export const DEPENDENCY_GRAPH_LAYOUT: GraphLayoutConfig = {
 };
 
 /**
- * Layout for TaskGraph component.
+ * Layout for TestCaseGraph component.
  * Optimized for vertical layout with readable text at reasonable zoom levels.
  *
  * Design rationale:
  * - nodeWidth: 200px accommodates ~24 chars without wrapping (12px font, avg 8px/char)
  * - nodeHeight: 52px provides space for 2-line text + step count at 12px font
- * - gapY: 24px compact spacing between task groups
+ * - gapY: 24px compact spacing between test case groups
  */
-export const TASK_GRAPH_LAYOUT: GraphLayoutConfig = {
+export const TEST_CASE_GRAPH_LAYOUT: GraphLayoutConfig = {
   nodeWidth: 200,
   nodeHeight: 52,
   gapX: 220,

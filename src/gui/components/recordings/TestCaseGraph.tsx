@@ -7,7 +7,7 @@
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import type { TestCase, StepResult } from '../../../recordings';
-import { TASK_GRAPH_LAYOUT } from '../../constants/graph-layout';
+import { TEST_CASE_GRAPH_LAYOUT } from '../../constants/graph-layout';
 import { EdgeLine } from '../shared/EdgeLine';
 
 type TestCaseState = 'pending' | 'running' | 'success' | 'failed';
@@ -28,12 +28,12 @@ interface TestCaseGraphProps {
 const ZOOM = { min: 0.5, max: 2.0, step: 0.1, default: 1.0 };
 
 // Layout constants
-const NODE_WIDTH = TASK_GRAPH_LAYOUT.nodeWidth;
+const NODE_WIDTH = TEST_CASE_GRAPH_LAYOUT.nodeWidth;
 const COLLAPSED_HEIGHT = 52;
 const STEP_ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 36;
-const GAP_Y = TASK_GRAPH_LAYOUT.gapY;
-const PADDING = TASK_GRAPH_LAYOUT.padding ?? 20;
+const GAP_Y = TEST_CASE_GRAPH_LAYOUT.gapY;
+const PADDING = TEST_CASE_GRAPH_LAYOUT.padding ?? 20;
 
 const STATE_COLORS: Record<TestCaseState, { fill: string; stroke: string }> = {
   running: { fill: '#1e3a5f', stroke: '#4fc1ff' },
