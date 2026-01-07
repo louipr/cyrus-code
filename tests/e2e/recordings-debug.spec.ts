@@ -150,12 +150,12 @@ test.describe('Recordings Debug View', () => {
 
     // ACTIONABILITY TEST: Verify elements are actually clickable (not obscured)
     // This catches the case where DOM elements exist but are covered by an overlay
-    const graphHeader = graphCard.locator('text=TEST CASE GRAPH');
+    // Both headers are now on the Column, not the Card (for horizontal collapse)
+    const graphHeader = page.locator('[data-testid="column-graph-debug-header"]');
     await expect(graphHeader).toBeVisible();
     // hover() will fail if element is covered by another element
     await graphHeader.hover({ timeout: 1000 });
 
-    // Details header is now on the Column, not the Card
     const detailsHeader = page.locator('[data-testid="column-details-header"]');
     await expect(detailsHeader).toBeVisible();
     await detailsHeader.hover({ timeout: 1000 });

@@ -235,9 +235,9 @@ export function RecordingsView() {
       >
         {/* Two-column layout: Graph+Debug | Details */}
         <div style={styles.rightPanelContent}>
-          {/* Column 1: Graph + Debug Controls (stitched vertically) */}
-          <Column id="graph-debug" stitched fill>
-            <Card id="graph" title="Test Case Graph" fill testId="test-case-graph-card">
+          {/* Column 1: Graph + Debug Controls (stitched vertically, horizontally collapsible) */}
+          <Column id="graph-debug" stitched fill collapsible title="Test Case Graph">
+            <Card id="graph" title="Test Case Graph" fill testId="test-case-graph-card" showHeader={false} collapsible={false}>
               {testSuite ? (
                 <TestCaseGraph
                   testCases={testSuite.testCases}

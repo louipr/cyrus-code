@@ -83,4 +83,68 @@ test.describe('Column Collapse', () => {
     expect(graphBoxExpanded).not.toBeNull();
     expect(graphBoxExpanded!.width).toBeCloseTo(graphBoxBefore!.width, -1);
   });
+
+  test('Test Case Graph column can collapse and expand', async () => {
+    const { page } = context;
+
+    // Navigate to Recordings view and select a recording
+    await page.click('[data-testid="recordings-view-button"]');
+    await page.waitForTimeout(300);
+
+    const firstNode = page.locator('[data-testid^="recording-tree-"]').first();
+    await firstNode.click();
+    await page.waitForTimeout(300);
+
+    const allNodes = page.locator('[data-testid^="recording-tree-"]');
+    await allNodes.nth(1).click();
+    await page.waitForTimeout(500);
+
+    // Screenshot 1: Before collapse - Graph column visible
+    await page.screenshot({
+      path: 'tests/e2e/screenshots/column-collapse/04-graph-before-collapse.png',
+      fullPage: true,
+    });
+
+    // Find and measure the details card before collapse
+    const detailsCard = page.locator('[data-testid="details-card"]');
+    await expect(detailsCard).toBeVisible();
+    const detailsBoxBefore = await detailsCard.boundingBox();
+    expect(detailsBoxBefore).not.toBeNull();
+
+    // Find the Graph column header and click to collapse
+    const graphHeader = page.locator('[data-testid="column-graph-debug-header"]');
+    await expect(graphHeader).toBeVisible();
+    await graphHeader.click();
+    await page.waitForTimeout(300);
+
+    // Screenshot 2: After collapse - Graph column collapsed
+    await page.screenshot({
+      path: 'tests/e2e/screenshots/column-collapse/05-graph-after-collapse.png',
+      fullPage: true,
+    });
+
+    // The collapsed column should be visible
+    const collapsedColumn = page.locator('[data-testid="column-graph-debug-collapsed"]');
+    await expect(collapsedColumn).toBeVisible();
+
+    // Details should have expanded (wider than before or moved left)
+    const detailsBoxAfter = await detailsCard.boundingBox();
+    expect(detailsBoxAfter).not.toBeNull();
+
+    // Details card should have moved left (x is smaller) since graph collapsed
+    expect(detailsBoxAfter!.x).toBeLessThan(detailsBoxBefore!.x);
+
+    // Click the collapsed column to expand
+    await collapsedColumn.click();
+    await page.waitForTimeout(300);
+
+    // Screenshot 3: After expand - Graph column visible again
+    await page.screenshot({
+      path: 'tests/e2e/screenshots/column-collapse/06-graph-after-expand.png',
+      fullPage: true,
+    });
+
+    // Graph column header should be visible again
+    await expect(graphHeader).toBeVisible();
+  });
 });
