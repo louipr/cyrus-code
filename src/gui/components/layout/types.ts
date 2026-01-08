@@ -155,11 +155,8 @@ export type LayoutAction =
   | { type: 'REGISTER_COLUMN'; config: ColumnConfig }
   | { type: 'REGISTER_CARD'; config: CardConfig }
   | { type: 'TOGGLE_PANEL'; panelId: string }
-  | { type: 'TOGGLE_COLUMN'; columnId: string }
   | { type: 'TOGGLE_CARD'; cardId: string }
   | { type: 'SET_PANEL_COLLAPSED'; panelId: string; collapsed: boolean }
-  | { type: 'SET_COLUMN_COLLAPSED'; columnId: string; collapsed: boolean }
-  | { type: 'SET_CARD_COLLAPSED'; cardId: string; collapsed: boolean }
   | { type: 'SET_PANEL_WIDTH'; panelId: string; width: number }
   | { type: 'SET_COLUMN_WIDTH'; columnId: string; width: number }
   | { type: 'RESTORE_STATE'; state: PanelLayoutState };

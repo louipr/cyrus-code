@@ -151,20 +151,6 @@ export const styles: Record<string, React.CSSProperties> = {
     marginTop: '2px',
     marginBottom: '4px',
   },
-  subsectionButton: {
-    display: 'block',
-    width: '100%',
-    padding: '4px 8px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    textAlign: 'left',
-    cursor: 'pointer',
-    color: '#888',
-    fontSize: '11px',
-  },
-  groupedSubsectionButton: {
-    paddingLeft: '16px',
-  },
   groupHeaderActive: {
     backgroundColor: '#37373d',
     color: '#fff',

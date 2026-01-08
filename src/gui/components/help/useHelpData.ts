@@ -26,7 +26,7 @@ export interface HeadingNode {
  * Build a tree from flat headings array.
  * h2 headings become parent nodes, h3 headings are nested under their parent h2.
  */
-export function buildHeadingTree(headings: DocumentHeading[]): HeadingNode[] {
+function buildHeadingTree(headings: DocumentHeading[]): HeadingNode[] {
   const tree: HeadingNode[] = [];
   let currentH2: HeadingNode | null = null;
 

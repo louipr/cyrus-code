@@ -14,8 +14,6 @@ interface DebugControlsProps {
   commands: DebugSessionCommands;
   testSuite: TestSuite | null;
   onClose: () => void;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 export function DebugControls({
@@ -23,8 +21,6 @@ export function DebugControls({
   commands,
   testSuite,
   onClose,
-  collapsed = false,
-  onToggleCollapse,
 }: DebugControlsProps) {
   const { isActive, isRunning, isPaused, error, sessionId } = state;
 
@@ -45,25 +41,13 @@ export function DebugControls({
     onClose();
   };
 
-  // Collapsed view - just a status bar
-  if (collapsed) {
-    return (
-      <div style={styles.collapsedContainer} onClick={onToggleCollapse}>
-        <span style={getStatusDotStyle(state.state)} />
-        <span style={styles.collapsedText}>Debug: {getStatusLabel(state.state)}</span>
-        <span style={styles.expandIcon}>{'<'}</span>
-      </div>
-    );
-  }
-
   // Completed state
   if (state.state === 'completed') {
     const isPassed = executionStatus === 'PASSED';
     return (
       <div style={styles.container} data-testid="debug-controls">
-        <div style={styles.header} onClick={onToggleCollapse}>
+        <div style={styles.header}>
           <span style={styles.headerTitle}>Debug Session</span>
-          {onToggleCollapse && <span style={styles.collapseIcon}>{'>'}</span>}
         </div>
         <div style={{ ...styles.statusBanner, backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a' }}>
           <span style={{ ...styles.statusIcon, color: isPassed ? '#89d185' : '#f48771' }}>
@@ -94,9 +78,8 @@ export function DebugControls({
   return (
     <div style={styles.container} data-testid="debug-controls">
       {/* Header */}
-      <div style={styles.header} onClick={onToggleCollapse}>
+      <div style={styles.header}>
         <span style={styles.headerTitle}>Debug Session</span>
-        {onToggleCollapse && <span style={styles.collapseIcon}>{'>'}</span>}
       </div>
 
       {/* Status row */}
@@ -231,8 +214,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '8px 12px',
-    cursor: 'pointer',
-    userSelect: 'none',
   },
   headerTitle: {
     fontSize: '11px',
@@ -240,10 +221,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#cccccc',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
-  },
-  collapseIcon: {
-    fontSize: '10px',
-    color: '#888',
   },
   statusRow: {
     display: 'flex',
@@ -327,24 +304,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px',
     color: '#f48771',
     backgroundColor: '#3a1a1a',
-  },
-  collapsedContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    borderTop: '1px solid #3c3c3c',
-    backgroundColor: '#252526',
-    cursor: 'pointer',
-  },
-  collapsedText: {
-    fontSize: '11px',
-    color: '#cccccc',
-    flex: 1,
-  },
-  expandIcon: {
-    fontSize: '10px',
-    color: '#888',
   },
   statusBanner: {
     display: 'flex',

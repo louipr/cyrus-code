@@ -6,40 +6,13 @@
  */
 
 import type { TestCase } from '../../../recordings';
+import { ACTION_ICONS, ACTION_COLORS } from './constants';
 
 interface TestCaseDetailProps {
   testCase: TestCase;
   testCaseIndex: number;
   allTestCases: TestCase[];
 }
-
-const ACTION_ICONS: Record<string, string> = {
-  click: '👆',
-  type: '⌨️',
-  'wait-for': '⏳',
-  'wait-hidden': '👻',
-  evaluate: '🔧',
-  poll: '🔄',
-  extract: '📤',
-  assert: '✓',
-  screenshot: '📷',
-  hover: '🖱️',
-  keyboard: '⌨️',
-};
-
-const ACTION_COLORS: Record<string, string> = {
-  click: '#4fc1ff',
-  type: '#dcdcaa',
-  'wait-for': '#c586c0',
-  'wait-hidden': '#c586c0',
-  evaluate: '#ce9178',
-  poll: '#4ec9b0',
-  extract: '#9cdcfe',
-  assert: '#89d185',
-  screenshot: '#ffd700',
-  hover: '#4fc1ff',
-  keyboard: '#dcdcaa',
-};
 
 export function TestCaseDetail({ testCase, testCaseIndex, allTestCases }: TestCaseDetailProps) {
   // Count step types

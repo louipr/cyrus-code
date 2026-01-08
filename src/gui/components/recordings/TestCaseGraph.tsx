@@ -9,6 +9,7 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import type { TestCase, StepResult } from '../../../recordings';
 import { TEST_CASE_GRAPH_LAYOUT } from '../../constants/graph-layout';
 import { EdgeLine } from '../shared/EdgeLine';
+import { ACTION_ICONS, ACTION_COLORS } from './constants';
 
 type TestCaseState = 'pending' | 'running' | 'success' | 'failed';
 type StepState = 'pending' | 'running' | 'success' | 'failed';
@@ -40,34 +41,6 @@ const STATE_COLORS: Record<TestCaseState, { fill: string; stroke: string }> = {
   success: { fill: '#1a3a1a', stroke: '#89d185' },
   failed: { fill: '#3a1a1a', stroke: '#f48771' },
   pending: { fill: '#2d2d2d', stroke: '#555' },
-};
-
-const ACTION_ICONS: Record<string, string> = {
-  click: '👆',
-  type: '⌨️',
-  'wait-for': '⏳',
-  'wait-hidden': '👻',
-  evaluate: '🔧',
-  poll: '🔄',
-  extract: '📤',
-  assert: '✓',
-  screenshot: '📷',
-  hover: '🖱️',
-  keyboard: '⌨️',
-};
-
-const ACTION_COLORS: Record<string, string> = {
-  click: '#4fc1ff',
-  type: '#dcdcaa',
-  'wait-for': '#c586c0',
-  'wait-hidden': '#c586c0',
-  evaluate: '#ce9178',
-  poll: '#4ec9b0',
-  extract: '#9cdcfe',
-  assert: '#89d185',
-  screenshot: '#ffd700',
-  hover: '#4fc1ff',
-  keyboard: '#dcdcaa',
 };
 
 function calculateLevels(testCases: TestCase[]): Map<string, number> {

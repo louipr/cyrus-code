@@ -40,15 +40,11 @@ export interface PanelContextValue {
 
   /** Toggle panel collapsed state */
   togglePanel: (panelId: string) => void;
-  /** Toggle column collapsed state */
-  toggleColumn: (columnId: string) => void;
   /** Toggle card collapsed state */
   toggleCard: (cardId: string) => void;
 
   /** Set panel collapsed state */
   setPanelCollapsed: (panelId: string, collapsed: boolean) => void;
-  /** Set card collapsed state */
-  setCardCollapsed: (cardId: string, collapsed: boolean) => void;
 
   /** Register a panel (for initial state) */
   registerPanel: (config: PanelConfig) => void;
@@ -105,7 +101,7 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
           ...state.columns,
           [config.id]: {
             width: config.width?.default ?? 0,
-            collapsed: config.defaultCollapsed ?? false,
+            collapsed: false,
           },
         },
       };
@@ -140,21 +136,6 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
       };
     }
 
-    case 'TOGGLE_COLUMN': {
-      const column = state.columns[action.columnId];
-      if (!column) return state;
-      return {
-        ...state,
-        columns: {
-          ...state.columns,
-          [action.columnId]: {
-            ...column,
-            collapsed: !column.collapsed,
-          },
-        },
-      };
-    }
-
     case 'TOGGLE_CARD': {
       const card = state.cards[action.cardId];
       if (!card) return state;
@@ -179,36 +160,6 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
           ...state.panels,
           [action.panelId]: {
             ...panel,
-            collapsed: action.collapsed,
-          },
-        },
-      };
-    }
-
-    case 'SET_COLUMN_COLLAPSED': {
-      const column = state.columns[action.columnId];
-      if (!column) return state;
-      return {
-        ...state,
-        columns: {
-          ...state.columns,
-          [action.columnId]: {
-            ...column,
-            collapsed: action.collapsed,
-          },
-        },
-      };
-    }
-
-    case 'SET_CARD_COLLAPSED': {
-      const card = state.cards[action.cardId];
-      if (!card) return state;
-      return {
-        ...state,
-        cards: {
-          ...state.cards,
-          [action.cardId]: {
-            ...card,
             collapsed: action.collapsed,
           },
         },
@@ -421,20 +372,12 @@ export function PanelProvider({
     dispatch({ type: 'TOGGLE_PANEL', panelId });
   }, []);
 
-  const toggleColumn = useCallback((columnId: string) => {
-    dispatch({ type: 'TOGGLE_COLUMN', columnId });
-  }, []);
-
   const toggleCard = useCallback((cardId: string) => {
     dispatch({ type: 'TOGGLE_CARD', cardId });
   }, []);
 
   const setPanelCollapsed = useCallback((panelId: string, collapsed: boolean) => {
     dispatch({ type: 'SET_PANEL_COLLAPSED', panelId, collapsed });
-  }, []);
-
-  const setCardCollapsed = useCallback((cardId: string, collapsed: boolean) => {
-    dispatch({ type: 'SET_CARD_COLLAPSED', cardId, collapsed });
   }, []);
 
   const registerPanel = useCallback((config: PanelConfig) => {
@@ -490,10 +433,8 @@ export function PanelProvider({
     getColumnState,
     getCardState,
     togglePanel,
-    toggleColumn,
     toggleCard,
     setPanelCollapsed,
-    setCardCollapsed,
     registerPanel,
     registerColumn,
     registerCard,

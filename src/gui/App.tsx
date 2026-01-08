@@ -20,7 +20,7 @@ import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { RecordingsView, TestSuitePanel } from './components/recordings';
 import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
-import { PanelLayout, Panel, ResizeHandle } from './components/layout';
+import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 

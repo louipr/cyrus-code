@@ -6,25 +6,12 @@
  */
 
 import type { TestStep } from '../../../recordings';
+import { ACTION_ICONS } from './constants';
 
 interface StepDetailProps {
   step: TestStep;
   stepIndex: number;
 }
-
-const ACTION_ICONS: Record<string, string> = {
-  click: '👆',
-  type: '⌨️',
-  'wait-for': '⏳',
-  'wait-hidden': '👻',
-  evaluate: '🔧',
-  poll: '🔄',
-  extract: '📤',
-  assert: '✓',
-  screenshot: '📷',
-  hover: '🖱️',
-  keyboard: '⌨️',
-};
 
 const ACTION_DESCRIPTIONS: Record<string, string> = {
   click: 'Click on an element',
