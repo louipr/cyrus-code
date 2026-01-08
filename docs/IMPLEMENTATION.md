@@ -454,43 +454,7 @@ npm run electron:dev   # Dev mode with hot reload
 | E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ✅ |
 | E2E.22 | IPC handlers for loading/running test suites | `electron/ipc-handlers.ts` | ✅ |
 
-**View Layout Concept:**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  [Browser] [Graph] [Canvas] [Diagram] [Recordings]              │
-├─────────────────┬───────────────────────────────────────────────┤
-│  Tree Navigator │  Test Case Dependency Graph                   │
-│  ├─ drawio/     │  ┌─────────┐     ┌─────────┐                  │
-│  │  ├─ export-  │  │ verify  │────▶│ start   │                  │
-│  │  │   png     │  │ editor  │     │ export  │                  │
-│  │  │  ├─ case1 │  └─────────┘     └────┬────┘                  │
-│  │  │  └─ case2 │                       │                       │
-│  │  └─ export-  │                       ▼                       │
-│  │      svg     │               ┌───────────────┐               │
-│  └─ _context    │               │ wait-for-     │               │
-│                 │               │ export        │               │
-│                 │               └───────────────┘               │
-├─────────────────┴───────────────────────────────────────────────┤
-│  Step Timeline                                                  │
-│  ○ wait-for ─── ○ evaluate ─── ○ poll ─── ● extract ───▶        │
-│  .geDiagram     check editor   window     png-data-url          │
-├─────────────────────────────────────────────────────────────────┤
-│  Step Details                                                   │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │ action: evaluate                                            ││
-│  │ code: editor.exportToCanvas(...)                            ││
-│  │ why: exportToCanvas() is Draw.io's native export method...  ││
-│  └─────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Key UX Features:**
-- Tree navigator with collapsible app contexts and test suites
-- Test case DAG shows dependencies visually (similar to CI pipeline view)
-- Step timeline with action icons and status indicators
-- `why` field prominently displayed for LLM explanations
-- Click-through from tree → DAG → timeline → details
-- Execution status colors: ✅ green (pass), ❌ red (fail), ⏳ gray (pending)
+> **Architecture**: See [C4 Component: Test Suite](c4/component-test-suite.md) for view layout and component details.
 
 ### Deliverables
 
@@ -509,24 +473,7 @@ npm run electron:dev   # Dev mode with hot reload
 
 ### Phase 4: Step-Through Debugger
 
-Interactive step-by-step execution of test suites with real-time GUI feedback.
-
-**Architecture:**
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Renderer Process                                                   │
-│    DebugControls ───► [▶ Step] [⏸ Pause] [▶▶ Run to End] [⏹ Stop] │
-│    TestCaseGraph ───► ○ pending │ ◉ running │ ✓ success │ ✕ failed│
-│    StepResultOverlay ───► Real-time result display                 │
-└─────────────────────────────────────────────────────────────────────┘
-                         │  IPC Events (step-start, step-complete)
-                         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Main Process                                                       │
-│    InAppSession ───► Manages execution state via webContents       │
-│    InAppExecutor ───► Executes steps via executeJavaScript()       │
-└─────────────────────────────────────────────────────────────────────┘
-```
+Interactive step-by-step execution of test suites with real-time GUI feedback. See [C4 Component: Test Suite](c4/component-test-suite.md) for IPC protocol and component architecture.
 
 #### 4.1 Backend: InAppExecutor Core
 
@@ -673,22 +620,7 @@ Industry-standard test automation terminology applied throughout the codebase.
 
 ### Phase 7: Panel Architecture
 
-Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](../adr/014-panel-architecture.md) and [C4 Component Diagram](../c4/component-gui-panel.md).
-
-**Architecture Overview:**
-```
-┌─────────────┬─────────────────────────────┬─────────────────────────┐
-│ LeftPanel   │         MainPanel           │       RightPanel        │
-│ (collapsible│                             │ ┌───────────┬──────────┐│
-│  sidebar)   │                             │ │ Column A  │ Column B ││
-│             │      <Content Area>         │ ├───────────┼──────────┤│
-│ RecordingTree│                            │ │ TestCase  │ Details  ││
-│             │                             │ │ Graph     │          ││
-│             │                             │ ├───────────┤          ││
-│             │                             │ │ Debug     │          ││
-│             │                             │ │ Controls  │          ││
-└─────────────┴─────────────────────────────┴─────────────┴──────────┘
-```
+Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](../adr/014-panel-architecture.md) and [C4 Component Diagram](../c4/component-gui-panel.md) for architecture details.
 
 #### 7.1 Core Panel Components
 
