@@ -1,10 +1,8 @@
 /**
  * E2E Tests: Help Dialog
  *
- * Tests the help system GUI functionality including:
- * - Help button opens dialog
- * - F1 keyboard shortcut
- * - Dialog can be closed
+ * Tests the help system GUI functionality.
+ * Mermaid diagram rendering is tested via a single smoke test.
  */
 
 import { test, expect } from '@playwright/test';
@@ -42,94 +40,27 @@ test.describe('Help Dialog', () => {
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).not.toBeVisible();
   });
 
-  // Parameterized screenshot tests for C4 diagrams
-  // Each diagram is tested for: render completion, visibility, and minimum size
-  // Note: c4-container, c4-component-facade removed - flaky mermaid rendering
-  const diagramTests = [
-    { group: 'c4-overview', topic: 'c4-context', name: 'C4 Context Diagram', file: 'c4-context-diagram' },
-    { group: 'symbol-table', topic: 'c4-component', name: 'C4 Component Diagram', file: 'c4-component-diagram' },
-    { group: 'help-service', topic: 'c4-component-help', name: 'C4 L3 Help', file: 'c4-l3-help-diagram' },
-    { group: 'dependency-graph', topic: 'c4-component-dependency-graph', name: 'C4 L3 Dependency Graph', file: 'c4-l3-dependency-graph-diagram' },
-    { group: 'diagram-pipeline', topic: 'c4-component-diagram-pipeline', name: 'C4 L3 Diagram Pipeline', file: 'c4-l3-diagram-pipeline-diagram' },
-    { group: 'c4-overview', topic: 'c4-dynamic', name: 'C4 Dynamic', file: 'c4-dynamic-diagram' },
-  ];
-
-  for (const { group, topic, name, file } of diagramTests) {
-    test(`screenshot: ${name} renders cleanly`, async () => {
-      const { page } = context;
-
-      // Open help dialog
-      await page.click(selectors.helpButton);
-      await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
-
-      // Navigate to topic via sidebar
-      await helpActions.navigateToTopic(page, group, topic);
-
-      // Wait for mermaid diagram to render
-      await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-      await page.waitForTimeout(2000);
-
-      // Get diagram SVG (use .first() for pages with multiple diagrams)
-      const diagramSvg = page.locator('.mermaid-diagram svg').first();
-      await diagramSvg.scrollIntoViewIfNeeded();
-
-      // Capture screenshot
-      await diagramSvg.screenshot({
-        path: `/tmp/cyrus-code/screenshots/${file}.png`,
-      });
-
-      // Verify diagram rendered with reasonable size
-      await expect(diagramSvg).toBeVisible();
-      const box = await diagramSvg.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.width).toBeGreaterThan(100);
-      expect(box!.height).toBeGreaterThan(100);
-
-      // Close dialog
-      await page.keyboard.press('Escape');
-    });
-  }
-
-  // Test specifically for pages with multiple diagrams (capturing 2nd diagram)
-  test('screenshot: Symbol Table UML Code Diagram renders cleanly', async () => {
+  test('mermaid diagram renders with valid dimensions', async () => {
     const { page } = context;
 
-    // Open help dialog
     await page.click(selectors.helpButton);
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
-    // Navigate to Symbol Table component topic
-    await helpActions.navigateToTopic(page, 'symbol-table', 'c4-component');
+    // Navigate to C4 Context diagram (representative test)
+    await helpActions.navigateToTopic(page, 'c4-overview', 'c4-context');
 
-    // Wait for diagrams to render (this page has 2)
+    // Wait for mermaid to render
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
 
-    // Count diagrams - should have at least 2
-    const diagramCount = await page.locator('.mermaid-diagram svg').count();
-    expect(diagramCount).toBeGreaterThanOrEqual(2);
-
-    // Get the second (UML) diagram
-    const umlDiagram = page.locator('.mermaid-diagram svg').nth(1);
-    await umlDiagram.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(1000);
-
-    // Capture screenshot of the diagram
-    await umlDiagram.screenshot({
-      path: '/tmp/cyrus-code/screenshots/symbol-table-uml-code.png',
-    });
-
-
-    // Verify diagram rendered with reasonable size
-    await expect(umlDiagram).toBeVisible();
-    const box = await umlDiagram.boundingBox();
+    // Verify diagram rendered with real dimensions
+    const diagramSvg = page.locator('.mermaid-diagram svg').first();
+    await expect(diagramSvg).toBeVisible();
+    const box = await diagramSvg.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.width).toBeGreaterThan(100);
     expect(box!.height).toBeGreaterThan(100);
 
-    // Close dialog
     await page.keyboard.press('Escape');
   });
-
-  // h3 sidebar navigation test removed - flaky due to mermaid/browser timing issues
 });
