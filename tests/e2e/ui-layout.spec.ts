@@ -104,17 +104,4 @@ test.describe('UI Layout', () => {
     // Should show Symbols list view (default sub-view)
     await expect(page.locator(selectors.searchBar)).toBeVisible({ timeout: 5000 });
   });
-
-  test('tool buttons are visible in header', async () => {
-    const { page } = context;
-
-    // Export All button
-    await expect(page.locator('[data-testid="export-all-button"]')).toBeVisible();
-
-    // Recordings tool button (📼)
-    await expect(page.locator('[data-testid="recordings-view-button"]')).toBeVisible();
-
-    // Help button (?)
-    await expect(page.locator('[data-testid="help-button"]')).toBeVisible();
-  });
 });

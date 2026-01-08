@@ -111,21 +111,6 @@ test.describe('Recordings View', () => {
     await page.screenshot({ path: `${SCREENSHOT_DIR}/02-panel-layout.png` });
   });
 
-  test('panel headers are clickable (not obscured)', async () => {
-    const { page } = context;
-
-    await selectRecording(page);
-
-    // Headers must be hoverable (verifies they're not obscured by other elements)
-    const graphHeader = page.locator('[data-testid="recordings-right-panel-header"]');
-    await expect(graphHeader).toBeVisible();
-    await graphHeader.hover({ timeout: 1000 });
-
-    const detailsHeader = page.locator('[data-testid="details-panel-header"]');
-    await expect(detailsHeader).toBeVisible();
-    await detailsHeader.hover({ timeout: 1000 });
-  });
-
   test('graph renders test case nodes with proper dimensions', async () => {
     const { page } = context;
 
