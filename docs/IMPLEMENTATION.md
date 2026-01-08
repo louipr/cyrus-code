@@ -445,8 +445,8 @@ npm run electron:dev   # Dev mode with hot reload
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | E2E.14 | Test Suite Tree Navigator component | `src/gui/components/recordings/RecordingTree.tsx` | ✅ |
-| E2E.15 | Test Case Dependency Graph (DAG visualization) | `src/gui/components/recordings/TaskGraph.tsx` | ✅ |
-| E2E.16 | Step Timeline component (action sequence) | `src/gui/components/recordings/StepTimeline.tsx` | ✅ |
+| E2E.15 | Test Case Dependency Graph (DAG visualization) | `src/gui/components/recordings/TestCaseGraph.tsx` | ✅ |
+| E2E.16 | Test Case Detail panel | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
 | E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/recordings/StepDetail.tsx` | ✅ |
 | E2E.18 | Test Suite Detail view (combined test case/step view) | `src/gui/components/recordings/RecordingDetail.tsx` | ✅ |
 | E2E.19 | Play Test Suite Dialog (execution UI) | `src/gui/components/recordings/PlayRecordingDialog.tsx` | ✅ |
@@ -516,7 +516,7 @@ Interactive step-by-step execution of test suites with real-time GUI feedback.
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Renderer Process                                                   │
 │    DebugControls ───► [▶ Step] [⏸ Pause] [▶▶ Run to End] [⏹ Stop] │
-│    StepTimeline  ───► ○ pending │ ◉ running │ ✓ success │ ✕ failed│
+│    TestCaseGraph ───► ○ pending │ ◉ running │ ✓ success │ ✕ failed│
 │    StepResultOverlay ───► Real-time result display                 │
 └─────────────────────────────────────────────────────────────────────┘
                          │  IPC Events (step-start, step-complete)
@@ -560,13 +560,13 @@ Interactive step-by-step execution of test suites with real-time GUI feedback.
 | E2E.34 | Add useDebugSession hook | `src/gui/hooks/useDebugSession.ts` | ✅ |
 | E2E.35 | Integrate into RecordingsView | `RecordingsView.tsx` | ✅ |
 
-#### 4.4 GUI: Timeline Highlighting
+#### 4.4 GUI: Test Case Graph Execution State
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.36 | Add execution state to StepTimeline | `StepTimeline.tsx` | ✅ |
-| E2E.37 | Visual status indicators (spinner, colors) | `StepTimeline.tsx` | ✅ |
-| E2E.38 | Add execution state to TaskGraph | `TaskGraph.tsx` | ✅ |
+| E2E.36 | Add execution state to TestCaseGraph | `TestCaseGraph.tsx` | ✅ |
+| E2E.37 | Visual status indicators (spinner, colors) | `TestCaseGraph.tsx` | ✅ |
+| E2E.38 | Add step navigation to TestCaseGraph | `TestCaseGraph.tsx` | ✅ |
 
 #### 4.5 GUI: Step Result Overlay
 
@@ -591,9 +591,9 @@ Interactive step-by-step execution of test suites with real-time GUI feedback.
 | E2E.V1 | `npm run build && npm test` passes | Agent | ✅ |
 | E2E.V2 | `npm run test:e2e` recordings-debug (requires display) | E2E | ✅ |
 | E2E.V3 | Debug button visible when recording selected | E2E | ✅ |
-| E2E.V4 | Task graph displays and responds to clicks | E2E | ✅ |
-| E2E.V5 | Step timeline shows when task selected | E2E | ✅ |
-| E2E.V6 | Zoom controls work in task graph | E2E | ✅ |
+| E2E.V4 | Test case graph displays and responds to clicks | E2E | ✅ |
+| E2E.V5 | Steps shown when test case expanded | E2E | ✅ |
+| E2E.V6 | Zoom controls work in test case graph | E2E | ✅ |
 
 > **Note**: E2E tests require a display environment (Electron can't run headless). Use `xvfb-run npx playwright test` on headless CI.
 
@@ -614,10 +614,10 @@ Improvements to debug session interface for better usability.
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.49 | Side-by-side layout (TaskGraph left, Details right) | `RecordingsView.tsx` | ✅ |
-| E2E.50 | Create TaskDetail component | `src/gui/components/recordings/TaskDetail.tsx` | ✅ |
-| E2E.51 | Add expand/collapse all to TaskGraph toolbar | `TaskGraph.tsx` | ✅ |
-| E2E.52 | Reduce TaskGraph vertical spacing (gapY: 24px) | `src/gui/constants/graph-layout.ts` | ✅ |
+| E2E.49 | Side-by-side layout (TestCaseGraph left, Details right) | `RecordingsView.tsx` | ✅ |
+| E2E.50 | Create TestCaseDetail component | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
+| E2E.51 | Add expand/collapse all to TestCaseGraph toolbar | `TestCaseGraph.tsx` | ✅ |
+| E2E.52 | Reduce TestCaseGraph vertical spacing (gapY: 24px) | `src/gui/constants/graph-layout.ts` | ✅ |
 
 #### 5.3 Debug Overlay Behavior
 
@@ -653,6 +653,10 @@ Industry-standard test automation terminology applied throughout the codebase.
 | E2E.66 | Update repository and service layers | `src/repositories/`, `src/services/` | ✅ |
 | E2E.67 | Update GUI components for new terminology | `src/gui/components/` | ✅ |
 | E2E.68 | Update panel header "TASK FLOW" → "TEST SUITE" | `DebugSidePanel.tsx` | ✅ |
+| E2E.69 | TestCase schema: rename `name` → `description` | `src/recordings/recording-types.ts` | ✅ |
+| E2E.70 | TestCase IDs: kebab-case → snake_case | All `.suite.yaml` files | ✅ |
+| E2E.71 | TestCaseGraph: display `id` instead of `name` | `src/gui/components/recordings/TestCaseGraph.tsx` | ✅ |
+| E2E.72 | TestCaseDetail: display `description` field | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
 
 **Terminology mapping:**
 - Recording → TestSuite (YAML file with test cases)
@@ -660,6 +664,12 @@ Industry-standard test automation terminology applied throughout the codebase.
 - RecordingStep → TestStep (single action within a test case)
 - tasks: → test_cases: (YAML key, snake_case convention)
 - recordingId → testSuiteId (identifier references)
+
+**TestCase schema:**
+- `id`: snake_case identifier displayed in graph nodes (e.g., `wait_for_drawio`)
+- `description`: human-readable text displayed in details panel
+- `depends`: array of test case IDs (snake_case) this test case depends on
+- `steps`: array of TestStep objects to execute
 
 ### Phase 7: Panel Architecture
 
