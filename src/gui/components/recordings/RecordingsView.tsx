@@ -295,7 +295,6 @@ export function RecordingsView() {
             <TestCaseDetail
               testCase={selectedTestCase}
               testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
-              allTestCases={testSuite.testCases}
             />
           ) : testSuite ? (
             <RecordingDetail testSuite={testSuite} />

@@ -27,8 +27,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: open-diagram
-    name: Open diagram view
+  - id: open_diagram
+    description: Open diagram view
     steps:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
@@ -39,9 +39,9 @@ test_cases:
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
-  - id: wait-for-drawio
-    name: Wait for Draw.io editor to be ready
-    depends: [open-diagram]
+  - id: wait_for_drawio
+    description: Wait for Draw.io editor to be ready
+    depends: [open_diagram]
     steps:
       - action: evaluate
         code: |
@@ -69,9 +69,9 @@ test_cases:
         timeout: 20000
         why: Wait for Draw.io's editor API to be available before export.
 
-  - id: wait-for-editor-ready
-    name: Wait for editor to be fully ready
-    depends: [wait-for-drawio]
+  - id: wait_for_editor_ready
+    description: Wait for editor to be fully ready
+    depends: [wait_for_drawio]
     steps:
       - action: evaluate
         code: |
@@ -89,9 +89,9 @@ test_cases:
           The React component sets isReady=true when it receives the IPC 'ready' message.
           Wait for the loading indicator to disappear.
 
-  - id: create-test-diagram
-    name: Create test diagram content
-    depends: [wait-for-editor-ready]
+  - id: create_test_diagram
+    description: Create test diagram content
+    depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
         code: |
@@ -136,18 +136,18 @@ test_cases:
         timeout: 10000
         why: Create a simple test diagram with two components and a connection.
 
-  - id: verify-export-button
-    name: Verify export button exists
-    depends: [create-test-diagram]
+  - id: verify_export_button
+    description: Verify export button exists
+    depends: [create_test_diagram]
     steps:
       - action: wait-for
         selector: "[data-testid='diagram-export-button']"
         timeout: 5000
         why: The Export button should be visible in the diagram toolbar.
 
-  - id: trigger-export-dialog
-    name: Trigger PNG export and open native dialog
-    depends: [verify-export-button]
+  - id: trigger_export_dialog
+    description: Trigger PNG export and open native dialog
+    depends: [verify_export_button]
     steps:
       - action: evaluate
         code: |
@@ -214,9 +214,9 @@ test_cases:
         returns: tests/e2e/screenshots/export-dialog/01-dialog-opened.png
         why: Capture screenshot of Draw.io's native export dialog.
 
-  - id: verify-dialog-options
-    name: Verify export dialog has expected options
-    depends: [trigger-export-dialog]
+  - id: verify_dialog_options
+    description: Verify export dialog has expected options
+    depends: [trigger_export_dialog]
     steps:
       - action: evaluate
         code: |
@@ -272,9 +272,9 @@ test_cases:
         timeout: 5000
         why: Verify Draw.io's native export dialog has the expected options.
 
-  - id: click-export
-    name: Click Export button
-    depends: [verify-dialog-options]
+  - id: click_export
+    description: Click Export button
+    depends: [verify_dialog_options]
     steps:
       - action: evaluate
         code: |
@@ -309,9 +309,9 @@ test_cases:
         returns: /tmp/export-dialog-after-export-click.png
         why: Screenshot after clicking Export button.
 
-  - id: wait-for-save-dialog
-    name: Wait for Save As dialog
-    depends: [click-export]
+  - id: wait_for_save_dialog
+    description: Wait for Save As dialog
+    depends: [click_export]
     steps:
       - action: evaluate
         code: |
@@ -342,9 +342,9 @@ test_cases:
         returns: /tmp/export-dialog-save-as.png
         why: Screenshot of Save As dialog.
 
-  - id: set-filename-and-save
-    name: Set filename and click Save
-    depends: [wait-for-save-dialog]
+  - id: set_filename_and_save
+    description: Set filename and click Save
+    depends: [wait_for_save_dialog]
     steps:
       - action: evaluate
         code: |

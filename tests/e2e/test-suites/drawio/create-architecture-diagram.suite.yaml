@@ -20,8 +20,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: open-diagram
-    name: Open diagram view
+  - id: open_diagram
+    description: Open diagram view
     steps:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
@@ -32,9 +32,9 @@ test_cases:
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
-  - id: wait-for-drawio
-    name: Wait for Draw.io editor
-    depends: [open-diagram]
+  - id: wait_for_drawio
+    description: Wait for Draw.io editor
+    depends: [open_diagram]
     steps:
       - action: evaluate
         code: |
@@ -63,9 +63,9 @@ test_cases:
         timeout: 20000
         why: Wait for Draw.io's editor API to be available.
 
-  - id: wait-for-editor-ready
-    name: Wait for editor to be fully ready
-    depends: [wait-for-drawio]
+  - id: wait_for_editor_ready
+    description: Wait for editor to be fully ready
+    depends: [wait_for_drawio]
     steps:
       - action: evaluate
         code: |
@@ -83,9 +83,9 @@ test_cases:
           The React component sets isReady=true when it receives the IPC 'ready' message.
           Wait for the loading indicator to disappear.
 
-  - id: create-diagram
-    name: Create 3-tier architecture diagram
-    depends: [wait-for-editor-ready]
+  - id: create_diagram
+    description: Create 3-tier architecture diagram
+    depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
         code: |
@@ -149,9 +149,9 @@ test_cases:
         returns: "{ success: true, components: 3, connections: 2 }"
         why: Use Draw.io's graph API to create a 3-tier architecture with Frontend, API, and Database components.
 
-  - id: verify-diagram
-    name: Verify diagram was created
-    depends: [create-diagram]
+  - id: verify_diagram
+    description: Verify diagram was created
+    depends: [create_diagram]
     steps:
       - action: evaluate
         code: |

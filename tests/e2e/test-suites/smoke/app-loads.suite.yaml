@@ -20,8 +20,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: verify-app-loaded
-    name: Verify app loaded
+  - id: verify_app_loaded
+    description: Verify app loaded
     steps:
       - action: wait-for
         selector: "[data-testid='search-bar']"

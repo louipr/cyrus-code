@@ -335,12 +335,12 @@ export function TestCaseGraph({
                       {isExpanded ? '▼' : '▶'}
                     </text>
 
-                    {/* Test case name */}
+                    {/* Test case id */}
                     <text
                       x={pos.x + 24} y={pos.y + 22}
                       fill="#fff" fontSize={12} fontWeight={500}
                     >
-                      {testCase.name.length > 22 ? testCase.name.slice(0, 20) + '...' : testCase.name}
+                      {testCase.id.length > 22 ? testCase.id.slice(0, 20) + '...' : testCase.id}
                     </text>
 
                     {/* Step count badge */}

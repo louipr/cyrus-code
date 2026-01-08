@@ -27,8 +27,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: open-diagram
-    name: Open diagram view
+  - id: open_diagram
+    description: Open diagram view
     steps:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
@@ -39,9 +39,9 @@ test_cases:
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
-  - id: wait-for-drawio
-    name: Wait for Draw.io editor
-    depends: [open-diagram]
+  - id: wait_for_drawio
+    description: Wait for Draw.io editor
+    depends: [open_diagram]
     steps:
       - action: evaluate
         code: |
@@ -69,9 +69,9 @@ test_cases:
         timeout: 20000
         why: Wait for Draw.io's editor API to be available.
 
-  - id: wait-for-editor-ready
-    name: Wait for editor to be fully ready
-    depends: [wait-for-drawio]
+  - id: wait_for_editor_ready
+    description: Wait for editor to be fully ready
+    depends: [wait_for_drawio]
     steps:
       - action: evaluate
         code: |
@@ -89,9 +89,9 @@ test_cases:
           The React component sets isReady=true when it receives the IPC 'ready' message.
           Wait for the loading indicator to disappear.
 
-  - id: verify-editor-ready
-    name: Verify EditorUi is available
-    depends: [wait-for-editor-ready]
+  - id: verify_editor_ready
+    description: Verify EditorUi is available
+    depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
         code: |
@@ -121,9 +121,9 @@ test_cases:
           2. It has an editor property
           3. The editor has exportToCanvas method
 
-  - id: start-export
-    name: Start native PNG export
-    depends: [verify-editor-ready]
+  - id: start_export
+    description: Start native PNG export
+    depends: [verify_editor_ready]
     steps:
       - action: evaluate
         code: |
@@ -190,9 +190,9 @@ test_cases:
           - border: 10px padding around the diagram
           The result is stored in window.__exportResult for polling.
 
-  - id: wait-for-export
-    name: Poll for export completion
-    depends: [start-export]
+  - id: wait_for_export
+    description: Poll for export completion
+    depends: [start_export]
     steps:
       - action: evaluate
         code: |
@@ -229,9 +229,9 @@ test_cases:
           apply styles, and convert to canvas. We poll window.__exportDone
           which is set by our callback when export completes or fails.
 
-  - id: extract-result
-    name: Extract PNG data URL
-    depends: [wait-for-export]
+  - id: extract_result
+    description: Extract PNG data URL
+    depends: [wait_for_export]
     steps:
       - action: evaluate
         code: |

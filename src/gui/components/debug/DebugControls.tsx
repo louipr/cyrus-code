@@ -115,7 +115,7 @@ export function DebugControls({
                         ? '#4fc1ff'
                         : '#3c3c3c',
                 }}
-                title={testCase.name}
+                title={testCase.id}
               />
             );
           })}

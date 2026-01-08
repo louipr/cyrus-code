@@ -11,10 +11,9 @@ import { ACTION_ICONS, ACTION_COLORS } from './constants';
 interface TestCaseDetailProps {
   testCase: TestCase;
   testCaseIndex: number;
-  allTestCases: TestCase[];
 }
 
-export function TestCaseDetail({ testCase, testCaseIndex, allTestCases }: TestCaseDetailProps) {
+export function TestCaseDetail({ testCase, testCaseIndex }: TestCaseDetailProps) {
   // Count step types
   const stepCounts = testCase.steps.reduce(
     (acc: Record<string, number>, step) => {
@@ -24,17 +23,15 @@ export function TestCaseDetail({ testCase, testCaseIndex, allTestCases }: TestCa
     {} as Record<string, number>
   );
 
-  // Get dependency test case names
-  const dependencyNames = (testCase.depends ?? [])
-    .map((depId) => allTestCases.find((tc) => tc.id === depId)?.name ?? depId)
-    .filter(Boolean);
+  // Get dependency test case IDs (shown in graph)
+  const dependencyIds = (testCase.depends ?? []).filter(Boolean);
 
   return (
     <div style={styles.container} data-testid="test-case-detail">
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.testCaseNumber}>Test Case {testCaseIndex + 1}</span>
-        <span style={styles.title}>{testCase.name}</span>
+        <span style={styles.title}>{testCase.description}</span>
       </div>
 
       {/* Step Summary */}
@@ -54,13 +51,13 @@ export function TestCaseDetail({ testCase, testCaseIndex, allTestCases }: TestCa
       </div>
 
       {/* Dependencies */}
-      {dependencyNames.length > 0 && (
+      {dependencyIds.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Depends On</div>
           <div style={styles.dependencyList}>
-            {dependencyNames.map((name, idx) => (
+            {dependencyIds.map((id, idx) => (
               <div key={idx} style={styles.dependency}>
-                {name}
+                {id}
               </div>
             ))}
           </div>

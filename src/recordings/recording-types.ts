@@ -79,11 +79,11 @@ export interface TestStep {
  * A test case containing multiple steps.
  */
 export interface TestCase {
-  /** Unique identifier for this test case */
+  /** Unique identifier for this test case (snake_case, shown in graph) */
   id: string;
 
-  /** Human-readable name */
-  name: string;
+  /** Human-readable description (shown in details panel) */
+  description: string;
 
   /** Test case IDs this test case depends on */
   depends?: string[];

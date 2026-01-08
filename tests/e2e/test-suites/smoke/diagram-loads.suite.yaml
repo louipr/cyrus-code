@@ -20,8 +20,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: open-diagram
-    name: Open diagram view
+  - id: open_diagram
+    description: Open diagram view
     steps:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
@@ -32,9 +32,9 @@ test_cases:
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
-  - id: verify-webview
-    name: Verify webview loaded
-    depends: [open-diagram]
+  - id: verify_webview
+    description: Verify webview loaded
+    depends: [open_diagram]
     steps:
       - action: assert
         selector: "[data-testid='diagram-webview']"

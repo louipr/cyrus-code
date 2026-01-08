@@ -261,7 +261,7 @@ export function RecordingTree({
                           <TreeNode
                             key={testCasePath}
                             id={testCasePath}
-                            label={testCase.name}
+                            label={testCase.id}
                             type="testCase"
                             icon={ICONS.testCase}
                             depth={2}

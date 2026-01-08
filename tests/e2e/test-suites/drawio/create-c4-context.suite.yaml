@@ -21,8 +21,8 @@ context:
   waitFor: "[data-testid='search-bar']"
 
 test_cases:
-  - id: open-diagram
-    name: Open diagram view
+  - id: open_diagram
+    description: Open diagram view
     steps:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
@@ -33,9 +33,9 @@ test_cases:
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
-  - id: wait-for-drawio
-    name: Wait for Draw.io editor
-    depends: [open-diagram]
+  - id: wait_for_drawio
+    description: Wait for Draw.io editor
+    depends: [open_diagram]
     steps:
       - action: evaluate
         code: |
@@ -55,9 +55,9 @@ test_cases:
         timeout: 20000
         why: Wait for Draw.io's editor API to be available.
 
-  - id: wait-for-editor-ready
-    name: Wait for editor to be fully ready
-    depends: [wait-for-drawio]
+  - id: wait_for_editor_ready
+    description: Wait for editor to be fully ready
+    depends: [wait_for_drawio]
     steps:
       - action: evaluate
         code: |
@@ -75,9 +75,9 @@ test_cases:
           The React component sets isReady=true when it receives the IPC 'ready' message.
           Wait for the loading indicator to disappear.
 
-  - id: create-c4-diagram
-    name: Create C4 Context diagram
-    depends: [wait-for-editor-ready]
+  - id: create_c4_diagram
+    description: Create C4 Context diagram
+    depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
         code: |
@@ -136,9 +136,9 @@ test_cases:
         returns: "{ success: true, elements: 5 }"
         why: Create a C4 Context diagram showing cyrus-code with Developer, Git, and AI Service.
 
-  - id: verify-c4
-    name: Verify C4 diagram
-    depends: [create-c4-diagram]
+  - id: verify_c4
+    description: Verify C4 diagram
+    depends: [create_c4_diagram]
     steps:
       - action: evaluate
         code: |
