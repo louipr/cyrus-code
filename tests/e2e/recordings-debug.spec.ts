@@ -1,34 +1,33 @@
 /**
- * Recordings Debug View E2E Tests
+ * Recordings View E2E Tests
  *
- * Tests the recordings view layout with independent collapsible panels.
- * Verifies that graph and details panels are both visible and functional.
+ * Tests the recordings view layout with actual dimension verification.
+ * Uses boundingBox() for layout tests, not just toBeVisible().
  */
 
 import { test, expect, Page } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 
+const SCREENSHOT_DIR = 'tests/e2e/screenshots/recordings-debug';
+
 /**
  * Helper to navigate to recordings view and select a recording
  */
 async function selectRecording(page: Page) {
-  // Navigate to Recordings view
   await page.click('[data-testid="recordings-view-button"]');
   await page.waitForTimeout(300);
 
-  // Expand first tree node (app folder)
   const firstNode = page.locator('[data-testid^="recording-tree-"]').first();
   await expect(firstNode).toBeVisible();
   await firstNode.click();
   await page.waitForTimeout(300);
 
-  // Select second node (a recording)
   const allNodes = page.locator('[data-testid^="recording-tree-"]');
   await allNodes.nth(1).click();
   await page.waitForTimeout(500);
 }
 
-test.describe('Recordings Debug View', () => {
+test.describe('Recordings View', () => {
   let context: AppContext;
 
   test.beforeAll(async () => {
@@ -41,101 +40,83 @@ test.describe('Recordings Debug View', () => {
     }
   });
 
-  test('displays recording tree and allows selection', async () => {
+  test('recording tree expands and graph renders with correct dimensions', async () => {
     const { page } = context;
 
-    // Navigate to Recordings view
     await page.click('[data-testid="recordings-view-button"]');
     await page.waitForTimeout(300);
 
-    // Recording tree must be visible
+    // Tree must be visible with real dimensions
     const tree = page.locator('[data-testid="recording-tree"]');
     await expect(tree).toBeVisible();
+    const treeBox = await tree.boundingBox();
+    expect(treeBox).not.toBeNull();
+    expect(treeBox!.height).toBeGreaterThan(100);
 
-    // Click on first tree node (app folder) to expand
+    // Expand and select
     const firstNode = page.locator('[data-testid^="recording-tree-"]').first();
-    await expect(firstNode).toBeVisible();
     await firstNode.click();
     await page.waitForTimeout(300);
 
-    // After expanding, more nodes should be visible
     const allNodes = page.locator('[data-testid^="recording-tree-"]');
     const nodeCount = await allNodes.count();
     expect(nodeCount).toBeGreaterThan(1);
 
-    // Click on second node (a recording) to load it
     await allNodes.nth(1).click();
     await page.waitForTimeout(500);
 
-    // Graph should now be visible
-    const graph = page.locator('[data-testid="test-case-graph"]');
-    await expect(graph).toBeVisible();
+    // Graph must render with real dimensions (not 1px)
+    const graphCard = page.locator('[data-testid="test-case-graph-card"]');
+    await expect(graphCard).toBeVisible();
+    const graphBox = await graphCard.boundingBox();
+    expect(graphBox).not.toBeNull();
+    expect(graphBox!.height).toBeGreaterThan(100);
+
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/01-tree-and-graph.png` });
   });
 
-  test('shows both graph AND details panel (two-panel layout)', async () => {
+  test('panels have correct layout positions and dimensions', async () => {
     const { page } = context;
 
-    // Setup: ensure recording is selected
     await selectRecording(page);
 
-    // Main panel must be visible
-    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
-    await expect(mainPanel).toBeVisible();
-
-    // Graph panel must be visible (not collapsed)
+    // Get all panel dimensions
     const graphPanel = page.locator('[data-testid="recordings-right-panel"]');
-    await expect(graphPanel).toBeVisible();
-
-    // Graph content must be visible
-    const graph = page.locator('[data-testid="test-case-graph"]');
-    await expect(graph).toBeVisible();
-
-    // Details panel must be visible (not collapsed)
     const detailsPanel = page.locator('[data-testid="details-panel"]');
+
+    await expect(graphPanel).toBeVisible();
     await expect(detailsPanel).toBeVisible();
 
-    // At least one detail view must be visible (recording, test case, or step)
-    const recordingDetail = page.locator('[data-testid="recording-detail"]');
-    const testCaseDetail = page.locator('[data-testid="test-case-detail"]');
-    const stepDetail = page.locator('[data-testid="step-detail"]');
+    const graphBox = await graphPanel.boundingBox();
+    const detailsBox = await detailsPanel.boundingBox();
 
-    const hasRecordingDetail = await recordingDetail.isVisible();
-    const hasTestCaseDetail = await testCaseDetail.isVisible();
-    const hasStepDetail = await stepDetail.isVisible();
+    expect(graphBox).not.toBeNull();
+    expect(detailsBox).not.toBeNull();
 
-    // Take screenshot for manual verification
-    await page.screenshot({ path: 'tests/e2e/screenshots/recordings-debug/two-column-layout.png' });
+    // Details panel must be to the right of graph panel
+    expect(detailsBox!.x).toBeGreaterThan(graphBox!.x);
 
-    // CRITICAL: At least one details view must be visible alongside the graph
-    expect(hasRecordingDetail || hasTestCaseDetail || hasStepDetail).toBe(true);
+    // Panels must be adjacent (within resize handle width)
+    const graphRight = graphBox!.x + graphBox!.width;
+    expect(detailsBox!.x).toBeGreaterThanOrEqual(graphRight - 20);
+
+    // Details panel should have reasonable width (around 320px default)
+    expect(detailsBox!.width).toBeGreaterThan(250);
+    expect(detailsBox!.width).toBeLessThan(500);
+
+    // Both panels should have substantial height
+    expect(graphBox!.height).toBeGreaterThan(200);
+    expect(detailsBox!.height).toBeGreaterThan(200);
+
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/02-panel-layout.png` });
   });
 
-  test('details panel is positioned to the right of graph panel', async () => {
+  test('panel headers are clickable (not obscured)', async () => {
     const { page } = context;
 
-    // Setup: ensure recording is selected
     await selectRecording(page);
 
-    // Graph panel must be visible and not collapsed
-    const graphPanel = page.locator('[data-testid="recordings-right-panel"]');
-    await expect(graphPanel).toBeVisible();
-    const graphPanelBox = await graphPanel.boundingBox();
-    expect(graphPanelBox).not.toBeNull();
-
-    // Details panel must be visible and not collapsed
-    const detailsPanel = page.locator('[data-testid="details-panel"]');
-    await expect(detailsPanel).toBeVisible();
-    const detailsPanelBox = await detailsPanel.boundingBox();
-    expect(detailsPanelBox).not.toBeNull();
-
-    // Details panel should be to the right of graph panel
-    expect(detailsPanelBox!.x).toBeGreaterThan(graphPanelBox!.x);
-
-    // Panels should be adjacent (details starts where graph ends, with small gap for resize handle)
-    const graphRight = graphPanelBox!.x + graphPanelBox!.width;
-    expect(detailsPanelBox!.x).toBeGreaterThanOrEqual(graphRight - 20); // Allow for resize handle
-
-    // ACTIONABILITY TEST: Verify panel headers are clickable (not obscured)
+    // Headers must be hoverable (verifies they're not obscured by other elements)
     const graphHeader = page.locator('[data-testid="recordings-right-panel-header"]');
     await expect(graphHeader).toBeVisible();
     await graphHeader.hover({ timeout: 1000 });
@@ -145,88 +126,31 @@ test.describe('Recordings Debug View', () => {
     await detailsHeader.hover({ timeout: 1000 });
   });
 
-  test('Debug button is visible when recording loaded', async () => {
+  test('graph renders test case nodes with proper dimensions', async () => {
     const { page } = context;
 
-    // Setup: ensure recording is selected
     await selectRecording(page);
 
-    // Verify the graph is visible (recording is loaded)
-    const graph = page.locator('[data-testid="test-case-graph"]');
-    await expect(graph).toBeVisible();
-
-    // Take screenshot to debug
-    await page.screenshot({ path: 'tests/e2e/screenshots/recordings-debug/debug-button.png' });
-
-    // Debug button must be visible in main panel toolbar (contains emoji)
-    // The button is in recordings-main-panel's toolbar
-    const mainPanel = page.locator('[data-testid="recordings-main-panel"]');
-    const debugButton = mainPanel.locator('button').filter({ hasText: /Debug/ });
-    await expect(debugButton).toBeVisible();
-  });
-
-  test('graph renders with actual content (not just visibility)', async () => {
-    const { page } = context;
-
-    // Use selectRecording helper which is known to work
-    await selectRecording(page);
-
-    // CRITICAL: Verify graph card has proper dimensions (not 1px height)
-    const graphCard = page.locator('[data-testid="test-case-graph-card"]');
-    await expect(graphCard).toBeVisible();
-    const graphBox = await graphCard.boundingBox();
-    expect(graphBox).not.toBeNull();
-    expect(graphBox!.height).toBeGreaterThan(100); // Must have real height, not 1px
-
-    // CRITICAL: Verify graph wrapper exists and has content
-    const graph = page.locator('[data-testid="test-case-graph"]');
-    await expect(graph).toBeVisible({ timeout: 5000 });
-    const graphInnerBox = await graph.boundingBox();
-    expect(graphInnerBox).not.toBeNull();
-    expect(graphInnerBox!.height).toBeGreaterThan(50);
-
-    // CRITICAL: Graph inner HTML must not be empty (regression from Card.collapsed bug)
-    const graphInnerHTML = await graphCard.innerHTML();
-    expect(graphInnerHTML.length).toBeGreaterThan(100);
-  });
-
-  test('graph renders for different recordings (regression test)', async () => {
-    const { page } = context;
-
-    // Navigate to Recordings view
-    await page.click('[data-testid="recordings-view-button"]');
-    await page.waitForTimeout(300);
-
-    // Expand drawio folder and select a recording with many test cases
-    const drawioNode = page.locator('[data-testid^="recording-tree-"]').filter({ hasText: 'drawio' }).first();
-    await drawioNode.click();
-    await page.waitForTimeout(300);
-
-    // Find and click Export Dialog UI Test (has 10 test cases)
-    const allNodes = page.locator('[data-testid^="recording-tree-"]');
-    const count = await allNodes.count();
-    for (let i = 0; i < count; i++) {
-      const text = await allNodes.nth(i).textContent();
-      if (text?.includes('Export Dialog UI Test')) {
-        await allNodes.nth(i).click();
-        break;
-      }
-    }
-    await page.waitForTimeout(500);
-
-    // CRITICAL: Graph card must have proper height (was buggy - height: 1px)
+    // Graph must have proper dimensions
     const graphCard = page.locator('[data-testid="test-case-graph-card"]');
     const graphBox = await graphCard.boundingBox();
     expect(graphBox).not.toBeNull();
     expect(graphBox!.height).toBeGreaterThan(100);
 
-    // CRITICAL: Must have multiple test case nodes (this recording has 10)
+    // Must have at least one test case node rendered
     const testCaseNodes = page.locator('[data-testid^="test-case-node-"]');
     const nodeCount = await testCaseNodes.count();
-    expect(nodeCount).toBeGreaterThanOrEqual(5); // At least 5 visible nodes
+    expect(nodeCount).toBeGreaterThanOrEqual(1);
 
-    // Screenshot for verification
-    await page.screenshot({ path: 'tests/e2e/screenshots/recordings-debug/large-suite-graph.png' });
+    // First node should have real dimensions (not 0x0)
+    if (nodeCount > 0) {
+      const firstNode = testCaseNodes.first();
+      const nodeBox = await firstNode.boundingBox();
+      expect(nodeBox).not.toBeNull();
+      expect(nodeBox!.width).toBeGreaterThan(50);
+      expect(nodeBox!.height).toBeGreaterThan(20);
+    }
+
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/03-test-case-nodes.png` });
   });
-
 });

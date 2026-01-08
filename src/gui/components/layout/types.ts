@@ -63,10 +63,6 @@ export interface ColumnConfig {
   width?: SizeConstraint;
   /** Cards in this column collapse together if true */
   stitched?: boolean;
-  /** Whether the column can be horizontally collapsed */
-  collapsible?: boolean;
-  /** Initial collapsed state */
-  defaultCollapsed?: boolean;
 }
 
 /**
@@ -147,6 +143,8 @@ export interface ActiveResize {
   startSize: number;
   /** Size constraints */
   constraints: SizeConstraint;
+  /** Side of layout (for inverting delta on right panels) */
+  side?: 'left' | 'right';
 }
 
 /**
@@ -165,6 +163,3 @@ export type LayoutAction =
   | { type: 'SET_PANEL_WIDTH'; panelId: string; width: number }
   | { type: 'SET_COLUMN_WIDTH'; columnId: string; width: number }
   | { type: 'RESTORE_STATE'; state: PanelLayoutState };
-
-// Legacy export for backwards compatibility during migration
-export type PanelAction = LayoutAction;

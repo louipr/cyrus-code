@@ -17,6 +17,8 @@ export interface ResizeHandleProps {
   targetType: 'panel' | 'column';
   /** Size constraints for the target */
   constraints: SizeConstraint;
+  /** Side of layout (for inverting delta on right panels) */
+  side?: 'left' | 'right';
 }
 
 export function ResizeHandle({
@@ -24,6 +26,7 @@ export function ResizeHandle({
   targetId,
   targetType,
   constraints,
+  side,
 }: ResizeHandleProps): React.ReactElement {
   const { startResize, activeResize } = usePanelContext();
   const [isHovered, setIsHovered] = useState(false);
@@ -32,7 +35,7 @@ export function ResizeHandle({
     (activeResize?.id === targetId && activeResize?.type === targetType) || isHovered;
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    startResize(targetType, targetId, orientation, constraints, e);
+    startResize(targetType, targetId, orientation, constraints, e, side);
   };
 
   const containerStyle: React.CSSProperties =

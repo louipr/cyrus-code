@@ -1,12 +1,13 @@
 /**
- * Panel Layout Persistence
+ * Panel Layout Utilities
  *
- * localStorage utilities for layout state persistence.
+ * Utilities for layout state management.
+ * Note: Persistence is disabled - layout resets to defaults on app restart.
  */
 
 import type { PanelLayoutState } from './types';
 
-/** Current storage version for migrations */
+/** Current storage version */
 const STORAGE_VERSION = 2;
 
 /** Default empty state */
@@ -18,87 +19,17 @@ export const INITIAL_STATE: PanelLayoutState = {
 };
 
 /**
- * Load layout state from localStorage
+ * Load layout state - returns null (persistence disabled)
  */
-export function loadState(storageKey: string): PanelLayoutState | null {
-  try {
-    const stored = localStorage.getItem(storageKey);
-    if (!stored) return null;
-
-    const parsed = JSON.parse(stored) as PanelLayoutState;
-
-    // Version check for migrations
-    if (parsed.version !== STORAGE_VERSION) {
-      return migrateState(parsed);
-    }
-
-    // Validate structure
-    if (!parsed.panels || typeof parsed.panels !== 'object') {
-      return null;
-    }
-
-    // Ensure columns and cards exist
-    if (!parsed.columns) parsed.columns = {};
-    if (!parsed.cards) parsed.cards = {};
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Save layout state to localStorage
- */
-export function saveState(storageKey: string, state: PanelLayoutState): void {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(state));
-  } catch {
-    // localStorage not available or quota exceeded
-  }
-}
-
-/**
- * Migrate state from older versions
- */
-function migrateState(state: Partial<PanelLayoutState>): PanelLayoutState | null {
-  // Migrate from v1 to v2 (add columns and cards)
-  if (state.version === 1) {
-    return {
-      panels: state.panels || {},
-      columns: {},
-      cards: {},
-      version: STORAGE_VERSION,
-    };
-  }
-
-  // Unknown version, return null to use defaults
+export function loadState(_storageKey: string): PanelLayoutState | null {
   return null;
 }
 
 /**
- * Migrate old panel storage keys to new format
+ * Save layout state - no-op (persistence disabled)
  */
-export function migrateOldStorage(): void {
-  try {
-    const oldWidth = localStorage.getItem('test-suite-panel-width');
-    if (oldWidth) {
-      const width = parseInt(oldWidth, 10);
-      if (!isNaN(width) && width > 0) {
-        const migratedState: PanelLayoutState = {
-          panels: {
-            right: { width, collapsed: false },
-          },
-          columns: {},
-          cards: {},
-          version: STORAGE_VERSION,
-        };
-        saveState('main-layout', migratedState);
-      }
-    }
-  } catch {
-    // Migration failed, continue with defaults
-  }
+export function saveState(_storageKey: string, _state: PanelLayoutState): void {
+  // Persistence disabled - layout resets on app restart
 }
 
 /**

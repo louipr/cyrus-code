@@ -2,16 +2,12 @@
  * Centralized Test Selectors
  *
  * All data-testid selectors in one place for maintainability.
- * Update here when component testids change.
+ * Only include selectors that are actually used in tests.
  */
 
 export const selectors = {
   // Search
   searchBar: '[data-testid="search-bar"]',
-
-  // Component List
-  componentList: '[data-testid="component-list"]',
-  componentListLoading: '[data-testid="component-list-loading"]',
 
   // View Toggle
   viewToggle: '[data-testid="view-toggle"]',
@@ -29,10 +25,4 @@ export const selectors = {
 
   // Help Dialog
   helpButton: '[data-testid="help-button"]',
-
-  // Panel Layout
-  recordingsView: '[data-testid="recordings-view"]',
-  recordingsTreePanel: '[data-testid="recordings-tree-panel"]',
-  recordingsMainPanel: '[data-testid="recordings-main-panel"]',
-  debugPanel: '[data-testid="debug-panel"]',
 };

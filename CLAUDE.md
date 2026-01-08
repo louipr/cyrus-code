@@ -171,3 +171,82 @@ npm run lint           # ESLint
 2. Update ALL callers to use new API
 3. Delete old code completely
 4. Never leave transitional scaffolding
+
+### GUI/Visual Fix Verification
+
+**CRITICAL: Never claim a visual/layout fix is complete without screenshot verification.**
+
+Regression tests (running `npm run test:e2e`) do NOT verify specific fixes unless a test was written for that exact issue. A "false pass" occurs when:
+- All existing tests pass
+- But the specific bug was never tested
+- The fix is declared complete without visual verification
+
+**When fixing GUI/layout issues:**
+1. **Before fixing**: Take a screenshot or describe the exact visual problem
+2. **Create specific test**: Write an E2E test that specifically checks for the fix (not just general functionality)
+3. **Run the specific test**: Don't run all E2E tests - run only the test that verifies your fix
+4. **Screenshot verification**: E2E tests should save screenshots that can be visually inspected
+5. **Only then**: Run full regression suite to ensure no breakage
+
+### E2E Test Quality Guidelines
+
+**WEAK test patterns (avoid):**
+
+| Pattern | Why It's Weak | Better Approach |
+|---------|---------------|-----------------|
+| `toBeVisible()` alone for layout | Proves element exists, not that it's sized/positioned correctly | Use `boundingBox()` to verify dimensions |
+| Mocking state to make UI testable | Tests the mock, not real UI/UX | Test real user flows or accept manual verification |
+| "X is visible" when X requires action to test | Misleading - doesn't verify X works | Either test the action or rename the test |
+| Test name doesn't match what it tests | Creates false confidence | Name tests precisely for what they verify |
+| `innerHTML.length > N` | Brittle, doesn't verify content | Check for specific elements or structure |
+
+**STRONG test patterns (use):**
+
+| Pattern | Why It's Strong | Example |
+|---------|-----------------|---------|
+| `boundingBox()` for layout | Verifies actual pixel dimensions | `expect(box.width).toBeGreaterThan(300)` |
+| Screenshot + dimension checks | Visual + programmatic verification | Save to `tests/e2e/screenshots/` |
+| Before/after dimension comparison | Verifies change actually happened | Resize test: measure before drag, after drag |
+| Action + result verification | Tests real behavior | Click collapse header → verify width changed |
+| Specific element checks | Tests content, not just existence | `locator('[data-testid="test-case-node-"]').count()` |
+
+**Test categorization:**
+
+| Test Type | `toBeVisible()` OK? | `boundingBox()` Needed? |
+|-----------|---------------------|-------------------------|
+| Navigation (view switching) | Yes | No |
+| Layout/positioning | No | Yes |
+| Resize/collapse behavior | No | Yes (before/after) |
+| Content rendering | Sometimes | Yes for dimensions |
+
+**Layout assertion utilities** (`tests/e2e/helpers/layout.ts`):
+
+```typescript
+import { assertHasRealDimensions, assertToRightOf, assertDimensionChanged } from './helpers/layout';
+
+// Verify element has real dimensions (not 0x0)
+const box = await assertHasRealDimensions(locator, minWidth, minHeight);
+
+// Verify positioning
+await assertToRightOf(detailsPanel, graphPanel);
+
+// Verify resize/collapse changed dimensions
+await assertDimensionChanged(panel, async () => {
+  await collapseButton.click();
+}, 'width', 'decreased');
+```
+
+**E2E test file organization:**
+
+| File | Purpose | Key patterns |
+|------|---------|--------------|
+| `helpers/layout.ts` | Layout assertion utilities | `boundingBox()` wrappers |
+| `helpers/selectors.ts` | Centralized data-testid selectors | Only include used selectors |
+| `helpers/actions.ts` | High-level actions (diagram export, help navigation) | Only include used actions |
+| `helpers/app.ts` | Electron app launch/close | `launchApp()`, `closeApp()` |
+
+**Test maintenance rules:**
+- Delete unused helpers immediately (no dead code)
+- Test names must match what they verify (no "false confidence" names)
+- Remove selectors when their components are deleted
+- Prefer inline test logic over unused helper abstractions

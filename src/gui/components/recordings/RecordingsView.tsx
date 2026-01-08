@@ -225,6 +225,7 @@ export function RecordingsView() {
         targetId="graph"
         targetType="panel"
         constraints={{ default: 280, min: 200, max: 500 }}
+        side="right"
       />
 
       {/* Graph Panel - Test Case Graph + Debug Controls */}
@@ -275,6 +276,7 @@ export function RecordingsView() {
         targetId="details"
         targetType="panel"
         constraints={{ default: 320, min: 200, max: 500 }}
+        side="right"
       />
 
       {/* Details Panel - Recording/TestCase/Step details */}

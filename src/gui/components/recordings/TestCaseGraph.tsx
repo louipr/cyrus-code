@@ -540,7 +540,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   toolbar: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 24,
     display: 'flex',
     alignItems: 'center',

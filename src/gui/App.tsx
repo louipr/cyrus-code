@@ -411,31 +411,15 @@ function AppContent(): React.ReactElement {
           )}
         </Panel>
 
-        {/* Test suite panel - appears during debug sessions in non-recordings views */}
+        {/* Test suite panels - appears during debug sessions in non-recordings views */}
+        {/* TestSuitePanel renders its own Panel components matching RecordingsView layout */}
         {showTestSuitePanel && (
-          <>
-            <ResizeHandle
-              orientation="horizontal"
-              targetId="debug-panel"
-              targetType="panel"
-              constraints={{ default: 450, min: 350, max: 700 }}
-            />
-            <Panel
-              id="debug-panel"
-              position="right"
-              size={{ default: 450, min: 350, max: 700 }}
-              title="Test Suite"
-              testId="debug-panel"
-            >
-              <TestSuitePanel
-                showHeader={false}
-                testSuite={debugSession.testSuite}
-                debugState={debugSession.state}
-                debugCommands={debugSession.commands}
-                onDebugClose={debugSession.clearDebug}
-              />
-            </Panel>
-          </>
+          <TestSuitePanel
+            testSuite={debugSession.testSuite}
+            debugState={debugSession.state}
+            debugCommands={debugSession.commands}
+            onDebugClose={debugSession.clearDebug}
+          />
         )}
       </PanelLayout>
 

@@ -63,7 +63,8 @@ export interface PanelContextValue {
     id: string,
     orientation: ResizeOrientation,
     constraints: SizeConstraint,
-    e: React.MouseEvent
+    e: React.MouseEvent,
+    side?: 'left' | 'right'
   ) => void;
 
   /** Active resize state (for cursor styling) */
@@ -362,7 +363,12 @@ export function PanelProvider({
 
     const handleMouseMove = (e: MouseEvent) => {
       const pos = activeResize.orientation === 'horizontal' ? e.clientX : e.clientY;
-      const delta = pos - startPosRef.current;
+      let delta = pos - startPosRef.current;
+
+      // For right-side panels, invert delta (dragging left increases width)
+      if (activeResize.side === 'right') {
+        delta = -delta;
+      }
 
       const newSize = clamp(
         startSizeRef.current + delta,
@@ -449,7 +455,8 @@ export function PanelProvider({
       id: string,
       orientation: ResizeOrientation,
       constraints: SizeConstraint,
-      e: React.MouseEvent
+      e: React.MouseEvent,
+      side?: 'left' | 'right'
     ) => {
       if (e.button !== 0) return;
       e.preventDefault();
@@ -470,6 +477,7 @@ export function PanelProvider({
         startPos,
         startSize: currentSize,
         constraints,
+        side,
       });
     },
     [state.panels, state.columns]
