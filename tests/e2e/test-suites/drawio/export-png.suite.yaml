@@ -1,31 +1,23 @@
-# Draw.io PNG Export Recording
-#
-# Exports a diagram to PNG using Draw.io's native exportToCanvas API.
-# This recording captures the knowledge learned during exploration:
-# - EditorUi is captured via window.__cyrusEditorUi by the preload hook
-# - editor.exportToCanvas() is the native API for PNG generation
-# - Export is async, requires polling for completion
-
-name: Draw.io PNG Export
 description: |
   Export the current diagram to PNG using Draw.io's native exportToCanvas API.
   Returns a base64 data URL that can be written to a file.
-
 metadata:
   status: verified
   reliability: high
-  tags: [export, png, drawio, native-api]
+  tags:
+    - export
+    - png
+    - drawio
+    - native-api
   author: AI exploration session
-  created: "2025-01-01"
-  modified: "2025-01-03"
-
+  created: 2025-01-01
+  modified: 2025-01-03
 context:
   app: cyrus-code
   prerequisites:
     - App is launched
     - Diagram view is active
   waitFor: "[data-testid='search-bar']"
-
 test_cases:
   - id: open_diagram
     description: Open diagram view
@@ -33,15 +25,14 @@ test_cases:
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
-
       - action: wait-for
         selector: "[data-testid='diagram-webview']"
         timeout: 10000
         why: Wait for Draw.io webview to appear.
-
   - id: wait_for_drawio
     description: Wait for Draw.io editor
-    depends: [open_diagram]
+    depends:
+      - open_diagram
     steps:
       - action: evaluate
         code: |
@@ -68,10 +59,10 @@ test_cases:
           throw new Error('Draw.io editor not ready after 15 seconds');
         timeout: 20000
         why: Wait for Draw.io's editor API to be available.
-
-  - id: wait_for_editor_ready
+  - id: wait_for_editor
     description: Wait for editor to be fully ready
-    depends: [wait_for_drawio]
+    depends:
+      - wait_for_drawio
     steps:
       - action: evaluate
         code: |
@@ -88,10 +79,10 @@ test_cases:
         why: |
           The React component sets isReady=true when it receives the IPC 'ready' message.
           Wait for the loading indicator to disappear.
-
   - id: verify_editor_ready
     description: Verify EditorUi is available
-    depends: [wait_for_editor_ready]
+    depends:
+      - wait_for_editor
     steps:
       - action: evaluate
         code: |
@@ -120,10 +111,10 @@ test_cases:
           1. The hook captured the instance
           2. It has an editor property
           3. The editor has exportToCanvas method
-
   - id: start_export
     description: Start native PNG export
-    depends: [verify_editor_ready]
+    depends:
+      - verify_editor_ready
     steps:
       - action: evaluate
         code: |
@@ -189,10 +180,10 @@ test_cases:
           - ignoreSelection: true exports everything, not just selected
           - border: 10px padding around the diagram
           The result is stored in window.__exportResult for polling.
-
   - id: wait_for_export
     description: Poll for export completion
-    depends: [start_export]
+    depends:
+      - start_export
     steps:
       - action: evaluate
         code: |
@@ -228,10 +219,10 @@ test_cases:
           exportToCanvas is asynchronous - it needs to render all shapes,
           apply styles, and convert to canvas. We poll window.__exportDone
           which is set by our callback when export completes or fails.
-
   - id: extract_result
     description: Extract PNG data URL
-    depends: [wait_for_export]
+    depends:
+      - wait_for_export
     steps:
       - action: evaluate
         code: |
@@ -252,14 +243,3 @@ test_cases:
           - Strip "data:image/png;base64," prefix
           - Decode from base64
           - Write to file as binary PNG
-
-# Usage example in tests:
-#
-# const player = new RecordingPlayer(page);
-# const result = await player.run('drawio/export-png');
-#
-# if (result.success) {
-#   const dataUrl = result.extracts['png-data-url'];
-#   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
-#   fs.writeFileSync('output.png', Buffer.from(base64, 'base64'));
-# }

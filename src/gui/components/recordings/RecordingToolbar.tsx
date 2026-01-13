@@ -32,12 +32,13 @@ const styles = {
 export function RecordingToolbar({
   testSuite,
 }: RecordingToolbarProps) {
-  const testSuiteName = testSuite?.name || 'No test suite';
+  // Use description as the label since name field was removed
+  const label = testSuite?.description || 'No test suite';
 
   return (
     <div style={styles.toolbar} data-testid="recording-toolbar">
-      <span style={styles.label} title={testSuiteName}>
-        {testSuite ? truncate(testSuiteName, 20) : 'Select test suite'}
+      <span style={styles.label} title={label}>
+        {testSuite ? truncate(label, 30) : 'Select test suite'}
       </span>
     </div>
   );

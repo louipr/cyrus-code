@@ -2,18 +2,71 @@
  * TestCaseDetail Component
  *
  * Displays detailed information about a selected test case.
- * Shows test case name, dependencies, and step summary.
+ * Shows test case ID, description, dependencies, and step summary.
+ * Supports editing test case parameters with save functionality.
  */
 
-import type { TestCase } from '../../../recordings';
+import { useState, useCallback, useEffect } from 'react';
+import type { TestCase, TestSuite, ActionType } from '../../../recordings';
 import { ACTION_ICONS, ACTION_COLORS } from './constants';
 
 interface TestCaseDetailProps {
   testCase: TestCase;
   testCaseIndex: number;
+  testSuite?: TestSuite;
+  appId?: string;
+  testSuiteId?: string;
+  onSave?: (updatedTestSuite: TestSuite) => Promise<void>;
 }
 
-export function TestCaseDetail({ testCase, testCaseIndex }: TestCaseDetailProps) {
+/**
+ * Validate snake_case ID format.
+ * Must start with lowercase letter, contain only lowercase letters, numbers, and underscores.
+ */
+function isValidSnakeCaseId(id: string): boolean {
+  return /^[a-z][a-z0-9_]*$/.test(id);
+}
+
+/**
+ * Update all depends arrays when a test case ID changes.
+ */
+function updateDependsReferences(
+  testSuite: TestSuite,
+  oldId: string,
+  newId: string
+): TestSuite {
+  return {
+    ...testSuite,
+    test_cases: testSuite.test_cases.map((tc) => ({
+      ...tc,
+      depends: tc.depends?.map((d) => (d === oldId ? newId : d)),
+    })),
+  };
+}
+
+export function TestCaseDetail({
+  testCase,
+  testCaseIndex,
+  testSuite,
+  appId,
+  testSuiteId,
+  onSave,
+}: TestCaseDetailProps) {
+  const [editingId, setEditingId] = useState(false);
+  const [idValue, setIdValue] = useState(testCase.id);
+  const [idError, setIdError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Reset edit state when test case changes
+  useEffect(() => {
+    setIdValue(testCase.id);
+    setEditingId(false);
+    setIdError(null);
+  }, [testCase.id]);
+
+  // Check if editing is enabled (requires all save-related props)
+  const canEdit = Boolean(testSuite && appId && testSuiteId && onSave);
+
   // Count step types
   const stepCounts = testCase.steps.reduce(
     (acc: Record<string, number>, step) => {
@@ -26,6 +79,77 @@ export function TestCaseDetail({ testCase, testCaseIndex }: TestCaseDetailProps)
   // Get dependency test case IDs (shown in graph)
   const dependencyIds = (testCase.depends ?? []).filter(Boolean);
 
+  // Validate ID and check for uniqueness
+  const validateId = useCallback(
+    (newId: string): string | null => {
+      if (!newId.trim()) {
+        return 'ID cannot be empty';
+      }
+      if (!isValidSnakeCaseId(newId)) {
+        return 'ID must be snake_case (lowercase letters, numbers, underscores)';
+      }
+      if (testSuite && newId !== testCase.id) {
+        const isDuplicate = testSuite.test_cases.some((tc) => tc.id === newId);
+        if (isDuplicate) {
+          return 'ID already exists in this test suite';
+        }
+      }
+      return null;
+    },
+    [testSuite, testCase.id]
+  );
+
+  // Handle ID change
+  const handleIdChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setIdValue(newValue);
+      setIdError(validateId(newValue));
+    },
+    [validateId]
+  );
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    if (!testSuite || !onSave || idError) return;
+
+    const error = validateId(idValue);
+    if (error) {
+      setIdError(error);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Update the test case ID
+      let updatedSuite: TestSuite = {
+        ...testSuite,
+        test_cases: testSuite.test_cases.map((tc, idx) =>
+          idx === testCaseIndex ? { ...tc, id: idValue } : tc
+        ),
+      };
+
+      // Update depends references if ID changed
+      if (idValue !== testCase.id) {
+        updatedSuite = updateDependsReferences(updatedSuite, testCase.id, idValue);
+      }
+
+      await onSave(updatedSuite);
+      setEditingId(false);
+    } finally {
+      setSaving(false);
+    }
+  }, [testSuite, onSave, idValue, idError, validateId, testCaseIndex, testCase.id]);
+
+  // Handle cancel
+  const handleCancel = useCallback(() => {
+    setIdValue(testCase.id);
+    setEditingId(false);
+    setIdError(null);
+  }, [testCase.id]);
+
+  const isDirty = idValue !== testCase.id;
+
   return (
     <div style={styles.container} data-testid="test-case-detail">
       {/* Header */}
@@ -34,14 +158,48 @@ export function TestCaseDetail({ testCase, testCaseIndex }: TestCaseDetailProps)
         <span style={styles.title}>{testCase.description}</span>
       </div>
 
+      {/* ID Field */}
+      <div style={styles.section}>
+        <div style={styles.label}>ID</div>
+        {editingId ? (
+          <div style={styles.editContainer}>
+            <input
+              type="text"
+              value={idValue}
+              onChange={handleIdChange}
+              style={{
+                ...styles.input,
+                ...(idError ? styles.inputError : {}),
+              }}
+              autoFocus
+              data-testid="test-case-id-input"
+            />
+            {idError && <div style={styles.errorText}>{idError}</div>}
+          </div>
+        ) : (
+          <div
+            style={{
+              ...styles.idDisplay,
+              ...(canEdit ? styles.idDisplayEditable : {}),
+            }}
+            onClick={canEdit ? () => setEditingId(true) : undefined}
+            title={canEdit ? 'Click to edit' : undefined}
+            data-testid="test-case-id-display"
+          >
+            <code style={styles.idCode}>{testCase.id}</code>
+            {canEdit && <span style={styles.editIcon}>✎</span>}
+          </div>
+        )}
+      </div>
+
       {/* Step Summary */}
       <div style={styles.section}>
         <div style={styles.label}>Steps ({testCase.steps.length})</div>
         <div style={styles.stepSummary}>
           {Object.entries(stepCounts).map(([action, count]) => (
             <div key={action} style={styles.stepType}>
-              <span>{ACTION_ICONS[action] ?? '○'}</span>
-              <span style={{ color: ACTION_COLORS[action] ?? '#888' }}>
+              <span>{ACTION_ICONS[action as ActionType] ?? '○'}</span>
+              <span style={{ color: ACTION_COLORS[action as ActionType] ?? '#888' }}>
                 {action.toUpperCase()}
               </span>
               <span style={styles.stepCount}>×{count}</span>
@@ -82,6 +240,28 @@ export function TestCaseDetail({ testCase, testCaseIndex }: TestCaseDetailProps)
           ))}
         </div>
       </div>
+
+      {/* Save/Cancel Buttons */}
+      {editingId && isDirty && (
+        <div style={styles.buttonRow}>
+          <button
+            style={{ ...styles.button, ...styles.saveButton }}
+            onClick={handleSave}
+            disabled={saving || Boolean(idError)}
+            data-testid="test-case-save-button"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            style={{ ...styles.button, ...styles.cancelButton }}
+            onClick={handleCancel}
+            disabled={saving}
+            data-testid="test-case-cancel-button"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Hint */}
       <div style={styles.hint}>
@@ -199,5 +379,70 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     color: '#4fc1ff',
     textAlign: 'center',
+  },
+  idDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#2a2d2e',
+    borderRadius: '4px',
+  },
+  idDisplayEditable: {
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
+  },
+  idCode: {
+    fontSize: '13px',
+    color: '#ce9178',
+    fontFamily: 'monospace',
+  },
+  editIcon: {
+    fontSize: '12px',
+    color: '#666',
+    marginLeft: 'auto',
+  },
+  editContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  input: {
+    padding: '8px 12px',
+    backgroundColor: '#3c3c3c',
+    border: '1px solid #555',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '13px',
+    fontFamily: 'monospace',
+    outline: 'none',
+  },
+  inputError: {
+    borderColor: '#f14c4c',
+  },
+  errorText: {
+    fontSize: '11px',
+    color: '#f14c4c',
+  },
+  buttonRow: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '16px',
+  },
+  button: {
+    padding: '6px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+  },
+  saveButton: {
+    backgroundColor: '#0e639c',
+    color: '#fff',
+  },
+  cancelButton: {
+    backgroundColor: '#3c3c3c',
+    color: '#ccc',
   },
 };

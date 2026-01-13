@@ -419,6 +419,9 @@ function AppContent(): React.ReactElement {
             debugState={debugSession.state}
             debugCommands={debugSession.commands}
             onDebugClose={debugSession.clearDebug}
+            appId={debugSession.appId}
+            testSuiteId={debugSession.testSuiteId}
+            onTestSuiteUpdate={debugSession.updateTestSuite}
           />
         )}
       </PanelLayout>

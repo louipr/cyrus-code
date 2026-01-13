@@ -230,13 +230,14 @@ export function RecordingTree({
                 // Show test cases if this test suite is loaded and expanded
                 const showTestCases =
                   isTestSuiteExpanded &&
-                  testSuite?.name === entry.name;
+                  selectedTestSuiteId === entry.id &&
+                  testSuite !== null;
 
                 return (
                   <TreeNode
                     key={testSuitePath}
                     id={testSuitePath}
-                    label={entry.name}
+                    label={entry.id}
                     type="recording"
                     icon={ICONS.recording}
                     depth={1}
@@ -248,7 +249,7 @@ export function RecordingTree({
                     onToggle={() => onToggle(testSuitePath)}
                   >
                     {showTestCases &&
-                      testSuite.testCases.map((testCase: TestCase) => {
+                      testSuite.test_cases.map((testCase: TestCase) => {
                         const testCasePath = `${testSuitePath}/${testCase.id}`;
                         const isTestCaseExpanded = expandedNodes.has(testCasePath);
                         const isTestCaseSelected =

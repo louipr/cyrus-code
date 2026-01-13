@@ -1,49 +1,68 @@
-# Draw.io Export Dialog Recording
+# Draw.io Export Dialog Test
 #
-# Tests Draw.io's native export dialog UI including:
-# - Opening the export dialog via our Export button
-# - Verifying the native Image export dialog appears
-# - Testing export options (zoom, background, etc.)
-# - Closing the dialog
+# Tests Draw.io's native export dialog UI flow.
+#
+# @agent-context
+# Context for LLM agents and developers working with Draw.io test suites.
+#
+# Access: '[data-testid="diagram-webview"]' via webview.executeJavaScript()
+#
+# Globals available in Draw.io context:
+#   __cyrusEditorUi  - EditorUi instance captured by preload hook (drawio-preload.ts)
+#   __cyrusHooked    - Boolean indicating hook was installed
+#   editorUi         - Native Draw.io EditorUi (embed mode only)
+#   App              - Draw.io application class
+#
+# Key selectors:
+#   .geDiagramContainer  - Main diagram container
+#   .geDialog            - Draw.io dialog boxes
+#   .geMenubar           - Menu bar
+#   .geItem              - Menu items
+#   .mxPopupMenu         - Context menus
+#
+# Hook mechanism (see electron/preload/drawio-preload.ts):
+#   The preload script wraps App.main() to intercept the EditorUi callback.
+#   This provides access to:
+#   - editorUi.editor.graph      - the mxGraph instance
+#   - editorUi.editor.exportToCanvas() - native PNG export
+#   - editorUi.actions           - menu action handlers
 
-name: Draw.io Export Dialog
 description: |
   Test Draw.io's native export dialog. Verifies the Export button
   triggers Draw.io's built-in Image export dialog with all options.
-
 metadata:
   status: verified
   reliability: high
-  tags: [export, dialog, drawio, native]
+  tags:
+    - export
+    - dialog
+    - drawio
+    - native
   author: AI exploration session
-  created: "2025-01-03"
-  modified: "2025-01-03"
-
+  created: 2025-01-03
+  modified: 2025-01-03
 context:
   app: cyrus-code
   prerequisites:
     - App is launched
     - Main UI is visible
   waitFor: "[data-testid='search-bar']"
-
 test_cases:
   - id: open_diagram
     description: Open diagram view
     steps:
       - action: click
-        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
-
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
       - action: wait-for
+        why: Wait for Draw.io webview to appear.
         selector: "[data-testid='diagram-webview']"
         timeout: 10000
-        why: Wait for Draw.io webview to appear.
-
   - id: wait_for_drawio
     description: Wait for Draw.io editor to be ready
-    depends: [open_diagram]
     steps:
       - action: evaluate
+        why: Wait for Draw.io's editor API to be available before export.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -67,13 +86,15 @@ test_cases:
           }
           throw new Error('Draw.io editor not ready after 15 seconds');
         timeout: 20000
-        why: Wait for Draw.io's editor API to be available before export.
-
-  - id: wait_for_editor_ready
+    depends:
+      - open_diagram
+  - id: wait_for_editor
     description: Wait for editor to be fully ready
-    depends: [wait_for_drawio]
     steps:
       - action: evaluate
+        why: |
+          The React component sets isReady=true when it receives the IPC 'ready' message.
+          Wait for the loading indicator to disappear.
         code: |
           // Wait for the loading indicator to disappear
           for (let i = 0; i < 50; i++) {
@@ -85,15 +106,13 @@ test_cases:
           }
           throw new Error('Editor loading indicator did not disappear after 10 seconds');
         timeout: 15000
-        why: |
-          The React component sets isReady=true when it receives the IPC 'ready' message.
-          Wait for the loading indicator to disappear.
-
+    depends:
+      - wait_for_drawio
   - id: create_test_diagram
     description: Create test diagram content
-    depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
+        why: Create a simple test diagram with two components and a connection.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -134,22 +153,22 @@ test_cases:
           if (result.error) throw new Error('Failed to create diagram: ' + result.error);
           return result;
         timeout: 10000
-        why: Create a simple test diagram with two components and a connection.
-
+    depends:
+      - wait_for_editor
   - id: verify_export_button
     description: Verify export button exists
-    depends: [create_test_diagram]
     steps:
       - action: wait-for
+        why: The Export button should be visible in the diagram toolbar.
         selector: "[data-testid='diagram-export-button']"
         timeout: 5000
-        why: The Export button should be visible in the diagram toolbar.
-
+    depends:
+      - create_test_diagram
   - id: trigger_export_dialog
     description: Trigger PNG export and open native dialog
-    depends: [verify_export_button]
     steps:
       - action: evaluate
+        why: Trigger Draw.io's native export dialog via the exportPng action.
         code: |
           // Trigger Draw.io's native export dialog via the actions system
           const webview = document.querySelector('[data-testid="diagram-webview"]');
@@ -174,9 +193,8 @@ test_cases:
 
           return { dialogTriggered: true };
         timeout: 10000
-        why: Trigger Draw.io's native export dialog via the exportPng action.
-
       - action: evaluate
+        why: Wait for Draw.io's native export dialog to appear.
         code: |
           // Wait for Draw.io's native export dialog to appear
           const webview = document.querySelector('[data-testid="diagram-webview"]');
@@ -208,17 +226,16 @@ test_cases:
           }
           throw new Error('Draw.io export dialog did not appear');
         timeout: 10000
-        why: Wait for Draw.io's native export dialog to appear.
-
       - action: screenshot
-        returns: tests/e2e/screenshots/export-dialog/01-dialog-opened.png
         why: Capture screenshot of Draw.io's native export dialog.
-
+        returns: tests/e2e/screenshots/export-dialog/01-dialog-opened.png
+    depends:
+      - verify_export_button
   - id: verify_dialog_options
     description: Verify export dialog has expected options
-    depends: [trigger_export_dialog]
     steps:
       - action: evaluate
+        why: Verify Draw.io's native export dialog has the expected options.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -270,13 +287,13 @@ test_cases:
 
           return dialogInfo;
         timeout: 5000
-        why: Verify Draw.io's native export dialog has the expected options.
-
+    depends:
+      - trigger_export_dialog
   - id: click_export
     description: Click Export button
-    depends: [verify_dialog_options]
     steps:
       - action: evaluate
+        why: Click Export to proceed with the export.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -303,17 +320,16 @@ test_cases:
           if (!result.clicked) throw new Error('Export button not found');
           return result;
         timeout: 5000
-        why: Click Export to proceed with the export.
-
       - action: screenshot
-        returns: /tmp/export-dialog-after-export-click.png
         why: Screenshot after clicking Export button.
-
+        returns: /tmp/export-dialog-after-export-click.png
+    depends:
+      - verify_dialog_options
   - id: wait_for_save_dialog
     description: Wait for Save As dialog
-    depends: [click_export]
     steps:
       - action: evaluate
+        why: Wait for Draw.io Save As dialog to appear.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -336,17 +352,16 @@ test_cases:
           }
           throw new Error('Save As dialog did not appear');
         timeout: 10000
-        why: Wait for Draw.io Save As dialog to appear.
-
       - action: screenshot
-        returns: /tmp/export-dialog-save-as.png
         why: Screenshot of Save As dialog.
-
+        returns: /tmp/export-dialog-save-as.png
+    depends:
+      - click_export
   - id: set_filename_and_save
     description: Set filename and click Save
-    depends: [wait_for_save_dialog]
     steps:
       - action: evaluate
+        why: Set filename and click Save to export.
         code: |
           const webview = document.querySelector('[data-testid="diagram-webview"]');
           if (!webview) throw new Error('Webview not found');
@@ -384,25 +399,15 @@ test_cases:
           if (!result.saved) throw new Error('Could not click Save button');
           return result;
         timeout: 5000
-        why: Set filename and click Save to export.
-
       - action: evaluate
+        why: Wait for file to be saved.
         code: |
           // Wait for save to complete
           await new Promise(r => setTimeout(r, 2000));
           return { waitedForSave: true };
         timeout: 5000
-        why: Wait for file to be saved.
-
       - action: screenshot
-        returns: /tmp/export-dialog-after-save.png
         why: Screenshot after clicking Save.
-
-# Usage example in tests:
-#
-# const player = new RecordingPlayer(page);
-# const result = await player.run('drawio/export-dialog');
-#
-# // All tasks should complete successfully
-# expect(result.success).toBe(true);
-# expect(result.taskResults['verify-dialog-options'].hasExportButton).toBe(true);
+        returns: /tmp/export-dialog-after-save.png
+    depends:
+      - wait_for_save_dialog

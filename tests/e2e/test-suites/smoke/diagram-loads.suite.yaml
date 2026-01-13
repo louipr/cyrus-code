@@ -2,7 +2,6 @@
 #
 # Opens diagram view and verifies the Draw.io iframe loads.
 
-name: Diagram Loads
 description: Open diagram view and verify the Draw.io iframe loads.
 
 metadata:

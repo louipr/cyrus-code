@@ -9,6 +9,8 @@ import type { TestSuite } from '../../../recordings';
 
 interface RecordingDetailProps {
   testSuite: TestSuite;
+  /** Test suite ID (derived from filename, e.g., "export-dialog") */
+  testSuiteId?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,15 +26,18 @@ const RELIABILITY_COLORS: Record<string, string> = {
   unknown: '#808080',
 };
 
-export function RecordingDetail({ testSuite }: RecordingDetailProps) {
+export function RecordingDetail({ testSuite, testSuiteId }: RecordingDetailProps) {
   const statusColor = STATUS_COLORS[testSuite.metadata.status] ?? '#808080';
   const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata.reliability] ?? '#808080';
+
+  // Display testSuiteId as title (derived from filename)
+  const title = testSuiteId ?? 'Test Suite';
 
   return (
     <div style={styles.container} data-testid="recording-detail">
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.title}>{testSuite.name}</span>
+        <span style={styles.title}>{title}</span>
         <span style={{ ...styles.statusBadge, color: statusColor, borderColor: statusColor }}>
           {testSuite.metadata.status}
         </span>
@@ -50,7 +55,7 @@ export function RecordingDetail({ testSuite }: RecordingDetailProps) {
 
         <div style={styles.metadataItem}>
           <span style={styles.label}>Test Cases</span>
-          <span style={styles.value}>{testSuite.testCases.length}</span>
+          <span style={styles.value}>{testSuite.test_cases.length}</span>
         </div>
 
         <div style={styles.metadataItem}>

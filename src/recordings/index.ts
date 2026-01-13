@@ -13,6 +13,9 @@
 // Test suite definition types
 export * from './recording-types.js';
 
+// Constants for file discovery
+export * from './constants.js';
+
 // Playback types (events, state, results)
 export * from './playback-types.js';
 

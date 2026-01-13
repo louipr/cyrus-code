@@ -88,15 +88,15 @@ export function DebugControls({
         <span style={styles.statusText}>{getStatusLabel(state.state)}</span>
         {state.position && testSuite && (
           <span style={styles.positionText}>
-            Test Case {state.position.testCaseIndex + 1}/{testSuite.testCases.length}
+            Test Case {state.position.testCaseIndex + 1}/{testSuite.test_cases.length}
           </span>
         )}
       </div>
 
       {/* Progress bar */}
-      {testSuite && testSuite.testCases.length > 0 && (
+      {testSuite && testSuite.test_cases.length > 0 && (
         <div style={styles.progressBar}>
-          {testSuite.testCases.map((testCase, idx) => {
+          {testSuite.test_cases.map((testCase, idx) => {
             const isComplete = state.position ? idx < state.position.testCaseIndex : false;
             const isCurrent = state.position ? idx === state.position.testCaseIndex : false;
             const hasFailed = Array.from(state.stepResults.entries()).some(
@@ -126,7 +126,7 @@ export function DebugControls({
       {state.position && testSuite && (
         <div style={styles.currentStep}>
           <span style={styles.stepBadge}>
-            Step {state.position.stepIndex + 1}/{testSuite.testCases[state.position.testCaseIndex]?.steps.length || '?'}
+            Step {state.position.stepIndex + 1}/{testSuite.test_cases[state.position.testCaseIndex]?.steps.length || '?'}
           </span>
         </div>
       )}

@@ -22,10 +22,8 @@ export type ActionType =
   | 'click'
   | 'type'
   | 'wait-for'
-  | 'wait-hidden'
   | 'evaluate'
   | 'poll'
-  | 'extract'
   | 'assert'
   | 'screenshot'
   | 'hover'
@@ -49,9 +47,6 @@ export interface TestStep {
 
   /** Condition to poll for (for poll action) */
   condition?: string;
-
-  /** Variable to extract (for extract action) */
-  variable?: string;
 
   /** Expected value (for assert action) */
   expect?: unknown;
@@ -139,9 +134,6 @@ export interface TestSuiteMetadata {
  * Complete test suite structure.
  */
 export interface TestSuite {
-  /** Test suite name */
-  name: string;
-
   /** Description of what this test suite does */
   description: string;
 
@@ -152,5 +144,5 @@ export interface TestSuite {
   context: TestSuiteContext;
 
   /** Test cases to execute */
-  testCases: TestCase[];
+  test_cases: TestCase[];
 }

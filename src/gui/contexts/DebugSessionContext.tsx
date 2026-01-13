@@ -32,6 +32,9 @@ interface DebugSessionContextValue {
   /** Start a debug session for a test suite */
   startDebug: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<void>;
 
+  /** Update the test suite (e.g., after editing parameters) */
+  updateTestSuite: (testSuite: TestSuite) => void;
+
   /** Clear the current debug session */
   clearDebug: () => void;
 }
@@ -57,6 +60,10 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     [commands]
   );
 
+  const updateTestSuite = useCallback((newTestSuite: TestSuite) => {
+    setTestSuite(newTestSuite);
+  }, []);
+
   const clearDebug = useCallback(() => {
     setTestSuite(null);
     setAppId(null);
@@ -70,6 +77,7 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     appId,
     testSuiteId,
     startDebug,
+    updateTestSuite,
     clearDebug,
   };
 

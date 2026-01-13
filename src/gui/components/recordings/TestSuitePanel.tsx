@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { apiClient } from '../../api-client';
 import { TestCaseGraph } from './TestCaseGraph';
 import { StepDetail } from './StepDetail';
 import { TestCaseDetail } from './TestCaseDetail';
@@ -21,6 +22,9 @@ interface TestSuitePanelProps {
   debugState: DebugSessionHookState;
   debugCommands: DebugSessionCommands;
   onDebugClose: () => void;
+  appId?: string | null;
+  testSuiteId?: string | null;
+  onTestSuiteUpdate?: (testSuite: TestSuite) => void;
 }
 
 /**
@@ -33,6 +37,9 @@ export function TestSuitePanel({
   debugState,
   debugCommands,
   onDebugClose,
+  appId,
+  testSuiteId,
+  onTestSuiteUpdate,
 }: TestSuitePanelProps) {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
@@ -42,7 +49,7 @@ export function TestSuitePanel({
 
   const handleTestCaseClick = useCallback(
     (testCaseId: string) => {
-      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
       if (testCase) {
         setSelectedTestCase(testCase);
         setSelectedStep(null);
@@ -54,13 +61,13 @@ export function TestSuitePanel({
 
   const handleStepClick = useCallback(
     (testCaseId: string, stepIdx: number) => {
-      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
       if (testCase && testCase.steps[stepIdx]) {
         setSelectedTestCase(testCase);
         setSelectedStep(testCase.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
 
-        const testCaseIndex = testSuite?.testCases.findIndex((t) => t.id === testCaseId) ?? -1;
+        const testCaseIndex = testSuite?.test_cases.findIndex((t) => t.id === testCaseId) ?? -1;
         if (testCaseIndex >= 0) {
           const result = debugState.stepResults.get(`${testCaseIndex}:${stepIdx}`);
           if (result) {
@@ -71,6 +78,36 @@ export function TestSuitePanel({
       }
     },
     [testSuite, debugState.stepResults]
+  );
+
+  // Handle saving test suite (for test case parameter edits)
+  const handleSaveTestSuite = useCallback(
+    async (updatedTestSuite: TestSuite) => {
+      if (!appId || !testSuiteId) return;
+
+      const result = await apiClient.recordings.save(appId, testSuiteId, updatedTestSuite);
+      if (result.success) {
+        // Notify parent to update state
+        onTestSuiteUpdate?.(updatedTestSuite);
+        // Update selected test case if needed
+        if (selectedTestCase) {
+          const updatedTestCase = updatedTestSuite.test_cases.find(
+            (tc) => tc.id === selectedTestCase.id
+          );
+          if (!updatedTestCase) {
+            const idx = testSuite?.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
+            if (idx !== undefined && idx >= 0 && updatedTestSuite.test_cases[idx]) {
+              setSelectedTestCase(updatedTestSuite.test_cases[idx]);
+            }
+          } else {
+            setSelectedTestCase(updatedTestCase);
+          }
+        }
+      } else {
+        console.error('Failed to save test suite:', result.error?.message);
+      }
+    },
+    [appId, testSuiteId, onTestSuiteUpdate, selectedTestCase, testSuite]
   );
 
   return (
@@ -104,7 +141,7 @@ export function TestSuitePanel({
           >
             {testSuite ? (
               <TestCaseGraph
-                testCases={testSuite.testCases}
+                testCases={testSuite.test_cases}
                 selectedTestCaseId={selectedTestCase?.id ?? null}
                 selectedStepIndex={selectedStepIndex}
                 onTestCaseClick={handleTestCaseClick}
@@ -165,10 +202,14 @@ export function TestSuitePanel({
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
-              testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
+              testCaseIndex={testSuite.test_cases.findIndex((t) => t.id === selectedTestCase.id)}
+              testSuite={testSuite}
+              appId={appId ?? undefined}
+              testSuiteId={testSuiteId ?? undefined}
+              onSave={handleSaveTestSuite}
             />
           ) : testSuite ? (
-            <RecordingDetail testSuite={testSuite} />
+            <RecordingDetail testSuite={testSuite} testSuiteId={testSuiteId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholderText}>Select a test case or step</span>

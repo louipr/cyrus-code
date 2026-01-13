@@ -161,6 +161,7 @@ interface CyrusAPI {
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
     get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
+    save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
     debug: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;
@@ -303,6 +304,7 @@ function createMockApi(): CyrusAPI {
       getByApp: () => mockResponse([]),
       get: () => mockResponse(null),
       getByPath: () => mockResponse(null),
+      save: () => mockError('Not connected to backend'),
       debug: {
         create: () => mockError('Not connected to backend'),
         start: () => mockError('Not connected to backend'),

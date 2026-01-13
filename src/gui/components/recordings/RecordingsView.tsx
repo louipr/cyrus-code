@@ -81,14 +81,14 @@ export function RecordingsView() {
         }
       } else if (type === 'testCase' && testSuite) {
         const testCaseId = parts[2];
-        const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
+        const testCase = testSuite.test_cases.find((t) => t.id === testCaseId);
         setSelectedTestCase(testCase || null);
         setSelectedStep(null);
         setSelectedStepIndex(null);
       } else if (type === 'step' && testSuite) {
         const testCaseId = parts[2];
         const stepIdx = parseInt(parts[3], 10);
-        const testCase = testSuite.testCases.find((t) => t.id === testCaseId);
+        const testCase = testSuite.test_cases.find((t) => t.id === testCaseId);
         if (testCase && testCase.steps[stepIdx]) {
           setSelectedTestCase(testCase);
           setSelectedStep(testCase.steps[stepIdx]);
@@ -115,14 +115,14 @@ export function RecordingsView() {
   // Handle step click from TestCaseGraph
   const handleStepClick = useCallback(
     (testCaseId: string, stepIdx: number) => {
-      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
       if (testCase && testCase.steps[stepIdx]) {
         setSelectedTestCase(testCase);
         setSelectedStep(testCase.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
 
         // Check if there's a result for this step and show overlay
-        const testCaseIndex = testSuite?.testCases.findIndex((t) => t.id === testCaseId) ?? -1;
+        const testCaseIndex = testSuite?.test_cases.findIndex((t) => t.id === testCaseId) ?? -1;
         if (testCaseIndex >= 0) {
           const result = debugState.stepResults.get(`${testCaseIndex}:${stepIdx}`);
           if (result) {
@@ -138,7 +138,7 @@ export function RecordingsView() {
   // Handle test case click from TestCaseGraph
   const handleTestCaseClick = useCallback(
     (testCaseId: string) => {
-      const testCase = testSuite?.testCases.find((t) => t.id === testCaseId);
+      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
       if (testCase) {
         setSelectedTestCase(testCase);
         setSelectedStep(null);
@@ -146,6 +146,38 @@ export function RecordingsView() {
       }
     },
     [testSuite]
+  );
+
+  // Handle saving test suite (for test case parameter edits)
+  const handleSaveTestSuite = useCallback(
+    async (updatedTestSuite: TestSuite) => {
+      if (!selectedAppId || !selectedTestSuiteId) return;
+
+      const result = await apiClient.recordings.save(selectedAppId, selectedTestSuiteId, updatedTestSuite);
+      if (result.success) {
+        // Update local state with the saved test suite
+        setTestSuite(updatedTestSuite);
+        // Update selected test case if it was modified
+        if (selectedTestCase) {
+          const updatedTestCase = updatedTestSuite.test_cases.find(
+            (tc) => tc.id === selectedTestCase.id
+          );
+          // If the ID was changed, find by index instead
+          if (!updatedTestCase) {
+            const idx = testSuite?.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
+            if (idx !== undefined && idx >= 0 && updatedTestSuite.test_cases[idx]) {
+              setSelectedTestCase(updatedTestSuite.test_cases[idx]);
+            }
+          } else {
+            setSelectedTestCase(updatedTestCase);
+          }
+        }
+      } else {
+        // Show error (could add toast notification here)
+        console.error('Failed to save test suite:', result.error?.message);
+      }
+    },
+    [selectedAppId, selectedTestSuiteId, selectedTestCase, testSuite]
   );
 
   if (loading) {
@@ -241,7 +273,7 @@ export function RecordingsView() {
           <Card id="graph-card" title="Test Case Graph" fill testId="test-case-graph-card" showHeader={false} collapsible={false}>
             {testSuite ? (
               <TestCaseGraph
-                testCases={testSuite.testCases}
+                testCases={testSuite.test_cases}
                 selectedTestCaseId={selectedTestCase?.id ?? null}
                 selectedStepIndex={selectedStepIndex}
                 onTestCaseClick={handleTestCaseClick}
@@ -294,10 +326,14 @@ export function RecordingsView() {
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
-              testCaseIndex={testSuite.testCases.findIndex((t) => t.id === selectedTestCase.id)}
+              testCaseIndex={testSuite.test_cases.findIndex((t) => t.id === selectedTestCase.id)}
+              testSuite={testSuite}
+              appId={selectedAppId ?? undefined}
+              testSuiteId={selectedTestSuiteId ?? undefined}
+              onSave={handleSaveTestSuite}
             />
           ) : testSuite ? (
-            <RecordingDetail testSuite={testSuite} />
+            <RecordingDetail testSuite={testSuite} testSuiteId={selectedTestSuiteId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholder}>

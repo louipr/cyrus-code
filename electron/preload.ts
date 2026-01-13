@@ -167,6 +167,7 @@ export interface CyrusAPI {
     getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
     get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
+    save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
     // Debug session operations
     debug: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
@@ -290,6 +291,8 @@ const cyrusAPI: CyrusAPI = {
     getByApp: (appId) => ipcRenderer.invoke('recordings:byApp', appId),
     get: (appId, testSuiteId) => ipcRenderer.invoke('recordings:get', appId, testSuiteId),
     getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
+    save: (appId, testSuiteId, testSuite) =>
+      ipcRenderer.invoke('recordings:save', appId, testSuiteId, testSuite),
     debug: {
       create: (config) => ipcRenderer.invoke('recordings:debug:create', config),
       start: (sessionId) => ipcRenderer.invoke('recordings:debug:start', sessionId),

@@ -205,10 +205,10 @@ export class TestSuitePlayer {
     this.setState('running');
     let success = true;
 
-    for (let testCaseIndex = 0; testCaseIndex < this.testSuite.testCases.length; testCaseIndex++) {
+    for (let testCaseIndex = 0; testCaseIndex < this.testSuite.test_cases.length; testCaseIndex++) {
       if (this.stopRequested) break;
 
-      const testCase = this.testSuite.testCases[testCaseIndex];
+      const testCase = this.testSuite.test_cases[testCaseIndex];
       if (!testCase) continue;
 
       this.emit({

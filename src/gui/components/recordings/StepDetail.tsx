@@ -5,7 +5,7 @@
  * Shows action type, selector, code, and the reasoning (why) field.
  */
 
-import type { TestStep } from '../../../recordings';
+import type { TestStep, ActionType } from '../../../recordings';
 import { ACTION_ICONS } from './constants';
 
 interface StepDetailProps {
@@ -13,14 +13,12 @@ interface StepDetailProps {
   stepIndex: number;
 }
 
-const ACTION_DESCRIPTIONS: Record<string, string> = {
+const ACTION_DESCRIPTIONS: Record<ActionType, string> = {
   click: 'Click on an element',
   type: 'Type text into an input',
   'wait-for': 'Wait for an element to appear',
-  'wait-hidden': 'Wait for an element to disappear',
   evaluate: 'Execute JavaScript code',
   poll: 'Poll for a condition',
-  extract: 'Extract value from page',
   assert: 'Assert a condition',
   screenshot: 'Take a screenshot',
   hover: 'Hover over an element',
@@ -85,14 +83,6 @@ export function StepDetail({ step, stepIndex }: StepDetailProps) {
         <div style={styles.section}>
           <div style={styles.label}>Expected</div>
           <div style={styles.codeBlock}>{JSON.stringify(step.expect, null, 2)}</div>
-        </div>
-      )}
-
-      {/* Variable (for extract action) */}
-      {step.variable && (
-        <div style={styles.section}>
-          <div style={styles.label}>Variable</div>
-          <div style={styles.variableBlock}>{step.variable}</div>
         </div>
       )}
 
@@ -187,15 +177,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'monospace',
     color: '#dcdcaa',
     border: '1px solid #555',
-  },
-  variableBlock: {
-    display: 'inline-block',
-    backgroundColor: '#1e3a5f',
-    padding: '4px 10px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontFamily: 'monospace',
-    color: '#9cdcfe',
   },
   whyBlock: {
     backgroundColor: '#1a3a1a',

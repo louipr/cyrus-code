@@ -1,8 +1,32 @@
 # Create Architecture Diagram Smoke Test
 #
 # Opens Draw.io and creates a simple 3-tier UML architecture diagram.
+#
+# @agent-context
+# Context for LLM agents and developers working with Draw.io test suites.
+#
+# Access: '[data-testid="diagram-webview"]' via webview.executeJavaScript()
+#
+# Globals available in Draw.io context:
+#   __cyrusEditorUi  - EditorUi instance captured by preload hook (drawio-preload.ts)
+#   __cyrusHooked    - Boolean indicating hook was installed
+#   editorUi         - Native Draw.io EditorUi (embed mode only)
+#   App              - Draw.io application class
+#
+# Key selectors:
+#   .geDiagramContainer  - Main diagram container
+#   .geDialog            - Draw.io dialog boxes
+#   .geMenubar           - Menu bar
+#   .geItem              - Menu items
+#   .mxPopupMenu         - Context menus
+#
+# Hook mechanism (see electron/preload/drawio-preload.ts):
+#   The preload script wraps App.main() to intercept the EditorUi callback.
+#   This provides access to:
+#   - editorUi.editor.graph      - the mxGraph instance
+#   - editorUi.editor.exportToCanvas() - native PNG export
+#   - editorUi.actions           - menu action handlers
 
-name: Create Architecture Diagram
 description: Open Draw.io and create a 3-tier architecture diagram with Frontend, API, and Database components.
 
 metadata:

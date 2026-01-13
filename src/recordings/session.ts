@@ -6,9 +6,6 @@
  */
 
 import type { WebContents } from 'electron';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as yaml from 'yaml';
 import type { TestSuite } from './recording-types.js';
 import { TestSuitePlayer, type PlayerOptions } from './player.js';
 import type {
@@ -26,11 +23,11 @@ import type {
 export class PlaybackSession {
   private readonly sessionId: string;
   private readonly config: PlaybackConfig;
-  private readonly testSuitesDir: string;
+  private readonly testSuite: TestSuite;
   private readonly webContents: WebContents;
+  private readonly basePath: string;
 
   private player: TestSuitePlayer | null = null;
-  private testSuite: TestSuite | null = null;
 
   private state: PlaybackState = 'idle';
   private createdAt: number;
@@ -40,15 +37,16 @@ export class PlaybackSession {
 
   constructor(
     config: PlaybackConfig,
+    testSuite: TestSuite,
     webContents: WebContents,
-    testSuitesDir?: string
+    basePath: string
   ) {
     this.sessionId = this.generateSessionId();
     this.config = config;
+    this.testSuite = testSuite;
     this.webContents = webContents;
+    this.basePath = basePath;
     this.createdAt = Date.now();
-    this.testSuitesDir =
-      testSuitesDir || path.join(process.cwd(), 'tests', 'e2e', 'test-suites');
   }
 
   /**
@@ -84,7 +82,7 @@ export class PlaybackSession {
   /**
    * Get the loaded test suite.
    */
-  getTestSuite(): TestSuite | null {
+  getTestSuite(): TestSuite {
     return this.testSuite;
   }
 
@@ -136,31 +134,7 @@ export class PlaybackSession {
   }
 
   /**
-   * Load test suite from disk.
-   */
-  private loadTestSuite(): TestSuite {
-    const { appId, testSuiteId } = this.config;
-    const filePath = path.join(this.testSuitesDir, appId, `${testSuiteId}.suite.yaml`);
-
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Test suite not found: ${filePath}`);
-    }
-
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const raw = yaml.parse(content) as Record<string, unknown>;
-
-    // Transform YAML snake_case to TypeScript camelCase
-    return {
-      name: raw.name as string,
-      description: raw.description as string,
-      metadata: raw.metadata as TestSuite['metadata'],
-      context: raw.context as TestSuite['context'],
-      testCases: (raw.test_cases as TestSuite['testCases']) ?? [],
-    };
-  }
-
-  /**
-   * Initialize the session - load test suite and create player.
+   * Initialize the session - create player.
    */
   async initialize(): Promise<void> {
     if (this.state !== 'idle') {
@@ -168,15 +142,11 @@ export class PlaybackSession {
     }
 
     try {
-      // Load test suite
-      this.testSuite = this.loadTestSuite();
-
       // Create player
-      const basePath = path.resolve(this.testSuitesDir, '..', '..', '..');
       const playerOptions: PlayerOptions = {
         pauseOnStart: this.config.pauseOnStart ?? true,
         stopOnError: true,
-        basePath,
+        basePath: this.basePath,
       };
       if (this.config.timeoutMultiplier !== undefined) {
         playerOptions.timeoutMultiplier = this.config.timeoutMultiplier;
@@ -281,10 +251,10 @@ export class PlaybackSession {
 
     results.forEach((result, key) => {
       const [testCaseIndex, stepIndex] = key.split(':').map(Number);
-      const testCase = this.testSuite?.testCases[testCaseIndex];
+      const testCase = this.testSuite.test_cases[testCaseIndex!];
       if (testCase) {
         completedSteps.push({
-          position: { testCaseIndex, stepIndex, testCaseId: testCase.id },
+          position: { testCaseIndex: testCaseIndex!, stepIndex: stepIndex!, testCaseId: testCase.id },
           result,
         });
       }

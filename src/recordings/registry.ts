@@ -11,27 +11,8 @@ import type {
   PlaybackEvent,
   PlaybackConfig,
   PlaybackSnapshot,
-  PlaybackState,
-  PlaybackPosition,
-  StepResult,
 } from './playback-types.js';
-
-/** Session interface for registry */
-interface Session {
-  getId(): string;
-  getState(): PlaybackState;
-  getPosition(): PlaybackPosition | null;
-  getSnapshot(): PlaybackSnapshot;
-  on(listener: (event: PlaybackEvent) => void): () => void;
-  initialize(): Promise<void>;
-  start(): Promise<{ success: boolean; duration: number }>;
-  pause(): void;
-  resume(): void;
-  step(): void;
-  stop(): Promise<void>;
-  dispose(): Promise<void>;
-  getStepResults(): Map<string, StepResult>;
-}
+import type { TestSuiteRepository } from '../domain/recordings/index.js';
 
 /**
  * Manages multiple playback sessions.
@@ -39,9 +20,11 @@ interface Session {
 export class SessionRegistry {
   private static instance: SessionRegistry | null = null;
 
-  private sessions: Map<string, Session> = new Map();
+  private sessions: Map<string, PlaybackSession> = new Map();
   private globalListeners: Array<(sessionId: string, event: PlaybackEvent) => void> = [];
   private webContents: WebContents | null = null;
+  private repository: TestSuiteRepository | null = null;
+  private basePath: string = process.cwd();
 
   private constructor() {
     // Private constructor for singleton
@@ -76,14 +59,32 @@ export class SessionRegistry {
   }
 
   /**
+   * Set the repository for loading test suites.
+   * Must be called before creating sessions.
+   */
+  setRepository(repository: TestSuiteRepository, basePath: string): void {
+    this.repository = repository;
+    this.basePath = basePath;
+  }
+
+  /**
    * Create a new playback session.
    */
   async createSession(config: PlaybackConfig): Promise<string> {
     if (!this.webContents) {
       throw new Error('WebContents not set. Call setWebContents() first.');
     }
+    if (!this.repository) {
+      throw new Error('Repository not set. Call setRepository() first.');
+    }
 
-    const session = new PlaybackSession(config, this.webContents);
+    // Load test suite from repository
+    const testSuite = this.repository.getTestSuite(config.appId, config.testSuiteId);
+    if (!testSuite) {
+      throw new Error(`Test suite not found: ${config.appId}/${config.testSuiteId}`);
+    }
+
+    const session = new PlaybackSession(config, testSuite, this.webContents, this.basePath);
 
     // Forward events to global listeners
     session.on((event) => {
@@ -106,7 +107,7 @@ export class SessionRegistry {
   /**
    * Get a session by ID.
    */
-  getSession(sessionId: string): Session | undefined {
+  getSession(sessionId: string): PlaybackSession | undefined {
     return this.sessions.get(sessionId);
   }
 

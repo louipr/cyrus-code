@@ -2,7 +2,6 @@
 #
 # Simple verification that the app loads and basic UI elements appear.
 
-name: App Loads
 description: Verify the app loads and shows the main UI elements.
 
 metadata:

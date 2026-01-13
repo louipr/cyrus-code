@@ -25,43 +25,6 @@ export interface StepResult {
 }
 
 /**
- * Result from executing a test case.
- */
-export interface TestCaseResult {
-  /** Test case ID */
-  testCaseId: string;
-
-  /** Whether the test case succeeded */
-  success: boolean;
-
-  /** Results for each step */
-  steps: StepResult[];
-
-  /** Total duration in milliseconds */
-  duration: number;
-}
-
-/**
- * Result from executing a test suite.
- */
-export interface TestSuiteResult {
-  /** Test suite name */
-  name: string;
-
-  /** Whether the test suite succeeded */
-  success: boolean;
-
-  /** Results for each test case */
-  testCases: TestCaseResult[];
-
-  /** Total duration in milliseconds */
-  duration: number;
-
-  /** Any extracted values */
-  extracts: Record<string, unknown>;
-}
-
-/**
  * Playback session lifecycle states.
  */
 export type PlaybackState =
@@ -118,17 +81,6 @@ export interface TestCaseStartEvent {
 }
 
 /**
- * Event emitted when a test case completes.
- */
-export interface TestCaseCompleteEvent {
-  type: 'test-case-complete';
-  testCaseIndex: number;
-  testCase: TestCase;
-  result: TestCaseResult;
-  timestamp: number;
-}
-
-/**
  * Event emitted when session state changes.
  */
 export interface SessionStateEvent {
@@ -165,22 +117,9 @@ export type PlaybackEvent =
   | StepStartEvent
   | StepCompleteEvent
   | TestCaseStartEvent
-  | TestCaseCompleteEvent
   | SessionStateEvent
   | SessionReadyEvent
   | PlaybackCompleteEvent;
-
-/**
- * Commands to control playback.
- */
-export type PlaybackCommand =
-  | { type: 'start' } // Begin playback from current position
-  | { type: 'pause' } // Pause after current step
-  | { type: 'resume' } // Continue playback
-  | { type: 'step' } // Execute single step then pause
-  | { type: 'step-over' } // Execute current task to completion then pause
-  | { type: 'stop' } // Stop playback and cleanup
-  | { type: 'restart' }; // Reset to beginning
 
 /**
  * Configuration for creating a playback session.

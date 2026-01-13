@@ -22,11 +22,12 @@ import type {
 } from '../src/api/types.js';
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
-import { createTestSuiteContentService } from '../src/services/recording-content/index.js';
+import { createTestSuiteRepository } from '../src/services/recording-content/index.js';
 import {
   getSessionRegistry,
   type PlaybackConfig,
   type PlaybackEvent,
+  type TestSuite,
 } from '../src/recordings/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import {
@@ -648,12 +649,12 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Test Suite Operations (IPC channels preserved for compatibility)
   // ==========================================================================
 
-  // Initialize test suite service with same project root as help
-  const testSuiteService = createTestSuiteContentService(helpProjectRoot);
+  // Initialize test suite repository with same project root as help
+  const testSuiteRepository = createTestSuiteRepository(helpProjectRoot);
 
   ipcMain.handle('recordings:index', async () => {
     try {
-      return { success: true, data: testSuiteService.getIndex() };
+      return { success: true, data: testSuiteRepository.getIndex() };
     } catch (error) {
       return {
         success: false,
@@ -664,7 +665,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   ipcMain.handle('recordings:apps', async () => {
     try {
-      return { success: true, data: testSuiteService.getApps() };
+      return { success: true, data: testSuiteRepository.getApps() };
     } catch (error) {
       return {
         success: false,
@@ -675,7 +676,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   ipcMain.handle('recordings:byApp', async (_event, appId: string) => {
     try {
-      return { success: true, data: testSuiteService.getTestSuitesByApp(appId) };
+      return { success: true, data: testSuiteRepository.getTestSuitesByApp(appId) };
     } catch (error) {
       return {
         success: false,
@@ -686,7 +687,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   ipcMain.handle('recordings:get', async (_event, appId: string, testSuiteId: string) => {
     try {
-      return { success: true, data: testSuiteService.getTestSuite(appId, testSuiteId) };
+      return { success: true, data: testSuiteRepository.getTestSuite(appId, testSuiteId) };
     } catch (error) {
       return {
         success: false,
@@ -697,7 +698,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   ipcMain.handle('recordings:getByPath', async (_event, filePath: string) => {
     try {
-      return { success: true, data: testSuiteService.getTestSuiteByPath(filePath) };
+      return { success: true, data: testSuiteRepository.getTestSuiteByPath(filePath) };
     } catch (error) {
       return {
         success: false,
@@ -706,11 +707,28 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   });
 
+  ipcMain.handle(
+    'recordings:save',
+    async (_event, appId: string, testSuiteId: string, testSuite: TestSuite) => {
+      try {
+        testSuiteRepository.saveTestSuite(appId, testSuiteId, testSuite);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: { message: extractErrorMessage(error) },
+        };
+      }
+    }
+  );
+
   // ==========================================================================
   // Debug Session Handlers (Step-through Debugger)
   // ==========================================================================
 
   const sessionRegistry = getSessionRegistry();
+  // Configure registry with repository for loading test suites
+  sessionRegistry.setRepository(testSuiteRepository, helpProjectRoot);
   let debugEventListener: ((sessionId: string, event: PlaybackEvent) => void) | null = null;
 
   // Create a new debug session (runs in current Electron window)

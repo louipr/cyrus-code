@@ -6,6 +6,8 @@
  * directly from 'recordings'.
  */
 
+import type { TestSuite, TestSuiteStatus } from '../../recordings/index.js';
+
 /**
  * Entry in the recordings index for a single recording.
  */
@@ -13,17 +15,11 @@ export interface RecordingEntry {
   /** Unique identifier (e.g., "export-png") */
   id: string;
 
-  /** Relative file path from recordings directory */
-  file: string;
-
-  /** Human-readable name */
-  name: string;
-
   /** Brief description */
   description: string;
 
   /** Current status */
-  status: 'draft' | 'verified' | 'deprecated';
+  status: TestSuiteStatus;
 
   /** Tags for categorization */
   tags: string[];
@@ -36,15 +32,12 @@ export interface RecordingApp {
   /** Description of this app's recordings */
   description: string;
 
-  /** Path to shared context file */
-  context?: string;
-
   /** Recordings in this app */
   recordings: RecordingEntry[];
 }
 
 /**
- * The _index.yaml structure for discovering recordings.
+ * Index of all discovered test suites.
  */
 export interface RecordingIndex {
   /** Index format version */
@@ -58,29 +51,16 @@ export interface RecordingIndex {
 }
 
 /**
- * Tree node for hierarchical display.
- */
-export interface TestSuiteTreeNode {
-  /** Unique node ID (path-based: "app/test-suite/test-case/step-index") */
-  id: string;
-
-  /** Node type */
-  type: 'app' | 'test-suite' | 'test-case' | 'step';
-
-  /** Display label */
-  label: string;
-
-  /** Child nodes */
-  children?: TestSuiteTreeNode[];
-
-  /** Associated data */
-  data?: RecordingEntry | import('../../recordings/index.js').TestCase | import('../../recordings/index.js').TestStep;
-}
-
-/**
- * Repository interface for loading test suites.
+ * Repository interface for loading and saving test suites.
  */
 export interface TestSuiteRepository {
+  /**
+   * Initialize the repository by discovering and loading all test suites.
+   * Provides fail-fast behavior - throws if any file is invalid.
+   * Call at application startup.
+   */
+  initialize(): void;
+
   /** Get the test suites index */
   getIndex(): RecordingIndex;
 
@@ -91,10 +71,13 @@ export interface TestSuiteRepository {
   getTestSuitesByApp(appId: string): RecordingEntry[];
 
   /** Get a specific test suite */
-  getTestSuite(appId: string, testSuiteId: string): import('../../recordings/index.js').TestSuite | null;
+  getTestSuite(appId: string, testSuiteId: string): TestSuite | null;
 
   /** Get test suite by file path */
-  getTestSuiteByPath(filePath: string): import('../../recordings/index.js').TestSuite | null;
+  getTestSuiteByPath(filePath: string): TestSuite | null;
+
+  /** Save a test suite to its YAML file */
+  saveTestSuite(appId: string, testSuiteId: string, testSuite: TestSuite): void;
 
   /** Clear cached data */
   clearCache(): void;
