@@ -197,7 +197,6 @@ export const ComponentSymbolSchema = z.object({
 
   // Versioning
   version: SemVerSchema,
-  compatibleWith: z.array(VersionRangeSchema).optional(),
 
   // Location
   sourceLocation: SourceLocationSchema.optional(),

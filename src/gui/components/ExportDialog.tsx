@@ -11,6 +11,7 @@ import { apiClient } from '../api-client';
 import { extractErrorMessage } from '../../infrastructure/errors';
 import { FileTree } from './FileTree';
 import { GenerationBatchResult } from './GenerationResult';
+import { Z_INDEX_MODAL } from '../constants/colors';
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -227,7 +228,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: Z_INDEX_MODAL,
   },
   dialog: {
     backgroundColor: '#1e1e1e',

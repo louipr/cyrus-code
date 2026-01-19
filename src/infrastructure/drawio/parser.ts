@@ -17,6 +17,12 @@ import type {
   RelationshipType,
   InjectionKind,
 } from './schema.js';
+import {
+  DEFAULT_ELEMENT_WIDTH,
+  DEFAULT_ELEMENT_HEIGHT,
+  DEFAULT_POSITION_X,
+  DEFAULT_POSITION_Y,
+} from './constants.js';
 
 /**
  * Raw parsed mxCell from XML.
@@ -325,13 +331,13 @@ function parseElement(obj: RawObject): DiagramElement | null {
   const level = inferLevel(obj['cyrus-level'], shapeType);
 
   const position: Position = {
-    x: obj.geometry?.x ?? 0,
-    y: obj.geometry?.y ?? 0,
+    x: obj.geometry?.x ?? DEFAULT_POSITION_X,
+    y: obj.geometry?.y ?? DEFAULT_POSITION_Y,
   };
 
   const size: Size = {
-    width: obj.geometry?.width ?? 100,
-    height: obj.geometry?.height ?? 60,
+    width: obj.geometry?.width ?? DEFAULT_ELEMENT_WIDTH,
+    height: obj.geometry?.height ?? DEFAULT_ELEMENT_HEIGHT,
   };
 
   // Extract custom properties (cyrus-* prefix)
@@ -445,10 +451,10 @@ export function parseDrawioXml(xml: string): Diagram {
       ...(cellAttrs.target ? { target: cellAttrs.target } : {}),
       ...(cellAttrs.parent ? { parent: cellAttrs.parent } : {}),
       geometry: {
-        x: parseFloat(geoAttrs.x ?? '0'),
-        y: parseFloat(geoAttrs.y ?? '0'),
-        width: parseFloat(geoAttrs.width ?? '100'),
-        height: parseFloat(geoAttrs.height ?? '60'),
+        x: parseFloat(geoAttrs.x ?? String(DEFAULT_POSITION_X)),
+        y: parseFloat(geoAttrs.y ?? String(DEFAULT_POSITION_Y)),
+        width: parseFloat(geoAttrs.width ?? String(DEFAULT_ELEMENT_WIDTH)),
+        height: parseFloat(geoAttrs.height ?? String(DEFAULT_ELEMENT_HEIGHT)),
         relative: geoAttrs.relative === '1',
       },
     };
@@ -486,10 +492,10 @@ export function parseDrawioXml(xml: string): Diagram {
       vertex: cellAttrs.vertex === '1',
       edge: cellAttrs.edge === '1',
       geometry: {
-        x: parseFloat(geoAttrs.x ?? '0'),
-        y: parseFloat(geoAttrs.y ?? '0'),
-        width: parseFloat(geoAttrs.width ?? '100'),
-        height: parseFloat(geoAttrs.height ?? '60'),
+        x: parseFloat(geoAttrs.x ?? String(DEFAULT_POSITION_X)),
+        y: parseFloat(geoAttrs.y ?? String(DEFAULT_POSITION_Y)),
+        width: parseFloat(geoAttrs.width ?? String(DEFAULT_ELEMENT_WIDTH)),
+        height: parseFloat(geoAttrs.height ?? String(DEFAULT_ELEMENT_HEIGHT)),
         relative: geoAttrs.relative === '1',
       },
     };

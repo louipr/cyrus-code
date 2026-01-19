@@ -36,7 +36,7 @@ metadata:
   tags: [smoke, diagram, drawio, c4, architecture]
   author: smoke-test
   created: "2025-01-03"
-  modified: "2025-01-04"
+  modified: "2025-01-14"
 
 context:
   app: cyrus-code
@@ -52,8 +52,8 @@ test_cases:
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
 
-      - action: wait-for
-        selector: "[data-testid='diagram-webview']"
+      - action: poll
+        condition: "!!document.querySelector('[data-testid=\"diagram-webview\"]')"
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
@@ -61,103 +61,85 @@ test_cases:
     description: Wait for Draw.io editor
     depends: [open_diagram]
     steps:
-      - action: evaluate
-        code: |
-          const webview = document.querySelector('[data-testid="diagram-webview"]');
-          if (!webview) throw new Error('Webview not found');
-
-          for (let i = 0; i < 30; i++) {
-            await new Promise(r => setTimeout(r, 500));
-            try {
-              const ready = await webview.executeJavaScript(`
-                !!(window.__cyrusEditorUi || window.editorUi || window.ui)?.editor?.graph
-              `);
-              if (ready) return { ready: true };
-            } catch (e) {}
-          }
-          throw new Error('Draw.io not ready');
+      - action: poll
+        webview: "[data-testid='diagram-webview']"
+        condition: |
+          (function() {
+            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            return !!(ui && ui.editor && ui.editor.graph);
+          })()
         timeout: 20000
+        interval: 500
         why: Wait for Draw.io's editor API to be available.
 
   - id: wait_for_editor_ready
-    description: Wait for editor to be fully ready
+    description: Wait for editor loading indicator to disappear
     depends: [wait_for_drawio]
     steps:
-      - action: evaluate
-        code: |
-          // Wait for the loading indicator to disappear
-          for (let i = 0; i < 50; i++) {
-            await new Promise(r => setTimeout(r, 200));
-            const loading = document.querySelector('[data-testid="diagram-loading"]');
-            if (!loading) {
-              return { ready: true, attempts: i + 1 };
-            }
-          }
-          throw new Error('Editor loading indicator did not disappear after 10 seconds');
+      - action: poll
+        condition: |
+          return !document.querySelector('[data-testid="diagram-loading"]');
         timeout: 15000
-        why: |
-          The React component sets isReady=true when it receives the IPC 'ready' message.
-          Wait for the loading indicator to disappear.
+        why: Wait for the React loading indicator to disappear.
 
   - id: create_c4_diagram
     description: Create C4 Context diagram
     depends: [wait_for_editor_ready]
     steps:
       - action: evaluate
+        webview: "[data-testid='diagram-webview']"
         code: |
-          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          (function() {
+            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            if (!ui || !ui.editor || !ui.editor.graph) {
+              return { error: 'Editor not ready' };
+            }
 
-          const result = await webview.executeJavaScript(`
-            (function() {
-              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
-              const graph = ui.editor.graph;
-              const model = graph.getModel();
-              const parent = graph.getDefaultParent();
+            const graph = ui.editor.graph;
+            const model = graph.getModel();
+            const parent = graph.getDefaultParent();
 
-              model.beginUpdate();
-              try {
-                graph.removeCells(graph.getChildCells(parent, true, true));
+            model.beginUpdate();
+            try {
+              graph.removeCells(graph.getChildCells(parent, true, true));
 
-                // C4 Styles
-                const personStyle = 'shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427b;strokeColor=#073763;fontColor=#ffffff;fontSize=12;';
-                const systemStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4884;fontColor=#ffffff;fontStyle=1;fontSize=14;arcSize=10;';
-                const externalStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=#666666;fontColor=#ffffff;fontStyle=1;fontSize=14;arcSize=10;dashed=1;';
-                const arrowStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;';
+              // C4 Styles
+              const personStyle = 'shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427b;strokeColor=#073763;fontColor=#ffffff;fontSize=12;';
+              const systemStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4884;fontColor=#ffffff;fontStyle=1;fontSize=14;arcSize=10;';
+              const externalStyle = 'rounded=1;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=#666666;fontColor=#ffffff;fontStyle=1;fontSize=14;arcSize=10;dashed=1;';
+              const arrowStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;';
 
-                // Title
-                const title = graph.insertVertex(parent, null, 'System Context Diagram\\ncyrus-code', 150, 10, 300, 50,
-                  'text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;fontColor=#333333;');
+              // Title
+              const title = graph.insertVertex(parent, null, 'System Context Diagram\\ncyrus-code', 150, 10, 300, 50,
+                'text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;fontColor=#333333;');
 
-                // Person: Developer
-                const developer = graph.insertVertex(parent, null, 'Developer', 50, 150, 60, 100, personStyle);
+              // Person: Developer
+              const developer = graph.insertVertex(parent, null, 'Developer', 50, 150, 60, 100, personStyle);
 
-                // Main System: cyrus-code
-                const mainSystem = graph.insertVertex(parent, null, 'cyrus-code\\n\\n[Software System]\\n\\nComponent registry and\\narchitecture visualization', 180, 120, 200, 120, systemStyle);
+              // Main System: cyrus-code
+              const mainSystem = graph.insertVertex(parent, null, 'cyrus-code\\n\\n[Software System]\\n\\nComponent registry and\\narchitecture visualization', 180, 120, 200, 120, systemStyle);
 
-                // External: Git Repository
-                const gitRepo = graph.insertVertex(parent, null, 'Git Repository\\n\\n[External System]\\n\\nStores component\\ndefinitions', 450, 80, 160, 100, externalStyle);
+              // External: Git Repository
+              const gitRepo = graph.insertVertex(parent, null, 'Git Repository\\n\\n[External System]\\n\\nStores component\\ndefinitions', 450, 80, 160, 100, externalStyle);
 
-                // External: AI Service
-                const aiService = graph.insertVertex(parent, null, 'AI Service\\n\\n[External System]\\n\\nCode generation\\nand analysis', 450, 220, 160, 100, externalStyle);
+              // External: AI Service
+              const aiService = graph.insertVertex(parent, null, 'AI Service\\n\\n[External System]\\n\\nCode generation\\nand analysis', 450, 220, 160, 100, externalStyle);
 
-                // Connections
-                graph.insertEdge(parent, null, 'Uses', developer, mainSystem, arrowStyle);
-                graph.insertEdge(parent, null, 'Reads/Writes', mainSystem, gitRepo, arrowStyle);
-                graph.insertEdge(parent, null, 'Generates code via', mainSystem, aiService, arrowStyle);
+              // Connections
+              graph.insertEdge(parent, null, 'Uses', developer, mainSystem, arrowStyle);
+              graph.insertEdge(parent, null, 'Reads/Writes', mainSystem, gitRepo, arrowStyle);
+              graph.insertEdge(parent, null, 'Generates code via', mainSystem, aiService, arrowStyle);
 
-                graph.fit();
-                graph.center();
+              graph.fit();
+              graph.center();
 
-                return { success: true, elements: 5, connections: 3 };
-              } finally {
-                model.endUpdate();
-              }
-            })()
-          `);
-
-          return result;
+              return { success: true, elements: 5, connections: 3 };
+            } finally {
+              model.endUpdate();
+            }
+          })()
         timeout: 10000
-        returns: "{ success: true, elements: 5 }"
+        returns: "{ success: true, elements: 5, connections: 3 }"
         why: Create a C4 Context diagram showing cyrus-code with Developer, Git, and AI Service.
 
   - id: verify_c4
@@ -165,31 +147,29 @@ test_cases:
     depends: [create_c4_diagram]
     steps:
       - action: evaluate
+        webview: "[data-testid='diagram-webview']"
         code: |
-          const webview = document.querySelector('[data-testid="diagram-webview"]');
+          (function() {
+            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            if (!ui || !ui.editor || !ui.editor.graph) {
+              return { error: 'Editor not ready' };
+            }
 
-          const result = await webview.executeJavaScript(`
-            (function() {
-              const graph = (window.__cyrusEditorUi || window.editorUi || window.ui).editor.graph;
-              const cells = graph.getChildCells(graph.getDefaultParent(), true, true);
-              let vertices = 0, edges = 0;
-              for (const cell of cells) {
-                if (cell.vertex) vertices++;
-                if (cell.edge) edges++;
-              }
-              return { verified: vertices >= 4 && edges >= 3, vertices, edges };
-            })()
-          `);
+            const graph = ui.editor.graph;
+            const cells = graph.getChildCells(graph.getDefaultParent(), true, true);
 
-          if (!result.verified) throw new Error('C4 diagram verification failed');
-          return result;
+            let vertices = 0, edges = 0;
+            for (const cell of cells) {
+              if (cell.vertex) vertices++;
+              if (cell.edge) edges++;
+            }
+
+            return {
+              verified: vertices >= 4 && edges >= 3,
+              vertices,
+              edges
+            };
+          })()
         timeout: 5000
+        returns: "{ verified: true, vertices: 5, edges: 3 }"
         why: Verify the C4 diagram has the expected elements.
-
-# Usage example in tests:
-#
-# const player = new RecordingPlayer(webContents, recording);
-# const result = await player.play();
-#
-# expect(result.success).toBe(true);
-# // C4 diagram now contains 5 elements and 3 connections

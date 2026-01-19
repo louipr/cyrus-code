@@ -5,6 +5,7 @@
  */
 
 import type React from 'react';
+import { Z_INDEX_MODAL } from '../../constants/colors';
 
 export const styles: Record<string, React.CSSProperties> = {
   overlay: {
@@ -17,7 +18,7 @@ export const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: Z_INDEX_MODAL,
   },
   dialog: {
     backgroundColor: '#252526',

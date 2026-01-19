@@ -107,7 +107,6 @@ interface SymbolData {
   updatedAt: string;
   sourceLocation?: ComponentSymbol['sourceLocation'];
   contains?: string[];
-  compatibleWith?: ComponentSymbol['compatibleWith'];
   statusInfo?: Omit<NonNullable<ComponentSymbol['statusInfo']>, 'updatedAt'> & { updatedAt: string };
   generationMeta?: Omit<NonNullable<ComponentSymbol['generationMeta']>, 'generatedAt'> & {
     generatedAt: string;
@@ -333,9 +332,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
     if (symbol.contains?.length) {
       data.contains = symbol.contains;
     }
-    if (symbol.compatibleWith?.length) {
-      data.compatibleWith = symbol.compatibleWith;
-    }
     if (symbol.statusInfo) {
       const { updatedAt, ...rest } = symbol.statusInfo;
       data.statusInfo = {
@@ -406,9 +402,6 @@ export class SqliteSymbolRepository implements ISymbolRepository {
     }
     if (data.contains?.length) {
       symbol.contains = data.contains;
-    }
-    if (data.compatibleWith?.length) {
-      symbol.compatibleWith = data.compatibleWith;
     }
     if (data.statusInfo) {
       symbol.statusInfo = {

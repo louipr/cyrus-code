@@ -22,3 +22,11 @@ export {
   type ExportHistoryRecord,
   type ExportHistoryRepository,
 } from './export-history-repository.js';
+export {
+  YamlTestSuiteRepository,
+  createTestSuiteRepository,
+  type TestSuiteEntry,
+  type TestSuiteGroup,
+  type TestSuiteIndex,
+  type TestSuiteRepository,
+} from './test-suite-repository.js';

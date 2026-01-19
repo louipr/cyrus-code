@@ -1,9 +1,7 @@
 /**
  * API Client
  *
- * Wrapper around the Electron IPC bridge (window.cyrus).
- * This abstraction allows easy migration to HTTP if cyrus-code
- * becomes a web application in the future.
+ * Type-safe wrapper around the Electron IPC bridge (window.cyrus).
  */
 
 import type {
@@ -31,13 +29,13 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../domain/help/index';
-import type { RecordingIndex, RecordingEntry } from '../domain/recordings/index';
+import type { TestSuiteIndex, TestSuiteEntry } from '../repositories/test-suite-repository';
 import type {
   TestSuite,
   PlaybackConfig,
   PlaybackSnapshot,
   PlaybackEvent,
-} from '../recordings';
+} from '../macro';
 import type { ExportHistoryRecord } from '../repositories/export-history-repository';
 
 // Re-export for components that import from api-client
@@ -122,6 +120,8 @@ interface CyrusAPI {
       source?: 'ui' | 'test' | 'api';
       sourcePath?: string;
     }) => Promise<ApiResponse<{ size: number }>>;
+    getHomeDir: () => Promise<ApiResponse<string>>;
+    getDownloadsDir: () => Promise<ApiResponse<string>>;
   };
   exportHistory: {
     getRecent: (limit?: number) => Promise<ApiResponse<ExportHistoryRecord[]>>;
@@ -156,9 +156,9 @@ interface CyrusAPI {
     onExportPng: (callback: () => void) => void;
   };
   recordings: {
-    getIndex: () => Promise<ApiResponse<RecordingIndex>>;
+    getIndex: () => Promise<ApiResponse<TestSuiteIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
-    getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
+    getByApp: (appId: string) => Promise<ApiResponse<TestSuiteEntry[]>>;
     get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
     save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
@@ -183,145 +183,6 @@ declare global {
 }
 
 /**
- * Check if running in Electron environment with cyrus API available.
+ * API client instance - direct reference to Electron IPC bridge.
  */
-function isCyrusAvailable(): boolean {
-  return typeof window !== 'undefined' && 'cyrus' in window;
-}
-
-/**
- * Create a mock API for development/testing outside Electron.
- */
-function createMockApi(): CyrusAPI {
-  const mockResponse = <T>(data: T): Promise<ApiResponse<T>> =>
-    Promise.resolve({ success: true, data });
-
-  const mockError = (message: string): Promise<ApiResponse<never>> =>
-    Promise.resolve({
-      success: false,
-      error: { code: 'MOCK_ERROR', message },
-    });
-
-  return {
-    symbols: {
-      list: () =>
-        mockResponse({
-          items: [],
-          total: 0,
-          limit: 100,
-          offset: 0,
-        }),
-      get: () => mockError('Not connected to backend'),
-      search: () => mockResponse([]),
-      resolve: () => mockError('Not connected to backend'),
-      getVersions: () => mockResponse([]),
-      register: () => mockError('Not connected to backend'),
-      remove: () => mockResponse(undefined),
-    },
-    relationships: {
-      findContains: () => mockResponse([]),
-      findContainedBy: () => mockResponse(null),
-      getDependents: () => mockResponse([]),
-      getDependencies: () => mockResponse([]),
-    },
-    graph: {
-      build: () => mockResponse({ nodes: [], edges: [], topologicalOrder: [], cycles: [] }),
-      detectCycles: () => mockResponse([]),
-      getTopologicalOrder: () => mockResponse([]),
-      getStats: () => mockResponse({
-        nodeCount: 0,
-        edgeCount: 0,
-        rootCount: 0,
-        leafCount: 0,
-        connectedComponentCount: 0,
-        hasCycles: false,
-        maxDepth: 0,
-      }),
-    },
-    validation: {
-      validate: () => mockResponse({ valid: true, errors: [], warnings: [] }),
-      validateSymbol: () => mockResponse({ valid: true, errors: [], warnings: [] }),
-      checkCircular: () => mockResponse([]),
-    },
-    status: {
-      findUnreachable: () => mockResponse([]),
-      findUntested: () => mockResponse([]),
-    },
-    synthesizer: {
-      generate: () => mockError('Not connected to backend'),
-      generateMultiple: () => mockError('Not connected to backend'),
-      generateAll: () => mockError('Not connected to backend'),
-      preview: () => mockError('Not connected to backend'),
-      listGeneratable: () => mockResponse([]),
-      canGenerate: () => mockResponse(false),
-      hasUserImplementation: () => mockResponse(false),
-    },
-    dialog: {
-      selectDirectory: () => mockResponse(null),
-    },
-    shell: {
-      openPath: () => mockError('Not connected to backend'),
-      showItemInFolder: () => mockError('Not connected to backend'),
-      saveFile: () => mockResponse(null),
-      showSaveDialog: () => mockResponse(null),
-      writeFile: () => mockError('Not connected to backend'),
-    },
-    exportHistory: {
-      getRecent: () => mockResponse([]),
-      get: () => mockResponse(null),
-      delete: () => mockResponse(false),
-      clear: () => mockResponse(undefined),
-    },
-    help: {
-      getCategories: () => mockResponse([]),
-      getGroups: () => mockResponse([]),
-      getTopics: () => mockResponse([]),
-      getC4Hierarchy: () => mockResponse(null),
-      getByCategory: () => mockResponse([]),
-      getTopic: () => mockResponse(undefined),
-      search: () => mockResponse([]),
-      getTopicContent: () => mockResponse('# Help not available\n\nNot connected to backend.'),
-      getTopicSubsections: () => mockResponse([]),
-      getAppVersion: () => mockResponse('0.1.0'),
-      onOpen: () => {},
-      onSearch: () => {},
-      onTopic: () => {},
-      onAbout: () => {},
-    },
-    diagram: {
-      getUrl: () => Promise.resolve('http://localhost:0/index.html'),
-      getPreloadPath: () => Promise.resolve(''),
-      open: () => mockResponse(null),
-      save: () => mockError('Not connected to backend'),
-      saveAs: () => mockResponse(null),
-      onNew: () => {},
-      onOpen: () => {},
-      onExportPng: () => {},
-    },
-    recordings: {
-      getIndex: () => mockResponse({ version: '1.0', description: 'Mock', recordings: {} }),
-      getApps: () => mockResponse([]),
-      getByApp: () => mockResponse([]),
-      get: () => mockResponse(null),
-      getByPath: () => mockResponse(null),
-      save: () => mockError('Not connected to backend'),
-      debug: {
-        create: () => mockError('Not connected to backend'),
-        start: () => mockError('Not connected to backend'),
-        step: () => mockError('Not connected to backend'),
-        pause: () => mockError('Not connected to backend'),
-        resume: () => mockError('Not connected to backend'),
-        stop: () => mockError('Not connected to backend'),
-        snapshot: () => mockError('Not connected to backend'),
-        subscribe: () => mockError('Not connected to backend'),
-        onEvent: () => {},
-      },
-    },
-  };
-}
-
-/**
- * API client instance.
- * Uses window.cyrus when available (Electron), falls back to mock for development.
- */
-export const apiClient: CyrusAPI = isCyrusAvailable() ? window.cyrus : createMockApi();
+export const apiClient: CyrusAPI = window.cyrus;

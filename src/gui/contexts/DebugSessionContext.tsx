@@ -7,35 +7,34 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useDebugSession } from '../hooks/useDebugSession';
-import type { DebugSessionHookState, DebugSessionCommands } from '../hooks/useDebugSession';
-import type { TestSuite } from '../../recordings';
+import type { DebugSessionCommands } from '../hooks/useDebugSession';
+import type { TestSuite, PlaybackState, PlaybackPosition, StepResult } from '../../macro';
 
 /**
- * Extended context that includes test suite metadata.
+ * Flattened context API - no nested state object.
  */
-interface DebugSessionContextValue {
-  /** Debug session state */
-  state: DebugSessionHookState;
+export interface DebugSessionContextValue {
+  // Playback state (flattened from hook)
+  sessionId: string | null;
+  playbackState: PlaybackState;
+  position: PlaybackPosition | null;
+  stepResults: Map<string, StepResult>;
+  error: string | null;
+  isActive: boolean;
+  isRunning: boolean;
+  isPaused: boolean;
 
-  /** Debug session commands */
+  // Commands
   commands: DebugSessionCommands;
 
-  /** Currently debugging test suite */
+  // Context-added metadata
   testSuite: TestSuite | null;
-
-  /** App ID for current debug session */
   appId: string | null;
-
-  /** Test suite ID for current debug session */
   testSuiteId: string | null;
 
-  /** Start a debug session for a test suite */
+  // Context actions
   startDebug: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<void>;
-
-  /** Update the test suite (e.g., after editing parameters) */
   updateTestSuite: (testSuite: TestSuite) => void;
-
-  /** Clear the current debug session */
   clearDebug: () => void;
 }
 
@@ -45,7 +44,7 @@ const DebugSessionContext = createContext<DebugSessionContextValue | null>(null)
  * Provider for debug session context.
  */
 export function DebugSessionProvider({ children }: { children: React.ReactNode }) {
-  const [state, commands] = useDebugSession();
+  const [hookState, commands] = useDebugSession();
   const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
   const [testSuiteId, setTestSuiteId] = useState<string | null>(null);
@@ -71,11 +70,22 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const value: DebugSessionContextValue = {
-    state,
+    // Flatten hook state
+    sessionId: hookState.sessionId,
+    playbackState: hookState.playbackState,
+    position: hookState.position,
+    stepResults: hookState.stepResults,
+    error: hookState.error,
+    isActive: hookState.isActive,
+    isRunning: hookState.isRunning,
+    isPaused: hookState.isPaused,
+    // Commands
     commands,
+    // Context metadata
     testSuite,
     appId,
     testSuiteId,
+    // Context actions
     startDebug,
     updateTestSuite,
     clearDebug,

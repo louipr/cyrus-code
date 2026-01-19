@@ -8,7 +8,7 @@ Proposed
 
 ### Problem
 
-The cyrus-code GUI has evolved with view-specific layouts (RecordingsView, DiagramView, BrowserView) that duplicate panel structure and state management. Each view independently implements collapsible sidebars, resize handles, and content areas, leading to:
+The cyrus-code GUI has evolved with view-specific layouts (MacroView, DiagramView, BrowserView) that duplicate panel structure and state management. Each view independently implements collapsible sidebars, resize handles, and content areas, leading to:
 
 1. **Code Duplication**: Similar panel logic repeated across views
 2. **Inconsistent UX**: Different resize behaviors, collapse animations
@@ -128,7 +128,7 @@ interface PanelContextValue {
 // Usage in App.tsx
 <PanelLayout storageKey="main-layout">
   <Panel position="left" defaultWidth={250} collapsible defaultCollapsed={viewHidesSidebar}>
-    <RecordingTree {...props} />
+    <TestSuiteTree {...props} />
   </Panel>
 
   <Panel position="main">
@@ -220,7 +220,7 @@ type PanelAction =
 
 ### Phase 2: Migration
 
-1. Migrate RecordingsView to use PanelLayout
+1. Migrate MacroView to use PanelLayout
 2. Migrate DiagramView
 3. Remove view-specific panel logic from App.tsx
 4. Add localStorage persistence

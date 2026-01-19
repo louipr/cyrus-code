@@ -41,3 +41,11 @@ export {
   inferLevel,
   inferRelationshipType,
 } from './parser.js';
+
+// Constants exports
+export {
+  DEFAULT_ELEMENT_WIDTH,
+  DEFAULT_ELEMENT_HEIGHT,
+  DEFAULT_POSITION_X,
+  DEFAULT_POSITION_Y,
+} from './constants.js';

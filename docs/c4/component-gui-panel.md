@@ -147,10 +147,10 @@ interface PanelContextValue {
 ### Usage Example
 
 ```tsx
-// RecordingsView with panel layout
-<PanelLayout storageKey="recordings-layout">
+// MacroView with panel layout
+<PanelLayout storageKey="macro-layout">
   <Panel position="left" defaultWidth={250} collapsible>
-    <RecordingTree {...treeProps} />
+    <TestSuiteTree {...treeProps} />
   </Panel>
 
   <Panel position="main">
@@ -196,4 +196,4 @@ interface PanelContextValue {
 
 - **Status**: 🔮 Planned (see [ADR-014](../adr/014-panel-architecture.md))
 - **Dependencies**: React Context API, CSS Grid
-- **Migration**: Will replace ad-hoc panel logic in RecordingsView, App.tsx
+- **Migration**: Will replace ad-hoc panel logic in MacroView, App.tsx

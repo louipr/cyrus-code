@@ -3,26 +3,30 @@
  *
  * Compact debug session controls for embedding in sidebars/panels.
  * Shows status, progress, and control buttons without the floating overlay chrome.
+ * Uses debug session context directly.
  */
 
 import React from 'react';
-import type { DebugSessionHookState, DebugSessionCommands } from '../../hooks/useDebugSession';
-import type { TestSuite } from '../../../recordings';
+import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
+import type { PlaybackState, TestSuite } from '../../../macro';
 
 interface DebugControlsProps {
-  state: DebugSessionHookState;
-  commands: DebugSessionCommands;
   testSuite: TestSuite | null;
   onClose: () => void;
 }
 
-export function DebugControls({
-  state,
-  commands,
-  testSuite,
-  onClose,
-}: DebugControlsProps) {
-  const { isActive, isRunning, isPaused, error, sessionId } = state;
+export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
+  const {
+    sessionId,
+    playbackState,
+    position,
+    stepResults,
+    error,
+    isActive,
+    isRunning,
+    isPaused,
+    commands,
+  } = useDebugSessionContext();
 
   // Don't render if no session
   if (!sessionId) {
@@ -30,10 +34,9 @@ export function DebugControls({
   }
 
   // Derive status
-  const hasFailedSteps = Array.from(state.stepResults.values()).some((r) => !r.success);
+  const hasFailedSteps = Array.from(stepResults.values()).some((r) => !r.success);
   const allStepsPassed =
-    state.stepResults.size > 0 &&
-    Array.from(state.stepResults.values()).every((r) => r.success);
+    stepResults.size > 0 && Array.from(stepResults.values()).every((r) => r.success);
   const executionStatus = hasFailedSteps ? 'FAILED' : allStepsPassed ? 'PASSED' : 'INCOMPLETE';
 
   const handleStop = () => {
@@ -42,7 +45,7 @@ export function DebugControls({
   };
 
   // Completed state
-  if (state.state === 'completed') {
+  if (playbackState === 'completed') {
     const isPassed = executionStatus === 'PASSED';
     return (
       <div style={styles.container} data-testid="debug-controls">
@@ -84,11 +87,11 @@ export function DebugControls({
 
       {/* Status row */}
       <div style={styles.statusRow}>
-        <span style={getStatusDotStyle(state.state)} />
-        <span style={styles.statusText}>{getStatusLabel(state.state)}</span>
-        {state.position && testSuite && (
+        <span style={getStatusDotStyle(playbackState)} />
+        <span style={styles.statusText}>{getStatusLabel(playbackState)}</span>
+        {position && testSuite && (
           <span style={styles.positionText}>
-            Test Case {state.position.testCaseIndex + 1}/{testSuite.test_cases.length}
+            Test Case {position.testCaseIndex + 1}/{testSuite.test_cases.length}
           </span>
         )}
       </div>
@@ -97,9 +100,9 @@ export function DebugControls({
       {testSuite && testSuite.test_cases.length > 0 && (
         <div style={styles.progressBar}>
           {testSuite.test_cases.map((testCase, idx) => {
-            const isComplete = state.position ? idx < state.position.testCaseIndex : false;
-            const isCurrent = state.position ? idx === state.position.testCaseIndex : false;
-            const hasFailed = Array.from(state.stepResults.entries()).some(
+            const isComplete = position ? idx < position.testCaseIndex : false;
+            const isCurrent = position ? idx === position.testCaseIndex : false;
+            const hasFailed = Array.from(stepResults.entries()).some(
               ([key, result]) => key.startsWith(`${idx}:`) && !result.success
             );
             return (
@@ -123,17 +126,18 @@ export function DebugControls({
       )}
 
       {/* Current step info */}
-      {state.position && testSuite && (
+      {position && testSuite && (
         <div style={styles.currentStep}>
           <span style={styles.stepBadge}>
-            Step {state.position.stepIndex + 1}/{testSuite.test_cases[state.position.testCaseIndex]?.steps.length || '?'}
+            Step {position.stepIndex + 1}/
+            {testSuite.test_cases[position.testCaseIndex]?.steps.length || '?'}
           </span>
         </div>
       )}
 
       {/* Control buttons */}
       <div style={styles.buttons}>
-        {state.state === 'ready' && (
+        {playbackState === 'ready' && (
           <button style={styles.button} onClick={() => commands.start()} title="Start">
             ▶ Start
           </button>
@@ -166,7 +170,7 @@ export function DebugControls({
   );
 }
 
-function getStatusLabel(state: DebugSessionHookState['state']): string {
+function getStatusLabel(state: PlaybackState): string {
   switch (state) {
     case 'idle':
       return 'Idle';
@@ -185,7 +189,7 @@ function getStatusLabel(state: DebugSessionHookState['state']): string {
   }
 }
 
-function getStatusDotStyle(sessionState: string): React.CSSProperties {
+function getStatusDotStyle(sessionState: PlaybackState): React.CSSProperties {
   return {
     width: '8px',
     height: '8px',

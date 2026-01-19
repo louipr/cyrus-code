@@ -12,18 +12,18 @@ import type {
   PlaybackEvent,
   PlaybackPosition,
   StepResult,
-} from '../../recordings';
+} from '../../macro';
 import { apiClient } from '../api-client';
 
 /**
  * Debug session state exposed by the hook.
  */
-export interface DebugSessionHookState {
+interface DebugSessionHookState {
   /** Current session ID (null if no session) */
   sessionId: string | null;
 
-  /** Current session state */
-  state: PlaybackState;
+  /** Current playback state */
+  playbackState: PlaybackState;
 
   /** Current execution position */
   position: PlaybackPosition | null;
@@ -218,7 +218,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
 
   const hookState: DebugSessionHookState = {
     sessionId,
-    state,
+    playbackState: state,
     position,
     stepResults,
     error,

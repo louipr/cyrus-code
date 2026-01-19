@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ComponentSymbolDTO, PreviewResultDTO, GenerationResultDTO } from '../../api/types';
 import { apiClient } from '../api-client';
+import { Z_INDEX_MODAL } from '../constants/colors';
 
 interface GenerateButtonProps {
   component: ComponentSymbolDTO;
@@ -286,7 +287,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: Z_INDEX_MODAL,
   },
   modalContent: {
     backgroundColor: '#1e1e1e',

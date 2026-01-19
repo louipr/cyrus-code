@@ -40,8 +40,8 @@ import type {
   PlaybackConfig,
   PlaybackSnapshot,
   PlaybackEvent,
-} from '../src/recordings/index.js';
-import type { RecordingIndex, RecordingEntry } from '../src/domain/recordings/index.js';
+} from '../src/macro/index.js';
+import type { TestSuiteIndex, TestSuiteEntry } from '../src/repositories/index.js';
 import type { ExportHistoryRecord } from '../src/repositories/index.js';
 
 /**
@@ -124,6 +124,8 @@ export interface CyrusAPI {
       source?: 'ui' | 'test' | 'api';
       sourcePath?: string;
     }) => Promise<ApiResponse<{ size: number }>>;
+    getHomeDir: () => Promise<ApiResponse<string>>;
+    getDownloadsDir: () => Promise<ApiResponse<string>>;
   };
   // Export history operations
   exportHistory: {
@@ -160,11 +162,11 @@ export interface CyrusAPI {
     onOpen: (callback: (path: string, xml: string) => void) => void;
     onExportPng: (callback: () => void) => void;
   };
-  // Recording operations
+  // Macro operations (test suite record/playback)
   recordings: {
-    getIndex: () => Promise<ApiResponse<RecordingIndex>>;
+    getIndex: () => Promise<ApiResponse<TestSuiteIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
-    getByApp: (appId: string) => Promise<ApiResponse<RecordingEntry[]>>;
+    getByApp: (appId: string) => Promise<ApiResponse<TestSuiteEntry[]>>;
     get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
     getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
     save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
@@ -236,6 +238,8 @@ const cyrusAPI: CyrusAPI = {
     saveFile: (options) => ipcRenderer.invoke('shell:saveFile', options),
     showSaveDialog: (options) => ipcRenderer.invoke('shell:showSaveDialog', options),
     writeFile: (options) => ipcRenderer.invoke('shell:writeFile', options),
+    getHomeDir: () => ipcRenderer.invoke('shell:getHomeDir'),
+    getDownloadsDir: () => ipcRenderer.invoke('shell:getDownloadsDir'),
   },
   exportHistory: {
     getRecent: (limit) => ipcRenderer.invoke('exportHistory:getRecent', limit),
@@ -311,9 +315,137 @@ const cyrusAPI: CyrusAPI = {
 
 contextBridge.exposeInMainWorld('cyrus', cyrusAPI);
 
+// ============================================================================
+// Test Runner API - Real code, no templates
+// ============================================================================
+
+const POLL_INTERVAL = 100;
+
+/**
+ * Poll until an element is found, then execute action.
+ */
+function pollForElement(
+  selector: string,
+  timeout: number,
+  action: (el: Element) => unknown
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    function poll() {
+      const el = document.querySelector(selector);
+      if (el) {
+        resolve(action(el));
+      } else if (Date.now() - startTime > timeout) {
+        reject(new Error(`Element not found: ${selector}`));
+      } else {
+        setTimeout(poll, POLL_INTERVAL);
+      }
+    }
+    poll();
+  });
+}
+
+/**
+ * Test runner API exposed to renderer.
+ * Main process calls these via executeJavaScript('window.__testRunner.click(...)')
+ */
+const testRunnerAPI = {
+  click: (selector: string, timeout: number) =>
+    pollForElement(selector, timeout, (el) => {
+      (el as HTMLElement).click();
+      return { clicked: true };
+    }),
+
+  clickByText: (selector: string, text: string, timeout: number) =>
+    new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      function poll() {
+        const elements = document.querySelectorAll(selector);
+        for (const el of elements) {
+          if (el.textContent?.includes(text)) {
+            (el as HTMLElement).click();
+            resolve({ clicked: true, text: el.textContent });
+            return;
+          }
+        }
+        if (Date.now() - startTime > timeout) {
+          reject(new Error(`Element not found with text "${text}": ${selector}`));
+        } else {
+          setTimeout(poll, POLL_INTERVAL);
+        }
+      }
+      poll();
+    }),
+
+  type: (selector: string, text: string, timeout: number) =>
+    pollForElement(selector, timeout, (el) => {
+      const input = el as HTMLInputElement;
+      input.focus();
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return { typed: true };
+    }),
+
+  hover: (selector: string, timeout: number) =>
+    pollForElement(selector, timeout, (el) => {
+      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      return { hovered: true };
+    }),
+
+  assert: (selector: string, shouldExist: boolean, timeout: number) =>
+    new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      function check() {
+        const el = document.querySelector(selector);
+        const exists = el !== null;
+        if (shouldExist && exists) {
+          resolve({ asserted: true, exists: true });
+        } else if (!shouldExist && !exists) {
+          resolve({ asserted: true, exists: false });
+        } else if (Date.now() - startTime > timeout) {
+          reject(new Error(
+            shouldExist
+              ? `Assert failed: element not found: ${selector}`
+              : `Assert failed: element should not exist: ${selector}`
+          ));
+        } else {
+          setTimeout(check, POLL_INTERVAL);
+        }
+      }
+      check();
+    }),
+
+  getBounds: (selector: string) => {
+    const el = document.querySelector(selector);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return {
+      x: Math.round(rect.x),
+      y: Math.round(rect.y),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    };
+  },
+
+  keyboard: (key: string) => {
+    const event = new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.activeElement?.dispatchEvent(event);
+    return { key };
+  },
+};
+
+contextBridge.exposeInMainWorld('__testRunner', testRunnerAPI);
+
 // Type augmentation for window.cyrus
 declare global {
   interface Window {
     cyrus: CyrusAPI;
+    __testRunner: typeof testRunnerAPI;
   }
 }

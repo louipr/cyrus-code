@@ -9,7 +9,7 @@ Internal structure of the Test Suite Visualization and Step-Through Debugger sys
 ```mermaid
 flowchart TD
     subgraph renderer ["Renderer Process (GUI)"]
-        tree["RecordingTree<br/><small>Test Suite Navigator</small>"]
+        tree["TestSuiteTree<br/><small>Test Suite Navigator</small>"]
         graph["TestCaseGraph<br/><small>DAG Visualization</small>"]
         detail["TestCaseDetail<br/><small>Description Display</small>"]
         step["StepDetail<br/><small>Action Details</small>"]
@@ -27,7 +27,7 @@ flowchart TD
 
     subgraph data ["Data Layer"]
         yaml["*.suite.yaml<br/><small>Test Definitions</small>"]
-        types["recording-types.ts<br/><small>Schema</small>"]
+        types["test-suite-types.ts<br/><small>Schema</small>"]
     end
 
     tree -->|"selects"| graph
@@ -65,22 +65,21 @@ flowchart TD
 
 | Component | Responsibility | Location |
 |-----------|----------------|----------|
-| **RecordingTree** | Hierarchical test suite navigator | `src/gui/components/recordings/RecordingTree.tsx` |
-| **TestCaseGraph** | DAG visualization with expandable nodes | `src/gui/components/recordings/TestCaseGraph.tsx` |
-| **TestCaseDetail** | Displays test case description and metadata | `src/gui/components/recordings/TestCaseDetail.tsx` |
-| **StepDetail** | Shows step action, selector, and `why` explanation | `src/gui/components/recordings/StepDetail.tsx` |
+| **TestSuiteTree** | Hierarchical test suite navigator | `src/gui/components/macro/TestSuiteTree.tsx` |
+| **TestCaseGraph** | DAG visualization with expandable nodes | `src/gui/components/macro/TestCaseGraph.tsx` |
+| **TestCaseDetail** | Displays test case description and metadata | `src/gui/components/macro/TestCaseDetail.tsx` |
+| **StepDetail** | Shows step action, selector, and `why` explanation | `src/gui/components/macro/StepDetail.tsx` |
 | **DebugControls** | Step/Pause/Resume/Stop buttons | `src/gui/components/debug/DebugControls.tsx` |
-| **StepResultOverlay** | Real-time result/error display | `src/gui/components/recordings/StepResultOverlay.tsx` |
+| **StepResultOverlay** | Real-time result/error display | `src/gui/components/macro/StepResultOverlay.tsx` |
 | **useDebugSession** | React hook for debug state subscription | `src/gui/hooks/useDebugSession.ts` |
 
 ### Backend Components (Main Process)
 
 | Component | Responsibility | Location |
 |-----------|----------------|----------|
-| **InAppSession** | Manages execution state, emits IPC events | `src/recordings/step-executor/in-app-session.ts` |
-| **InAppExecutor** | Executes steps via `webContents.executeJavaScript()` | `src/recordings/step-executor/in-app-executor.ts` |
-| **SessionManager** | Singleton for session lifecycle | `src/recordings/step-executor/session-manager.ts` |
-| **TestSuitePlayer** | Loads and validates YAML test suites | `src/recordings/player.ts` |
+| **PlaybackSession** | Manages execution state, emits IPC events | `src/macro/session.ts` |
+| **TestSuitePlayer** | Executes steps via `webContents.executeJavaScript()` | `src/macro/player.ts` |
+| **SessionRegistry** | Singleton for session lifecycle | `src/macro/registry.ts` |
 
 ## IPC Protocol
 

@@ -23,6 +23,8 @@ export interface PanelProps {
   children: React.ReactNode;
   /** Header title (shown when collapsed) */
   title?: string;
+  /** Actions rendered in header between title and collapse icon */
+  headerActions?: React.ReactNode;
   /** Test ID for E2E tests */
   testId?: string;
 }
@@ -35,6 +37,7 @@ export function Panel({
   defaultCollapsed = false,
   children,
   title,
+  headerActions,
   testId,
 }: PanelProps): React.ReactElement {
   const { registerPanel, getPanelState, togglePanel, setCurrentPanelId } = usePanelContext();
@@ -86,12 +89,27 @@ export function Panel({
       {collapsible && title && (
         <div
           style={styles.header}
-          onClick={() => togglePanel(id)}
-          title={`Collapse ${title}`}
           data-testid={testId ? `${testId}-header` : `panel-${id}-header`}
         >
-          <span style={styles.headerTitle}>{title}</span>
-          <span style={styles.collapseIcon}>{position === 'left' ? '\u00AB' : '\u00BB'}</span>
+          <span
+            style={styles.headerTitle}
+            onClick={() => togglePanel(id)}
+            title={`Collapse ${title}`}
+          >
+            {title}
+          </span>
+          {headerActions && (
+            <div style={styles.headerActions} onClick={(e) => e.stopPropagation()}>
+              {headerActions}
+            </div>
+          )}
+          <span
+            style={styles.collapseIcon}
+            onClick={() => togglePanel(id)}
+            title={`Collapse ${title}`}
+          >
+            {position === 'left' ? '\u00AB' : '\u00BB'}
+          </span>
         </div>
       )}
       <div style={styles.content}>{children}</div>
@@ -117,12 +135,12 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '8px 12px',
+    gap: '8px',
+    padding: '6px 12px',
     borderBottom: '1px solid #3c3c3c',
-    cursor: 'pointer',
     userSelect: 'none',
     backgroundColor: '#252526',
+    minHeight: '32px',
   },
   headerTitle: {
     fontSize: '11px',
@@ -130,10 +148,22 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#cccccc',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2px',
+    flex: 1,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   collapseIcon: {
     fontSize: '14px',
     color: '#888',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   content: {
     flex: 1,

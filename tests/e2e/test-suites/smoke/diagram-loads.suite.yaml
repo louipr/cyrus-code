@@ -26,8 +26,8 @@ test_cases:
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
 
-      - action: wait-for
-        selector: "[data-testid='diagram-webview']"
+      - action: poll
+        condition: "!!document.querySelector('[data-testid=\"diagram-webview\"]')"
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 

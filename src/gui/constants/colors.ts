@@ -28,3 +28,32 @@ export const EDGE_COLORS: Record<string, string> = {
   aggregates: '#9cdcfe',
   contains: '#6a9955',
 };
+
+/**
+ * Colors for test suite status.
+ */
+export const STATUS_COLORS: Record<string, string> = {
+  draft: '#dcdcaa',
+  verified: '#89d185',
+  deprecated: '#f14c4c',
+};
+
+/**
+ * Colors for test reliability levels.
+ */
+export const RELIABILITY_COLORS: Record<string, string> = {
+  high: '#89d185',
+  medium: '#dcdcaa',
+  low: '#f14c4c',
+  unknown: '#808080',
+};
+
+/**
+ * Fallback color when lookup fails.
+ */
+export const FALLBACK_COLOR = '#808080';
+
+/**
+ * z-index for modal/overlay components.
+ */
+export const Z_INDEX_MODAL = 1000;

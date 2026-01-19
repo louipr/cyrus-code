@@ -22,19 +22,19 @@ import type {
 } from '../src/api/types.js';
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
-import { createTestSuiteRepository } from '../src/services/recording-content/index.js';
 import {
   getSessionRegistry,
   type PlaybackConfig,
   type PlaybackEvent,
   type TestSuite,
-} from '../src/recordings/index.js';
+} from '../src/macro/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import {
   SqliteSymbolRepository,
   SqliteExportHistoryRepository,
   type ExportHistoryEntry,
   getDatabase,
+  createTestSuiteRepository,
 } from '../src/repositories/index.js';
 
 export function registerIpcHandlers(facade: Architecture): void {
@@ -354,6 +354,16 @@ export function registerIpcHandlers(facade: Architecture): void {
       return { success: true, data: result.filePath };
     }
   );
+
+  // Get the user's home directory (for Downloads path construction)
+  ipcMain.handle('shell:getHomeDir', async () => {
+    return { success: true, data: app.getPath('home') };
+  });
+
+  // Get the user's Downloads directory
+  ipcMain.handle('shell:getDownloadsDir', async () => {
+    return { success: true, data: app.getPath('downloads') };
+  });
 
   // Write file to a specific path (for Draw.io native integration)
   // Records to export history for image exports
@@ -728,7 +738,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   const sessionRegistry = getSessionRegistry();
   // Configure registry with repository for loading test suites
-  sessionRegistry.setRepository(testSuiteRepository, helpProjectRoot);
+  sessionRegistry.configure({ repository: testSuiteRepository, basePath: helpProjectRoot });
   let debugEventListener: ((sessionId: string, event: PlaybackEvent) => void) | null = null;
 
   // Create a new debug session (runs in current Electron window)

@@ -75,9 +75,6 @@ interface ComponentSymbol {
   /** Current semantic version */
   version: SemVer;
 
-  /** Compatible version ranges */
-  compatibleWith?: VersionRange[];
-
   // === Location ===
 
   /** Where this symbol is defined in the file system */
@@ -306,19 +303,6 @@ interface SemVer {
   build?: string;
 }
 
-/**
- * Version range for compatibility.
- */
-interface VersionRange {
-  /** Minimum version (inclusive) */
-  min?: SemVer;
-
-  /** Maximum version (exclusive) */
-  max?: SemVer;
-
-  /** npm-style constraint: "^1.2.3", "~1.2.0", ">=1.0.0" */
-  constraint?: string;
-}
 ```
 
 ### Source Location

@@ -18,7 +18,8 @@ import { GenerateButton } from './components/GenerateButton';
 import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
-import { RecordingsView, TestSuitePanel } from './components/recordings';
+import { Z_INDEX_MODAL } from './constants/colors';
+import { MacroView, TestSuitePanel } from './components/macro';
 import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
@@ -51,6 +52,13 @@ function AppContent(): React.ReactElement {
 
   // Debug session context - persists across view switches
   const debugSession = useDebugSessionContext();
+
+  // Switch to recordings view when debug session completes
+  useEffect(() => {
+    if (debugSession.playbackState === 'completed') {
+      setViewMode('recordings');
+    }
+  }, [debugSession.playbackState]);
 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
@@ -173,7 +181,7 @@ function AppContent(): React.ReactElement {
   }, []);
 
   // Show test suite panel in non-recordings views during debug (recordings view has its own layout)
-  const showTestSuitePanel = !!debugSession.state.sessionId && !!debugSession.testSuite && viewMode !== 'recordings';
+  const showTestSuitePanel = !!debugSession.sessionId && !!debugSession.testSuite && viewMode !== 'recordings';
 
   return (
     <div style={styles.container}>
@@ -273,8 +281,8 @@ function AppContent(): React.ReactElement {
             }}
             onClick={() => setViewMode('recordings')}
             type="button"
-            data-testid="recordings-view-button"
-            title="Recordings - E2E Test Visualization"
+            data-testid="macro-view-button"
+            title="Macro - Test Suite Visualization"
           >
             📼
           </button>
@@ -406,24 +414,14 @@ function AppContent(): React.ReactElement {
 
           {viewMode === 'recordings' && (
             <main style={styles.diagramMain}>
-              <RecordingsView />
+              <MacroView />
             </main>
           )}
         </Panel>
 
         {/* Test suite panels - appears during debug sessions in non-recordings views */}
-        {/* TestSuitePanel renders its own Panel components matching RecordingsView layout */}
-        {showTestSuitePanel && (
-          <TestSuitePanel
-            testSuite={debugSession.testSuite}
-            debugState={debugSession.state}
-            debugCommands={debugSession.commands}
-            onDebugClose={debugSession.clearDebug}
-            appId={debugSession.appId}
-            testSuiteId={debugSession.testSuiteId}
-            onTestSuiteUpdate={debugSession.updateTestSuite}
-          />
-        )}
+        {/* TestSuitePanel uses context directly - no props needed */}
+        {showTestSuitePanel && <TestSuitePanel />}
       </PanelLayout>
 
       <ExportDialog
@@ -495,7 +493,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #3c3c3c',
     borderRadius: '4px',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-    zIndex: 1000,
+    zIndex: Z_INDEX_MODAL,
     minWidth: '120px',
     overflow: 'hidden',
   },

@@ -419,23 +419,23 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.1 | Test suite schema types | `src/recordings/recording-types.ts` | ✅ |
-| E2E.2 | TestSuitePlayer (executes YAML test suites) | `src/recordings/player.ts` | ✅ |
-| E2E.3 | PlaybackSession (manages test execution) | `src/recordings/session.ts` | ✅ |
+| E2E.1 | Test suite schema types | `src/macro/test-suite-types.ts` | ✅ |
+| E2E.2 | TestSuitePlayer (executes YAML test suites) | `src/macro/player.ts` | ✅ |
+| E2E.3 | PlaybackSession (manages test execution) | `src/macro/session.ts` | ✅ |
 | E2E.4 | Draw.io export-png test suite | `tests/e2e/test-suites/drawio/export-png.suite.yaml` | ✅ |
 | E2E.5 | Draw.io SVG fallback test suite | `tests/e2e/test-suites/drawio/export-svg-fallback.suite.yaml` | ✅ |
 | E2E.6 | Draw.io context documentation | `tests/e2e/test-suites/drawio/_context.yaml` | ✅ |
 | E2E.7 | Test suite index | `tests/e2e/test-suites/_index.yaml` | ✅ |
-| E2E.8 | Unit tests for playback system | `src/recordings/*.test.ts` | ✅ |
+| E2E.8 | Unit tests for playback system | `src/macro/*.test.ts` | ✅ |
 
-**Summary**: AI-recordable GUI exploration system for E2E tests. Test suites are YAML files with tree-structured test cases and LLM-optimized `why` fields explaining each step's purpose. Supports 10 action types: click, type, wait-for, evaluate, poll, extract, assert, keyboard, hover, screenshot.
+**Summary**: AI-recordable GUI exploration system for E2E tests. Test suites are YAML files with tree-structured test cases and LLM-optimized `why` fields explaining each step's purpose. Supports 8 action types: click, type, evaluate, poll, assert, screenshot, hover, keyboard.
 
 ### Phase 2: Test Suite System Integration (Future)
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | E2E.9 | Integrate TestSuitePlayer into diagram-comparison test | `tests/e2e/diagram-comparison.spec.ts` | ⏳ |
-| E2E.10 | Add feedback/grading mechanism (success rates from CI) | `src/recordings/` | ⏳ |
+| E2E.10 | Add feedback/grading mechanism (success rates from CI) | `src/macro/` | ⏳ |
 | E2E.11 | Create menu navigation test suite | `tests/e2e/test-suites/drawio/menu-navigation.suite.yaml` | ⏳ |
 | E2E.12 | Create dialog handling test suite | `tests/e2e/test-suites/drawio/dialog-handling.suite.yaml` | ⏳ |
 | E2E.13 | Demo test suite builder in live exploration | - | ⏳ |
@@ -444,14 +444,12 @@ npm run electron:dev   # Dev mode with hot reload
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.14 | Test Suite Tree Navigator component | `src/gui/components/recordings/RecordingTree.tsx` | ✅ |
-| E2E.15 | Test Case Dependency Graph (DAG visualization) | `src/gui/components/recordings/TestCaseGraph.tsx` | ✅ |
-| E2E.16 | Test Case Detail panel | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
-| E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/recordings/StepDetail.tsx` | ✅ |
-| E2E.18 | Test Suite Detail view (combined test case/step view) | `src/gui/components/recordings/RecordingDetail.tsx` | ✅ |
-| E2E.19 | Play Test Suite Dialog (execution UI) | `src/gui/components/recordings/PlayRecordingDialog.tsx` | ✅ |
-| E2E.20 | Test Suite Toolbar (actions) | `src/gui/components/recordings/RecordingToolbar.tsx` | ✅ |
-| E2E.21 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ✅ |
+| E2E.14 | Test Suite Tree Navigator component | `src/gui/components/macro/TestSuiteTree.tsx` | ✅ |
+| E2E.15 | Test Case Dependency Graph (DAG visualization) | `src/gui/components/macro/TestCaseGraph.tsx` | ✅ |
+| E2E.16 | Test Case Detail panel | `src/gui/components/macro/TestCaseDetail.tsx` | ✅ |
+| E2E.17 | Step Details Panel (action, selector, `why`) | `src/gui/components/macro/StepDetail.tsx` | ✅ |
+| E2E.18 | Test Suite Detail view (combined test case/step view) | `src/gui/components/macro/TestSuiteDetail.tsx` | ✅ |
+| E2E.19 | Add "Recordings" view to main navigation | `src/gui/App.tsx` | ✅ |
 | E2E.22 | IPC handlers for loading/running test suites | `electron/ipc-handlers.ts` | ✅ |
 
 > **Architecture**: See [C4 Component: Test Suite](c4/component-test-suite.md) for view layout and component details.
@@ -463,11 +461,11 @@ npm run electron:dev   # Dev mode with hot reload
 - [x] PlaybackSession for managing test execution state
 - [x] First test suites capturing Draw.io export knowledge
 - [x] Integration with existing E2E tests (run-recording.spec.ts)
-- [x] Test Suite Visualization View in GUI (RecordingsView with tree, DAG, timeline, details)
+- [x] Test Suite Visualization View in GUI (MacroView with tree, DAG, timeline, details)
 - [x] Step-through debugger with pause/resume/step controls (Phase 4)
 - [x] Timeline highlighting with execution state indicators
 - [x] Step result overlay with value/error display
-- [x] E2E tests for step-through debugger (recordings-debug.spec.ts)
+- [x] E2E tests for step-through debugger (macro-debug.spec.ts)
 - [x] Debug UI/UX refinements (Phase 5): sidebar integration, Test Suite panel, code cleanup
 - [ ] Feedback/grading mechanism for test suite quality (future)
 
@@ -479,11 +477,11 @@ Interactive step-by-step execution of test suites with real-time GUI feedback. S
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.23 | Define debug session types | `src/recordings/step-executor/schema.ts` | ✅ |
-| E2E.24 | Create InAppExecutor class | `src/recordings/step-executor/in-app-executor.ts` | ✅ |
-| E2E.25 | Implement pause/resume flow | `src/recordings/step-executor/in-app-executor.ts` | ✅ |
-| E2E.26 | Create InAppSession | `src/recordings/step-executor/in-app-session.ts` | ✅ |
-| E2E.27 | Session manager (singleton) | `src/recordings/step-executor/session-manager.ts` | ✅ |
+| E2E.23 | Define debug session types | `src/macro/step-executor/schema.ts` | ✅ |
+| E2E.24 | Create InAppExecutor class | `src/macro/step-executor/in-app-executor.ts` | ✅ |
+| E2E.25 | Implement pause/resume flow | `src/macro/step-executor/in-app-executor.ts` | ✅ |
+| E2E.26 | Create InAppSession | `src/macro/step-executor/in-app-session.ts` | ✅ |
+| E2E.27 | Session manager (singleton) | `src/macro/step-executor/session-manager.ts` | ✅ |
 | E2E.28 | E2E tests | `tests/e2e/in-app-debug.spec.ts` | ✅ |
 
 #### 4.2 IPC Layer: Real-time Streaming
@@ -503,9 +501,9 @@ Interactive step-by-step execution of test suites with real-time GUI feedback. S
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.33 | Create DebugControls (inline in RecordingsView) | `src/gui/components/recordings/RecordingsView.tsx` | ✅ |
+| E2E.33 | Create DebugControls component | `src/gui/components/debug/DebugControls.tsx` | ✅ |
 | E2E.34 | Add useDebugSession hook | `src/gui/hooks/useDebugSession.ts` | ✅ |
-| E2E.35 | Integrate into RecordingsView | `RecordingsView.tsx` | ✅ |
+| E2E.35 | Integrate into MacroView | `MacroView.tsx` | ✅ |
 
 #### 4.4 GUI: Test Case Graph Execution State
 
@@ -519,7 +517,7 @@ Interactive step-by-step execution of test suites with real-time GUI feedback. S
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.39 | Create StepResultOverlay | `src/gui/components/recordings/StepResultOverlay.tsx` | ✅ |
+| E2E.39 | Create StepResultOverlay | `src/gui/components/macro/StepResultOverlay.tsx` | ✅ |
 | E2E.40 | Display extracted values | `StepResultOverlay.tsx` | ✅ |
 | E2E.41 | Error display for failed steps | `StepResultOverlay.tsx` | ✅ |
 
@@ -527,9 +525,9 @@ Interactive step-by-step execution of test suites with real-time GUI feedback. S
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.42 | DebugControls integrated (no separate dialog needed) | `DebugControls.tsx`, `RecordingsView.tsx` | ✅ |
+| E2E.42 | DebugControls integrated (no separate dialog needed) | `DebugControls.tsx`, `MacroView.tsx` | ✅ |
 | E2E.43 | Debug button in DebugControls | `DebugControls.tsx` | ✅ |
-| E2E.44 | E2E tests for step-through | `tests/e2e/recordings-debug.spec.ts` | ✅ |
+| E2E.44 | E2E tests for step-through | `tests/e2e/macro-debug.spec.ts` | ✅ |
 
 #### Verification Tasks
 
@@ -561,8 +559,8 @@ Improvements to debug session interface for better usability.
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.49 | Side-by-side layout (TestCaseGraph left, Details right) | `RecordingsView.tsx` | ✅ |
-| E2E.50 | Create TestCaseDetail component | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
+| E2E.49 | Side-by-side layout (TestCaseGraph left, Details right) | `MacroView.tsx` | ✅ |
+| E2E.50 | Create TestCaseDetail component | `src/gui/components/macro/TestCaseDetail.tsx` | ✅ |
 | E2E.51 | Add expand/collapse all to TestCaseGraph toolbar | `TestCaseGraph.tsx` | ✅ |
 | E2E.52 | Reduce TestCaseGraph vertical spacing (gapY: 24px) | `src/gui/constants/graph-layout.ts` | ✅ |
 
@@ -579,7 +577,6 @@ Improvements to debug session interface for better usability.
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | E2E.56 | Remove unused appId/testSuiteId from DebugOverlay | `DebugOverlay.tsx` | ✅ |
-| E2E.57 | Remove unused appId from RecordingToolbar | `RecordingToolbar.tsx` | ✅ |
 
 **Summary**: Refactored debug UI/UX for better organization and usability. Debug controls now integrated into sidebar footer when sidebar is expanded, with floating overlay only shown when sidebar is collapsed or hidden. Component organization improved with dedicated `debug/` directory.
 
@@ -589,21 +586,21 @@ Industry-standard test automation terminology applied throughout the codebase.
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.58 | Rename Recording → TestSuite in types | `src/recordings/recording-types.ts` | ✅ |
-| E2E.59 | Rename RecordingTask → TestCase | `src/recordings/recording-types.ts` | ✅ |
-| E2E.60 | Rename RecordingStep → TestStep | `src/recordings/recording-types.ts` | ✅ |
-| E2E.61 | Rename RecordingPlayer → TestSuitePlayer | `src/recordings/player.ts` | ✅ |
-| E2E.62 | Update playback types (taskIndex → testCaseIndex) | `src/recordings/playback-types.ts` | ✅ |
+| E2E.58 | Rename Recording → TestSuite in types | `src/macro/test-suite-types.ts` | ✅ |
+| E2E.59 | Rename RecordingTask → TestCase | `src/macro/test-suite-types.ts` | ✅ |
+| E2E.60 | Rename RecordingStep → TestStep | `src/macro/test-suite-types.ts` | ✅ |
+| E2E.61 | Rename RecordingPlayer → TestSuitePlayer | `src/macro/player.ts` | ✅ |
+| E2E.62 | Update playback types (taskIndex → testCaseIndex) | `src/macro/playback-types.ts` | ✅ |
 | E2E.63 | Rename directory recordings/ → test-suites/ | `tests/e2e/test-suites/` | ✅ |
 | E2E.64 | Rename .yaml → .suite.yaml extensions | `tests/e2e/test-suites/**/*.suite.yaml` | ✅ |
 | E2E.65 | Update YAML content (tasks: → test_cases:) | All `.suite.yaml` files | ✅ |
 | E2E.66 | Update repository and service layers | `src/repositories/`, `src/services/` | ✅ |
 | E2E.67 | Update GUI components for new terminology | `src/gui/components/` | ✅ |
 | E2E.68 | Update panel header "TASK FLOW" → "TEST SUITE" | `DebugSidePanel.tsx` | ✅ |
-| E2E.69 | TestCase schema: rename `name` → `description` | `src/recordings/recording-types.ts` | ✅ |
+| E2E.69 | TestCase schema: rename `name` → `description` | `src/macro/test-suite-types.ts` | ✅ |
 | E2E.70 | TestCase IDs: kebab-case → snake_case | All `.suite.yaml` files | ✅ |
-| E2E.71 | TestCaseGraph: display `id` instead of `name` | `src/gui/components/recordings/TestCaseGraph.tsx` | ✅ |
-| E2E.72 | TestCaseDetail: display `description` field | `src/gui/components/recordings/TestCaseDetail.tsx` | ✅ |
+| E2E.71 | TestCaseGraph: display `id` instead of `name` | `src/gui/components/macro/TestCaseGraph.tsx` | ✅ |
+| E2E.72 | TestCaseDetail: display `description` field | `src/gui/components/macro/TestCaseDetail.tsx` | ✅ |
 
 **Terminology mapping:**
 - Recording → TestSuite (YAML file with test cases)
@@ -647,17 +644,17 @@ Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](.
 | E2E.82 | Collapse animation styles | `src/gui/components/layout/Panel.tsx` | ⏳ |
 | E2E.83 | Panel header styles (optional) | `src/gui/components/layout/PanelCell.tsx` | ⏳ |
 
-#### 7.3 Migration: RecordingsView
+#### 7.3 Migration: MacroView
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.84 | Refactor RecordingsView to use PanelLayout | `src/gui/components/recordings/RecordingsView.tsx` | ✅ |
-| E2E.85 | Extract RecordingTree to LeftPanel | `RecordingsView.tsx` | ✅ |
-| E2E.86 | Configure RightPanel with PanelGrid (2 columns) | `RecordingsView.tsx` | ⏳ |
-| E2E.87 | Move TestCaseGraph to RightPanel Column A, Row 1 | `RecordingsView.tsx` | ⏳ |
-| E2E.88 | Move DebugControls to RightPanel Column A, Row 2 | `RecordingsView.tsx` | ⏳ |
-| E2E.89 | Move StepDetail/TestCaseDetail to RightPanel Column B | `RecordingsView.tsx` | ⏳ |
-| E2E.90 | Remove legacy inline styles from RecordingsView | `RecordingsView.tsx` | ⏳ |
+| E2E.84 | Refactor MacroView to use PanelLayout | `src/gui/components/macro/MacroView.tsx` | ✅ |
+| E2E.85 | Extract TestSuiteTree to LeftPanel | `MacroView.tsx` | ✅ |
+| E2E.86 | Configure RightPanel with PanelGrid (2 columns) | `MacroView.tsx` | ⏳ |
+| E2E.87 | Move TestCaseGraph to RightPanel Column A, Row 1 | `MacroView.tsx` | ⏳ |
+| E2E.88 | Move DebugControls to RightPanel Column A, Row 2 | `MacroView.tsx` | ⏳ |
+| E2E.89 | Move StepDetail/TestCaseDetail to RightPanel Column B | `MacroView.tsx` | ⏳ |
+| E2E.90 | Remove legacy inline styles from MacroView | `MacroView.tsx` | ⏳ |
 
 #### 7.4 Migration: App.tsx
 
@@ -680,11 +677,11 @@ Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](.
 
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
-| E2E.98 | Remove TestSuitePanel.tsx (replaced by PanelGrid) | `src/gui/components/recordings/TestSuitePanel.tsx` | ⏳ |
+| E2E.98 | Remove TestSuitePanel.tsx (replaced by PanelGrid) | `src/gui/components/macro/TestSuitePanel.tsx` | ⏳ |
 | E2E.99 | Remove DebugSidePanel.tsx (replaced by PanelLayout) | `src/gui/components/debug/DebugSidePanel.tsx` | N/A (never existed) |
 | E2E.100 | Remove ResizableDivider.tsx (replaced by ResizeHandle) | `src/gui/components/shared/ResizableDivider.tsx` | ✅ |
 | E2E.101 | Remove useResizablePanel hook | `src/gui/hooks/useResizablePanel.ts` | ✅ |
-| E2E.102 | Update barrel exports in recordings/ | `src/gui/components/recordings/index.ts` | ⏳ |
+| E2E.102 | Update barrel exports in recordings/ | `src/gui/components/macro/index.ts` | ⏳ |
 | E2E.103 | Update barrel exports in debug/ | `src/gui/components/debug/index.ts` | ⏳ |
 
 #### 7.7 E2E Tests
@@ -715,7 +712,7 @@ Composable panel system to replace ad-hoc view-specific layouts. See [ADR-014](.
 - [x] Flexbox-based layout with resize handles
 - [x] localStorage persistence for panel state
 - [ ] Smooth collapse animations
-- [x] RecordingsView migrated to panel system
+- [x] MacroView migrated to panel system
 - [x] App.tsx simplified (removed ad-hoc panel logic)
 - [ ] TestSuitePanel replaced by composable grid
 - [x] E2E tests for panel interactions

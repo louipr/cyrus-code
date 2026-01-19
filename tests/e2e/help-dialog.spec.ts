@@ -7,8 +7,6 @@
 
 import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
-import { selectors } from './helpers/selectors';
-import { helpActions } from './helpers/actions';
 
 let context: AppContext;
 
@@ -27,7 +25,7 @@ test.describe('Help Dialog', () => {
     const { page } = context;
 
     // Test button trigger
-    await page.click(selectors.helpButton);
+    await page.click('[data-testid="help-button"]');
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
     await expect(page.locator('input[placeholder="Search topics..."]')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -43,11 +41,12 @@ test.describe('Help Dialog', () => {
   test('mermaid diagram renders with valid dimensions', async () => {
     const { page } = context;
 
-    await page.click(selectors.helpButton);
+    await page.click('[data-testid="help-button"]');
     await expect(page.getByRole('heading', { name: 'cyrus-code Help', exact: true })).toBeVisible({ timeout: 5000 });
 
     // Navigate to C4 Context diagram (representative test)
-    await helpActions.navigateToTopic(page, 'c4-overview', 'c4-context');
+    await page.click('[data-testid="help-group-c4-overview"]');
+    await page.click('[data-testid="help-topic-c4-context"]');
 
     // Wait for mermaid to render
     await page.waitForSelector('.mermaid-diagram', { timeout: 10000 });
