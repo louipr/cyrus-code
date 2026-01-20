@@ -6,12 +6,13 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { TestStep, ActionType } from '../../../macro';
+import type { TestStep, ActionType, StepResult } from '../../../macro';
 import { ACTION_ICONS } from './constants';
 
 interface StepDetailProps {
   step: TestStep;
   stepIndex: number;
+  result?: StepResult;
   onStepChange?: (stepIndex: number, field: string, value: string) => void;
 }
 
@@ -19,14 +20,14 @@ const ACTION_DESCRIPTIONS: Record<ActionType, string> = {
   click: 'Click on an element',
   type: 'Type text into an input',
   evaluate: 'Execute JavaScript code',
-  poll: 'Poll for a condition',
+  poll: 'Wait for element to exist',
   assert: 'Assert a condition',
   screenshot: 'Take a screenshot',
   hover: 'Hover over an element',
   keyboard: 'Press a keyboard key',
 };
 
-export function StepDetail({ step, stepIndex, onStepChange }: StepDetailProps) {
+export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetailProps) {
   const [editingSelector, setEditingSelector] = useState(false);
   const [selectorValue, setSelectorValue] = useState('');
 
@@ -70,7 +71,39 @@ export function StepDetail({ step, stepIndex, onStepChange }: StepDetailProps) {
 
       <div style={styles.description}>{ACTION_DESCRIPTIONS[step.action]}</div>
 
-      {/* Selector - for click, type, hover, assert, screenshot */}
+      {/* Result section - shown when step has been executed */}
+      {result && (
+        <div
+          style={{
+            ...styles.resultSection,
+            backgroundColor: result.success ? '#1a3a1a' : '#3a1a1a',
+            borderColor: result.success ? '#2a5a2a' : '#5a2a2a',
+          }}
+        >
+          <div style={styles.resultHeader}>
+            <span style={{ color: result.success ? '#89d185' : '#f48771', fontWeight: 600 }}>
+              {result.success ? '✓ Success' : '✕ Failed'}
+            </span>
+            {result.duration !== undefined && (
+              <span style={styles.duration}>{result.duration}ms</span>
+            )}
+          </div>
+          {result.value !== undefined && (
+            <div style={styles.resultValue}>
+              <code>
+                {typeof result.value === 'object'
+                  ? JSON.stringify(result.value, null, 2)
+                  : String(result.value)}
+              </code>
+            </div>
+          )}
+          {result.error && (
+            <div style={styles.resultError}>{result.error}</div>
+          )}
+        </div>
+      )}
+
+      {/* Selector - for click, type, hover, assert, poll, screenshot */}
       {'selector' in step && step.selector && (
         <div style={styles.section}>
           <div style={styles.label}>Selector</div>
@@ -133,14 +166,6 @@ export function StepDetail({ step, stepIndex, onStepChange }: StepDetailProps) {
         <div style={styles.section}>
           <div style={styles.label}>Code</div>
           <div style={styles.codeBlock}>{step.code}</div>
-        </div>
-      )}
-
-      {/* Condition (for poll action) */}
-      {'condition' in step && step.condition && (
-        <div style={styles.section}>
-          <div style={styles.label}>Condition</div>
-          <div style={styles.codeBlock}>{step.condition}</div>
         </div>
       )}
 
@@ -222,6 +247,42 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#888',
     marginBottom: '16px',
     fontStyle: 'italic',
+  },
+  resultSection: {
+    marginBottom: '16px',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    border: '1px solid',
+  },
+  resultHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+  },
+  duration: {
+    color: '#888',
+    fontSize: '11px',
+    fontFamily: 'monospace',
+  },
+  resultValue: {
+    marginTop: '8px',
+    padding: '6px 8px',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: '3px',
+    fontSize: '11px',
+    fontFamily: 'monospace',
+    color: '#ce9178',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-all' as const,
+    maxHeight: '80px',
+    overflow: 'auto',
+  },
+  resultError: {
+    marginTop: '8px',
+    fontSize: '11px',
+    color: '#f48771',
+    fontFamily: 'monospace',
   },
   section: {
     marginBottom: '14px',

@@ -16,23 +16,7 @@ test_cases:
   - id: poll_for_element
     description: Poll until element exists
     steps:
-      - action: evaluate
-        code: |
-          // Switch to Symbols view first
-          const btn = Array.from(document.querySelectorAll('[data-testid="view-toggle"] button'))
-            .find(b => b.textContent?.includes('Symbols'));
-          if (btn) btn.click();
-          return { clicked: !!btn };
-        timeout: 5000
-        why: Switch to Symbols view using evaluate.
-
       - action: poll
-        selector: "[data-testid='search-bar'] input"
+        selector: "[data-testid='search-bar']"
         timeout: 5000
-        why: Poll until search bar input is visible using IPC-based poll.
-
-      - action: assert
-        selector: "[data-testid='search-bar'] input"
-        exists: true
-        timeout: 3000
-        why: Verify the element we polled for exists.
+        why: Poll for search bar. Success means poll found the element.

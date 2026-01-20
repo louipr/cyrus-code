@@ -19,9 +19,6 @@ export const INDEX_VERSION = '1.0';
 /** Default description for auto-discovered index */
 export const INDEX_DESCRIPTION = 'Test suites discovered from filesystem';
 
-/** Default poll interval in milliseconds for selector-based steps */
-export const POLL_INTERVAL_MS = 100;
-
 /** Default timeout in milliseconds for step execution */
 export const DEFAULT_TIMEOUT_MS = 5000;
 

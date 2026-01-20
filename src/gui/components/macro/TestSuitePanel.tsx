@@ -19,10 +19,9 @@ import {
 import { StepDetail } from './StepDetail';
 import { TestCaseDetail } from './TestCaseDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
-import { StepResultOverlay } from './StepResultOverlay';
 import { DebugControls } from '../debug/DebugControls';
 import { Panel, Column, Card, ResizeHandle } from '../layout';
-import type { TestSuite, TestCase, TestStep, StepResult } from '../../../macro';
+import type { TestSuite, TestCase, TestStep } from '../../../macro';
 
 /**
  * TestSuitePanel renders two Panels matching MacroView's right-side layout:
@@ -47,8 +46,6 @@ export function TestSuitePanel() {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
-  const [showResultOverlay, setShowResultOverlay] = useState(false);
-  const [overlayResult, setOverlayResult] = useState<StepResult | null>(null);
 
   // Lifted state for graph controls (shared with header toolbar)
   const [graphScale, setGraphScale] = useState(ZOOM.default);
@@ -101,18 +98,9 @@ export function TestSuitePanel() {
         setSelectedTestCase(testCase);
         setSelectedStep(testCase.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
-
-        const testCaseIndex = testSuite?.test_cases.findIndex((t) => t.id === testCaseId) ?? -1;
-        if (testCaseIndex >= 0) {
-          const result = stepResults.get(`${testCaseIndex}:${stepIdx}`);
-          if (result) {
-            setOverlayResult(result);
-            setShowResultOverlay(true);
-          }
-        }
       }
     },
-    [testSuite, stepResults]
+    [testSuite]
   );
 
   // Handle saving test suite (for test case parameter edits)
@@ -267,7 +255,14 @@ export function TestSuitePanel() {
           collapsible={false}
         >
           {selectedStep && selectedStepIndex !== null ? (
-            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} onStepChange={handleStepChange} />
+            <StepDetail
+              step={selectedStep}
+              stepIndex={selectedStepIndex}
+              result={selectedTestCase ? stepResults.get(
+                `${testSuite?.test_cases.findIndex((t) => t.id === selectedTestCase.id) ?? -1}:${selectedStepIndex}`
+              ) : undefined}
+              onStepChange={handleStepChange}
+            />
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
@@ -287,19 +282,6 @@ export function TestSuitePanel() {
           )}
         </Card>
       </Panel>
-
-      {/* Step Result Overlay */}
-      {showResultOverlay && selectedStep && overlayResult && selectedStepIndex !== null && (
-        <StepResultOverlay
-          step={selectedStep}
-          result={overlayResult}
-          stepIndex={selectedStepIndex}
-          onClose={() => {
-            setShowResultOverlay(false);
-            setOverlayResult(null);
-          }}
-        />
-      )}
     </>
   );
 }

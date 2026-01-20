@@ -24,12 +24,11 @@ import {
 import { StepDetail } from './StepDetail';
 import { TestCaseDetail } from './TestCaseDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
-import { StepResultOverlay } from './StepResultOverlay';
 import { DebugControls } from '../debug/DebugControls';
 import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
 import { PanelLayout, Panel, ResizeHandle, Column, Card } from '../layout';
 import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestCase, TestStep, StepResult } from '../../../macro';
+import type { TestSuite, TestCase, TestStep } from '../../../macro';
 
 /**
  * MacroView - Main test suite visualization view
@@ -45,10 +44,6 @@ export function MacroView() {
   const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Dialog state
-  const [showResultOverlay, setShowResultOverlay] = useState(false);
-  const [overlayResult, setOverlayResult] = useState<StepResult | null>(null);
 
   // Lifted state for graph controls (shared with header toolbar)
   const [graphScale, setGraphScale] = useState(ZOOM.default);
@@ -156,19 +151,9 @@ export function MacroView() {
         setSelectedTestCase(testCase);
         setSelectedStep(testCase.steps[stepIdx]);
         setSelectedStepIndex(stepIdx);
-
-        // Check if there's a result for this step and show overlay
-        const testCaseIndex = testSuite?.test_cases.findIndex((t) => t.id === testCaseId) ?? -1;
-        if (testCaseIndex >= 0) {
-          const result = debugSession.stepResults.get(`${testCaseIndex}:${stepIdx}`);
-          if (result) {
-            setOverlayResult(result);
-            setShowResultOverlay(true);
-          }
-        }
       }
     },
-    [testSuite, debugSession.stepResults]
+    [testSuite]
   );
 
   // Handle test case click from TestCaseGraph
@@ -399,7 +384,14 @@ export function MacroView() {
       >
         <Card id="details-content" title="Details" fill testId="details-card" showHeader={false} collapsible={false}>
           {selectedStep && selectedStepIndex !== null ? (
-            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} onStepChange={handleStepChange} />
+            <StepDetail
+              step={selectedStep}
+              stepIndex={selectedStepIndex}
+              result={selectedTestCase ? debugSession.stepResults.get(
+                `${testSuite?.test_cases.findIndex((t) => t.id === selectedTestCase.id) ?? -1}:${selectedStepIndex}`
+              ) : undefined}
+              onStepChange={handleStepChange}
+            />
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
@@ -421,19 +413,6 @@ export function MacroView() {
           )}
         </Card>
       </Panel>
-
-      {/* Step Result Overlay */}
-      {showResultOverlay && selectedStep && overlayResult && selectedStepIndex !== null && (
-        <StepResultOverlay
-          step={selectedStep}
-          result={overlayResult}
-          stepIndex={selectedStepIndex}
-          onClose={() => {
-            setShowResultOverlay(false);
-            setOverlayResult(null);
-          }}
-        />
-      )}
     </PanelLayout>
   );
 }

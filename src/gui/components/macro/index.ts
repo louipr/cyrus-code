@@ -8,4 +8,3 @@ export { TestCaseDetail } from './TestCaseDetail';
 export { TestSuitePanel } from './TestSuitePanel';
 export { StepDetail } from './StepDetail';
 export { TestSuiteDetail } from './TestSuiteDetail';
-export { StepResultOverlay } from './StepResultOverlay';
