@@ -30,6 +30,7 @@ declare const document: {
   head: DomElement | null;
   documentElement: DomElement;
   querySelector(selector: string): DomElement | null;
+  querySelectorAll(selector: string): DomElement[];
   createElement(tagName: string): any;
   addEventListener(type: string, listener: () => void): void;
 };
@@ -350,6 +351,95 @@ function setupBridge(): void {
 
   console.log('[DrawioPreload] Bridge initialized for standalone mode');
 }
+
+// ============================================================================
+// Test Runner API (same pattern as main preload)
+// ============================================================================
+
+const POLL_INTERVAL = 100;
+
+function pollForElement(
+  selector: string,
+  timeout: number,
+  action: (el: any) => unknown
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    function poll() {
+      const el = document.querySelector(selector);
+      if (el) {
+        resolve(action(el));
+      } else if (Date.now() - startTime > timeout) {
+        reject(new Error(`Element not found: ${selector}`));
+      } else {
+        setTimeout(poll, POLL_INTERVAL);
+      }
+    }
+    poll();
+  });
+}
+
+const webviewTestRunnerAPI = {
+  click: (selector: string, timeout: number) =>
+    pollForElement(selector, timeout, (el) => {
+      el.click();
+      return { clicked: true };
+    }),
+
+  clickByText: (selector: string, text: string, timeout: number) =>
+    new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      function poll() {
+        const elements = document.querySelectorAll(selector) as any;
+        for (const el of elements) {
+          if (el.textContent?.includes(text)) {
+            el.click();
+            resolve({ clicked: true, text: el.textContent });
+            return;
+          }
+        }
+        if (Date.now() - startTime > timeout) {
+          reject(new Error(`Element not found with text "${text}": ${selector}`));
+        } else {
+          setTimeout(poll, POLL_INTERVAL);
+        }
+      }
+      poll();
+    }),
+};
+
+type WebviewTestCommand = {
+  id: string;
+  action: keyof typeof webviewTestRunnerAPI;
+  args: unknown[];
+};
+
+type WebviewTestResponse = {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+};
+
+// Listen for test runner commands from host (main renderer)
+ipcRenderer.on('__webviewTestRunner', async (_event, command: WebviewTestCommand) => {
+  let response: WebviewTestResponse;
+  try {
+    const method = webviewTestRunnerAPI[command.action];
+    if (!method) {
+      throw new Error(`Unknown action: ${command.action}`);
+    }
+    const result = await (method as (...args: unknown[]) => unknown)(...command.args);
+    response = { success: true, result };
+  } catch (error) {
+    response = {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  ipcRenderer.sendToHost(`__webviewTestRunner:${command.id}`, response);
+});
+
+console.log('[DrawioPreload] Test runner API initialized');
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

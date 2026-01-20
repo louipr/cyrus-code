@@ -216,6 +216,42 @@ export function MacroView() {
     [selectedAppId, selectedTestSuiteId, selectedTestCase, testSuite]
   );
 
+  // Handle step field changes (inline editing)
+  const handleStepChange = useCallback(
+    (stepIndex: number, field: string, value: string) => {
+      if (!testSuite || !selectedTestCase) return;
+
+      // Find the test case index
+      const testCaseIndex = testSuite.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
+      if (testCaseIndex === -1) return;
+
+      // Create updated test suite with the modified step
+      const updatedTestCases = [...testSuite.test_cases];
+      const updatedSteps = [...(updatedTestCases[testCaseIndex]?.steps ?? [])];
+      const currentStep = updatedSteps[stepIndex];
+      if (!currentStep) return;
+
+      updatedSteps[stepIndex] = { ...currentStep, [field]: value };
+      updatedTestCases[testCaseIndex] = {
+        ...updatedTestCases[testCaseIndex]!,
+        steps: updatedSteps,
+      };
+
+      const updatedTestSuite: TestSuite = {
+        ...testSuite,
+        test_cases: updatedTestCases,
+      };
+
+      // Update local state immediately for responsive UI
+      setTestSuite(updatedTestSuite);
+      setSelectedStep(updatedSteps[stepIndex] ?? null);
+
+      // Save to file
+      handleSaveTestSuite(updatedTestSuite);
+    },
+    [testSuite, selectedTestCase, handleSaveTestSuite]
+  );
+
   if (loading) {
     return (
       <div style={styles.container}>
@@ -363,7 +399,7 @@ export function MacroView() {
       >
         <Card id="details-content" title="Details" fill testId="details-card" showHeader={false} collapsible={false}>
           {selectedStep && selectedStepIndex !== null ? (
-            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
+            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} onStepChange={handleStepChange} />
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
@@ -372,6 +408,7 @@ export function MacroView() {
               appId={selectedAppId ?? undefined}
               testSuiteId={selectedTestSuiteId ?? undefined}
               onSave={handleSaveTestSuite}
+              onStepChange={handleStepChange}
             />
           ) : testSuite ? (
             <TestSuiteDetail testSuite={testSuite} testSuiteId={selectedTestSuiteId ?? undefined} />

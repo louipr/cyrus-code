@@ -1,0 +1,39 @@
+description: Test type action via IPC.
+metadata:
+  status: draft
+  reliability: unknown
+  tags:
+    - actions
+    - type
+  author: refactor
+  created: 2025-01-19
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+  waitFor: "[data-testid='view-toggle']"
+test_cases:
+  - id: type_in_search
+    description: Type in search bar
+    steps:
+      - action: evaluate
+        code: |
+          // Log to confirm test is running
+          console.log('[TYPE TEST] Starting - switching to Symbols view');
+          const btn = Array.from(document.querySelectorAll('[data-testid="view-toggle"] button'))
+            .find(b => b.textContent?.includes('Symbols'));
+          if (btn) btn.click();
+          return { clicked: !!btn };
+        timeout: 5000
+        why: Switch to Symbols view using evaluate (more reliable).
+
+      - action: poll
+        selector: "[data-testid='search-bar'] input"
+        timeout: 5000
+        why: Wait for search bar to be visible.
+
+      - action: type
+        selector: "[data-testid='search-bar'] input"
+        text: "test query"
+        timeout: 5000
+        why: Type text into search bar using IPC-based type action.

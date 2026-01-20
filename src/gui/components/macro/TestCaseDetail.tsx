@@ -17,6 +17,7 @@ interface TestCaseDetailProps {
   appId?: string;
   testSuiteId?: string;
   onSave?: (updatedTestSuite: TestSuite) => Promise<void>;
+  onStepChange?: (stepIndex: number, field: string, value: string) => void;
 }
 
 /**
@@ -51,17 +52,24 @@ export function TestCaseDetail({
   appId,
   testSuiteId,
   onSave,
+  onStepChange,
 }: TestCaseDetailProps) {
   const [editingId, setEditingId] = useState(false);
   const [idValue, setIdValue] = useState(testCase.id);
   const [idError, setIdError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Step selector editing state
+  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
+  const [selectorValue, setSelectorValue] = useState('');
+
   // Reset edit state when test case changes
   useEffect(() => {
     setIdValue(testCase.id);
     setEditingId(false);
     setIdError(null);
+    setEditingStepIndex(null);
+    setSelectorValue('');
   }, [testCase.id]);
 
   // Check if editing is enabled (requires all save-related props)
@@ -150,6 +158,33 @@ export function TestCaseDetail({
 
   const isDirty = idValue !== testCase.id;
 
+  // Start editing a step's selector
+  const startEditingSelector = useCallback((stepIndex: number, currentSelector: string) => {
+    setEditingStepIndex(stepIndex);
+    setSelectorValue(currentSelector);
+  }, []);
+
+  // Save selector change
+  const handleSaveSelector = useCallback(() => {
+    if (editingStepIndex === null || !onStepChange) return;
+    onStepChange(editingStepIndex, 'selector', selectorValue);
+    setEditingStepIndex(null);
+    setSelectorValue('');
+  }, [editingStepIndex, selectorValue, onStepChange]);
+
+  // Cancel selector edit
+  const handleCancelSelector = useCallback(() => {
+    setEditingStepIndex(null);
+    setSelectorValue('');
+  }, []);
+
+  // Check if selector is dirty
+  const isSelectorDirty = useCallback((stepIndex: number) => {
+    if (editingStepIndex !== stepIndex) return false;
+    const step = testCase.steps[stepIndex];
+    return step && 'selector' in step && step.selector !== selectorValue;
+  }, [editingStepIndex, selectorValue, testCase.steps]);
+
   return (
     <div style={styles.container} data-testid="test-case-detail">
       {/* Header */}
@@ -228,14 +263,60 @@ export function TestCaseDetail({
         <div style={styles.stepList}>
           {testCase.steps.map((step, idx) => (
             <div key={idx} style={styles.stepItem}>
-              <span style={styles.stepIndex}>{idx + 1}</span>
-              <span style={styles.stepIcon}>{ACTION_ICONS[step.action] ?? '○'}</span>
-              <span style={{ ...styles.stepAction, color: ACTION_COLORS[step.action] ?? '#888' }}>
-                {step.action}
-              </span>
-              <span style={styles.stepWhy}>
-                {step.why.length > 40 ? step.why.slice(0, 40) + '...' : step.why}
-              </span>
+              <div style={styles.stepHeader}>
+                <span style={styles.stepIndex}>{idx + 1}</span>
+                <span style={styles.stepIcon}>{ACTION_ICONS[step.action] ?? '○'}</span>
+                <span style={{ ...styles.stepAction, color: ACTION_COLORS[step.action] ?? '#888' }}>
+                  {step.action}
+                </span>
+              </div>
+              {'selector' in step && step.selector && (
+                <div style={styles.stepSelector}>
+                  {editingStepIndex === idx ? (
+                    <div style={styles.editContainer}>
+                      <input
+                        type="text"
+                        value={selectorValue}
+                        onChange={(e) => setSelectorValue(e.target.value)}
+                        style={styles.selectorInput}
+                        autoFocus
+                        data-testid={`step-${idx}-selector-input`}
+                      />
+                      {isSelectorDirty(idx) && (
+                        <div style={styles.selectorButtonRow}>
+                          <button
+                            style={{ ...styles.button, ...styles.saveButton }}
+                            onClick={handleSaveSelector}
+                            data-testid={`step-${idx}-save-button`}
+                          >
+                            Save
+                          </button>
+                          <button
+                            style={{ ...styles.button, ...styles.cancelButton }}
+                            onClick={handleCancelSelector}
+                            data-testid={`step-${idx}-cancel-button`}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        ...styles.selectorDisplay,
+                        ...(onStepChange ? styles.selectorDisplayEditable : {}),
+                      }}
+                      onClick={onStepChange ? () => startEditingSelector(idx, step.selector!) : undefined}
+                      title={onStepChange ? 'Click to edit' : undefined}
+                      data-testid={`step-${idx}-selector-display`}
+                    >
+                      <code style={styles.selectorCode}>{step.selector}</code>
+                      {onStepChange && <span style={styles.editIcon}>✎</span>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -343,12 +424,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepItem: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '6px 8px',
+    flexDirection: 'column',
+    gap: '4px',
+    padding: '8px',
     backgroundColor: '#252526',
     borderRadius: '4px',
     fontSize: '12px',
+  },
+  stepHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   stepIndex: {
     color: '#666',
@@ -360,16 +446,47 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepAction: {
     fontWeight: 500,
-    minWidth: '70px',
     textTransform: 'uppercase',
     fontSize: '10px',
   },
-  stepWhy: {
-    color: '#888',
+  stepSelector: {
+    marginLeft: '24px',
+  },
+  selectorInput: {
+    width: '100%',
+    padding: '6px 10px',
+    backgroundColor: '#2a2d2e',
+    border: '1px solid #4fc1ff',
+    borderRadius: '4px',
+    color: '#ce9178',
     fontSize: '11px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+    fontFamily: 'monospace',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  },
+  selectorCode: {
+    color: '#ce9178',
+    fontSize: '11px',
+    fontFamily: 'monospace',
+    wordBreak: 'break-all' as const,
+    flex: 1,
+  },
+  selectorDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '6px 10px',
+    backgroundColor: '#2a2d2e',
+    borderRadius: '4px',
+  },
+  selectorDisplayEditable: {
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
+  },
+  selectorButtonRow: {
+    display: 'flex',
+    gap: '6px',
+    marginTop: '4px',
   },
   hint: {
     marginTop: '16px',

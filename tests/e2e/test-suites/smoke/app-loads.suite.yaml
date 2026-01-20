@@ -23,7 +23,7 @@ test_cases:
     description: Verify app loaded
     steps:
       - action: poll
-        condition: "!!document.querySelector('[data-testid=\"search-bar\"]')"
+        selector: "[data-testid='search-bar']"
         timeout: 10000
         why: Search bar is the main indicator that the app has fully loaded.
 

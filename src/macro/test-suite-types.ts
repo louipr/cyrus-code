@@ -57,6 +57,7 @@ export interface ClickStep extends BaseStep {
 
 /**
  * Type text into an element.
+ * If webview is specified, types inside that webview's isolated context.
  */
 export interface TypeStep extends BaseStep {
   action: 'type';
@@ -64,6 +65,8 @@ export interface TypeStep extends BaseStep {
   selector: string;
   /** Text to type */
   text: string;
+  /** If specified, type inside this webview element */
+  webview?: string;
 }
 
 /**
@@ -79,15 +82,12 @@ export interface EvaluateStep extends BaseStep {
 }
 
 /**
- * Poll until a condition is true.
- * If webview is specified, polls inside that webview's isolated context.
+ * Poll until an element exists.
  */
 export interface PollStep extends BaseStep {
   action: 'poll';
-  /** JavaScript condition to poll for (should return truthy when ready) */
-  condition: string;
-  /** Poll interval in milliseconds (default: POLL_INTERVAL_MS from constants.ts) */
-  interval?: number;
+  /** CSS selector to wait for */
+  selector: string;
   /** If specified, poll inside this webview element */
   webview?: string;
 }

@@ -417,6 +417,25 @@ const testRunnerAPI = {
       check();
     }),
 
+  // Selector-based poll (no dynamic code evaluation needed)
+  // For arbitrary condition strings, player uses executeJavaScript directly
+  pollForSelector: (selector: string, timeout: number) =>
+    new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      const interval = POLL_INTERVAL;
+      function check() {
+        const el = document.querySelector(selector);
+        if (el) {
+          resolve({ found: true, selector });
+        } else if (Date.now() - startTime > timeout) {
+          reject(new Error(`Selector not found within ${timeout}ms: ${selector}`));
+        } else {
+          setTimeout(check, interval);
+        }
+      }
+      check();
+    }),
+
   getBounds: (selector: string) => {
     const el = document.querySelector(selector);
     if (!el) return null;
@@ -441,6 +460,84 @@ const testRunnerAPI = {
 };
 
 contextBridge.exposeInMainWorld('__testRunner', testRunnerAPI);
+
+// ============================================================================
+// IPC-based test runner (preload handles all routing)
+// ============================================================================
+
+type TestRunnerCommand = {
+  id: string;
+  action: string;
+  args: unknown[];
+  context?: string; // undefined = main DOM, string = webview selector
+};
+
+type TestRunnerResponse = {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+};
+
+ipcRenderer.on('__testRunner', async (_event, command: TestRunnerCommand) => {
+  // Route to webview if context is specified
+  if (command.context) {
+    forwardToWebview(command);
+    return;
+  }
+
+  // Execute locally in main DOM
+  let response: TestRunnerResponse;
+  try {
+    const method = testRunnerAPI[command.action as keyof typeof testRunnerAPI];
+    if (!method) {
+      throw new Error(`Unknown action: ${command.action}`);
+    }
+    const result = await (method as (...args: unknown[]) => unknown)(...command.args);
+    response = { success: true, result };
+  } catch (error) {
+    response = {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  ipcRenderer.send(`__testRunner:${command.id}`, response);
+});
+
+/**
+ * Forward command to webview and relay response back.
+ */
+function forwardToWebview(command: TestRunnerCommand): void {
+  const webview = document.querySelector(command.context!) as HTMLElement & {
+    send: (channel: string, ...args: unknown[]) => void;
+    addEventListener: (event: string, handler: (e: { channel: string; args: unknown[] }) => void) => void;
+    removeEventListener: (event: string, handler: (e: { channel: string; args: unknown[] }) => void) => void;
+  };
+
+  if (!webview) {
+    ipcRenderer.send(`__testRunner:${command.id}`, {
+      success: false,
+      error: `Webview not found: ${command.context}`,
+    });
+    return;
+  }
+
+  const responseChannel = `__webviewTestRunner:${command.id}`;
+
+  const handler = (event: { channel: string; args: unknown[] }) => {
+    if (event.channel === responseChannel) {
+      webview.removeEventListener('ipc-message', handler);
+      const response = event.args[0] as TestRunnerResponse;
+      ipcRenderer.send(`__testRunner:${command.id}`, response);
+    }
+  };
+
+  webview.addEventListener('ipc-message', handler);
+  webview.send('__webviewTestRunner', {
+    id: command.id,
+    action: command.action,
+    args: command.args,
+  });
+}
 
 // Type augmentation for window.cyrus
 declare global {

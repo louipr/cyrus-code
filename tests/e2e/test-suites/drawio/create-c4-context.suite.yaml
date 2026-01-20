@@ -53,7 +53,7 @@ test_cases:
         why: Click the Diagram button to switch to diagram view.
 
       - action: poll
-        condition: "!!document.querySelector('[data-testid=\"diagram-webview\"]')"
+        selector: "[data-testid='diagram-webview']"
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
@@ -61,26 +61,36 @@ test_cases:
     description: Wait for Draw.io editor
     depends: [open_diagram]
     steps:
-      - action: poll
+      # Wait for Draw.io editor API using evaluate with retry loop
+      - action: evaluate
         webview: "[data-testid='diagram-webview']"
-        condition: |
-          (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
-            return !!(ui && ui.editor && ui.editor.graph);
+        code: |
+          (async function() {
+            const timeout = 20000;
+            const interval = 500;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (ui && ui.editor && ui.editor.graph) {
+                return { ready: true };
+              }
+              await new Promise(r => setTimeout(r, interval));
+            }
+            throw new Error('Draw.io editor not ready within timeout');
           })()
-        timeout: 20000
-        interval: 500
+        timeout: 25000
         why: Wait for Draw.io's editor API to be available.
 
   - id: wait_for_editor_ready
     description: Wait for editor loading indicator to disappear
     depends: [wait_for_drawio]
     steps:
-      - action: poll
-        condition: |
-          return !document.querySelector('[data-testid="diagram-loading"]');
+      # Assert loading indicator is gone (after editor is ready, it should be)
+      - action: assert
+        selector: "[data-testid='diagram-loading']"
+        exists: false
         timeout: 15000
-        why: Wait for the React loading indicator to disappear.
+        why: Verify the React loading indicator has disappeared.
 
   - id: create_c4_diagram
     description: Create C4 Context diagram

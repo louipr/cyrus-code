@@ -145,6 +145,37 @@ export function TestSuitePanel() {
     [appId, testSuiteId, updateTestSuite, selectedTestCase, testSuite]
   );
 
+  // Handle step field changes (inline editing)
+  const handleStepChange = useCallback(
+    (stepIndex: number, field: string, value: string) => {
+      if (!testSuite || !selectedTestCase) return;
+
+      const testCaseIndex = testSuite.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
+      if (testCaseIndex === -1) return;
+
+      const updatedTestCases = [...testSuite.test_cases];
+      const updatedSteps = [...(updatedTestCases[testCaseIndex]?.steps ?? [])];
+      const currentStep = updatedSteps[stepIndex];
+      if (!currentStep) return;
+
+      updatedSteps[stepIndex] = { ...currentStep, [field]: value };
+      updatedTestCases[testCaseIndex] = {
+        ...updatedTestCases[testCaseIndex]!,
+        steps: updatedSteps,
+      };
+
+      const updatedTestSuite: TestSuite = {
+        ...testSuite,
+        test_cases: updatedTestCases,
+      };
+
+      updateTestSuite(updatedTestSuite);
+      setSelectedStep(updatedSteps[stepIndex] ?? null);
+      handleSaveTestSuite(updatedTestSuite);
+    },
+    [testSuite, selectedTestCase, updateTestSuite, handleSaveTestSuite]
+  );
+
   return (
     <>
       {/* ResizeHandle before graph panel */}
@@ -236,7 +267,7 @@ export function TestSuitePanel() {
           collapsible={false}
         >
           {selectedStep && selectedStepIndex !== null ? (
-            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} />
+            <StepDetail step={selectedStep} stepIndex={selectedStepIndex} onStepChange={handleStepChange} />
           ) : selectedTestCase && testSuite ? (
             <TestCaseDetail
               testCase={selectedTestCase}
@@ -245,6 +276,7 @@ export function TestSuitePanel() {
               appId={appId ?? undefined}
               testSuiteId={testSuiteId ?? undefined}
               onSave={handleSaveTestSuite}
+              onStepChange={handleStepChange}
             />
           ) : testSuite ? (
             <TestSuiteDetail testSuite={testSuite} testSuiteId={testSuiteId ?? undefined} />

@@ -17,7 +17,6 @@ import {
   SUITE_GLOB_PATTERN,
   INDEX_VERSION,
   INDEX_DESCRIPTION,
-  POLL_INTERVAL_MS,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_ASSERT_EXISTS,
 } from '../macro/constants.js';
@@ -310,11 +309,6 @@ export class YamlTestSuiteRepository implements TestSuiteRepository {
 
     // Apply action-specific defaults
     switch (normalized.action) {
-      case 'poll':
-        return {
-          ...normalized,
-          interval: normalized.interval ?? POLL_INTERVAL_MS,
-        };
       case 'assert':
         return {
           ...normalized,

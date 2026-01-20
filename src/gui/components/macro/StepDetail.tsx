@@ -5,12 +5,14 @@
  * Shows action type, selector, code, and the reasoning (why) field.
  */
 
+import { useState, useCallback, useEffect } from 'react';
 import type { TestStep, ActionType } from '../../../macro';
 import { ACTION_ICONS } from './constants';
 
 interface StepDetailProps {
   step: TestStep;
   stepIndex: number;
+  onStepChange?: (stepIndex: number, field: string, value: string) => void;
 }
 
 const ACTION_DESCRIPTIONS: Record<ActionType, string> = {
@@ -24,7 +26,38 @@ const ACTION_DESCRIPTIONS: Record<ActionType, string> = {
   keyboard: 'Press a keyboard key',
 };
 
-export function StepDetail({ step, stepIndex }: StepDetailProps) {
+export function StepDetail({ step, stepIndex, onStepChange }: StepDetailProps) {
+  const [editingSelector, setEditingSelector] = useState(false);
+  const [selectorValue, setSelectorValue] = useState('');
+
+  // Reset edit state when step changes
+  useEffect(() => {
+    setEditingSelector(false);
+    setSelectorValue('');
+  }, [step, stepIndex]);
+
+  const startEditing = useCallback(() => {
+    if ('selector' in step && step.selector) {
+      setSelectorValue(step.selector);
+      setEditingSelector(true);
+    }
+  }, [step]);
+
+  const handleSave = useCallback(() => {
+    if (onStepChange) {
+      onStepChange(stepIndex, 'selector', selectorValue);
+    }
+    setEditingSelector(false);
+  }, [onStepChange, stepIndex, selectorValue]);
+
+  const handleCancel = useCallback(() => {
+    setEditingSelector(false);
+    setSelectorValue('');
+  }, []);
+
+  const currentSelector = 'selector' in step ? step.selector : undefined;
+  const isDirty = selectorValue !== currentSelector;
+
   return (
     <div style={styles.container} data-testid="step-detail">
       {/* Header with step number and action */}
@@ -41,7 +74,49 @@ export function StepDetail({ step, stepIndex }: StepDetailProps) {
       {'selector' in step && step.selector && (
         <div style={styles.section}>
           <div style={styles.label}>Selector</div>
-          <div style={styles.codeBlock}>{step.selector}</div>
+          {editingSelector ? (
+            <div style={styles.editContainer}>
+              <input
+                type="text"
+                value={selectorValue}
+                onChange={(e) => setSelectorValue(e.target.value)}
+                style={styles.editableInput}
+                autoFocus
+                data-testid="step-selector-input"
+              />
+              {isDirty && (
+                <div style={styles.buttonRow}>
+                  <button
+                    style={{ ...styles.button, ...styles.saveButton }}
+                    onClick={handleSave}
+                    data-testid="step-selector-save"
+                  >
+                    Save
+                  </button>
+                  <button
+                    style={{ ...styles.button, ...styles.cancelButton }}
+                    onClick={handleCancel}
+                    data-testid="step-selector-cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                ...styles.selectorDisplay,
+                ...(onStepChange ? styles.selectorEditable : {}),
+              }}
+              onClick={onStepChange ? startEditing : undefined}
+              title={onStepChange ? 'Click to edit' : undefined}
+              data-testid="step-selector-display"
+            >
+              <code style={styles.selectorCode}>{step.selector}</code>
+              {onStepChange && <span style={styles.editIcon}>✎</span>}
+            </div>
+          )}
         </div>
       )}
 
@@ -170,6 +245,68 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'auto',
     maxHeight: '80px',
     border: '1px solid #3c3c3c',
+  },
+  editContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  editableInput: {
+    backgroundColor: '#2a2d2e',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    color: '#ce9178',
+    border: '1px solid #4fc1ff',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    outline: 'none',
+  },
+  selectorDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#2a2d2e',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    border: '1px solid #3c3c3c',
+  },
+  selectorEditable: {
+    cursor: 'pointer',
+    transition: 'border-color 0.15s',
+  },
+  selectorCode: {
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    color: '#ce9178',
+    flex: 1,
+    wordBreak: 'break-all' as const,
+  },
+  editIcon: {
+    fontSize: '12px',
+    color: '#666',
+    marginLeft: 'auto',
+  },
+  buttonRow: {
+    display: 'flex',
+    gap: '8px',
+  },
+  button: {
+    padding: '6px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+  },
+  saveButton: {
+    backgroundColor: '#0e639c',
+    color: '#fff',
+  },
+  cancelButton: {
+    backgroundColor: '#3c3c3c',
+    color: '#ccc',
   },
   valueBlock: {
     fontSize: '13px',

@@ -6,6 +6,7 @@
  */
 
 import type { WebContents } from 'electron';
+import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { TestSuite, TestStep } from './test-suite-types.js';
@@ -16,13 +17,8 @@ import type {
   StepResult,
 } from './playback-types.js';
 import { EventEmitter } from './event-emitter.js';
-import { POLL_INTERVAL_MS, DEFAULT_TIMEOUT_MS, DEFAULT_ASSERT_EXISTS } from './constants.js';
-import {
-  webviewClickScript,
-  evaluateScript,
-  pollScript,
-  webviewPollScript,
-} from './scripts.js';
+import { DEFAULT_TIMEOUT_MS, DEFAULT_ASSERT_EXISTS } from './constants.js';
+import { evaluateScript } from './scripts.js';
 
 /**
  * Options for TestSuitePlayer.
@@ -291,9 +287,7 @@ export class TestSuitePlayer extends EventEmitter<PlaybackEvent> {
         return this.executeClick(step.selector, timeout, step.webview, step.text);
 
       case 'type':
-        return this.exec(
-          `window.__testRunner.type(${JSON.stringify(step.selector)}, ${JSON.stringify(step.text)}, ${timeout})`
-        );
+        return this.executeType(step.selector, step.text, timeout, step.webview);
 
       case 'evaluate':
         return this.exec(evaluateScript(step.code, step.webview));
@@ -306,12 +300,8 @@ export class TestSuitePlayer extends EventEmitter<PlaybackEvent> {
       case 'keyboard':
         return this.exec(`window.__testRunner.keyboard(${JSON.stringify(step.key)})`);
 
-      case 'poll': {
-        const interval = step.interval ?? POLL_INTERVAL_MS;
-        return step.webview
-          ? this.exec(webviewPollScript(step.webview, step.condition, interval, timeout))
-          : this.exec(pollScript(step.condition, interval, timeout));
-      }
+      case 'poll':
+        return this.invoke('pollForSelector', [step.selector, timeout], step.webview);
 
       case 'assert':
         return this.exec(
@@ -325,14 +315,52 @@ export class TestSuitePlayer extends EventEmitter<PlaybackEvent> {
 
   /**
    * Execute a script in the renderer process.
+   * @deprecated Use invoke() for new code - no string templates.
    */
   private exec(script: string): Promise<unknown> {
     return this.webContents.executeJavaScript(script);
   }
 
   /**
-   * Execute a click action.
-   * Uses preload API for main DOM, templates only for webview (cross-context).
+   * Invoke a test runner action via IPC.
+   * Player doesn't know/care about routing - preload handles it.
+   */
+  private invoke(action: string, args: unknown[], context?: string): Promise<unknown> {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const channel = `__testRunner:${id}`;
+
+    return new Promise((resolve, reject) => {
+      const handler = (
+        _event: Electron.IpcMainEvent,
+        response: { success: boolean; result?: unknown; error?: string }
+      ) => {
+        ipcMain.removeListener(channel, handler);
+        if (response.success) {
+          resolve(response.result);
+        } else {
+          reject(new Error(response.error));
+        }
+      };
+
+      ipcMain.on(channel, handler);
+      this.webContents.send('__testRunner', { id, action, args, context });
+    });
+  }
+
+  /**
+   * Execute a type action via IPC.
+   */
+  private executeType(
+    selector: string,
+    text: string,
+    timeout: number,
+    webview?: string
+  ): Promise<unknown> {
+    return this.invoke('type', [selector, text, timeout], webview);
+  }
+
+  /**
+   * Execute a click action via IPC (handles both main DOM and webview).
    */
   private executeClick(
     selector: string,
@@ -340,21 +368,15 @@ export class TestSuitePlayer extends EventEmitter<PlaybackEvent> {
     webview?: string,
     text?: string
   ): Promise<unknown> {
-    if (webview) {
-      return this.exec(webviewClickScript(webview, selector, timeout, text));
-    }
-
     // Parse :has-text() pseudo-selector
     const match = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
     if (match?.[1] && match[2]) {
-      return this.exec(
-        `window.__testRunner.clickByText(${JSON.stringify(match[1])}, ${JSON.stringify(match[2])}, ${timeout})`
-      );
+      return this.invoke('clickByText', [match[1], match[2], timeout], webview);
     }
-
-    return this.exec(
-      `window.__testRunner.click(${JSON.stringify(selector)}, ${timeout})`
-    );
+    if (text) {
+      return this.invoke('clickByText', [selector, text, timeout], webview);
+    }
+    return this.invoke('click', [selector, timeout], webview);
   }
 
   /**

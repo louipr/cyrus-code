@@ -1,0 +1,22 @@
+description: Test click action via IPC.
+metadata:
+  status: draft
+  reliability: unknown
+  tags:
+    - actions
+    - click
+  author: refactor
+  created: 2025-01-19
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+  waitFor: "[data-testid='search-bar']"
+test_cases:
+  - id: click_help_button
+    description: Click help button
+    steps:
+      - action: click
+        selector: "[data-testid='help-button']"
+        timeout: 5000
+        why: Click the help button using IPC-based click.

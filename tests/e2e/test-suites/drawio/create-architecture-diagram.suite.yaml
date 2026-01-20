@@ -56,7 +56,7 @@ test_cases:
         why: Click the Diagram button to switch to diagram view.
 
       - action: poll
-        condition: "!!document.querySelector('[data-testid=\"diagram-webview\"]')"
+        selector: "[data-testid='diagram-webview']"
         timeout: 10000
         why: Wait for Draw.io webview to appear.
 
@@ -64,26 +64,34 @@ test_cases:
     description: Wait for Draw.io editor
     depends: [open_diagram]
     steps:
-      - action: poll
+      - action: evaluate
         webview: "[data-testid='diagram-webview']"
-        condition: |
-          (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
-            return !!(ui && ui.editor && ui.editor.graph);
+        code: |
+          (async function() {
+            const timeout = 20000;
+            const interval = 500;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              if (ui && ui.editor && ui.editor.graph) {
+                return { ready: true };
+              }
+              await new Promise(r => setTimeout(r, interval));
+            }
+            throw new Error('Draw.io editor not ready within timeout');
           })()
-        timeout: 20000
-        interval: 500
+        timeout: 25000
         why: Wait for Draw.io's editor API to be available.
 
   - id: wait_for_editor_ready
     description: Wait for editor loading indicator to disappear
     depends: [wait_for_drawio]
     steps:
-      - action: poll
-        condition: |
-          return !document.querySelector('[data-testid="diagram-loading"]');
+      - action: assert
+        selector: "[data-testid='diagram-loading']"
+        exists: false
         timeout: 15000
-        why: Wait for the React loading indicator to disappear.
+        why: Verify the React loading indicator has disappeared.
 
   - id: create_diagram
     description: Create 3-tier architecture diagram
@@ -186,17 +194,23 @@ test_cases:
     description: Wait for export options dialog
     depends: [open_export_dialog]
     steps:
-      - action: poll
+      - action: evaluate
         webview: "[data-testid='diagram-webview']"
-        condition: |
-          (function() {
-            const dialogs = document.querySelectorAll('.geDialog');
-            for (const d of dialogs) {
-              if (d.textContent.includes('Zoom')) return true;
+        code: |
+          (async function() {
+            const timeout = 10000;
+            const interval = 200;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              const dialogs = document.querySelectorAll('.geDialog');
+              for (const d of dialogs) {
+                if (d.textContent.includes('Zoom')) return { found: true };
+              }
+              await new Promise(r => setTimeout(r, interval));
             }
-            return false;
+            throw new Error('Export dialog not found within timeout');
           })()
-        timeout: 10000
+        timeout: 15000
         why: Wait for Draw.io's export options dialog (contains "Zoom" setting).
 
   - id: click_export_button
@@ -213,17 +227,23 @@ test_cases:
     description: Wait for Save As dialog
     depends: [click_export_button]
     steps:
-      - action: poll
+      - action: evaluate
         webview: "[data-testid='diagram-webview']"
-        condition: |
-          (function() {
-            const dialogs = document.querySelectorAll('.geDialog');
-            for (const d of dialogs) {
-              if (d.querySelector("input[type='text']")) return true;
+        code: |
+          (async function() {
+            const timeout = 10000;
+            const interval = 200;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              const dialogs = document.querySelectorAll('.geDialog');
+              for (const d of dialogs) {
+                if (d.querySelector("input[type='text']")) return { found: true };
+              }
+              await new Promise(r => setTimeout(r, interval));
             }
-            return false;
+            throw new Error('Save dialog not found within timeout');
           })()
-        timeout: 10000
+        timeout: 15000
         why: Wait for Save As dialog with filename input.
 
   - id: select_downloads_destination
