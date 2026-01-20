@@ -418,23 +418,8 @@ const testRunnerAPI = {
     }),
 
   // Selector-based poll (no dynamic code evaluation needed)
-  // For arbitrary condition strings, player uses executeJavaScript directly
   pollForSelector: (selector: string, timeout: number) =>
-    new Promise((resolve, reject) => {
-      const startTime = Date.now();
-      const interval = POLL_INTERVAL;
-      function check() {
-        const el = document.querySelector(selector);
-        if (el) {
-          resolve({ found: true, selector });
-        } else if (Date.now() - startTime > timeout) {
-          reject(new Error(`Selector not found within ${timeout}ms: ${selector}`));
-        } else {
-          setTimeout(check, interval);
-        }
-      }
-      check();
-    }),
+    pollForElement(selector, timeout, () => ({ found: true, selector })),
 
   getBounds: (selector: string) => {
     const el = document.querySelector(selector);
