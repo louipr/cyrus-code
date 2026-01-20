@@ -322,9 +322,9 @@ contextBridge.exposeInMainWorld('cyrus', cyrusAPI);
 const POLL_INTERVAL = 100;
 
 /**
- * Poll until an element is found, then execute action.
+ * Wait until an element is found, then execute action.
  */
-function pollForElement(
+function waitForElement(
   selector: string,
   timeout: number,
   action: (el: Element) => unknown
@@ -346,39 +346,52 @@ function pollForElement(
 }
 
 /**
- * Test runner API exposed to renderer.
- * Main process calls these via executeJavaScript('window.__testRunner.click(...)')
+ * Test runner API implementation.
+ * Main process invokes via IPC ('__testRunner' channel) - see handler below.
  */
-const testRunnerAPI = {
-  click: (selector: string, timeout: number) =>
-    pollForElement(selector, timeout, (el) => {
-      (el as HTMLElement).click();
-      return { clicked: true };
-    }),
-
-  clickByText: (selector: string, text: string, timeout: number) =>
-    new Promise((resolve, reject) => {
-      const startTime = Date.now();
-      function poll() {
-        const elements = document.querySelectorAll(selector);
-        for (const el of elements) {
-          if (el.textContent?.includes(text)) {
-            (el as HTMLElement).click();
-            resolve({ clicked: true, text: el.textContent });
-            return;
-          }
-        }
-        if (Date.now() - startTime > timeout) {
-          reject(new Error(`Element not found with text "${text}": ${selector}`));
-        } else {
-          setTimeout(poll, POLL_INTERVAL);
+/**
+ * Click by text - polls until element with matching text is found.
+ */
+function clickByText(selector: string, text: string, timeout: number): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    function poll() {
+      const elements = document.querySelectorAll(selector);
+      for (const el of elements) {
+        if (el.textContent?.includes(text)) {
+          (el as HTMLElement).click();
+          resolve({ clicked: true, text: el.textContent });
+          return;
         }
       }
-      poll();
-    }),
+      if (Date.now() - startTime > timeout) {
+        reject(new Error(`Element not found with text "${text}": ${selector}`));
+      } else {
+        setTimeout(poll, POLL_INTERVAL);
+      }
+    }
+    poll();
+  });
+}
 
-  type: (selector: string, text: string, timeout: number) =>
-    pollForElement(selector, timeout, (el) => {
+const testRunnerAPI = {
+  click: (selector: string, timeout: number, text?: string) => {
+    // Parse :has-text() pseudo-selector
+    const match = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
+    if (match?.[1] && match[2]) {
+      return clickByText(match[1], match[2], timeout);
+    }
+    if (text) {
+      return clickByText(selector, text, timeout);
+    }
+    return waitForElement(selector, timeout, (el) => {
+      (el as HTMLElement).click();
+      return { clicked: true };
+    });
+  },
+
+  type: (selector: string, timeout: number, text: string) =>
+    waitForElement(selector, timeout, (el) => {
       const input = el as HTMLInputElement;
       input.focus();
       input.value = text;
@@ -388,13 +401,13 @@ const testRunnerAPI = {
     }),
 
   hover: (selector: string, timeout: number) =>
-    pollForElement(selector, timeout, (el) => {
+    waitForElement(selector, timeout, (el) => {
       el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
       return { hovered: true };
     }),
 
-  assert: (selector: string, shouldExist: boolean, timeout: number) =>
+  assert: (selector: string, timeout: number, shouldExist: boolean) =>
     new Promise((resolve, reject) => {
       const startTime = Date.now();
       function check() {
@@ -417,10 +430,6 @@ const testRunnerAPI = {
       check();
     }),
 
-  // Selector-based poll (no dynamic code evaluation needed)
-  pollForSelector: (selector: string, timeout: number) =>
-    pollForElement(selector, timeout, () => ({ found: true, selector })),
-
   getBounds: (selector: string) => {
     const el = document.querySelector(selector);
     if (!el) return null;
@@ -442,12 +451,15 @@ const testRunnerAPI = {
     document.activeElement?.dispatchEvent(event);
     return { key };
   },
+
+  evaluate: (code: string) => {
+    const fn = new Function(`return (async () => { ${code} })();`);
+    return fn();
+  },
 };
 
-contextBridge.exposeInMainWorld('__testRunner', testRunnerAPI);
-
 // ============================================================================
-// IPC-based test runner (preload handles all routing)
+// IPC-based test runner (player invokes via webContents.send)
 // ============================================================================
 
 type TestRunnerCommand = {
@@ -528,6 +540,5 @@ function forwardToWebview(command: TestRunnerCommand): void {
 declare global {
   interface Window {
     cyrus: CyrusAPI;
-    __testRunner: typeof testRunnerAPI;
   }
 }

@@ -137,7 +137,7 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
 
       {/* Control buttons */}
       <div style={styles.buttons}>
-        {playbackState === 'ready' && (
+        {playbackState === 'idle' && (
           <button style={styles.button} onClick={() => commands.start()} title="Start">
             ▶ Start
           </button>
@@ -173,8 +173,6 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
 function getStatusLabel(state: PlaybackState): string {
   switch (state) {
     case 'idle':
-      return 'Idle';
-    case 'ready':
       return 'Ready';
     case 'running':
       return 'Running...';
@@ -182,29 +180,22 @@ function getStatusLabel(state: PlaybackState): string {
       return 'Paused';
     case 'completed':
       return 'Completed';
-    case 'error':
-      return 'Error';
-    default:
-      return state;
   }
 }
 
 function getStatusDotStyle(sessionState: PlaybackState): React.CSSProperties {
+  const colorMap: Record<PlaybackState, string> = {
+    running: '#4fc1ff',
+    paused: '#dcdcaa',
+    completed: '#89d185',
+    idle: '#808080',
+  };
   return {
     width: '8px',
     height: '8px',
     borderRadius: '50%',
     flexShrink: 0,
-    backgroundColor:
-      sessionState === 'running'
-        ? '#4fc1ff'
-        : sessionState === 'paused'
-          ? '#dcdcaa'
-          : sessionState === 'completed'
-            ? '#89d185'
-            : sessionState === 'error'
-              ? '#f48771'
-              : '#808080',
+    backgroundColor: colorMap[sessionState],
   };
 }
 

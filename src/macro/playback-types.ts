@@ -1,11 +1,17 @@
 /**
- * Playback Types
+ * Playback Runtime Types
  *
  * Types for playing back test suites with step-through capability.
- * Like a video player: play, pause, step-through, stop.
+ * These are "runtime" types - what happens during execution.
+ *
+ * @see test-suite-types.ts for schema types (document structure)
  */
 
 import type { TestStep, TestCase } from './test-suite-types.js';
+
+// ============================================================================
+// Execution Results - Outcome of running steps
+// ============================================================================
 
 /**
  * Result from executing a step.
@@ -24,16 +30,18 @@ export interface StepResult {
   duration: number;
 }
 
+// ============================================================================
+// State Machine - Playback lifecycle
+// ============================================================================
+
 /**
  * Playback session lifecycle states.
  */
 export type PlaybackState =
   | 'idle' // No session active
-  | 'ready' // Session created, waiting to start
   | 'running' // Currently executing a step
   | 'paused' // Paused between steps, waiting for user action
-  | 'completed' // All tasks/steps finished
-  | 'error'; // Unrecoverable error occurred
+  | 'completed'; // All tasks/steps finished
 
 /**
  * Current position in the test suite playback.
@@ -48,6 +56,10 @@ export interface PlaybackPosition {
   /** Test case ID for reference */
   testCaseId: string;
 }
+
+// ============================================================================
+// Events - Notifications during playback
+// ============================================================================
 
 /**
  * Event emitted when a step is about to execute.
@@ -104,7 +116,7 @@ export interface SessionReadyEvent {
  * Event emitted when playback completes.
  */
 export interface PlaybackCompleteEvent {
-  type: 'execution-complete';
+  type: 'playback-complete';
   success: boolean;
   duration: number;
   timestamp: number;
@@ -121,25 +133,27 @@ export type PlaybackEvent =
   | SessionReadyEvent
   | PlaybackCompleteEvent;
 
+// ============================================================================
+// Configuration - Session setup
+// ============================================================================
+
 /**
  * Configuration for creating a playback session.
  */
 export interface PlaybackConfig {
-  /** App ID for the test suite */
-  appId: string;
+  /** Group/category for the test suite (directory name, e.g., "drawio", "smoke") */
+  groupId: string;
 
-  /** Test suite ID */
-  testSuiteId: string;
-
-  /** Whether to run browser in headed mode */
-  headed?: boolean;
-
-  /** Timeout multiplier for slow environments */
-  timeoutMultiplier?: number;
+  /** Test suite ID (filename without extension) */
+  suiteId: string;
 
   /** Whether to pause before first step */
   pauseOnStart?: boolean;
 }
+
+// ============================================================================
+// Serialization - Snapshot for persistence/IPC
+// ============================================================================
 
 /**
  * Snapshot of playback session state for serialization.
@@ -155,8 +169,8 @@ export interface PlaybackSnapshot {
   position: PlaybackPosition | null;
 
   /** Test suite being played */
-  appId: string;
-  testSuiteId: string;
+  groupId: string;
+  suiteId: string;
 
   /** Results collected so far */
   completedSteps: Array<{

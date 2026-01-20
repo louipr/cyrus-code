@@ -20,44 +20,62 @@ const ACTION_DESCRIPTIONS: Record<ActionType, string> = {
   click: 'Click on an element',
   type: 'Type text into an input',
   evaluate: 'Execute JavaScript code',
-  poll: 'Wait for element to exist',
-  assert: 'Assert a condition',
+  wait: 'Wait for expectation',
   screenshot: 'Take a screenshot',
   hover: 'Hover over an element',
   keyboard: 'Press a keyboard key',
 };
 
+// Editable field types
+type EditingField = 'selector' | 'expect.selector' | 'timeout' | null;
+
 export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetailProps) {
-  const [editingSelector, setEditingSelector] = useState(false);
-  const [selectorValue, setSelectorValue] = useState('');
+  const [editingField, setEditingField] = useState<EditingField>(null);
+  const [editValue, setEditValue] = useState('');
 
   // Reset edit state when step changes
   useEffect(() => {
-    setEditingSelector(false);
-    setSelectorValue('');
+    setEditingField(null);
+    setEditValue('');
   }, [step, stepIndex]);
 
-  const startEditing = useCallback(() => {
-    if ('selector' in step && step.selector) {
-      setSelectorValue(step.selector);
-      setEditingSelector(true);
+  // Get current value for a field
+  const getFieldValue = useCallback((field: EditingField): string => {
+    switch (field) {
+      case 'selector':
+        return 'selector' in step && step.selector ? step.selector : '';
+      case 'expect.selector':
+        return step.expect?.type === 'selector' ? step.expect.selector : '';
+      case 'timeout':
+        return step.timeout !== undefined ? String(step.timeout) : '';
+      default:
+        return '';
     }
   }, [step]);
 
-  const handleSave = useCallback(() => {
-    if (onStepChange) {
-      onStepChange(stepIndex, 'selector', selectorValue);
-    }
-    setEditingSelector(false);
-  }, [onStepChange, stepIndex, selectorValue]);
+  // Start editing a field
+  const startEditing = useCallback((field: EditingField) => {
+    if (!onStepChange) return;
+    setEditValue(getFieldValue(field));
+    setEditingField(field);
+  }, [onStepChange, getFieldValue]);
 
+  // Save the current edit
+  const handleSave = useCallback(() => {
+    if (!onStepChange || !editingField) return;
+    onStepChange(stepIndex, editingField, editValue);
+    setEditingField(null);
+    setEditValue('');
+  }, [onStepChange, stepIndex, editingField, editValue]);
+
+  // Cancel editing
   const handleCancel = useCallback(() => {
-    setEditingSelector(false);
-    setSelectorValue('');
+    setEditingField(null);
+    setEditValue('');
   }, []);
 
-  const currentSelector = 'selector' in step ? step.selector : undefined;
-  const isDirty = selectorValue !== currentSelector;
+  // Check if current value is dirty
+  const isDirty = editingField && editValue !== getFieldValue(editingField);
 
   return (
     <div style={styles.container} data-testid="step-detail">
@@ -103,34 +121,26 @@ export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetail
         </div>
       )}
 
-      {/* Selector - for click, type, hover, assert, poll, screenshot */}
+      {/* Selector - for click, type, hover, screenshot */}
       {'selector' in step && step.selector && (
         <div style={styles.section}>
           <div style={styles.label}>Selector</div>
-          {editingSelector ? (
+          {editingField === 'selector' ? (
             <div style={styles.editContainer}>
               <input
                 type="text"
-                value={selectorValue}
-                onChange={(e) => setSelectorValue(e.target.value)}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
                 style={styles.editableInput}
                 autoFocus
                 data-testid="step-selector-input"
               />
               {isDirty && (
                 <div style={styles.buttonRow}>
-                  <button
-                    style={{ ...styles.button, ...styles.saveButton }}
-                    onClick={handleSave}
-                    data-testid="step-selector-save"
-                  >
+                  <button style={{ ...styles.button, ...styles.saveButton }} onClick={handleSave}>
                     Save
                   </button>
-                  <button
-                    style={{ ...styles.button, ...styles.cancelButton }}
-                    onClick={handleCancel}
-                    data-testid="step-selector-cancel"
-                  >
+                  <button style={{ ...styles.button, ...styles.cancelButton }} onClick={handleCancel}>
                     Cancel
                   </button>
                 </div>
@@ -142,7 +152,7 @@ export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetail
                 ...styles.selectorDisplay,
                 ...(onStepChange ? styles.selectorEditable : {}),
               }}
-              onClick={onStepChange ? startEditing : undefined}
+              onClick={() => startEditing('selector')}
               title={onStepChange ? 'Click to edit' : undefined}
               data-testid="step-selector-display"
             >
@@ -177,7 +187,7 @@ export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetail
         </div>
       )}
 
-      {/* Webview context (for click, evaluate, poll with webview param) */}
+      {/* Webview context (for click, evaluate with webview param) */}
       {'webview' in step && step.webview && (
         <div style={styles.section}>
           <div style={styles.label}>Webview</div>
@@ -185,11 +195,67 @@ export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetail
         </div>
       )}
 
-      {/* Expected value (for assert action) */}
-      {'expect' in step && step.expect !== undefined && (
+      {/* Expect - post-action verification */}
+      {step.expect && (
         <div style={styles.section}>
-          <div style={styles.label}>Expected</div>
-          <div style={styles.codeBlock}>{JSON.stringify(step.expect, null, 2)}</div>
+          <div style={styles.label}>Expect</div>
+          {step.expect.type === 'selector' ? (
+            <div style={styles.expectBlock}>
+              {/* Selector field - editable */}
+              <div style={styles.expectField}>
+                <span style={styles.expectKey}>selector</span>
+                {editingField === 'expect.selector' ? (
+                  <div style={styles.expectEditInline}>
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      style={styles.expectInput}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && isDirty) handleSave();
+                        if (e.key === 'Escape') handleCancel();
+                      }}
+                    />
+                    {isDirty && (
+                      <div style={styles.inlineButtons}>
+                        <button style={styles.inlineSave} onClick={handleSave}>✓</button>
+                        <button style={styles.inlineCancel} onClick={handleCancel}>✕</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span
+                    style={{ ...styles.expectValueEditable, ...(onStepChange ? styles.clickable : {}) }}
+                    onClick={() => startEditing('expect.selector')}
+                    title={onStepChange ? 'Click to edit' : undefined}
+                  >
+                    <code>{step.expect.selector}</code>
+                    {onStepChange && <span style={styles.editIconSmall}>✎</span>}
+                  </span>
+                )}
+              </div>
+
+              {/* Exists field - only show if explicitly set */}
+              {step.expect.exists !== undefined && (
+                <div style={styles.expectField}>
+                  <span style={styles.expectKey}>exists</span>
+                  <span style={styles.expectValueStatic}>{String(step.expect.exists)}</span>
+                </div>
+              )}
+            </div>
+          ) : step.expect.type === 'value' ? (
+            <div style={styles.expectBlock}>
+              <div style={styles.expectField}>
+                <span style={styles.expectKey}>value</span>
+                <code style={styles.expectValueStatic}>
+                  {JSON.stringify(step.expect.value, null, 2)}
+                </code>
+              </div>
+            </div>
+          ) : (
+            <div style={styles.codeBlock}>{JSON.stringify(step.expect, null, 2)}</div>
+          )}
         </div>
       )}
 
@@ -202,10 +268,47 @@ export function StepDetail({ step, stepIndex, result, onStepChange }: StepDetail
       )}
 
       {/* Timeout */}
-      {step.timeout && (
+      {step.timeout !== undefined && (
         <div style={styles.section}>
           <div style={styles.label}>Timeout</div>
-          <div style={styles.valueBlock}>{step.timeout}ms</div>
+          {editingField === 'timeout' ? (
+            <div style={styles.editContainer}>
+              <div style={styles.inputWithUnit}>
+                <input
+                  type="number"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  style={styles.editableInput}
+                  autoFocus
+                  data-testid="step-timeout-input"
+                />
+                <span style={styles.unitLabel}>ms</span>
+              </div>
+              {isDirty && (
+                <div style={styles.buttonRow}>
+                  <button style={{ ...styles.button, ...styles.saveButton }} onClick={handleSave}>
+                    Save
+                  </button>
+                  <button style={{ ...styles.button, ...styles.cancelButton }} onClick={handleCancel}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                ...styles.valueBlock,
+                ...(onStepChange ? styles.clickable : {}),
+              }}
+              onClick={() => startEditing('timeout')}
+              title={onStepChange ? 'Click to edit' : undefined}
+              data-testid="step-timeout-display"
+            >
+              {step.timeout}ms
+              {onStepChange && <span style={styles.editIcon}>✎</span>}
+            </div>
+          )}
         </div>
       )}
 
@@ -370,6 +473,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#ccc',
   },
   valueBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
     fontSize: '13px',
     color: '#ccc',
   },
@@ -392,5 +498,95 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'pre-wrap',
     lineHeight: 1.6,
     border: '1px solid #2a5a2a',
+  },
+  expectBlock: {
+    backgroundColor: '#252526',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    border: '1px solid #3c3c3c',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  expectField: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    minHeight: '24px',
+  },
+  expectKey: {
+    color: '#9cdcfe',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    minWidth: '60px',
+  },
+  expectValueEditable: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    color: '#ce9178',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+  },
+  expectValueStatic: {
+    color: '#b5cea8',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+  },
+  clickable: {
+    cursor: 'pointer',
+  },
+  editIconSmall: {
+    fontSize: '10px',
+    color: '#666',
+    opacity: 0.7,
+  },
+  expectEditInline: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    flex: 1,
+  },
+  expectInput: {
+    backgroundColor: '#1e1e1e',
+    padding: '4px 8px',
+    borderRadius: '3px',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    color: '#ce9178',
+    border: '1px solid #4fc1ff',
+    outline: 'none',
+    flex: 1,
+  },
+  unitLabel: {
+    color: '#888',
+    fontSize: '11px',
+  },
+  inputWithUnit: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  inlineButtons: {
+    display: 'flex',
+    gap: '4px',
+  },
+  inlineSave: {
+    padding: '2px 8px',
+    border: 'none',
+    borderRadius: '3px',
+    fontSize: '12px',
+    backgroundColor: '#0e639c',
+    color: '#fff',
+    cursor: 'pointer',
+  },
+  inlineCancel: {
+    padding: '2px 8px',
+    border: 'none',
+    borderRadius: '3px',
+    fontSize: '12px',
+    backgroundColor: '#3c3c3c',
+    color: '#ccc',
+    cursor: 'pointer',
   },
 };

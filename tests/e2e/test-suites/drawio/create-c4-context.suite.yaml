@@ -42,19 +42,27 @@ context:
   app: cyrus-code
   prerequisites:
     - App is launched
-  waitFor: "[data-testid='search-bar']"
 
 test_cases:
   - id: open_diagram
     description: Open diagram view
     steps:
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='view-toggle']"
+        why: Wait for app to be ready.
+
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
 
-      - action: poll
-        selector: "[data-testid='diagram-webview']"
-        timeout: 10000
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='diagram-webview']"
         why: Wait for Draw.io webview to appear.
 
   - id: wait_for_drawio
@@ -78,18 +86,19 @@ test_cases:
             }
             throw new Error('Draw.io editor not ready within timeout');
           })()
-        timeout: 25000
+        timeout: 1000
         why: Wait for Draw.io's editor API to be available.
 
   - id: wait_for_editor_ready
     description: Wait for editor loading indicator to disappear
     depends: [wait_for_drawio]
     steps:
-      # Assert loading indicator is gone (after editor is ready, it should be)
-      - action: assert
-        selector: "[data-testid='diagram-loading']"
-        exists: false
-        timeout: 15000
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='diagram-loading']"
+          exists: false
         why: Verify the React loading indicator has disappeared.
 
   - id: create_c4_diagram
@@ -148,7 +157,7 @@ test_cases:
               model.endUpdate();
             }
           })()
-        timeout: 10000
+        timeout: 1000
         returns: "{ success: true, elements: 5, connections: 3 }"
         why: Create a C4 Context diagram showing cyrus-code with Developer, Git, and AI Service.
 
@@ -180,6 +189,6 @@ test_cases:
               edges
             };
           })()
-        timeout: 5000
+        timeout: 1000
         returns: "{ verified: true, vertices: 5, edges: 3 }"
         why: Verify the C4 diagram has the expected elements.

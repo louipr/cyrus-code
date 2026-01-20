@@ -29,11 +29,11 @@ export interface DebugSessionContextValue {
 
   // Context-added metadata
   testSuite: TestSuite | null;
-  appId: string | null;
-  testSuiteId: string | null;
+  groupId: string | null;
+  suiteId: string | null;
 
   // Context actions
-  startDebug: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<void>;
+  startDebug: (groupId: string, suiteId: string, testSuite: TestSuite) => Promise<void>;
   updateTestSuite: (testSuite: TestSuite) => void;
   clearDebug: () => void;
 }
@@ -46,15 +46,15 @@ const DebugSessionContext = createContext<DebugSessionContextValue | null>(null)
 export function DebugSessionProvider({ children }: { children: React.ReactNode }) {
   const [hookState, commands] = useDebugSession();
   const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
-  const [appId, setAppId] = useState<string | null>(null);
-  const [testSuiteId, setTestSuiteId] = useState<string | null>(null);
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const [suiteId, setSuiteId] = useState<string | null>(null);
 
   const startDebug = useCallback(
-    async (newAppId: string, newTestSuiteId: string, newTestSuite: TestSuite) => {
-      setAppId(newAppId);
-      setTestSuiteId(newTestSuiteId);
+    async (newGroupId: string, newSuiteId: string, newTestSuite: TestSuite) => {
+      setGroupId(newGroupId);
+      setSuiteId(newSuiteId);
       setTestSuite(newTestSuite);
-      await commands.create(newAppId, newTestSuiteId, true);
+      await commands.create(newGroupId, newSuiteId);
     },
     [commands]
   );
@@ -65,8 +65,8 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
 
   const clearDebug = useCallback(() => {
     setTestSuite(null);
-    setAppId(null);
-    setTestSuiteId(null);
+    setGroupId(null);
+    setSuiteId(null);
   }, []);
 
   const value: DebugSessionContextValue = {
@@ -83,8 +83,8 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     commands,
     // Context metadata
     testSuite,
-    appId,
-    testSuiteId,
+    groupId,
+    suiteId,
     // Context actions
     startDebug,
     updateTestSuite,

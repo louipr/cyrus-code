@@ -14,8 +14,8 @@ interface TestCaseDetailProps {
   testCase: TestCase;
   testCaseIndex: number;
   testSuite?: TestSuite;
-  appId?: string;
-  testSuiteId?: string;
+  groupId?: string;
+  suiteId?: string;
   onSave?: (updatedTestSuite: TestSuite) => Promise<void>;
   onStepChange?: (stepIndex: number, field: string, value: string) => void;
 }
@@ -49,8 +49,8 @@ export function TestCaseDetail({
   testCase,
   testCaseIndex,
   testSuite,
-  appId,
-  testSuiteId,
+  groupId,
+  suiteId,
   onSave,
   onStepChange,
 }: TestCaseDetailProps) {
@@ -73,7 +73,7 @@ export function TestCaseDetail({
   }, [testCase.id]);
 
   // Check if editing is enabled (requires all save-related props)
-  const canEdit = Boolean(testSuite && appId && testSuiteId && onSave);
+  const canEdit = Boolean(testSuite && groupId && suiteId && onSave);
 
   // Count step types
   const stepCounts = testCase.steps.reduce(

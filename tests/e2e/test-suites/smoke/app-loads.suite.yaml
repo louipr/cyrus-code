@@ -16,25 +16,14 @@ context:
   app: cyrus-code
   prerequisites:
     - App is launched
-  waitFor: "[data-testid='search-bar']"
 
 test_cases:
   - id: verify_app_loaded
     description: Verify app loaded
     steps:
-      - action: poll
-        selector: "[data-testid='search-bar']"
-        timeout: 10000
-        why: Search bar is the main indicator that the app has fully loaded.
-
-      - action: assert
-        selector: "[data-testid='search-bar']"
-        exists: true
-        why: Confirm search bar exists after waiting.
-
-# Usage example in tests:
-#
-# const player = new RecordingPlayer(webContents, recording);
-# const result = await player.play();
-#
-# expect(result.success).toBe(true);
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='view-toggle']"
+        why: View toggle is the main indicator that the app has fully loaded.

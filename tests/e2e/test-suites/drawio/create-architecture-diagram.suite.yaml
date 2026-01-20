@@ -45,19 +45,27 @@ context:
   app: cyrus-code
   prerequisites:
     - App is launched
-  waitFor: "[data-testid='search-bar']"
 
 test_cases:
   - id: open_diagram
     description: Open diagram view
     steps:
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='view-toggle']"
+        why: Wait for app to be ready.
+
       - action: click
         selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
         why: Click the Diagram button to switch to diagram view.
 
-      - action: poll
-        selector: "[data-testid='diagram-webview']"
-        timeout: 10000
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='diagram-webview']"
         why: Wait for Draw.io webview to appear.
 
   - id: wait_for_drawio
@@ -80,17 +88,19 @@ test_cases:
             }
             throw new Error('Draw.io editor not ready within timeout');
           })()
-        timeout: 25000
+        timeout: 1000
         why: Wait for Draw.io's editor API to be available.
 
   - id: wait_for_editor_ready
     description: Wait for editor loading indicator to disappear
     depends: [wait_for_drawio]
     steps:
-      - action: assert
-        selector: "[data-testid='diagram-loading']"
-        exists: false
-        timeout: 15000
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='diagram-loading']"
+          exists: false
         why: Verify the React loading indicator has disappeared.
 
   - id: create_diagram
@@ -133,7 +143,7 @@ test_cases:
               model.endUpdate();
             }
           })()
-        timeout: 10000
+        timeout: 1000
         returns: "{ success: true, components: 3, connections: 2 }"
         why: Use Draw.io's graph API to create a 3-tier architecture diagram.
 
@@ -165,7 +175,7 @@ test_cases:
               edges
             };
           })()
-        timeout: 5000
+        timeout: 1000
         returns: "{ verified: true, vertices: 3, edges: 2 }"
         why: Verify the diagram contains the expected components and connections.
 
@@ -210,7 +220,7 @@ test_cases:
             }
             throw new Error('Export dialog not found within timeout');
           })()
-        timeout: 15000
+        timeout: 1000
         why: Wait for Draw.io's export options dialog (contains "Zoom" setting).
 
   - id: click_export_button
@@ -243,7 +253,7 @@ test_cases:
             }
             throw new Error('Save dialog not found within timeout');
           })()
-        timeout: 15000
+        timeout: 1000
         why: Wait for Save As dialog with filename input.
 
   - id: select_downloads_destination
@@ -271,7 +281,7 @@ test_cases:
             }
             return { selected: false, reason: 'Downloads option not found' };
           })()
-        timeout: 5000
+        timeout: 1000
         why: Select Downloads from the destination dropdown.
 
   - id: get_export_data_and_save
@@ -379,6 +389,6 @@ test_cases:
             destination,
             size: writeResult.data?.size || 0
           };
-        timeout: 15000
+        timeout: 1000
         returns: "{ success: true, path: '<destination>/<filename>.png' }"
         why: Export PNG data and write to file, bypassing OS save dialog.

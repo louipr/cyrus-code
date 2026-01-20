@@ -1,32 +1,66 @@
 /**
- * Test Suite Types
+ * Test Suite Schema Types
  *
- * Defines the structure of a TestSuite document.
- * A TestSuite is a collection of TestCases for GUI automation testing.
+ * Defines the structure of a TestSuite document (*.suite.yaml).
+ * These are "schema" types - what you write, not what happens at runtime.
+ *
+ * @see playback-types.ts for runtime types (events, state, results)
  */
 
-/**
- * Test suite status indicating quality/reliability.
- */
-export type TestSuiteStatus = 'draft' | 'verified' | 'deprecated';
-
-/**
- * Reliability level based on test runs.
- */
-export type ReliabilityLevel = 'high' | 'medium' | 'low' | 'unknown';
+// ============================================================================
+// Action Types - What actions can be performed
+// ============================================================================
 
 /**
  * Supported action types for steps.
+ *
+ * - 'wait': No action, just run the expect block (used for waitFor/assert patterns)
  */
 export type ActionType =
   | 'click'
   | 'type'
   | 'evaluate'
-  | 'poll'
-  | 'assert'
+  | 'wait'
   | 'screenshot'
   | 'hover'
   | 'keyboard';
+
+// ============================================================================
+// Expectation Types - Post-action verification
+// ============================================================================
+
+/**
+ * Selector-based expectation - verify element exists/doesn't exist after action.
+ */
+export interface SelectorExpectation {
+  type: 'selector';
+  /** CSS selector to verify */
+  selector: string;
+  /** Whether element should exist. Omit for exists check, set false for not-exists check. */
+  exists?: boolean;
+}
+
+/**
+ * Value-based expectation - verify return value matches.
+ */
+export interface ValueExpectation {
+  type: 'value';
+  /** Expected return value (deep equality check) */
+  value: unknown;
+}
+
+/**
+ * Step expectation - what should happen after the action executes.
+ * Optional field - omit if no verification needed.
+ *
+ * - SelectorExpectation: Verify element state (type: 'selector')
+ * - ValueExpectation: Verify return value (type: 'value')
+ */
+export type StepExpectation = SelectorExpectation | ValueExpectation;
+
+// ============================================================================
+// Step Types - Individual test actions
+// ============================================================================
 
 /**
  * Common fields shared by all step types.
@@ -40,6 +74,9 @@ interface BaseStep {
 
   /** LLM-readable explanation of WHY this step is needed */
   why: string;
+
+  /** Post-action verification. Omit if no verification needed. */
+  expect?: StepExpectation;
 }
 
 /**
@@ -57,7 +94,6 @@ export interface ClickStep extends BaseStep {
 
 /**
  * Type text into an element.
- * If webview is specified, types inside that webview's isolated context.
  */
 export interface TypeStep extends BaseStep {
   action: 'type';
@@ -71,7 +107,6 @@ export interface TypeStep extends BaseStep {
 
 /**
  * Execute arbitrary JavaScript code.
- * If webview is specified, executes inside that webview's isolated context.
  */
 export interface EvaluateStep extends BaseStep {
   action: 'evaluate';
@@ -82,27 +117,24 @@ export interface EvaluateStep extends BaseStep {
 }
 
 /**
- * Poll until an element exists.
+ * Wait step - no action, just run the expect block.
+ *
+ * Use for waiting/asserting element state without performing an action.
+ * The expect field is REQUIRED for wait steps (otherwise, what are you waiting for?).
+ *
+ * Examples:
+ *   - action: wait
+ *     expect: { type: selector, selector: "[data-testid='foo']" }
+ *     why: Wait for element to appear.
+ *
+ *   - action: wait
+ *     expect: { type: selector, selector: "[data-testid='loading']", exists: false }
+ *     why: Wait for loading indicator to disappear.
  */
-export interface PollStep extends BaseStep {
-  action: 'poll';
-  /** CSS selector to wait for */
-  selector: string;
-  /** If specified, poll inside this webview element */
-  webview?: string;
-}
-
-/**
- * Assert element existence.
- */
-export interface AssertStep extends BaseStep {
-  action: 'assert';
-  /** CSS selector to assert */
-  selector: string;
-  /** Whether element should exist (default: DEFAULT_ASSERT_EXISTS from constants.ts) */
-  exists?: boolean;
-  /** Expected value (for content assertions) */
-  expect?: unknown;
+export interface WaitStep extends Omit<BaseStep, 'expect'> {
+  action: 'wait';
+  /** Required expectation - what to wait for */
+  expect: StepExpectation;
 }
 
 /**
@@ -140,11 +172,14 @@ export type TestStep =
   | ClickStep
   | TypeStep
   | EvaluateStep
-  | PollStep
-  | AssertStep
+  | WaitStep
   | ScreenshotStep
   | HoverStep
   | KeyboardStep;
+
+// ============================================================================
+// Suite Structure - Document hierarchy
+// ============================================================================
 
 /**
  * A test case containing multiple steps.
@@ -172,10 +207,21 @@ export interface TestSuiteContext {
 
   /** Prerequisites that must be true before running */
   prerequisites?: string[];
-
-  /** Selector that must exist before running */
-  waitFor?: string;
 }
+
+// ============================================================================
+// Suite Metadata - Quality tracking
+// ============================================================================
+
+/**
+ * Test suite status indicating quality/reliability.
+ */
+export type TestSuiteStatus = 'draft' | 'verified' | 'deprecated';
+
+/**
+ * Reliability level based on test runs.
+ */
+export type ReliabilityLevel = 'high' | 'medium' | 'low' | 'unknown';
 
 /**
  * Metadata for tracking test suite quality.
@@ -206,8 +252,13 @@ export interface TestSuiteMetadata {
   modified?: string;
 }
 
+// ============================================================================
+// Root Type - Complete test suite document
+// ============================================================================
+
 /**
  * Complete test suite structure.
+ * This is the root type for *.suite.yaml files.
  */
 export interface TestSuite {
   /** Description of what this test suite does */

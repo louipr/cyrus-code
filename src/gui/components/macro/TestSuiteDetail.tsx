@@ -10,16 +10,16 @@ import { STATUS_COLORS, RELIABILITY_COLORS, FALLBACK_COLOR } from '../../constan
 
 interface TestSuiteDetailProps {
   testSuite: TestSuite;
-  /** Test suite ID (derived from filename, e.g., "export-dialog") */
-  testSuiteId?: string;
+  /** Suite ID (derived from filename, e.g., "export-dialog") */
+  suiteId?: string;
 }
 
-export function TestSuiteDetail({ testSuite, testSuiteId }: TestSuiteDetailProps) {
+export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
   const statusColor = STATUS_COLORS[testSuite.metadata.status] ?? FALLBACK_COLOR;
   const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata.reliability] ?? FALLBACK_COLOR;
 
-  // Display testSuiteId as title (derived from filename)
-  const title = testSuiteId ?? 'Test Suite';
+  // Display suiteId as title (derived from filename)
+  const title = suiteId ?? 'Test Suite';
 
   return (
     <div style={styles.container} data-testid="test-suite-detail">
@@ -86,14 +86,6 @@ export function TestSuiteDetail({ testSuite, testSuiteId }: TestSuiteDetailProps
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* Wait For */}
-      {testSuite.context.waitFor && (
-        <div style={styles.section}>
-          <div style={styles.label}>Wait For</div>
-          <div style={styles.codeBlock}>{testSuite.context.waitFor}</div>
         </div>
       )}
 

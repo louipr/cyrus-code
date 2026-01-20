@@ -34,8 +34,8 @@ export function TestSuitePanel() {
   // Get everything from context
   const {
     testSuite,
-    appId,
-    testSuiteId,
+    groupId,
+    suiteId,
     sessionId,
     position,
     stepResults,
@@ -106,9 +106,9 @@ export function TestSuitePanel() {
   // Handle saving test suite (for test case parameter edits)
   const handleSaveTestSuite = useCallback(
     async (updatedTestSuite: TestSuite) => {
-      if (!appId || !testSuiteId) return;
+      if (!groupId || !suiteId) return;
 
-      const result = await apiClient.recordings.save(appId, testSuiteId, updatedTestSuite);
+      const result = await apiClient.recordings.save(groupId, suiteId, updatedTestSuite);
       if (result.success) {
         // Notify parent to update state
         updateTestSuite(updatedTestSuite);
@@ -130,10 +130,11 @@ export function TestSuitePanel() {
         console.error('Failed to save test suite:', result.error?.message);
       }
     },
-    [appId, testSuiteId, updateTestSuite, selectedTestCase, testSuite]
+    [groupId, suiteId, updateTestSuite, selectedTestCase, testSuite]
   );
 
   // Handle step field changes (inline editing)
+  // Supports nested fields like 'expect.selector' via dot notation
   const handleStepChange = useCallback(
     (stepIndex: number, field: string, value: string) => {
       if (!testSuite || !selectedTestCase) return;
@@ -146,7 +147,20 @@ export function TestSuitePanel() {
       const currentStep = updatedSteps[stepIndex];
       if (!currentStep) return;
 
-      updatedSteps[stepIndex] = { ...currentStep, [field]: value };
+      // Handle nested fields (e.g., 'expect.selector')
+      let updatedStep;
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        const parentObj = currentStep[parent as keyof typeof currentStep];
+        updatedStep = {
+          ...currentStep,
+          [parent!]: { ...(parentObj as object), [child!]: value },
+        };
+      } else {
+        updatedStep = { ...currentStep, [field]: value };
+      }
+
+      updatedSteps[stepIndex] = updatedStep;
       updatedTestCases[testCaseIndex] = {
         ...updatedTestCases[testCaseIndex]!,
         steps: updatedSteps,
@@ -268,13 +282,13 @@ export function TestSuitePanel() {
               testCase={selectedTestCase}
               testCaseIndex={testSuite.test_cases.findIndex((t) => t.id === selectedTestCase.id)}
               testSuite={testSuite}
-              appId={appId ?? undefined}
-              testSuiteId={testSuiteId ?? undefined}
+              groupId={groupId ?? undefined}
+              suiteId={suiteId ?? undefined}
               onSave={handleSaveTestSuite}
               onStepChange={handleStepChange}
             />
           ) : testSuite ? (
-            <TestSuiteDetail testSuite={testSuite} testSuiteId={testSuiteId ?? undefined} />
+            <TestSuiteDetail testSuite={testSuite} suiteId={suiteId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholderText}>Select a test case or step</span>

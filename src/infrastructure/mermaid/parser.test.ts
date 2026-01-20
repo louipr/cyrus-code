@@ -56,164 +56,70 @@ describe('parseCyrusComment', () => {
 });
 
 describe('inferShapeTypeFromMermaid', () => {
-  it('returns class for rectangle [text]', () => {
-    const result = inferShapeTypeFromMermaid('[UserService]');
-    assert.strictEqual(result, 'class');
-  });
+  const shapeTypeCases = [
+    // [description, input, stereotype, expected]
+    ['rectangle [text]', '[UserService]', undefined, 'class'],
+    ['stadium ([text])', '([AuthService])', undefined, 'service'],
+    ['cylinder [(text)]', '[(Database)]', undefined, 'database'],
+    ['circle ((text))', '((ExternalAPI))', undefined, 'external'],
+    ['diamond {text}', '{AuthModule}', undefined, 'module'],
+    ['subroutine [[text]]', '[[Subsystem]]', undefined, 'subsystem'],
+    ['hexagon {{text}}', '{{Controller}}', undefined, 'controller'],
+    ['asymmetric >text]', '>Handler]', undefined, 'handler'],
+    ['stereotype override', '[UserService]', 'repository', 'repository'],
+    ['case-insensitive stereotype', '[Foo]', 'Service', 'service'],
+  ] as const;
 
-  it('returns service for stadium ([text])', () => {
-    const result = inferShapeTypeFromMermaid('([AuthService])');
-    assert.strictEqual(result, 'service');
-  });
-
-  it('returns database for cylinder [(text)]', () => {
-    const result = inferShapeTypeFromMermaid('[(Database)]');
-    assert.strictEqual(result, 'database');
-  });
-
-  it('returns external for circle ((text))', () => {
-    const result = inferShapeTypeFromMermaid('((ExternalAPI))');
-    assert.strictEqual(result, 'external');
-  });
-
-  it('returns module for diamond {text}', () => {
-    const result = inferShapeTypeFromMermaid('{AuthModule}');
-    assert.strictEqual(result, 'module');
-  });
-
-  it('returns subsystem for subroutine [[text]]', () => {
-    const result = inferShapeTypeFromMermaid('[[Subsystem]]');
-    assert.strictEqual(result, 'subsystem');
-  });
-
-  it('returns controller for hexagon {{text}}', () => {
-    const result = inferShapeTypeFromMermaid('{{Controller}}');
-    assert.strictEqual(result, 'controller');
-  });
-
-  it('returns handler for asymmetric >text]', () => {
-    const result = inferShapeTypeFromMermaid('>Handler]');
-    assert.strictEqual(result, 'handler');
-  });
-
-  it('uses stereotype over shape inference', () => {
-    const result = inferShapeTypeFromMermaid('[UserService]', 'repository');
-    assert.strictEqual(result, 'repository');
-  });
-
-  it('handles stereotype case-insensitively', () => {
-    const result = inferShapeTypeFromMermaid('[Foo]', 'Service');
-    assert.strictEqual(result, 'service');
-  });
+  for (const [desc, input, stereotype, expected] of shapeTypeCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferShapeTypeFromMermaid(input, stereotype), expected);
+    });
+  }
 });
 
 describe('inferRelationshipTypeFromMermaid', () => {
-  it('returns dependency for -->', () => {
-    const result = inferRelationshipTypeFromMermaid('-->');
-    assert.strictEqual(result, 'dependency');
-  });
+  const relTypeCases = [
+    // [description, arrow, cyrusType, expected]
+    ['-->', '-->', undefined, 'dependency'],
+    ['-.-> (dotted)', '-.-> ', undefined, 'calls'],
+    ['==>', '==>', undefined, 'contains'],
+    ['--o', '--o', undefined, 'aggregation'],
+    ['--*', '--*', undefined, 'composition'],
+    ['--|>', '--|>', undefined, 'extends'],
+    ['..|>', '..|>', undefined, 'implements'],
+    ['---', '---', undefined, 'association'],
+    ['explicit cyrus-type override', '-->', 'calls', 'calls'],
+    ['invalid cyrus-type ignored', '-->', 'invalid', 'dependency'],
+  ] as const;
 
-  it('returns calls for -.->', () => {
-    const result = inferRelationshipTypeFromMermaid('-.->');
-    assert.strictEqual(result, 'calls');
-  });
-
-  it('returns contains for ==>', () => {
-    const result = inferRelationshipTypeFromMermaid('==>');
-    assert.strictEqual(result, 'contains');
-  });
-
-  it('returns aggregation for --o', () => {
-    const result = inferRelationshipTypeFromMermaid('--o');
-    assert.strictEqual(result, 'aggregation');
-  });
-
-  it('returns composition for --*', () => {
-    const result = inferRelationshipTypeFromMermaid('--*');
-    assert.strictEqual(result, 'composition');
-  });
-
-  it('returns extends for --|>', () => {
-    const result = inferRelationshipTypeFromMermaid('--|>');
-    assert.strictEqual(result, 'extends');
-  });
-
-  it('returns implements for ..|>', () => {
-    const result = inferRelationshipTypeFromMermaid('..|>');
-    assert.strictEqual(result, 'implements');
-  });
-
-  it('returns association for ---', () => {
-    const result = inferRelationshipTypeFromMermaid('---');
-    assert.strictEqual(result, 'association');
-  });
-
-  it('uses explicit cyrus-type over inference', () => {
-    const result = inferRelationshipTypeFromMermaid('-->', 'calls');
-    assert.strictEqual(result, 'calls');
-  });
-
-  it('ignores invalid cyrus-type', () => {
-    const result = inferRelationshipTypeFromMermaid('-->', 'invalid');
-    assert.strictEqual(result, 'dependency');
-  });
+  for (const [desc, arrow, cyrusType, expected] of relTypeCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferRelationshipTypeFromMermaid(arrow, cyrusType), expected);
+    });
+  }
 });
 
 describe('inferLevelFromMermaid', () => {
-  it('returns L1 as default', () => {
-    const result = inferLevelFromMermaid();
-    assert.strictEqual(result, 'L1');
-  });
+  const levelCases = [
+    // [description, cyrusLevel, shapeType, expected]
+    ['default', undefined, undefined, 'L1'],
+    ['explicit L2', 'L2', undefined, 'L2'],
+    ['invalid cyrus-level ignored', 'invalid', undefined, 'L1'],
+    ['interface shape', undefined, 'interface', 'L0'],
+    ['service shape', undefined, 'service', 'L1'],
+    ['module shape', undefined, 'module', 'L2'],
+    ['subsystem shape', undefined, 'subsystem', 'L3'],
+    ['api shape', undefined, 'api', 'L4'],
+    ['database shape', undefined, 'database', 'infra'],
+    ['external shape', undefined, 'external', 'boundary'],
+    ['explicit level over shape', 'L3', 'service', 'L3'],
+  ] as const;
 
-  it('uses explicit cyrus-level', () => {
-    const result = inferLevelFromMermaid('L2');
-    assert.strictEqual(result, 'L2');
-  });
-
-  it('ignores invalid cyrus-level', () => {
-    const result = inferLevelFromMermaid('invalid');
-    assert.strictEqual(result, 'L1');
-  });
-
-  it('infers L0 from interface shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'interface');
-    assert.strictEqual(result, 'L0');
-  });
-
-  it('infers L1 from service shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'service');
-    assert.strictEqual(result, 'L1');
-  });
-
-  it('infers L2 from module shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'module');
-    assert.strictEqual(result, 'L2');
-  });
-
-  it('infers L3 from subsystem shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'subsystem');
-    assert.strictEqual(result, 'L3');
-  });
-
-  it('infers L4 from api shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'api');
-    assert.strictEqual(result, 'L4');
-  });
-
-  it('infers infra from database shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'database');
-    assert.strictEqual(result, 'infra');
-  });
-
-  it('infers boundary from external shape', () => {
-    const result = inferLevelFromMermaid(undefined, 'external');
-    assert.strictEqual(result, 'boundary');
-  });
-
-  it('explicit level takes precedence over shape', () => {
-    const result = inferLevelFromMermaid('L3', 'service');
-    assert.strictEqual(result, 'L3');
-  });
+  for (const [desc, cyrusLevel, shapeType, expected] of levelCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferLevelFromMermaid(cyrusLevel, shapeType), expected);
+    });
+  }
 });
 
 describe('extractNodeLabel', () => {

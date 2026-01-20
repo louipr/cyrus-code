@@ -13,75 +13,34 @@ import {
 } from './parser.js';
 
 describe('parseStyleString', () => {
-  it('parses empty string', () => {
-    const result = parseStyleString('');
-    assert.deepStrictEqual(result, {});
-  });
+  const singlePropCases = [
+    // [description, input, key, expected]
+    ['empty string', '', null, {}],
+    ['fillColor', 'fillColor=#FF0000', 'fillColor', '#FF0000'],
+    ['fillColor=none', 'fillColor=none', 'fillColor', undefined],
+    ['strokeColor', 'strokeColor=#00FF00', 'strokeColor', '#00FF00'],
+    ['fontColor', 'fontColor=#0000FF', 'fontColor', '#0000FF'],
+    ['fontSize', 'fontSize=14', 'fontSize', 14],
+    ['fontStyle bold', 'fontStyle=1', 'fontStyle', 'bold'],
+    ['fontStyle italic', 'fontStyle=2', 'fontStyle', 'italic'],
+    ['fontStyle normal', 'fontStyle=0', 'fontStyle', 'normal'],
+    ['dashed=1', 'dashed=1', 'dashed', true],
+    ['dashed=0', 'dashed=0', 'dashed', false],
+    ['rounded=1', 'rounded=1', 'rounded', true],
+    ['opacity', 'opacity=50', 'opacity', 50],
+    ['shape', 'shape=cylinder', 'shape', 'cylinder'],
+  ] as const;
 
-  it('parses fillColor', () => {
-    const result = parseStyleString('fillColor=#FF0000');
-    assert.strictEqual(result.fillColor, '#FF0000');
-  });
-
-  it('handles fillColor=none as undefined', () => {
-    const result = parseStyleString('fillColor=none');
-    assert.strictEqual(result.fillColor, undefined);
-  });
-
-  it('parses strokeColor', () => {
-    const result = parseStyleString('strokeColor=#00FF00');
-    assert.strictEqual(result.strokeColor, '#00FF00');
-  });
-
-  it('parses fontColor', () => {
-    const result = parseStyleString('fontColor=#0000FF');
-    assert.strictEqual(result.fontColor, '#0000FF');
-  });
-
-  it('parses fontSize', () => {
-    const result = parseStyleString('fontSize=14');
-    assert.strictEqual(result.fontSize, 14);
-  });
-
-  it('parses fontStyle bold', () => {
-    const result = parseStyleString('fontStyle=1');
-    assert.strictEqual(result.fontStyle, 'bold');
-  });
-
-  it('parses fontStyle italic', () => {
-    const result = parseStyleString('fontStyle=2');
-    assert.strictEqual(result.fontStyle, 'italic');
-  });
-
-  it('parses fontStyle normal', () => {
-    const result = parseStyleString('fontStyle=0');
-    assert.strictEqual(result.fontStyle, 'normal');
-  });
-
-  it('parses dashed=1 as true', () => {
-    const result = parseStyleString('dashed=1');
-    assert.strictEqual(result.dashed, true);
-  });
-
-  it('parses dashed=0 as false', () => {
-    const result = parseStyleString('dashed=0');
-    assert.strictEqual(result.dashed, false);
-  });
-
-  it('parses rounded=1 as true', () => {
-    const result = parseStyleString('rounded=1');
-    assert.strictEqual(result.rounded, true);
-  });
-
-  it('parses opacity', () => {
-    const result = parseStyleString('opacity=50');
-    assert.strictEqual(result.opacity, 50);
-  });
-
-  it('parses shape', () => {
-    const result = parseStyleString('shape=cylinder');
-    assert.strictEqual(result.shape, 'cylinder');
-  });
+  for (const [desc, input, key, expected] of singlePropCases) {
+    it(`parses ${desc}`, () => {
+      const result = parseStyleString(input);
+      if (key === null) {
+        assert.deepStrictEqual(result, expected);
+      } else {
+        assert.strictEqual(result[key], expected);
+      }
+    });
+  }
 
   it('parses multiple properties', () => {
     const result = parseStyleString('fillColor=#FF0000;strokeColor=#00FF00;fontSize=12;dashed=1');
@@ -99,209 +58,79 @@ describe('parseStyleString', () => {
 });
 
 describe('inferShapeType', () => {
-  it('returns class as default', () => {
-    const result = inferShapeType({});
-    assert.strictEqual(result, 'class');
-  });
+  const shapeTypeCases = [
+    // [description, style, stereotype, expected]
+    ['default (empty)', {}, undefined, 'class'],
+    ['stereotype service', {}, 'service', 'service'],
+    ['stereotype Interface (case insensitive)', {}, 'Interface', 'interface'],
+    ['stereotype repository', {}, 'repository', 'repository'],
+    ['shape=cylinder', { shape: 'cylinder' }, undefined, 'database'],
+    ['shape=actor', { shape: 'actor' }, undefined, 'actor'],
+    ['shape=cloud', { shape: 'cloud' }, undefined, 'external'],
+    ['shape=parallelogram', { shape: 'parallelogram' }, undefined, 'queue'],
+    ['fillColor #6a9955', { fillColor: '#6a9955' }, undefined, 'primitive'],
+    ['fillColor #4ec9b0', { fillColor: '#4ec9b0' }, undefined, 'class'],
+    ['stereotype over shape', { shape: 'cylinder' }, 'service', 'service'],
+  ] as const;
 
-  it('infers from stereotype - service', () => {
-    const result = inferShapeType({}, 'service');
-    assert.strictEqual(result, 'service');
-  });
-
-  it('infers from stereotype - interface (case insensitive)', () => {
-    const result = inferShapeType({}, 'Interface');
-    assert.strictEqual(result, 'interface');
-  });
-
-  it('infers from stereotype - repository', () => {
-    const result = inferShapeType({}, 'repository');
-    assert.strictEqual(result, 'repository');
-  });
-
-  it('infers from shape=cylinder as database', () => {
-    const result = inferShapeType({ shape: 'cylinder' });
-    assert.strictEqual(result, 'database');
-  });
-
-  it('infers from shape=actor', () => {
-    const result = inferShapeType({ shape: 'actor' });
-    assert.strictEqual(result, 'actor');
-  });
-
-  it('infers from shape=cloud as external', () => {
-    const result = inferShapeType({ shape: 'cloud' });
-    assert.strictEqual(result, 'external');
-  });
-
-  it('infers from shape=parallelogram as queue', () => {
-    const result = inferShapeType({ shape: 'parallelogram' });
-    assert.strictEqual(result, 'queue');
-  });
-
-  it('infers from fillColor #6a9955 as primitive', () => {
-    const result = inferShapeType({ fillColor: '#6a9955' });
-    assert.strictEqual(result, 'primitive');
-  });
-
-  it('infers from fillColor #4ec9b0 as class', () => {
-    const result = inferShapeType({ fillColor: '#4ec9b0' });
-    assert.strictEqual(result, 'class');
-  });
-
-  it('stereotype takes precedence over shape', () => {
-    const result = inferShapeType({ shape: 'cylinder' }, 'service');
-    assert.strictEqual(result, 'service');
-  });
+  for (const [desc, style, stereotype, expected] of shapeTypeCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferShapeType(style, stereotype), expected);
+    });
+  }
 });
 
 describe('inferLevel', () => {
-  it('returns L1 as default', () => {
-    const result = inferLevel();
-    assert.strictEqual(result, 'L1');
-  });
+  const levelCases = [
+    // [description, cyrusLevel, shapeType, expected]
+    ['default', undefined, undefined, 'L1'],
+    ['explicit L0', 'L0', undefined, 'L0'],
+    ['explicit L2', 'L2', undefined, 'L2'],
+    ['explicit infra', 'infra', undefined, 'infra'],
+    ['explicit boundary', 'boundary', undefined, 'boundary'],
+    ['explicit ui', 'ui', undefined, 'ui'],
+    ['invalid cyrus-level ignored', 'invalid', undefined, 'L1'],
+    ['primitive shape', undefined, 'primitive', 'L0'],
+    ['interface shape', undefined, 'interface', 'L0'],
+    ['service shape', undefined, 'service', 'L1'],
+    ['module shape', undefined, 'module', 'L2'],
+    ['subsystem shape', undefined, 'subsystem', 'L3'],
+    ['api shape', undefined, 'api', 'L4'],
+    ['database shape', undefined, 'database', 'infra'],
+    ['external shape', undefined, 'external', 'boundary'],
+    ['component shape', undefined, 'component', 'ui'],
+    ['explicit level over shape', 'L3', 'service', 'L3'],
+  ] as const;
 
-  it('uses explicit cyrus-level L0', () => {
-    const result = inferLevel('L0');
-    assert.strictEqual(result, 'L0');
-  });
-
-  it('uses explicit cyrus-level L2', () => {
-    const result = inferLevel('L2');
-    assert.strictEqual(result, 'L2');
-  });
-
-  it('uses explicit cyrus-level infra', () => {
-    const result = inferLevel('infra');
-    assert.strictEqual(result, 'infra');
-  });
-
-  it('uses explicit cyrus-level boundary', () => {
-    const result = inferLevel('boundary');
-    assert.strictEqual(result, 'boundary');
-  });
-
-  it('uses explicit cyrus-level ui', () => {
-    const result = inferLevel('ui');
-    assert.strictEqual(result, 'ui');
-  });
-
-  it('ignores invalid cyrus-level', () => {
-    const result = inferLevel('invalid');
-    assert.strictEqual(result, 'L1');
-  });
-
-  it('infers L0 from primitive shape', () => {
-    const result = inferLevel(undefined, 'primitive');
-    assert.strictEqual(result, 'L0');
-  });
-
-  it('infers L0 from interface shape', () => {
-    const result = inferLevel(undefined, 'interface');
-    assert.strictEqual(result, 'L0');
-  });
-
-  it('infers L1 from service shape', () => {
-    const result = inferLevel(undefined, 'service');
-    assert.strictEqual(result, 'L1');
-  });
-
-  it('infers L2 from module shape', () => {
-    const result = inferLevel(undefined, 'module');
-    assert.strictEqual(result, 'L2');
-  });
-
-  it('infers L3 from subsystem shape', () => {
-    const result = inferLevel(undefined, 'subsystem');
-    assert.strictEqual(result, 'L3');
-  });
-
-  it('infers L4 from api shape', () => {
-    const result = inferLevel(undefined, 'api');
-    assert.strictEqual(result, 'L4');
-  });
-
-  it('infers infra from database shape', () => {
-    const result = inferLevel(undefined, 'database');
-    assert.strictEqual(result, 'infra');
-  });
-
-  it('infers boundary from external shape', () => {
-    const result = inferLevel(undefined, 'external');
-    assert.strictEqual(result, 'boundary');
-  });
-
-  it('infers ui from component shape', () => {
-    const result = inferLevel(undefined, 'component');
-    assert.strictEqual(result, 'ui');
-  });
-
-  it('explicit level takes precedence over shape inference', () => {
-    const result = inferLevel('L3', 'service');
-    assert.strictEqual(result, 'L3');
-  });
+  for (const [desc, cyrusLevel, shapeType, expected] of levelCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferLevel(cyrusLevel, shapeType), expected);
+    });
+  }
 });
 
 describe('inferRelationshipType', () => {
-  it('returns dependency as default', () => {
-    const result = inferRelationshipType({});
-    assert.strictEqual(result, 'dependency');
-  });
+  const relTypeCases = [
+    // [description, style, cyrusType, expected]
+    ['default (empty)', {}, undefined, 'dependency'],
+    ['explicit extends', {}, 'extends', 'extends'],
+    ['explicit implements', {}, 'implements', 'implements'],
+    ['explicit composition', {}, 'composition', 'composition'],
+    ['explicit calls', {}, 'calls', 'calls'],
+    ['invalid cyrus-type ignored', {}, 'invalid', 'dependency'],
+    ['dashed style', { dashed: true }, undefined, 'dependency'],
+    ['dashed green (#00FF00)', { dashed: true, strokeColor: '#00FF00' }, undefined, 'publishes'],
+    ['dashed green (lowercase)', { dashed: true, strokeColor: 'green' }, undefined, 'publishes'],
+    ['dashed blue', { dashed: true, strokeColor: '#0000FF' }, undefined, 'reads'],
+    ['dashed red', { dashed: true, strokeColor: '#FF0000' }, undefined, 'writes'],
+    ['explicit over style', { dashed: true, strokeColor: '#00FF00' }, 'calls', 'calls'],
+  ] as const;
 
-  it('uses explicit cyrus-type extends', () => {
-    const result = inferRelationshipType({}, 'extends');
-    assert.strictEqual(result, 'extends');
-  });
-
-  it('uses explicit cyrus-type implements', () => {
-    const result = inferRelationshipType({}, 'implements');
-    assert.strictEqual(result, 'implements');
-  });
-
-  it('uses explicit cyrus-type composition', () => {
-    const result = inferRelationshipType({}, 'composition');
-    assert.strictEqual(result, 'composition');
-  });
-
-  it('uses explicit cyrus-type calls', () => {
-    const result = inferRelationshipType({}, 'calls');
-    assert.strictEqual(result, 'calls');
-  });
-
-  it('ignores invalid cyrus-type', () => {
-    const result = inferRelationshipType({}, 'invalid');
-    assert.strictEqual(result, 'dependency');
-  });
-
-  it('infers dependency from dashed style', () => {
-    const result = inferRelationshipType({ dashed: true });
-    assert.strictEqual(result, 'dependency');
-  });
-
-  it('infers publishes from dashed green', () => {
-    const result = inferRelationshipType({ dashed: true, strokeColor: '#00FF00' });
-    assert.strictEqual(result, 'publishes');
-  });
-
-  it('infers publishes from dashed green (lowercase)', () => {
-    const result = inferRelationshipType({ dashed: true, strokeColor: 'green' });
-    assert.strictEqual(result, 'publishes');
-  });
-
-  it('infers reads from dashed blue', () => {
-    const result = inferRelationshipType({ dashed: true, strokeColor: '#0000FF' });
-    assert.strictEqual(result, 'reads');
-  });
-
-  it('infers writes from dashed red', () => {
-    const result = inferRelationshipType({ dashed: true, strokeColor: '#FF0000' });
-    assert.strictEqual(result, 'writes');
-  });
-
-  it('explicit type takes precedence over style inference', () => {
-    const result = inferRelationshipType({ dashed: true, strokeColor: '#00FF00' }, 'calls');
-    assert.strictEqual(result, 'calls');
-  });
+  for (const [desc, style, cyrusType, expected] of relTypeCases) {
+    it(`returns ${expected} for ${desc}`, () => {
+      assert.strictEqual(inferRelationshipType(style, cyrusType), expected);
+    });
+  }
 });
 
 describe('parseDrawioXml', () => {

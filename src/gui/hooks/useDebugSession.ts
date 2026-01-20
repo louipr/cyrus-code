@@ -49,7 +49,7 @@ interface DebugSessionHookState {
  */
 export interface DebugSessionCommands {
   /** Create and start a new debug session */
-  create: (appId: string, testSuiteId: string, headed?: boolean) => Promise<void>;
+  create: (groupId: string, suiteId: string) => Promise<void>;
 
   /** Start execution */
   start: () => Promise<void>;
@@ -113,7 +113,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
           break;
 
         case 'session-ready':
-          setState('ready');
+          // Session created, stays in idle until start() is called
           break;
 
         case 'step-start':
@@ -130,7 +130,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
           });
           break;
 
-        case 'execution-complete':
+        case 'playback-complete':
           setState('completed');
           break;
       }
@@ -141,7 +141,7 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
 
   // Commands
   const create = useCallback(
-    async (appId: string, testSuiteId: string, headed = true) => {
+    async (groupId: string, suiteId: string) => {
       try {
         setError(null);
         setStepResults(new Map());
@@ -149,9 +149,8 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
         setState('idle');
 
         const response = await apiClient.recordings.debug.create({
-          appId,
-          testSuiteId,
-          headed,
+          groupId,
+          suiteId,
           pauseOnStart: true,
         });
 
@@ -170,7 +169,10 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   const start = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await apiClient.recordings.debug.start(sessionId);
+      const response = await apiClient.recordings.debug.start(sessionId);
+      if (!response.success) {
+        setError(response.error?.message ?? 'Failed to start');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -179,7 +181,10 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   const step = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await apiClient.recordings.debug.step(sessionId);
+      const response = await apiClient.recordings.debug.step(sessionId);
+      if (!response.success) {
+        setError(response.error?.message ?? 'Failed to step');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -188,7 +193,10 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   const pause = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await apiClient.recordings.debug.pause(sessionId);
+      const response = await apiClient.recordings.debug.pause(sessionId);
+      if (!response.success) {
+        setError(response.error?.message ?? 'Failed to pause');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -197,7 +205,10 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   const resume = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await apiClient.recordings.debug.resume(sessionId);
+      const response = await apiClient.recordings.debug.resume(sessionId);
+      if (!response.success) {
+        setError(response.error?.message ?? 'Failed to resume');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -206,11 +217,15 @@ export function useDebugSession(): [DebugSessionHookState, DebugSessionCommands]
   const stop = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await apiClient.recordings.debug.stop(sessionId);
-      setSessionId(null);
-      setState('idle');
-      setPosition(null);
-      setError(null);
+      const response = await apiClient.recordings.debug.stop(sessionId);
+      if (response.success) {
+        setSessionId(null);
+        setState('idle');
+        setPosition(null);
+        setError(null);
+      } else {
+        setError(response.error?.message ?? 'Failed to stop');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }

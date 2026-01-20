@@ -10,16 +10,26 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import fg from 'fast-glob';
-import type { TestSuite, TestSuiteStatus, TestStep, TestCase } from '../macro/index.js';
-import {
-  TEST_SUITES_DIR,
-  SUITE_FILE_EXTENSION,
-  SUITE_GLOB_PATTERN,
-  INDEX_VERSION,
-  INDEX_DESCRIPTION,
-  DEFAULT_TIMEOUT_MS,
-  DEFAULT_ASSERT_EXISTS,
-} from '../macro/constants.js';
+import type { TestSuite, TestSuiteStatus } from '../macro/index.js';
+
+// ============================================================================
+// File Discovery Constants (internal to this module)
+// ============================================================================
+
+/** Relative path from project root to test suites directory */
+const TEST_SUITES_DIR = 'tests/e2e/test-suites';
+
+/** File extension for test suite YAML files */
+const SUITE_FILE_EXTENSION = '.suite.yaml';
+
+/** Glob pattern for discovering test suite files */
+const SUITE_GLOB_PATTERN = `**/*${SUITE_FILE_EXTENSION}`;
+
+/** Index version for discovered test suites */
+const INDEX_VERSION = '1.0';
+
+/** Default description for auto-discovered index */
+const INDEX_DESCRIPTION = 'Test suites discovered from filesystem';
 
 /**
  * Entry in the test suite index for a single test suite.
@@ -276,47 +286,15 @@ export class YamlTestSuiteRepository implements TestSuiteRepository {
   }
 
   /**
-   * Transform and normalize raw YAML data to TestSuite type.
-   * Applies default values to all steps during parsing (single source of truth).
+   * Transform raw YAML data to TestSuite type.
+   * Pure data transformation - no default injection.
+   * Defaults are handled at runtime by the Player.
    */
   private transformYamlToTestSuite(raw: Record<string, unknown>): TestSuite {
-    // Default test_cases to empty array if not present
     if (!raw.test_cases) {
       raw.test_cases = [];
     }
-
-    // Normalize all steps with defaults
-    const testCases = raw.test_cases as TestCase[];
-    for (const testCase of testCases) {
-      if (testCase.steps) {
-        testCase.steps = testCase.steps.map((step) => this.normalizeStep(step));
-      }
-    }
-
     return raw as unknown as TestSuite;
-  }
-
-  /**
-   * Apply default values to a step based on its action type.
-   * This is the single source of truth for step defaults.
-   */
-  private normalizeStep(step: TestStep): TestStep {
-    // Apply universal defaults
-    const normalized = {
-      ...step,
-      timeout: step.timeout ?? DEFAULT_TIMEOUT_MS,
-    };
-
-    // Apply action-specific defaults
-    switch (normalized.action) {
-      case 'assert':
-        return {
-          ...normalized,
-          exists: normalized.exists ?? DEFAULT_ASSERT_EXISTS,
-        };
-      default:
-        return normalized;
-    }
   }
 
   /**

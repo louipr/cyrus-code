@@ -1,0 +1,23 @@
+description: Test wait action with selector expectation.
+metadata:
+  status: draft
+  reliability: unknown
+  tags:
+    - actions
+    - wait
+  author: refactor
+  created: 2025-01-19
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+test_cases:
+  - id: wait_for_element
+    description: Wait for element to exist
+    steps:
+      - action: wait
+        timeout: 1000
+        expect:
+          type: selector
+          selector: "[data-testid='view-toggle']"
+        why: Wait for view toggle (exists in all views). Success means wait found the element.

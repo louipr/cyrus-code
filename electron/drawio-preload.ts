@@ -22,6 +22,11 @@ interface DomElement {
   appendChild(child: any): void;
   remove(): void;
   textContent: string | null;
+  click(): void;
+  focus(): void;
+  value?: string;
+  dispatchEvent(event: Event): boolean;
+  getBoundingClientRect(): { x: number; y: number; width: number; height: number };
 }
 
 declare const document: {
@@ -29,6 +34,7 @@ declare const document: {
   body: DomElement | null;
   head: DomElement | null;
   documentElement: DomElement;
+  activeElement: DomElement | null;
   querySelector(selector: string): DomElement | null;
   querySelectorAll(selector: string): DomElement[];
   createElement(tagName: string): any;
@@ -358,7 +364,7 @@ function setupBridge(): void {
 
 const POLL_INTERVAL = 100;
 
-function pollForElement(
+function waitForElement(
   selector: string,
   timeout: number,
   action: (el: any) => unknown
@@ -379,33 +385,113 @@ function pollForElement(
   });
 }
 
-const webviewTestRunnerAPI = {
-  click: (selector: string, timeout: number) =>
-    pollForElement(selector, timeout, (el) => {
-      el.click();
-      return { clicked: true };
-    }),
-
-  clickByText: (selector: string, text: string, timeout: number) =>
-    new Promise((resolve, reject) => {
-      const startTime = Date.now();
-      function poll() {
-        const elements = document.querySelectorAll(selector) as any;
-        for (const el of elements) {
-          if (el.textContent?.includes(text)) {
-            el.click();
-            resolve({ clicked: true, text: el.textContent });
-            return;
-          }
-        }
-        if (Date.now() - startTime > timeout) {
-          reject(new Error(`Element not found with text "${text}": ${selector}`));
-        } else {
-          setTimeout(poll, POLL_INTERVAL);
+/**
+ * Click by text - polls until element with matching text is found.
+ */
+function clickByText(selector: string, text: string, timeout: number): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    function poll() {
+      const elements = document.querySelectorAll(selector) as any;
+      for (const el of elements) {
+        if (el.textContent?.includes(text)) {
+          el.click();
+          resolve({ clicked: true, text: el.textContent });
+          return;
         }
       }
-      poll();
+      if (Date.now() - startTime > timeout) {
+        reject(new Error(`Element not found with text "${text}": ${selector}`));
+      } else {
+        setTimeout(poll, POLL_INTERVAL);
+      }
+    }
+    poll();
+  });
+}
+
+const webviewTestRunnerAPI = {
+  click: (selector: string, timeout: number, text?: string) => {
+    // Parse :has-text() pseudo-selector
+    const match = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
+    if (match?.[1] && match[2]) {
+      return clickByText(match[1], match[2], timeout);
+    }
+    if (text) {
+      return clickByText(selector, text, timeout);
+    }
+    return waitForElement(selector, timeout, (el) => {
+      el.click();
+      return { clicked: true };
+    });
+  },
+
+  type: (selector: string, timeout: number, text: string) =>
+    waitForElement(selector, timeout, (el) => {
+      const input = el as HTMLInputElement;
+      input.focus();
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return { typed: true };
     }),
+
+  hover: (selector: string, timeout: number) =>
+    waitForElement(selector, timeout, (el) => {
+      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      return { hovered: true };
+    }),
+
+  assert: (selector: string, timeout: number, shouldExist: boolean) =>
+    new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      function check() {
+        const el = document.querySelector(selector);
+        const exists = el !== null;
+        if (shouldExist && exists) {
+          resolve({ asserted: true, exists: true });
+        } else if (!shouldExist && !exists) {
+          resolve({ asserted: true, exists: false });
+        } else if (Date.now() - startTime > timeout) {
+          reject(new Error(
+            shouldExist
+              ? `Assert failed: element not found: ${selector}`
+              : `Assert failed: element should not exist: ${selector}`
+          ));
+        } else {
+          setTimeout(check, POLL_INTERVAL);
+        }
+      }
+      check();
+    }),
+
+  getBounds: (selector: string) => {
+    const el = document.querySelector(selector);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return {
+      x: Math.round(rect.x),
+      y: Math.round(rect.y),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    };
+  },
+
+  keyboard: (key: string) => {
+    const event = new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.activeElement?.dispatchEvent(event);
+    return { key };
+  },
+
+  evaluate: (code: string) => {
+    const fn = new Function(`return (async () => { ${code} })();`);
+    return fn();
+  },
 };
 
 type WebviewTestCommand = {

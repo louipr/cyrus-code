@@ -1,424 +1,454 @@
 /**
  * Test Suite Player
  *
- * Plays back test suites by executing steps via webContents.executeJavaScript().
- * Supports pause/resume/step-through like a video player.
+ * Generator-based execution engine for test suites.
+ * Supports pause/resume/step-through debugging.
+ *
+ * Design: Generator yields after each step, enabling natural pause/resume.
+ * - yield = suspension point
+ * - next() = execute one step
+ * - Don't call next() = paused
  */
 
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { TestSuite, TestStep } from './test-suite-types.js';
 import type {
-  PlaybackEvent,
   PlaybackState,
   PlaybackPosition,
+  PlaybackEvent,
+  PlaybackConfig,
   StepResult,
 } from './playback-types.js';
-import { EventEmitter } from './event-emitter.js';
-import { DEFAULT_TIMEOUT_MS, DEFAULT_ASSERT_EXISTS } from './constants.js';
-import { evaluateScript } from './scripts.js';
+import { IPC_CHANNEL_TEST_RUNNER, IPC_DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS } from './constants.js';
+
+// Re-export types for convenience
+export type { PlaybackState, PlaybackPosition, PlaybackEvent, PlaybackConfig, StepResult };
 
 /**
- * Options for TestSuitePlayer.
+ * Snapshot of current player state for IPC serialization.
  */
-export interface PlayerOptions {
-  /** Timeout multiplier for slow environments */
-  timeoutMultiplier?: number;
-  /** Whether to pause before first step */
-  pauseOnStart?: boolean;
-  /** Stop playback on first error */
-  stopOnError?: boolean;
-  /** Base path for resolving relative file paths (e.g., screenshot outputs) */
-  basePath?: string;
+export interface PlaybackSnapshot {
+  state: PlaybackState;
+  position: PlaybackPosition | null;
+  groupId: string;
+  suiteId: string;
+  results: Record<string, StepResult>;
 }
 
-/**
- * Pause gate for Promise-based flow control.
- */
-interface PauseGate {
-  promise: Promise<void>;
-  resolve: () => void;
+// ============================================================================
+// Module State (single session)
+// ============================================================================
+
+interface StepYield {
+  position: PlaybackPosition;
+  step: TestStep;
+  result: StepResult;
 }
 
-/**
- * Plays test suites in the current Electron window.
- */
-export class TestSuitePlayer extends EventEmitter<PlaybackEvent> {
-  private webContents: WebContents;
-  private testSuite: TestSuite;
-  private options: PlayerOptions;
+let generator: AsyncGenerator<StepYield> | null = null;
+let webContents: WebContents | null = null;
+let testSuite: TestSuite | null = null;
+let config: PlaybackConfig | null = null;
+let state: PlaybackState = 'idle';
+let shouldPause = false;
+let position: PlaybackPosition | null = null;
+let results = new Map<string, StepResult>();
+let eventCallback: ((event: PlaybackEvent) => void) | null = null;
 
-  private state: PlaybackState = 'idle';
-  private position: PlaybackPosition | null = null;
-  private pauseGate: PauseGate | null = null;
-  private shouldPauseAfterStep = false;
-  private stopRequested = false;
+// ============================================================================
+// Generator - Core Execution Engine
+// ============================================================================
 
-  private stepResults: Map<string, StepResult> = new Map();
-
-  constructor(
-    webContents: WebContents,
-    testSuite: TestSuite,
-    options: PlayerOptions = {}
-  ) {
-    super();
-    this.webContents = webContents;
-    this.testSuite = testSuite;
-    this.options = options;
-  }
-
-  /**
-   * Get current playback state.
-   */
-  getState(): PlaybackState {
-    return this.state;
-  }
-
-  /**
-   * Get current playback position.
-   */
-  getPosition(): PlaybackPosition | null {
-    return this.position;
-  }
-
-  /**
-   * Get step results.
-   */
-  getStepResults(): Map<string, StepResult> {
-    return this.stepResults;
-  }
-
-  /**
-   * Create a pause gate.
-   */
-  private createPauseGate(): PauseGate {
-    let resolve: () => void = () => {};
-    const promise = new Promise<void>((r) => {
-      resolve = r;
-    });
-    return { promise, resolve };
-  }
-
-  /**
-   * Set state and emit event.
-   */
-  private setState(state: PlaybackState): void {
-    this.state = state;
-    const event: PlaybackEvent = {
-      type: 'session-state',
-      state,
-      timestamp: Date.now(),
-      ...(this.position && { position: this.position }),
-    };
-    this.emit(event);
-  }
-
-  /**
-   * Pause playback.
-   */
-  pause(): void {
-    if (this.state === 'running') {
-      this.shouldPauseAfterStep = true;
-    }
-  }
-
-  /**
-   * Resume playback.
-   */
-  resume(): void {
-    this.continueFromPause(false);
-  }
-
-  /**
-   * Execute single step then pause.
-   */
-  step(): void {
-    this.continueFromPause(true);
-  }
-
-  /**
-   * Continue from paused state.
-   */
-  private continueFromPause(pauseAfterStep: boolean): void {
-    if (this.state === 'paused' && this.pauseGate) {
-      this.shouldPauseAfterStep = pauseAfterStep;
-      this.pauseGate.resolve();
-      this.pauseGate = null;
-      this.setState('running');
-    }
-  }
-
-  /**
-   * Stop playback.
-   */
-  stop(): void {
-    this.stopRequested = true;
-    if (this.pauseGate) {
-      this.pauseGate.resolve();
-      this.pauseGate = null;
-    }
-  }
-
-  /**
-   * Play the test suite.
-   */
-  async play(): Promise<{ success: boolean; duration: number }> {
-    const startTime = Date.now();
-    this.stopRequested = false;
-    this.stepResults.clear();
-
-    // Start paused if requested
-    if (this.options.pauseOnStart) {
-      this.pauseGate = this.createPauseGate();
-      this.setState('paused');
-      await this.pauseGate.promise;
-      this.pauseGate = null;
-      if (this.stopRequested) {
-        return { success: false, duration: Date.now() - startTime };
-      }
-    }
-
-    this.setState('running');
-    let success = true;
-
-    for (let testCaseIndex = 0; testCaseIndex < this.testSuite.test_cases.length; testCaseIndex++) {
-      if (this.stopRequested) break;
-
-      const testCase = this.testSuite.test_cases[testCaseIndex];
-      if (!testCase) continue;
-
-      this.emit({
-        type: 'test-case-start',
-        testCaseIndex,
-        testCase,
-        timestamp: Date.now(),
-      });
-
-      for (let stepIndex = 0; stepIndex < testCase.steps.length; stepIndex++) {
-        if (this.stopRequested) break;
-
-        const step = testCase.steps[stepIndex];
-        if (!step) continue;
-
-        this.position = { testCaseIndex, stepIndex, testCaseId: testCase.id };
-
-        this.emit({
-          type: 'step-start',
-          position: this.position,
-          step,
-          timestamp: Date.now(),
-        });
-
-        // Execute the step
-        const stepStart = Date.now();
-        let result: StepResult;
-
-        try {
-          const value = await this.executeStep(step);
-          result = {
-            success: true,
-            duration: Date.now() - stepStart,
-            value,
-          };
-        } catch (err) {
-          result = {
-            success: false,
-            duration: Date.now() - stepStart,
-            error: err instanceof Error ? err.message : String(err),
-          };
-          success = false;
-        }
-
-        const resultKey = `${testCaseIndex}:${stepIndex}`;
-        this.stepResults.set(resultKey, result);
-
-        this.emit({
-          type: 'step-complete',
-          position: this.position,
-          step,
-          result,
-          timestamp: Date.now(),
-        });
-
-        if (!result.success && this.options.stopOnError) {
-          break;
-        }
-
-        // Check for pause after step
-        if (this.shouldPauseAfterStep && !this.stopRequested) {
-          this.pauseGate = this.createPauseGate();
-          this.setState('paused');
-          await this.pauseGate.promise;
-          this.pauseGate = null;
-          if (!this.stopRequested) {
-            this.setState('running');
-          }
-        }
-      }
-
-      if (!success && this.options.stopOnError) break;
-    }
-
-    const duration = Date.now() - startTime;
-
-    this.emit({
-      type: 'execution-complete',
-      success,
-      duration,
-      timestamp: Date.now(),
-    });
-
-    this.setState('completed');
-    return { success, duration };
-  }
-
-  /**
-   * Execute a single step.
-   * Uses window.__testRunner (preload API) for main DOM actions.
-   * Uses script templates only for webview actions (cross-context).
-   */
-  private async executeStep(step: TestStep): Promise<unknown> {
-    const timeout = (step.timeout ?? DEFAULT_TIMEOUT_MS) * (this.options.timeoutMultiplier ?? 1);
-
-    switch (step.action) {
-      case 'click':
-        return this.executeClick(step.selector, timeout, step.webview, step.text);
-
-      case 'type':
-        return this.executeType(step.selector, step.text, timeout, step.webview);
-
-      case 'evaluate':
-        return this.exec(evaluateScript(step.code, step.webview));
-
-      case 'hover':
-        return this.exec(
-          `window.__testRunner.hover(${JSON.stringify(step.selector)}, ${timeout})`
-        );
-
-      case 'keyboard':
-        return this.exec(`window.__testRunner.keyboard(${JSON.stringify(step.key)})`);
-
-      case 'poll':
-        return this.invoke('pollForSelector', [step.selector, timeout], step.webview);
-
-      case 'assert':
-        return this.exec(
-          `window.__testRunner.assert(${JSON.stringify(step.selector)}, ${step.exists ?? DEFAULT_ASSERT_EXISTS}, ${timeout})`
-        );
-
-      case 'screenshot':
-        return this.executeScreenshot(step.returns, step.selector);
-    }
-  }
-
-  /**
-   * Execute a script in the renderer process.
-   * @deprecated Use invoke() for new code - no string templates.
-   */
-  private exec(script: string): Promise<unknown> {
-    return this.webContents.executeJavaScript(script);
-  }
-
-  /**
-   * Invoke a test runner action via IPC.
-   * Player doesn't know/care about routing - preload handles it.
-   */
-  private invoke(action: string, args: unknown[], context?: string): Promise<unknown> {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const channel = `__testRunner:${id}`;
-
-    return new Promise((resolve, reject) => {
-      const handler = (
-        _event: Electron.IpcMainEvent,
-        response: { success: boolean; result?: unknown; error?: string }
-      ) => {
-        ipcMain.removeListener(channel, handler);
-        if (response.success) {
-          resolve(response.result);
-        } else {
-          reject(new Error(response.error));
-        }
+async function* executeSteps(
+  suite: TestSuite,
+  wc: WebContents,
+  base: string
+): AsyncGenerator<StepYield> {
+  for (let tcIdx = 0; tcIdx < suite.test_cases.length; tcIdx++) {
+    const tc = suite.test_cases[tcIdx]!;
+    for (let sIdx = 0; sIdx < tc.steps.length; sIdx++) {
+      const step = tc.steps[sIdx]!;
+      const pos: PlaybackPosition = {
+        testCaseIndex: tcIdx,
+        stepIndex: sIdx,
+        testCaseId: tc.id,
       };
 
-      ipcMain.on(channel, handler);
-      this.webContents.send('__testRunner', { id, action, args, context });
-    });
-  }
+      // Emit step-start
+      emit({ type: 'step-start', position: pos, step, timestamp: Date.now() });
 
-  /**
-   * Execute a type action via IPC.
-   */
-  private executeType(
-    selector: string,
-    text: string,
-    timeout: number,
-    webview?: string
-  ): Promise<unknown> {
-    return this.invoke('type', [selector, text, timeout], webview);
-  }
+      const start = Date.now();
+      let result: StepResult;
 
-  /**
-   * Execute a click action via IPC (handles both main DOM and webview).
-   */
-  private executeClick(
-    selector: string,
-    timeout: number,
-    webview?: string,
-    text?: string
-  ): Promise<unknown> {
-    // Parse :has-text() pseudo-selector
-    const match = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
-    if (match?.[1] && match[2]) {
-      return this.invoke('clickByText', [match[1], match[2], timeout], webview);
-    }
-    if (text) {
-      return this.invoke('clickByText', [selector, text, timeout], webview);
-    }
-    return this.invoke('click', [selector, timeout], webview);
-  }
-
-  /**
-   * Execute a screenshot action.
-   */
-  private async executeScreenshot(
-    outputPath?: string,
-    selector?: string
-  ): Promise<unknown> {
-    if (!outputPath) {
-      return { skipped: true, reason: 'No output path specified' };
-    }
-
-    let screenshotPath = outputPath;
-    if (!path.isAbsolute(screenshotPath) && this.options.basePath) {
-      screenshotPath = path.join(this.options.basePath, screenshotPath);
-    }
-
-    const dir = path.dirname(screenshotPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    let image: Electron.NativeImage;
-
-    if (selector) {
-      const bounds = await this.exec(`window.__testRunner.getBounds(${JSON.stringify(selector)})`);
-      if (!bounds) {
-        throw new Error(`Element not found for screenshot: ${selector}`);
+      try {
+        const actionValue = await executeAction(step, wc, base);
+        const expectValue = await executeExpect(step, actionValue, wc);
+        result = {
+          success: true,
+          duration: Date.now() - start,
+          value: expectValue ?? actionValue,
+        };
+      } catch (err) {
+        result = {
+          success: false,
+          duration: Date.now() - start,
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
-      image = await this.webContents.capturePage(bounds as Electron.Rectangle);
-    } else {
-      image = await this.webContents.capturePage();
+
+      yield { position: pos, step, result };
+    }
+  }
+}
+
+// ============================================================================
+// Step Execution
+// ============================================================================
+
+async function executeAction(
+  step: TestStep,
+  wc: WebContents,
+  base: string
+): Promise<unknown> {
+  const timeout = step.timeout ?? DEFAULT_TIMEOUT_MS;
+
+  switch (step.action) {
+    case 'click':
+      return invoke(wc, 'click', [step.selector, timeout, step.text], step.webview);
+
+    case 'type':
+      return invoke(wc, 'type', [step.selector, timeout, step.text], step.webview);
+
+    case 'evaluate':
+      return invoke(wc, 'evaluate', [step.code], step.webview);
+
+    case 'hover':
+      return invoke(wc, 'hover', [step.selector, timeout]);
+
+    case 'keyboard':
+      return invoke(wc, 'keyboard', [step.key]);
+
+    case 'wait':
+      return undefined; // Expect block handles the waiting
+
+    case 'screenshot':
+      return executeScreenshot(wc, step.returns, step.selector, base);
+  }
+}
+
+async function executeExpect(
+  step: TestStep,
+  actionValue: unknown,
+  wc: WebContents
+): Promise<unknown> {
+  const { expect } = step;
+  if (!expect) return undefined;
+
+  switch (expect.type) {
+    case 'value': {
+      const expectedStr = JSON.stringify(expect.value);
+      const actualStr = JSON.stringify(actionValue);
+      if (expectedStr !== actualStr) {
+        throw new Error(`Expected ${expectedStr} but got ${actualStr}`);
+      }
+      return { verified: true, expected: expect.value, actual: actionValue };
     }
 
-    const pngBuffer = image.toPNG();
-    fs.writeFileSync(screenshotPath, pngBuffer);
-
-    return {
-      captured: true,
-      path: screenshotPath,
-      size: pngBuffer.length,
-    };
+    case 'selector': {
+      const timeout = step.timeout ?? DEFAULT_TIMEOUT_MS;
+      const exists = expect.exists ?? true;
+      return invoke(wc, 'assert', [expect.selector, timeout, exists]);
+    }
   }
+}
+
+async function executeScreenshot(
+  wc: WebContents,
+  outputPath: string | undefined,
+  selector: string | undefined,
+  base: string
+): Promise<unknown> {
+  if (!outputPath) {
+    return { skipped: true, reason: 'No output path specified' };
+  }
+
+  let screenshotPath = outputPath;
+  if (!path.isAbsolute(screenshotPath)) {
+    screenshotPath = path.join(base, screenshotPath);
+  }
+
+  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+
+  let image: Electron.NativeImage;
+  if (selector) {
+    const bounds = await invoke(wc, 'getBounds', [selector]);
+    if (!bounds) throw new Error(`Element not found: ${selector}`);
+    image = await wc.capturePage(bounds as Electron.Rectangle);
+  } else {
+    image = await wc.capturePage();
+  }
+
+  const pngBuffer = image.toPNG();
+  await fs.writeFile(screenshotPath, pngBuffer);
+  return { captured: true, path: screenshotPath, size: pngBuffer.length };
+}
+
+// ============================================================================
+// IPC - Direct communication with preload
+// ============================================================================
+
+function invoke(
+  wc: WebContents,
+  action: string,
+  args: unknown[],
+  context?: string,
+  timeout: number = IPC_DEFAULT_TIMEOUT_MS
+): Promise<unknown> {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const channel = `${IPC_CHANNEL_TEST_RUNNER}:${id}`;
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      ipcMain.removeListener(channel, handler);
+    };
+
+    const handler = (
+      _event: Electron.IpcMainEvent,
+      response: { success: boolean; result?: unknown; error?: string }
+    ) => {
+      cleanup();
+      if (response.success) {
+        resolve(response.result);
+      } else {
+        reject(new Error(response.error));
+      }
+    };
+
+    ipcMain.on(channel, handler);
+    wc.send(IPC_CHANNEL_TEST_RUNNER, { id, action, args, context });
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error(`IPC timeout after ${timeout}ms for action: ${action}`));
+    }, timeout);
+  });
+}
+
+// ============================================================================
+// Public API
+// ============================================================================
+
+/**
+ * Create a new debug session.
+ */
+export function create(
+  suite: TestSuite,
+  wc: WebContents,
+  cfg: PlaybackConfig,
+  base: string
+): void {
+  // Dispose previous session if any
+  dispose();
+
+  testSuite = suite;
+  webContents = wc;
+  config = cfg;
+  generator = executeSteps(suite, wc, base);
+  state = 'idle';
+  position = null;
+  results.clear();
+
+  emit({ type: 'session-state', state: 'idle', timestamp: Date.now() });
+}
+
+/**
+ * Start or resume playback.
+ */
+export async function play(): Promise<{ success: boolean; duration: number }> {
+  if (!generator || !webContents) {
+    throw new Error('No active session');
+  }
+
+  const startTime = Date.now();
+  state = 'running';
+  shouldPause = false;
+  emit({ type: 'session-state', state: 'running', timestamp: Date.now() });
+
+  let success = true;
+
+  while (!shouldPause && generator) {
+    const { value, done } = await generator.next();
+
+    if (done) {
+      state = 'completed';
+      emit({ type: 'session-state', state: 'completed', timestamp: Date.now() });
+      emit({
+        type: 'playback-complete',
+        success,
+        duration: Date.now() - startTime,
+        timestamp: Date.now(),
+      });
+      return { success, duration: Date.now() - startTime };
+    }
+
+    // Store result
+    position = value.position;
+    const key = `${value.position.testCaseIndex}:${value.position.stepIndex}`;
+    results.set(key, value.result);
+
+    // Emit step-complete
+    emit({
+      type: 'step-complete',
+      position: value.position,
+      step: value.step,
+      result: value.result,
+      timestamp: Date.now(),
+    });
+
+    // Stop on error
+    if (!value.result.success) {
+      success = false;
+      state = 'completed';
+      emit({ type: 'session-state', state: 'completed', timestamp: Date.now() });
+      emit({
+        type: 'playback-complete',
+        success: false,
+        duration: Date.now() - startTime,
+        timestamp: Date.now(),
+      });
+      return { success: false, duration: Date.now() - startTime };
+    }
+  }
+
+  // Paused
+  state = 'paused';
+  emit({ type: 'session-state', state: 'paused', ...(position && { position }), timestamp: Date.now() });
+  return { success: true, duration: Date.now() - startTime };
+}
+
+/**
+ * Pause after current step.
+ */
+export function pause(): void {
+  if (state === 'running') {
+    shouldPause = true;
+  }
+}
+
+/**
+ * Execute one step then pause.
+ */
+export async function step(): Promise<void> {
+  if (!generator || !webContents) {
+    throw new Error('No active session');
+  }
+
+  if (state === 'idle' || state === 'paused') {
+    shouldPause = true;
+    await play();
+  }
+}
+
+/**
+ * Resume from paused state.
+ */
+export async function resume(): Promise<{ success: boolean; duration: number }> {
+  if (state !== 'paused') {
+    throw new Error(`Cannot resume from state: ${state}`);
+  }
+  return play();
+}
+
+/**
+ * Stop playback and reset.
+ */
+export function stop(): void {
+  if (generator) {
+    generator.return(undefined);
+  }
+  generator = null;
+  state = 'idle';
+  emit({ type: 'session-state', state: 'idle', timestamp: Date.now() });
+}
+
+/**
+ * Get current state.
+ */
+export function getState(): PlaybackState {
+  return state;
+}
+
+/**
+ * Get current position.
+ */
+export function getPosition(): PlaybackPosition | null {
+  return position;
+}
+
+/**
+ * Get test suite.
+ */
+export function getTestSuite(): TestSuite | null {
+  return testSuite;
+}
+
+/**
+ * Get snapshot for IPC serialization.
+ */
+export function getSnapshot(): PlaybackSnapshot | null {
+  if (!config) return null;
+
+  return {
+    state,
+    position,
+    groupId: config.groupId,
+    suiteId: config.suiteId,
+    results: Object.fromEntries(results),
+  };
+}
+
+/**
+ * Get step results.
+ */
+export function getResults(): Map<string, StepResult> {
+  return results;
+}
+
+/**
+ * Check if session exists.
+ */
+export function hasSession(): boolean {
+  return generator !== null;
+}
+
+/**
+ * Register event callback.
+ */
+export function onEvent(callback: (event: PlaybackEvent) => void): () => void {
+  eventCallback = callback;
+  return () => {
+    eventCallback = null;
+  };
+}
+
+function emit(event: PlaybackEvent): void {
+  eventCallback?.(event);
+}
+
+/**
+ * Dispose session and cleanup.
+ * Note: Does NOT clear eventCallback to preserve subscriptions across sessions.
+ */
+export function dispose(): void {
+  stop();
+  webContents = null;
+  testSuite = null;
+  config = null;
+  position = null;
+  results.clear();
 }

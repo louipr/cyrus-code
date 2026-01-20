@@ -23,7 +23,7 @@ import type {
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
 import {
-  getSessionRegistry,
+  Player,
   type PlaybackConfig,
   type PlaybackEvent,
   type TestSuite,
@@ -736,10 +736,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Debug Session Handlers (Step-through Debugger)
   // ==========================================================================
 
-  const sessionRegistry = getSessionRegistry();
-  // Configure registry with repository for loading test suites
-  sessionRegistry.configure({ repository: testSuiteRepository, basePath: helpProjectRoot });
-  let debugEventListener: ((sessionId: string, event: PlaybackEvent) => void) | null = null;
+  // Single-session design: one active debug session at a time
+  let currentSessionId: string | null = null;
+  let debugEventUnsubscribe: (() => void) | null = null;
 
   // Create a new debug session (runs in current Electron window)
   ipcMain.handle(
@@ -752,11 +751,18 @@ export function registerIpcHandlers(facade: Architecture): void {
           throw new Error('No window available for debug session');
         }
 
-        // Set the webContents for the session registry
-        sessionRegistry.setWebContents(mainWindow.webContents);
+        // Load test suite from repository
+        const testSuite = testSuiteRepository.getTestSuite(config.groupId, config.suiteId);
+        if (!testSuite) {
+          throw new Error(`Test suite not found: ${config.groupId}/${config.suiteId}`);
+        }
 
-        const sessionId = await sessionRegistry.createSession(config);
-        return { success: true, data: { sessionId } };
+        // Create player session
+        Player.create(testSuite, mainWindow.webContents, config, helpProjectRoot);
+
+        // Generate session ID for IPC compatibility
+        currentSessionId = `debug-${Date.now().toString(36)}`;
+        return { success: true, data: { sessionId: currentSessionId } };
       } catch (error) {
         return {
           success: false,
@@ -766,20 +772,24 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   );
 
-  // Start or resume debug session execution
-  ipcMain.handle('recordings:debug:start', async (_event, sessionId: string) => {
+  // Start debug session execution
+  ipcMain.handle('recordings:debug:start', async () => {
     try {
+      if (!Player.hasSession()) {
+        throw new Error('No active debug session');
+      }
+
       // Start in background and return immediately
       // Results will be streamed via events
-      sessionRegistry.startSession(sessionId).catch((err) => {
+      Player.play().catch((err: Error) => {
         // Send error event if start fails
         const mainWindow = BrowserWindow.getAllWindows()[0];
-        if (mainWindow) {
+        if (mainWindow && currentSessionId) {
           mainWindow.webContents.send('recordings:debug:event', {
-            sessionId,
+            sessionId: currentSessionId,
             event: {
               type: 'session-state',
-              state: 'error',
+              state: 'completed',
               error: extractErrorMessage(err),
               timestamp: Date.now(),
             },
@@ -796,9 +806,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Execute single step
-  ipcMain.handle('recordings:debug:step', async (_event, sessionId: string) => {
+  ipcMain.handle('recordings:debug:step', async () => {
     try {
-      sessionRegistry.stepSession(sessionId);
+      await Player.step();
       return { success: true };
     } catch (error) {
       return {
@@ -809,9 +819,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Pause execution
-  ipcMain.handle('recordings:debug:pause', async (_event, sessionId: string) => {
+  ipcMain.handle('recordings:debug:pause', async () => {
     try {
-      sessionRegistry.pauseSession(sessionId);
+      Player.pause();
       return { success: true };
     } catch (error) {
       return {
@@ -822,9 +832,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Resume execution
-  ipcMain.handle('recordings:debug:resume', async (_event, sessionId: string) => {
+  ipcMain.handle('recordings:debug:resume', async () => {
     try {
-      sessionRegistry.resumeSession(sessionId);
+      await Player.resume();
       return { success: true };
     } catch (error) {
       return {
@@ -835,9 +845,11 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Stop debug session
-  ipcMain.handle('recordings:debug:stop', async (_event, sessionId: string) => {
+  ipcMain.handle('recordings:debug:stop', async () => {
     try {
-      await sessionRegistry.stopSession(sessionId);
+      Player.stop();
+      Player.dispose();
+      currentSessionId = null;
       return { success: true };
     } catch (error) {
       return {
@@ -848,13 +860,13 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Get session snapshot
-  ipcMain.handle('recordings:debug:snapshot', async (_event, sessionId: string) => {
+  ipcMain.handle('recordings:debug:snapshot', async () => {
     try {
-      const snapshot = sessionRegistry.getSessionSnapshot(sessionId);
+      const snapshot = Player.getSnapshot();
       if (!snapshot) {
         return {
           success: false,
-          error: { message: `Session not found: ${sessionId}` },
+          error: { message: 'No active debug session' },
         };
       }
       return { success: true, data: snapshot };
@@ -869,24 +881,23 @@ export function registerIpcHandlers(facade: Architecture): void {
   // Subscribe to debug events (set up event streaming)
   ipcMain.handle('recordings:debug:subscribe', async () => {
     try {
-      // Remove existing listener if any
-      if (debugEventListener) {
-        // Can't unsubscribe since SessionRegistry.onEvent returns void
-        // This is a known limitation - we rely on single subscriber model
+      // Unsubscribe existing listener to prevent memory leak
+      if (debugEventUnsubscribe) {
+        debugEventUnsubscribe();
+        debugEventUnsubscribe = null;
       }
 
       // Set up event forwarding to renderer
-      debugEventListener = (sessionId: string, event: PlaybackEvent) => {
+      debugEventUnsubscribe = Player.onEvent((event: PlaybackEvent) => {
         const mainWindow = BrowserWindow.getAllWindows()[0];
-        if (mainWindow) {
+        if (mainWindow && currentSessionId) {
           mainWindow.webContents.send('recordings:debug:event', {
-            sessionId,
+            sessionId: currentSessionId,
             event,
           });
         }
-      };
+      });
 
-      sessionRegistry.onEvent(debugEventListener);
       return { success: true };
     } catch (error) {
       return {

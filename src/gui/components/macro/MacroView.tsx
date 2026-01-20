@@ -202,6 +202,7 @@ export function MacroView() {
   );
 
   // Handle step field changes (inline editing)
+  // Supports nested fields like 'expect.selector' via dot notation
   const handleStepChange = useCallback(
     (stepIndex: number, field: string, value: string) => {
       if (!testSuite || !selectedTestCase) return;
@@ -216,7 +217,20 @@ export function MacroView() {
       const currentStep = updatedSteps[stepIndex];
       if (!currentStep) return;
 
-      updatedSteps[stepIndex] = { ...currentStep, [field]: value };
+      // Handle nested fields (e.g., 'expect.selector')
+      let updatedStep;
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        const parentObj = currentStep[parent as keyof typeof currentStep];
+        updatedStep = {
+          ...currentStep,
+          [parent!]: { ...(parentObj as object), [child!]: value },
+        };
+      } else {
+        updatedStep = { ...currentStep, [field]: value };
+      }
+
+      updatedSteps[stepIndex] = updatedStep;
       updatedTestCases[testCaseIndex] = {
         ...updatedTestCases[testCaseIndex]!,
         steps: updatedSteps,
@@ -397,13 +411,13 @@ export function MacroView() {
               testCase={selectedTestCase}
               testCaseIndex={testSuite.test_cases.findIndex((t) => t.id === selectedTestCase.id)}
               testSuite={testSuite}
-              appId={selectedAppId ?? undefined}
-              testSuiteId={selectedTestSuiteId ?? undefined}
+              groupId={selectedAppId ?? undefined}
+              suiteId={selectedTestSuiteId ?? undefined}
               onSave={handleSaveTestSuite}
               onStepChange={handleStepChange}
             />
           ) : testSuite ? (
-            <TestSuiteDetail testSuite={testSuite} testSuiteId={selectedTestSuiteId ?? undefined} />
+            <TestSuiteDetail testSuite={testSuite} suiteId={selectedTestSuiteId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholder}>
