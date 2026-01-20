@@ -16,6 +16,10 @@ test_cases:
   - id: poll_for_element
     description: Poll until element exists
     steps:
+      - action: click
+        selector: "[data-testid='view-toggle'] button:has-text('Symbols')"
+        why: Navigate to Symbols view where search bar exists.
+
       - action: poll
         selector: "[data-testid='search-bar']"
         timeout: 5000
