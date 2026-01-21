@@ -743,6 +743,19 @@ export function registerIpcHandlers(facade: Architecture): void {
   /** Get the main window (first window) */
   const getMainWindow = () => BrowserWindow.getAllWindows()[0];
 
+  /** Validate sessionId matches current session */
+  const validateSession = (sessionId: string | undefined): void => {
+    if (!sessionId) {
+      throw new Error('Session ID required');
+    }
+    if (sessionId !== currentSessionId) {
+      throw new Error(`Invalid session ID: ${sessionId}`);
+    }
+    if (!Player.hasSession()) {
+      throw new Error('No active debug session');
+    }
+  };
+
   // Create a new debug session (runs in current Electron window)
   ipcMain.handle(
     'recordings:debug:create',
@@ -775,16 +788,13 @@ export function registerIpcHandlers(facade: Architecture): void {
   );
 
   // Start debug session execution
-  ipcMain.handle('recordings:debug:start', async () => {
+  ipcMain.handle('recordings:debug:start', async (_event, sessionId: string) => {
     try {
-      if (!Player.hasSession()) {
-        throw new Error('No active debug session');
-      }
+      validateSession(sessionId);
 
-      // Start in background and return immediately
-      // Results will be streamed via events
+      // Start in background, return immediately (results via events)
       Player.play().catch((err: Error) => {
-        // Send error event if start fails
+        // Forward error as event so GUI can display it
         const mainWindow = getMainWindow();
         if (mainWindow && currentSessionId) {
           mainWindow.webContents.send('recordings:debug:event', {
@@ -808,8 +818,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Execute single step
-  ipcMain.handle('recordings:debug:step', async () => {
+  ipcMain.handle('recordings:debug:step', async (_event, sessionId: string) => {
     try {
+      validateSession(sessionId);
       await Player.step();
       return { success: true };
     } catch (error) {
@@ -821,8 +832,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Pause execution
-  ipcMain.handle('recordings:debug:pause', async () => {
+  ipcMain.handle('recordings:debug:pause', async (_event, sessionId: string) => {
     try {
+      validateSession(sessionId);
       Player.pause();
       return { success: true };
     } catch (error) {
@@ -834,8 +846,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Resume execution
-  ipcMain.handle('recordings:debug:resume', async () => {
+  ipcMain.handle('recordings:debug:resume', async (_event, sessionId: string) => {
     try {
+      validateSession(sessionId);
       await Player.resume();
       return { success: true };
     } catch (error) {
@@ -847,8 +860,9 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Stop debug session
-  ipcMain.handle('recordings:debug:stop', async () => {
+  ipcMain.handle('recordings:debug:stop', async (_event, sessionId: string) => {
     try {
+      validateSession(sessionId);
       Player.stop();
       Player.dispose();
       currentSessionId = null;
