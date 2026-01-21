@@ -20,7 +20,7 @@ import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
 import { MacroView, TestSuitePanel } from './components/macro';
-import { DebugSessionProvider, useDebugSessionContext } from './contexts/DebugSessionContext';
+import { DebugSessionProvider, useDebugSession } from './stores/DebugSessionStore';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
@@ -50,8 +50,8 @@ function AppContent(): React.ReactElement {
   const [showSymbolsDropdown, setShowSymbolsDropdown] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  // Debug session context - persists across view switches
-  const debugSession = useDebugSessionContext();
+  // Debug session store - persists across view switches
+  const debugSession = useDebugSession();
 
   // Switch to recordings view when debug session completes
   useEffect(() => {

@@ -25,7 +25,7 @@ import { StepDetail } from './StepDetail';
 import { TestCaseDetail } from './TestCaseDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
 import { DebugControls } from '../debug/DebugControls';
-import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
+import { useDebugSession } from '../../stores/DebugSessionStore';
 import { PanelLayout, Panel, ResizeHandle, Column, Card } from '../layout';
 import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
 import type { TestSuite, TestCase, TestStep } from '../../../macro';
@@ -50,7 +50,7 @@ export function MacroView() {
   const [graphExpandedIds, setGraphExpandedIds] = useState<Set<string>>(new Set());
 
   // Debug session state from context (persists across view switches)
-  const debugSession = useDebugSessionContext();
+  const debugSession = useDebugSession();
 
   // Graph control functions
   const zoomIn = useCallback(() => setGraphScale((s) => Math.min(s + ZOOM.step, ZOOM.max)), []);

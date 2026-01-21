@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
+import { useDebugSession } from '../../stores/DebugSessionStore';
 import type { PlaybackState, TestSuite } from '../../../macro';
 
 interface DebugControlsProps {
@@ -26,7 +26,7 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
     isRunning,
     isPaused,
     commands,
-  } = useDebugSessionContext();
+  } = useDebugSession();
 
   // Don't render if no session
   if (!sessionId) {

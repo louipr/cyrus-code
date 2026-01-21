@@ -64,9 +64,12 @@ export type StepExpectation = SelectorExpectation | ValueExpectation;
 
 /**
  * Common fields shared by all step types.
+ *
+ * Note: timeout is optional in YAML (defaults applied at load time by repository),
+ * but always has a value at runtime after loading.
  */
 interface BaseStep {
-  /** Timeout in milliseconds (default: DEFAULT_TIMEOUT_MS from constants.ts) */
+  /** Timeout in milliseconds. Optional in YAML; defaults to DEFAULT_TIMEOUT_MS at load time. */
   timeout?: number;
 
   /** What this step returns (for documentation) */

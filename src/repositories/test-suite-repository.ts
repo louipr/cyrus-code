@@ -10,7 +10,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import fg from 'fast-glob';
-import type { TestSuite, TestSuiteStatus } from '../macro/index.js';
+import type { TestSuite, TestSuiteStatus, TestCase, TestStep } from '../macro/index.js';
+import { DEFAULT_TIMEOUT_MS } from '../macro/constants.js';
 
 // ============================================================================
 // File Discovery Constants (internal to this module)
@@ -287,13 +288,21 @@ export class YamlTestSuiteRepository implements TestSuiteRepository {
 
   /**
    * Transform raw YAML data to TestSuite type.
-   * Pure data transformation - no default injection.
-   * Defaults are handled at runtime by the Player.
+   * Normalizes step defaults (e.g., timeout) so Player doesn't need fallbacks.
    */
   private transformYamlToTestSuite(raw: Record<string, unknown>): TestSuite {
     if (!raw.test_cases) {
       raw.test_cases = [];
     }
+
+    // Normalize step timeouts
+    const testCases = raw.test_cases as TestCase[];
+    for (const testCase of testCases) {
+      for (const step of testCase.steps) {
+        (step as TestStep).timeout ??= DEFAULT_TIMEOUT_MS;
+      }
+    }
+
     return raw as unknown as TestSuite;
   }
 

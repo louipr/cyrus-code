@@ -17,14 +17,29 @@
  * - PlaybackEvent  - Events emitted during execution
  * - StepResult     - Result of executing a single step
  *
- * Player (in player.ts):
- * - Generator-based execution engine with pause/resume support
- * - create(), play(), pause(), step(), resume(), stop()
+ * DebugSession (in debug-session.ts):
+ * - Class-based session with encapsulated state
+ * - Supports multiple event listeners via on()
+ * - play(), pause(), step(), resume(), stop()
  *
- * ## Usage
+ * Player (in player.ts):
+ * - Backwards-compatible facade over DebugSession
+ * - Single-session semantics with module-level state
+ *
+ * ## Usage (New - Recommended)
  *
  * ```typescript
- * import * as Player from './macro/player';
+ * import { DebugSession, generateSessionId } from './macro';
+ *
+ * const session = new DebugSession(generateSessionId(), testSuite, webContents, config, basePath);
+ * session.on((event) => console.log(event));
+ * await session.play();
+ * ```
+ *
+ * ## Usage (Legacy - Backwards Compatible)
+ *
+ * ```typescript
+ * import { Player } from './macro';
  *
  * Player.create(testSuite, webContents, config, basePath);
  * Player.onEvent((event) => console.log(event));
@@ -44,6 +59,13 @@ export * from './playback-types.js';
 // Event emitter utility
 export { EventEmitter } from './event-emitter.js';
 
-// Player - Generator-based execution engine
+// DebugSession - Class-based session (recommended for new code)
+export { DebugSession, generateSessionId, type SessionSnapshot } from './debug-session.js';
+
+// Step Executor - Pure functions for step execution
+export { createStepGenerator, executeAction, executeExpect } from './step-executor.js';
+export type { StepYield, StepStartCallback } from './step-executor.js';
+
+// Player - Backwards-compatible facade (for existing code)
 export * as Player from './player.js';
 export type { PlaybackSnapshot } from './player.js';

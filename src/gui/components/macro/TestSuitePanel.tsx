@@ -8,7 +8,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { apiClient } from '../../api-client';
-import { useDebugSessionContext } from '../../contexts/DebugSessionContext';
+import { useDebugSession } from '../../stores/DebugSessionStore';
 import {
   TestCaseGraph,
   GraphToolbarButton,
@@ -41,7 +41,7 @@ export function TestSuitePanel() {
     stepResults,
     updateTestSuite,
     clearDebug,
-  } = useDebugSessionContext();
+  } = useDebugSession();
 
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);

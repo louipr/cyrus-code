@@ -740,13 +740,15 @@ export function registerIpcHandlers(facade: Architecture): void {
   let currentSessionId: string | null = null;
   let debugEventUnsubscribe: (() => void) | null = null;
 
+  /** Get the main window (first window) */
+  const getMainWindow = () => BrowserWindow.getAllWindows()[0];
+
   // Create a new debug session (runs in current Electron window)
   ipcMain.handle(
     'recordings:debug:create',
     async (_event, config: PlaybackConfig) => {
       try {
-        // Get the main window's webContents for in-app execution
-        const mainWindow = BrowserWindow.getAllWindows()[0];
+        const mainWindow = getMainWindow();
         if (!mainWindow) {
           throw new Error('No window available for debug session');
         }
@@ -783,7 +785,7 @@ export function registerIpcHandlers(facade: Architecture): void {
       // Results will be streamed via events
       Player.play().catch((err: Error) => {
         // Send error event if start fails
-        const mainWindow = BrowserWindow.getAllWindows()[0];
+        const mainWindow = getMainWindow();
         if (mainWindow && currentSessionId) {
           mainWindow.webContents.send('recordings:debug:event', {
             sessionId: currentSessionId,
@@ -889,7 +891,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
       // Set up event forwarding to renderer
       debugEventUnsubscribe = Player.onEvent((event: PlaybackEvent) => {
-        const mainWindow = BrowserWindow.getAllWindows()[0];
+        const mainWindow = getMainWindow();
         if (mainWindow && currentSessionId) {
           mainWindow.webContents.send('recordings:debug:event', {
             sessionId: currentSessionId,
