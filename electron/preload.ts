@@ -38,9 +38,10 @@ import type {
 import type {
   TestSuite,
   PlaybackConfig,
-  PlaybackSnapshot,
+  SessionSnapshot,
   PlaybackEvent,
 } from '../src/macro/index.js';
+import { IPC_CHANNEL_TEST_RUNNER, IPC_CHANNEL_WEBVIEW_TEST_RUNNER } from '../src/macro/index.js';
 import type { TestSuiteIndex, TestSuiteEntry } from '../src/repositories/index.js';
 import type { ExportHistoryRecord } from '../src/repositories/index.js';
 
@@ -178,7 +179,7 @@ export interface CyrusAPI {
       pause: (sessionId: string) => Promise<ApiResponse<void>>;
       resume: (sessionId: string) => Promise<ApiResponse<void>>;
       stop: (sessionId: string) => Promise<ApiResponse<void>>;
-      snapshot: (sessionId: string) => Promise<ApiResponse<PlaybackSnapshot>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<SessionSnapshot>>;
       subscribe: () => Promise<ApiResponse<void>>;
       onEvent: (callback: (data: { sessionId: string; event: PlaybackEvent }) => void) => void;
     };
@@ -347,7 +348,7 @@ function waitForElement(
 
 /**
  * Test runner API implementation.
- * Main process invokes via IPC ('__testRunner' channel) - see handler below.
+ * Main process invokes via IPC (IPC_CHANNEL_TEST_RUNNER) - see handler below.
  */
 /**
  * Click by text - polls until element with matching text is found.
@@ -475,7 +476,7 @@ type TestRunnerResponse = {
   error?: string;
 };
 
-ipcRenderer.on('__testRunner', async (_event, command: TestRunnerCommand) => {
+ipcRenderer.on(IPC_CHANNEL_TEST_RUNNER, async (_event, command: TestRunnerCommand) => {
   // Route to webview if context is specified
   if (command.context) {
     forwardToWebview(command);
@@ -497,7 +498,7 @@ ipcRenderer.on('__testRunner', async (_event, command: TestRunnerCommand) => {
       error: error instanceof Error ? error.message : String(error),
     };
   }
-  ipcRenderer.send(`__testRunner:${command.id}`, response);
+  ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, response);
 });
 
 /**
@@ -511,25 +512,25 @@ function forwardToWebview(command: TestRunnerCommand): void {
   };
 
   if (!webview) {
-    ipcRenderer.send(`__testRunner:${command.id}`, {
+    ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
       success: false,
       error: `Webview not found: ${command.context}`,
     });
     return;
   }
 
-  const responseChannel = `__webviewTestRunner:${command.id}`;
+  const responseChannel = `${IPC_CHANNEL_WEBVIEW_TEST_RUNNER}:${command.id}`;
 
   const handler = (event: { channel: string; args: unknown[] }) => {
     if (event.channel === responseChannel) {
       webview.removeEventListener('ipc-message', handler);
       const response = event.args[0] as TestRunnerResponse;
-      ipcRenderer.send(`__testRunner:${command.id}`, response);
+      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, response);
     }
   };
 
   webview.addEventListener('ipc-message', handler);
-  webview.send('__webviewTestRunner', {
+  webview.send(IPC_CHANNEL_WEBVIEW_TEST_RUNNER, {
     id: command.id,
     action: command.action,
     args: command.args,

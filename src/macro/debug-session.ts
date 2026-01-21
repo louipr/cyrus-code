@@ -2,12 +2,11 @@
  * Debug Session
  *
  * Class-based session with encapsulated state.
- * Replaces module-level globals for cleaner architecture.
- * Uses EventEmitter for multi-listener support.
+ * Supports multiple event listeners via on().
  */
 
 import type { WebContents } from 'electron';
-import type { TestSuite, TestStep } from './test-suite-types.js';
+import type { TestSuite } from './test-suite-types.js';
 import type {
   PlaybackState,
   PlaybackPosition,
@@ -57,8 +56,6 @@ export class DebugSession {
   private results = new Map<string, StepResult>();
   private generator: AsyncGenerator<StepYield> | null = null;
   private shouldPause = false;
-  private webContents: WebContents;
-  private basePath: string;
   private listeners: Set<EventListener> = new Set();
 
   constructor(
@@ -70,9 +67,7 @@ export class DebugSession {
   ) {
     this.id = id;
     this.testSuite = testSuite;
-    this.webContents = webContents;
     this.config = config;
-    this.basePath = basePath;
 
     // Create generator with step-start callback
     this.generator = createStepGenerator(testSuite, webContents, basePath, (pos, step) => {

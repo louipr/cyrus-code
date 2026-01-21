@@ -152,35 +152,3 @@ export interface PlaybackConfig {
 }
 
 // ============================================================================
-// Serialization - Snapshot for persistence/IPC
-// ============================================================================
-
-/**
- * Snapshot of playback session state for serialization.
- */
-export interface PlaybackSnapshot {
-  /** Unique session ID */
-  sessionId: string;
-
-  /** Current state */
-  state: PlaybackState;
-
-  /** Current position in playback */
-  position: PlaybackPosition | null;
-
-  /** Test suite being played */
-  groupId: string;
-  suiteId: string;
-
-  /** Results collected so far */
-  completedSteps: Array<{
-    position: PlaybackPosition;
-    result: StepResult;
-  }>;
-
-  /** When session was created */
-  createdAt: number;
-
-  /** Error message if in error state */
-  error?: string;
-}

@@ -15,6 +15,7 @@
  */
 
 import { ipcRenderer, contextBridge } from 'electron';
+import { IPC_CHANNEL_WEBVIEW_TEST_RUNNER } from '../src/macro/index.js';
 
 // Type declarations for DOM APIs (preload runs in renderer context)
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -507,7 +508,7 @@ type WebviewTestResponse = {
 };
 
 // Listen for test runner commands from host (main renderer)
-ipcRenderer.on('__webviewTestRunner', async (_event, command: WebviewTestCommand) => {
+ipcRenderer.on(IPC_CHANNEL_WEBVIEW_TEST_RUNNER, async (_event, command: WebviewTestCommand) => {
   let response: WebviewTestResponse;
   try {
     const method = webviewTestRunnerAPI[command.action];
@@ -522,7 +523,7 @@ ipcRenderer.on('__webviewTestRunner', async (_event, command: WebviewTestCommand
       error: error instanceof Error ? error.message : String(error),
     };
   }
-  ipcRenderer.sendToHost(`__webviewTestRunner:${command.id}`, response);
+  ipcRenderer.sendToHost(`${IPC_CHANNEL_WEBVIEW_TEST_RUNNER}:${command.id}`, response);
 });
 
 console.log('[DrawioPreload] Test runner API initialized');

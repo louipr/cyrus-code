@@ -288,7 +288,7 @@ export class YamlTestSuiteRepository implements TestSuiteRepository {
 
   /**
    * Transform raw YAML data to TestSuite type.
-   * Normalizes step defaults (e.g., timeout) so Player doesn't need fallbacks.
+   * Normalizes step defaults (e.g., timeout) at load time.
    */
   private transformYamlToTestSuite(raw: Record<string, unknown>): TestSuite {
     if (!raw.test_cases) {

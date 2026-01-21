@@ -33,7 +33,7 @@ import type { TestSuiteIndex, TestSuiteEntry } from '../repositories/test-suite-
 import type {
   TestSuite,
   PlaybackConfig,
-  PlaybackSnapshot,
+  SessionSnapshot,
   PlaybackEvent,
 } from '../macro';
 import type { ExportHistoryRecord } from '../repositories/export-history-repository';
@@ -169,7 +169,7 @@ interface CyrusAPI {
       pause: (sessionId: string) => Promise<ApiResponse<void>>;
       resume: (sessionId: string) => Promise<ApiResponse<void>>;
       stop: (sessionId: string) => Promise<ApiResponse<void>>;
-      snapshot: (sessionId: string) => Promise<ApiResponse<PlaybackSnapshot>>;
+      snapshot: (sessionId: string) => Promise<ApiResponse<SessionSnapshot>>;
       subscribe: () => Promise<ApiResponse<void>>;
       onEvent: (callback: (data: { sessionId: string; event: PlaybackEvent }) => void) => void;
     };
