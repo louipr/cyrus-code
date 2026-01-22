@@ -1,10 +1,8 @@
 /**
  * Macro Components Exports
+ *
+ * Only public-facing components are exported here.
+ * Internal components (TestSuiteTree, TestCaseGraph, etc.) are imported directly within the module.
  */
-export { TestSuiteTree } from './TestSuiteTree';
 export { MacroView } from './MacroView';
-export { TestCaseGraph } from './TestCaseGraph';
-export { TestCaseDetail } from './TestCaseDetail';
 export { TestSuitePanel } from './TestSuitePanel';
-export { StepDetail } from './StepDetail';
-export { TestSuiteDetail } from './TestSuiteDetail';

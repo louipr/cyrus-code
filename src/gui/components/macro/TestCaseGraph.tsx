@@ -495,12 +495,6 @@ const toolbarStyles = {
     transition: 'background-color 0.15s',
     padding: 0,
   } as React.CSSProperties,
-  zoomLabel: {
-    color: '#888',
-    fontSize: 11,
-    minWidth: 32,
-    textAlign: 'center',
-  } as React.CSSProperties,
 };
 
 const styles: Record<string, React.CSSProperties> = {

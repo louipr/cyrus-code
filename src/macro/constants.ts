@@ -12,15 +12,15 @@
 /** Default timeout in milliseconds for step execution */
 export const DEFAULT_TIMEOUT_MS = 5000;
 
+/** Poll interval in milliseconds for DOM element waiting */
+export const POLL_INTERVAL_MS = 100;
+
 // ============================================================================
 // IPC Communication
 // ============================================================================
 
-/** IPC channel name for test runner communication (main renderer) */
+/** IPC channel name for test runner communication */
 export const IPC_CHANNEL_TEST_RUNNER = '__testRunner';
-
-/** IPC channel name for test runner communication (webview) */
-export const IPC_CHANNEL_WEBVIEW_TEST_RUNNER = '__webviewTestRunner';
 
 /** Default IPC timeout in milliseconds (for invoke() calls) */
 export const IPC_DEFAULT_TIMEOUT_MS = 30000;

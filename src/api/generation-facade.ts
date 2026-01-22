@@ -89,12 +89,4 @@ export class GenerationFacade {
       return this.codeGenService.hasUserImplementation(symbolId, outputDir);
     }, 'CHECK_FAILED');
   }
-
-  // ==========================================================================
-  // Internal Access
-  // ==========================================================================
-
-  getCodeGenerationService(): CodeGenerationService {
-    return this.codeGenService;
-  }
 }

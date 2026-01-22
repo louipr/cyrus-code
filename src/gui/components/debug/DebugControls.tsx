@@ -65,6 +65,7 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
               backgroundColor: isPassed ? '#2d5a2d' : '#5a2d2d',
               color: isPassed ? '#89d185' : '#f48771',
             }}
+            data-testid={`debug-result-${isPassed ? 'passed' : 'failed'}`}
           >
             {executionStatus}
           </span>
@@ -138,27 +139,27 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
       {/* Control buttons */}
       <div style={styles.buttons}>
         {playbackState === 'idle' && (
-          <button style={styles.button} onClick={() => commands.start()} title="Start">
+          <button style={styles.button} onClick={() => commands.start()} title="Start" data-testid="debug-start-button">
             ▶ Start
           </button>
         )}
         {isPaused && (
           <>
-            <button style={styles.button} onClick={() => commands.step()} title="Step (F10)">
+            <button style={styles.button} onClick={() => commands.step()} title="Step (F10)" data-testid="debug-step-button">
               ⏭ Step
             </button>
-            <button style={styles.button} onClick={() => commands.resume()} title="Continue (F5)">
+            <button style={styles.button} onClick={() => commands.resume()} title="Continue (F5)" data-testid="debug-continue-button">
               ▶ Continue
             </button>
           </>
         )}
         {isRunning && (
-          <button style={styles.button} onClick={() => commands.pause()} title="Pause">
+          <button style={styles.button} onClick={() => commands.pause()} title="Pause" data-testid="debug-pause-button">
             ⏸ Pause
           </button>
         )}
         {isActive && (
-          <button style={styles.stopButton} onClick={handleStop} title="Stop">
+          <button style={styles.stopButton} onClick={handleStop} title="Stop" data-testid="debug-stop-button">
             ⏹ Stop
           </button>
         )}

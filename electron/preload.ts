@@ -41,7 +41,7 @@ import type {
   SessionSnapshot,
   PlaybackEvent,
 } from '../src/macro/index.js';
-import { IPC_CHANNEL_TEST_RUNNER, IPC_CHANNEL_WEBVIEW_TEST_RUNNER } from '../src/macro/index.js';
+import { IPC_CHANNEL_TEST_RUNNER, POLL_INTERVAL_MS } from '../src/macro/index.js';
 import type { TestSuiteIndex, TestSuiteEntry } from '../src/repositories/index.js';
 import type { ExportHistoryRecord } from '../src/repositories/index.js';
 
@@ -317,10 +317,8 @@ const cyrusAPI: CyrusAPI = {
 contextBridge.exposeInMainWorld('cyrus', cyrusAPI);
 
 // ============================================================================
-// Test Runner API - Real code, no templates
+// Test Runner API - DOM manipulation for test automation
 // ============================================================================
-
-const POLL_INTERVAL = 100;
 
 /**
  * Wait until an element is found, then execute action.
@@ -339,7 +337,7 @@ function waitForElement(
       } else if (Date.now() - startTime > timeout) {
         reject(new Error(`Element not found: ${selector}`));
       } else {
-        setTimeout(poll, POLL_INTERVAL);
+        setTimeout(poll, POLL_INTERVAL_MS);
       }
     }
     poll();
@@ -347,13 +345,9 @@ function waitForElement(
 }
 
 /**
- * Test runner API implementation.
- * Main process invokes via IPC (IPC_CHANNEL_TEST_RUNNER) - see handler below.
- */
-/**
  * Click by text - polls until element with matching text is found.
  */
-function clickByText(selector: string, text: string, timeout: number): Promise<unknown> {
+function clickByText(selector: string, text: string, timeout: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     function poll() {
@@ -361,14 +355,14 @@ function clickByText(selector: string, text: string, timeout: number): Promise<u
       for (const el of elements) {
         if (el.textContent?.includes(text)) {
           (el as HTMLElement).click();
-          resolve({ clicked: true, text: el.textContent });
+          resolve();
           return;
         }
       }
       if (Date.now() - startTime > timeout) {
         reject(new Error(`Element not found with text "${text}": ${selector}`));
       } else {
-        setTimeout(poll, POLL_INTERVAL);
+        setTimeout(poll, POLL_INTERVAL_MS);
       }
     }
     poll();
@@ -376,7 +370,7 @@ function clickByText(selector: string, text: string, timeout: number): Promise<u
 }
 
 const testRunnerAPI = {
-  click: (selector: string, timeout: number, text?: string) => {
+  click: (selector: string, timeout: number, text?: string): Promise<void> => {
     // Parse :has-text() pseudo-selector
     const match = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
     if (match?.[1] && match[2]) {
@@ -387,37 +381,28 @@ const testRunnerAPI = {
     }
     return waitForElement(selector, timeout, (el) => {
       (el as HTMLElement).click();
-      return { clicked: true };
-    });
+    }) as Promise<void>;
   },
 
-  type: (selector: string, timeout: number, text: string) =>
+  type: (selector: string, timeout: number, text: string): Promise<void> =>
     waitForElement(selector, timeout, (el) => {
       const input = el as HTMLInputElement;
       input.focus();
       input.value = text;
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
-      return { typed: true };
-    }),
+    }) as Promise<void>,
 
-  hover: (selector: string, timeout: number) =>
-    waitForElement(selector, timeout, (el) => {
-      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-      return { hovered: true };
-    }),
-
-  assert: (selector: string, timeout: number, shouldExist: boolean) =>
+  assert: (selector: string, timeout: number, shouldExist: boolean): Promise<{ exists: boolean }> =>
     new Promise((resolve, reject) => {
       const startTime = Date.now();
       function check() {
         const el = document.querySelector(selector);
         const exists = el !== null;
         if (shouldExist && exists) {
-          resolve({ asserted: true, exists: true });
+          resolve({ exists: true });
         } else if (!shouldExist && !exists) {
-          resolve({ asserted: true, exists: false });
+          resolve({ exists: false });
         } else if (Date.now() - startTime > timeout) {
           reject(new Error(
             shouldExist
@@ -425,35 +410,15 @@ const testRunnerAPI = {
               : `Assert failed: element should not exist: ${selector}`
           ));
         } else {
-          setTimeout(check, POLL_INTERVAL);
+          setTimeout(check, POLL_INTERVAL_MS);
         }
       }
       check();
     }),
 
-  getBounds: (selector: string) => {
-    const el = document.querySelector(selector);
-    if (!el) return null;
-    const rect = el.getBoundingClientRect();
-    return {
-      x: Math.round(rect.x),
-      y: Math.round(rect.y),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-    };
-  },
-
-  keyboard: (key: string) => {
-    const event = new KeyboardEvent('keydown', {
-      key,
-      bubbles: true,
-      cancelable: true,
-    });
-    document.activeElement?.dispatchEvent(event);
-    return { key };
-  },
-
-  evaluate: (code: string) => {
+  // Security: new Function() is intentional here for test automation.
+  // This runs in a sandboxed test environment, not with untrusted user input.
+  evaluate: (code: string): Promise<unknown> => {
     const fn = new Function(`return (async () => { ${code} })();`);
     return fn();
   },
@@ -502,13 +467,25 @@ ipcRenderer.on(IPC_CHANNEL_TEST_RUNNER, async (_event, command: TestRunnerComman
 });
 
 /**
- * Forward command to webview and relay response back.
+ * Generate JavaScript code for webview execution.
+ * Only supports 'evaluate' action - other actions should be implemented
+ * in evaluate code blocks in test suites.
+ */
+function generateWebviewCode(action: string, args: unknown[]): string {
+  if (action !== 'evaluate') {
+    throw new Error(`Webview only supports 'evaluate' action, got: ${action}`);
+  }
+  const [code] = args as [string];
+  return `(async () => { ${code} })()`;
+}
+
+/**
+ * Forward command to webview using executeJavaScript.
+ * Eliminates need for IPC forwarding and test runner API in webview preload.
  */
 function forwardToWebview(command: TestRunnerCommand): void {
   const webview = document.querySelector(command.context!) as HTMLElement & {
-    send: (channel: string, ...args: unknown[]) => void;
-    addEventListener: (event: string, handler: (e: { channel: string; args: unknown[] }) => void) => void;
-    removeEventListener: (event: string, handler: (e: { channel: string; args: unknown[] }) => void) => void;
+    executeJavaScript: (code: string) => Promise<unknown>;
   };
 
   if (!webview) {
@@ -519,22 +496,22 @@ function forwardToWebview(command: TestRunnerCommand): void {
     return;
   }
 
-  const responseChannel = `${IPC_CHANNEL_WEBVIEW_TEST_RUNNER}:${command.id}`;
+  const code = generateWebviewCode(command.action, command.args);
 
-  const handler = (event: { channel: string; args: unknown[] }) => {
-    if (event.channel === responseChannel) {
-      webview.removeEventListener('ipc-message', handler);
-      const response = event.args[0] as TestRunnerResponse;
-      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, response);
-    }
-  };
-
-  webview.addEventListener('ipc-message', handler);
-  webview.send(IPC_CHANNEL_WEBVIEW_TEST_RUNNER, {
-    id: command.id,
-    action: command.action,
-    args: command.args,
-  });
+  webview
+    .executeJavaScript(code)
+    .then((result) => {
+      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
+        success: true,
+        result,
+      });
+    })
+    .catch((error) => {
+      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
 }
 
 // Type augmentation for window.cyrus

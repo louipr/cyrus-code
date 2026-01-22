@@ -62,15 +62,14 @@ export class DebugSession {
     id: string,
     testSuite: TestSuite,
     webContents: WebContents,
-    config: PlaybackConfig,
-    basePath: string
+    config: PlaybackConfig
   ) {
     this.id = id;
     this.testSuite = testSuite;
     this.config = config;
 
     // Create generator with step-start callback
-    this.generator = createStepGenerator(testSuite, webContents, basePath, (pos, step) => {
+    this.generator = createStepGenerator(testSuite, webContents, (pos, step) => {
       this.emit({ type: 'step-start', position: pos, step, timestamp: Date.now() });
     });
 

@@ -77,9 +77,9 @@ flowchart TD
 
 | Component | Responsibility | Location |
 |-----------|----------------|----------|
-| **PlaybackSession** | Manages execution state, emits IPC events | `src/macro/session.ts` |
-| **TestSuitePlayer** | Executes steps via `webContents.executeJavaScript()` | `src/macro/player.ts` |
-| **SessionRegistry** | Singleton for session lifecycle | `src/macro/registry.ts` |
+| **DebugSession** | Manages execution state, emits events | `src/macro/debug-session.ts` |
+| **StepExecutor** | Executes steps via IPC to preload | `src/macro/step-executor.ts` |
+| **IPC Handlers** | Session lifecycle in main process | `electron/ipc-handlers.ts` |
 
 ## IPC Protocol
 

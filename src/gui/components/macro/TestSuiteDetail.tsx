@@ -15,8 +15,8 @@ interface TestSuiteDetailProps {
 }
 
 export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
-  const statusColor = STATUS_COLORS[testSuite.metadata.status] ?? FALLBACK_COLOR;
-  const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata.reliability] ?? FALLBACK_COLOR;
+  const statusColor = STATUS_COLORS[testSuite.metadata?.status] ?? FALLBACK_COLOR;
+  const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata?.reliability] ?? FALLBACK_COLOR;
 
   // Display suiteId as title (derived from filename)
   const title = suiteId ?? 'Test Suite';
@@ -26,9 +26,11 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.title}>{title}</span>
-        <span style={{ ...styles.statusBadge, color: statusColor, borderColor: statusColor }}>
-          {testSuite.metadata.status}
-        </span>
+        {testSuite.metadata?.status && (
+          <span style={{ ...styles.statusBadge, color: statusColor, borderColor: statusColor }}>
+            {testSuite.metadata.status}
+          </span>
+        )}
       </div>
 
       {/* Description */}
@@ -36,24 +38,28 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
 
       {/* Metadata */}
       <div style={styles.metadataGrid}>
-        <div style={styles.metadataItem}>
-          <span style={styles.label}>App</span>
-          <span style={styles.value}>{testSuite.context.app}</span>
-        </div>
+        {testSuite.context?.app && (
+          <div style={styles.metadataItem}>
+            <span style={styles.label}>App</span>
+            <span style={styles.value}>{testSuite.context.app}</span>
+          </div>
+        )}
 
         <div style={styles.metadataItem}>
           <span style={styles.label}>Test Cases</span>
           <span style={styles.value}>{testSuite.test_cases.length}</span>
         </div>
 
-        <div style={styles.metadataItem}>
-          <span style={styles.label}>Reliability</span>
-          <span style={{ ...styles.value, color: reliabilityColor }}>
-            {testSuite.metadata.reliability}
-          </span>
-        </div>
+        {testSuite.metadata?.reliability && (
+          <div style={styles.metadataItem}>
+            <span style={styles.label}>Reliability</span>
+            <span style={{ ...styles.value, color: reliabilityColor }}>
+              {testSuite.metadata.reliability}
+            </span>
+          </div>
+        )}
 
-        {testSuite.metadata.successRate !== undefined && (
+        {testSuite.metadata?.successRate !== undefined && (
           <div style={styles.metadataItem}>
             <span style={styles.label}>Success Rate</span>
             <span style={styles.value}>{testSuite.metadata.successRate}%</span>
@@ -62,7 +68,7 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
       </div>
 
       {/* Tags */}
-      {testSuite.metadata.tags && testSuite.metadata.tags.length > 0 && (
+      {testSuite.metadata?.tags && testSuite.metadata.tags.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Tags</div>
           <div style={styles.tagList}>
@@ -76,7 +82,7 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
       )}
 
       {/* Prerequisites */}
-      {testSuite.context.prerequisites && testSuite.context.prerequisites.length > 0 && (
+      {testSuite.context?.prerequisites && testSuite.context.prerequisites.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Prerequisites</div>
           <ul style={styles.prereqList}>
@@ -91,13 +97,13 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
 
       {/* Author & Dates */}
       <div style={styles.footer}>
-        {testSuite.metadata.author && (
+        {testSuite.metadata?.author && (
           <span style={styles.footerItem}>By: {testSuite.metadata.author}</span>
         )}
-        {testSuite.metadata.created && (
+        {testSuite.metadata?.created && (
           <span style={styles.footerItem}>Created: {testSuite.metadata.created}</span>
         )}
-        {testSuite.metadata.lastRun && (
+        {testSuite.metadata?.lastRun && (
           <span style={styles.footerItem}>Last run: {testSuite.metadata.lastRun}</span>
         )}
       </div>
@@ -182,15 +188,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   prereqItem: {
     marginBottom: '4px',
-  },
-  codeBlock: {
-    backgroundColor: '#2a2d2e',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontFamily: 'monospace',
-    color: '#ce9178',
-    border: '1px solid #3c3c3c',
   },
   footer: {
     marginTop: '16px',

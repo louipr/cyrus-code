@@ -1,0 +1,21 @@
+description: Test evaluate action.
+metadata:
+  status: draft
+  tags:
+    - actions
+    - evaluate
+test_cases:
+  - id: evaluate_js
+    description: Evaluate JavaScript and verify result
+    steps:
+      - action: evaluate
+        code: |
+          return {
+            hasRoot: !!document.getElementById('root'),
+            url: window.location.protocol
+          };
+        timeout: 1000
+        expect:
+          type: value
+          value: { hasRoot: true, url: "file:" }
+        why: Evaluate JS and verify return value.

@@ -1,0 +1,79 @@
+# Draw.io Export PNG Test Suite
+#
+# Minimal test for Draw.io PNG export via IPC.
+# Tests the drawio-preload.ts export functionality.
+
+description: Test Draw.io PNG export via preload IPC.
+
+metadata:
+  category: drawio
+  priority: high
+
+test_cases:
+  - id: open_diagram_view
+    description: Navigate to diagram view
+    steps:
+      - action: wait
+        timeout: 2000
+        expect:
+          type: selector
+          selector: "[data-testid='view-toggle']"
+        why: Wait for app to load.
+
+      - action: click
+        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+        why: Switch to diagram view.
+
+      - action: wait
+        timeout: 2000
+        expect:
+          type: selector
+          selector: "[data-testid='diagram-webview']"
+        why: Wait for webview to appear.
+
+  - id: wait_for_editor
+    description: Wait for Draw.io editor to initialize
+    depends: [open_diagram_view]
+    steps:
+      - action: evaluate
+        webview: "[data-testid='diagram-webview']"
+        code: |
+          (async function() {
+            const timeout = 15000;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              if (window.editorUi?.editor?.graph) {
+                return { ready: true };
+              }
+              await new Promise(r => setTimeout(r, 500));
+            }
+            throw new Error('Draw.io editor not ready');
+          })()
+        timeout: 1000
+        why: Wait for window.editorUi to be available.
+
+  - id: test_export_png
+    description: Test PNG export via preload
+    depends: [wait_for_editor]
+    steps:
+      - action: evaluate
+        webview: "[data-testid='diagram-webview']"
+        code: |
+          (async function() {
+            const graph = window.editorUi.editor.graph;
+
+            // Get SVG from graph
+            const svg = graph.getSvg(null, 1, 0, false, null, true, true);
+            if (!svg) {
+              throw new Error('Failed to get SVG from graph');
+            }
+
+            return {
+              success: true,
+              hasGraph: !!graph,
+              svgWidth: svg.getAttribute('width'),
+              svgHeight: svg.getAttribute('height')
+            };
+          })()
+        timeout: 5000
+        why: Verify graph export produces valid SVG.

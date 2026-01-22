@@ -98,11 +98,7 @@ const ICONS = {
   'step-click': '👆',
   'step-type': '⌨️',
   'step-evaluate': '🔧',
-  'step-poll': '🔄',
-  'step-assert': '✓',
-  'step-screenshot': '📷',
-  'step-hover': '🎯',
-  'step-keyboard': '⌨️',
+  'step-wait': '⏳',
 };
 
 function getStepIcon(action: string): string {

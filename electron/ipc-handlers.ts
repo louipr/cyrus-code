@@ -785,8 +785,7 @@ export function registerIpcHandlers(facade: Architecture): void {
           generateSessionId(),
           testSuite,
           mainWindow.webContents,
-          config,
-          helpProjectRoot
+          config
         );
 
         // Auto-subscribe to events if renderer requested it

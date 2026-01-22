@@ -7,8 +7,6 @@
 
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import type { TestSuite, TestStep } from './test-suite-types.js';
 import type { PlaybackPosition, StepResult } from './playback-types.js';
 import { IPC_CHANNEL_TEST_RUNNER, IPC_DEFAULT_TIMEOUT_MS } from './constants.js';
@@ -25,20 +23,18 @@ export interface StepYield {
 /**
  * Callback for step-start events (emitted before execution).
  */
-export type StepStartCallback = (position: PlaybackPosition, step: TestStep) => void;
+type StepStartCallback = (position: PlaybackPosition, step: TestStep) => void;
 
 /**
  * Create a generator that executes test steps sequentially.
  *
  * @param suite - Test suite to execute
  * @param wc - WebContents for IPC communication
- * @param basePath - Base path for relative file operations
  * @param onStepStart - Callback invoked before each step executes
  */
 export async function* createStepGenerator(
   suite: TestSuite,
   wc: WebContents,
-  basePath: string,
   onStepStart?: StepStartCallback
 ): AsyncGenerator<StepYield> {
   for (let tcIdx = 0; tcIdx < suite.test_cases.length; tcIdx++) {
@@ -58,7 +54,7 @@ export async function* createStepGenerator(
       let result: StepResult;
 
       try {
-        const actionValue = await executeAction(step, wc, basePath);
+        const actionValue = await executeAction(step, wc);
         const expectValue = await executeExpect(step, actionValue, wc);
         result = {
           success: true,
@@ -81,10 +77,9 @@ export async function* createStepGenerator(
 /**
  * Execute a step's action.
  */
-export async function executeAction(
+async function executeAction(
   step: TestStep,
-  wc: WebContents,
-  basePath: string
+  wc: WebContents
 ): Promise<unknown> {
   switch (step.action) {
     case 'click':
@@ -96,24 +91,15 @@ export async function executeAction(
     case 'evaluate':
       return invoke(wc, 'evaluate', [step.code], step.webview);
 
-    case 'hover':
-      return invoke(wc, 'hover', [step.selector, step.timeout!]);
-
-    case 'keyboard':
-      return invoke(wc, 'keyboard', [step.key]);
-
     case 'wait':
       return undefined; // Expect block handles the waiting
-
-    case 'screenshot':
-      return executeScreenshot(wc, step.returns, step.selector, basePath);
   }
 }
 
 /**
  * Execute a step's expectation/assertion.
  */
-export async function executeExpect(
+async function executeExpect(
   step: TestStep,
   actionValue: unknown,
   wc: WebContents
@@ -139,43 +125,9 @@ export async function executeExpect(
 }
 
 /**
- * Execute a screenshot action.
- */
-async function executeScreenshot(
-  wc: WebContents,
-  outputPath: string | undefined,
-  selector: string | undefined,
-  basePath: string
-): Promise<unknown> {
-  if (!outputPath) {
-    return { skipped: true, reason: 'No output path specified' };
-  }
-
-  let screenshotPath = outputPath;
-  if (!path.isAbsolute(screenshotPath)) {
-    screenshotPath = path.join(basePath, screenshotPath);
-  }
-
-  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-
-  let image: Electron.NativeImage;
-  if (selector) {
-    const bounds = await invoke(wc, 'getBounds', [selector]);
-    if (!bounds) throw new Error(`Element not found: ${selector}`);
-    image = await wc.capturePage(bounds as Electron.Rectangle);
-  } else {
-    image = await wc.capturePage();
-  }
-
-  const pngBuffer = image.toPNG();
-  await fs.writeFile(screenshotPath, pngBuffer);
-  return { captured: true, path: screenshotPath, size: pngBuffer.length };
-}
-
-/**
  * Send an IPC command to the preload test runner and wait for response.
  */
-export function invoke(
+function invoke(
   wc: WebContents,
   action: string,
   args: unknown[],

@@ -1,31 +1,41 @@
-description: Test click action via IPC.
+description: Test click action.
 metadata:
   status: draft
-  reliability: unknown
   tags:
     - actions
     - click
-  author: refactor
-  created: 2025-01-19
-context:
-  app: cyrus-code
-  prerequisites:
-    - App is launched
 test_cases:
-  - id: click_help_button
-    description: Click help button
+  - id: setup_button
+    description: Create test button
     steps:
-      - action: wait
+      - action: evaluate
+        code: |
+          const btn = document.createElement('button');
+          btn.id = 'test-btn';
+          btn.textContent = 'Click Me';
+          btn.onclick = () => { btn.setAttribute('data-clicked', 'true'); };
+          document.body.appendChild(btn);
+          return { created: true };
         timeout: 1000
-        expect:
-          type: selector
-          selector: "[data-testid='view-toggle']"
-        why: Wait for app to be ready (view-toggle exists in all views).
+        why: Create a test button element.
 
+  - id: click_button
+    description: Click test button
+    depends: [setup_button]
+    steps:
       - action: click
-        selector: "[data-testid='help-button']"
+        selector: "#test-btn"
         timeout: 1000
-        why: Click the help button using IPC-based click.
+        why: Click the button using IPC-based click.
+
+      - action: evaluate
+        code: |
+          const btn = document.getElementById('test-btn');
+          const clicked = btn?.getAttribute('data-clicked') === 'true';
+          if (btn) btn.remove();
+          return { clicked };
+        timeout: 1000
         expect:
-          type: selector
-          selector: "[data-testid='help-dialog']"
+          type: value
+          value: { clicked: true }
+        why: Verify click occurred and cleanup.

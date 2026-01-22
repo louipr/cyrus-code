@@ -9,9 +9,7 @@
 # Access: '[data-testid="diagram-webview"]' via webview.executeJavaScript()
 #
 # Globals available in Draw.io context:
-#   __cyrusEditorUi  - EditorUi instance captured by preload hook (drawio-preload.ts)
-#   __cyrusHooked    - Boolean indicating hook was installed
-#   editorUi         - Native Draw.io EditorUi (embed mode only)
+#   editorUi         - Native Draw.io EditorUi instance
 #   App              - Draw.io application class
 #
 # Key selectors:
@@ -21,8 +19,8 @@
 #   .geItem              - Menu items
 #   .mxPopupMenu         - Context menus
 #
-# Hook mechanism (see electron/preload/drawio-preload.ts):
-#   The preload script wraps App.main() to intercept the EditorUi callback.
+# Access pattern (see electron/drawio-preload.ts):
+#   The preload script accesses Draw.io's native window.editorUi instance.
 #   This provides access to:
 #   - editorUi.editor.graph      - the mxGraph instance
 #   - editorUi.editor.exportToCanvas() - native PNG export
@@ -78,7 +76,7 @@ test_cases:
             const interval = 500;
             const start = Date.now();
             while (Date.now() - start < timeout) {
-              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              const ui = window.editorUi;
               if (ui && ui.editor && ui.editor.graph) {
                 return { ready: true };
               }
@@ -109,7 +107,7 @@ test_cases:
         webview: "[data-testid='diagram-webview']"
         code: |
           (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            const ui = window.editorUi;
             if (!ui || !ui.editor || !ui.editor.graph) {
               return { error: 'Editor not ready' };
             }
@@ -169,7 +167,7 @@ test_cases:
         webview: "[data-testid='diagram-webview']"
         code: |
           (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            const ui = window.editorUi;
             if (!ui || !ui.editor || !ui.editor.graph) {
               return { error: 'Editor not ready' };
             }

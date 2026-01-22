@@ -1,14 +1,14 @@
 /**
  * TestCaseDetail Component
  *
- * Displays detailed information about a selected test case.
- * Shows test case ID, description, dependencies, and step summary.
- * Supports editing test case parameters with save functionality.
+ * Displays test case metadata: ID, description, dependencies, step summary.
+ * Step parameters are NOT edited here - click a step in the graph for StepDetail.
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import type { TestCase, TestSuite, ActionType } from '../../../macro';
 import { ACTION_ICONS, ACTION_COLORS } from './constants';
+import { getStepKeyIdentifier } from './stepConfig';
 
 interface TestCaseDetailProps {
   testCase: TestCase;
@@ -17,12 +17,10 @@ interface TestCaseDetailProps {
   groupId?: string;
   suiteId?: string;
   onSave?: (updatedTestSuite: TestSuite) => Promise<void>;
-  onStepChange?: (stepIndex: number, field: string, value: string) => void;
 }
 
 /**
  * Validate snake_case ID format.
- * Must start with lowercase letter, contain only lowercase letters, numbers, and underscores.
  */
 function isValidSnakeCaseId(id: string): boolean {
   return /^[a-z][a-z0-9_]*$/.test(id);
@@ -52,30 +50,22 @@ export function TestCaseDetail({
   groupId,
   suiteId,
   onSave,
-  onStepChange,
 }: TestCaseDetailProps) {
   const [editingId, setEditingId] = useState(false);
   const [idValue, setIdValue] = useState(testCase.id);
   const [idError, setIdError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Step selector editing state
-  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
-  const [selectorValue, setSelectorValue] = useState('');
-
   // Reset edit state when test case changes
   useEffect(() => {
     setIdValue(testCase.id);
     setEditingId(false);
     setIdError(null);
-    setEditingStepIndex(null);
-    setSelectorValue('');
   }, [testCase.id]);
 
-  // Check if editing is enabled (requires all save-related props)
   const canEdit = Boolean(testSuite && groupId && suiteId && onSave);
 
-  // Count step types
+  // Count step types for summary badges
   const stepCounts = testCase.steps.reduce(
     (acc: Record<string, number>, step) => {
       acc[step.action] = (acc[step.action] || 0) + 1;
@@ -84,21 +74,16 @@ export function TestCaseDetail({
     {} as Record<string, number>
   );
 
-  // Get dependency test case IDs (shown in graph)
   const dependencyIds = (testCase.depends ?? []).filter(Boolean);
 
-  // Validate ID and check for uniqueness
   const validateId = useCallback(
     (newId: string): string | null => {
-      if (!newId.trim()) {
-        return 'ID cannot be empty';
-      }
+      if (!newId.trim()) return 'ID cannot be empty';
       if (!isValidSnakeCaseId(newId)) {
         return 'ID must be snake_case (lowercase letters, numbers, underscores)';
       }
       if (testSuite && newId !== testCase.id) {
-        const isDuplicate = testSuite.test_cases.some((tc) => tc.id === newId);
-        if (isDuplicate) {
+        if (testSuite.test_cases.some((tc) => tc.id === newId)) {
           return 'ID already exists in this test suite';
         }
       }
@@ -107,7 +92,6 @@ export function TestCaseDetail({
     [testSuite, testCase.id]
   );
 
-  // Handle ID change
   const handleIdChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
@@ -117,7 +101,6 @@ export function TestCaseDetail({
     [validateId]
   );
 
-  // Handle save
   const handleSave = useCallback(async () => {
     if (!testSuite || !onSave || idError) return;
 
@@ -129,7 +112,6 @@ export function TestCaseDetail({
 
     setSaving(true);
     try {
-      // Update the test case ID
       let updatedSuite: TestSuite = {
         ...testSuite,
         test_cases: testSuite.test_cases.map((tc, idx) =>
@@ -137,7 +119,6 @@ export function TestCaseDetail({
         ),
       };
 
-      // Update depends references if ID changed
       if (idValue !== testCase.id) {
         updatedSuite = updateDependsReferences(updatedSuite, testCase.id, idValue);
       }
@@ -149,7 +130,6 @@ export function TestCaseDetail({
     }
   }, [testSuite, onSave, idValue, idError, validateId, testCaseIndex, testCase.id]);
 
-  // Handle cancel
   const handleCancel = useCallback(() => {
     setIdValue(testCase.id);
     setEditingId(false);
@@ -157,33 +137,6 @@ export function TestCaseDetail({
   }, [testCase.id]);
 
   const isDirty = idValue !== testCase.id;
-
-  // Start editing a step's selector
-  const startEditingSelector = useCallback((stepIndex: number, currentSelector: string) => {
-    setEditingStepIndex(stepIndex);
-    setSelectorValue(currentSelector);
-  }, []);
-
-  // Save selector change
-  const handleSaveSelector = useCallback(() => {
-    if (editingStepIndex === null || !onStepChange) return;
-    onStepChange(editingStepIndex, 'selector', selectorValue);
-    setEditingStepIndex(null);
-    setSelectorValue('');
-  }, [editingStepIndex, selectorValue, onStepChange]);
-
-  // Cancel selector edit
-  const handleCancelSelector = useCallback(() => {
-    setEditingStepIndex(null);
-    setSelectorValue('');
-  }, []);
-
-  // Check if selector is dirty
-  const isSelectorDirty = useCallback((stepIndex: number) => {
-    if (editingStepIndex !== stepIndex) return false;
-    const step = testCase.steps[stepIndex];
-    return step && 'selector' in step && step.selector !== selectorValue;
-  }, [editingStepIndex, selectorValue, testCase.steps]);
 
   return (
     <div style={styles.container} data-testid="test-case-detail">
@@ -202,10 +155,7 @@ export function TestCaseDetail({
               type="text"
               value={idValue}
               onChange={handleIdChange}
-              style={{
-                ...styles.input,
-                ...(idError ? styles.inputError : {}),
-              }}
+              style={{ ...styles.input, ...(idError ? styles.inputError : {}) }}
               autoFocus
               data-testid="test-case-id-input"
             />
@@ -213,10 +163,7 @@ export function TestCaseDetail({
           </div>
         ) : (
           <div
-            style={{
-              ...styles.idDisplay,
-              ...(canEdit ? styles.idDisplayEditable : {}),
-            }}
+            style={{ ...styles.idDisplay, ...(canEdit ? styles.editable : {}) }}
             onClick={canEdit ? () => setEditingId(true) : undefined}
             title={canEdit ? 'Click to edit' : undefined}
             data-testid="test-case-id-display"
@@ -227,17 +174,17 @@ export function TestCaseDetail({
         )}
       </div>
 
-      {/* Step Summary */}
+      {/* Step Summary Badges */}
       <div style={styles.section}>
         <div style={styles.label}>Steps ({testCase.steps.length})</div>
-        <div style={styles.stepSummary}>
+        <div style={styles.badgeRow}>
           {Object.entries(stepCounts).map(([action, count]) => (
-            <div key={action} style={styles.stepType}>
+            <div key={action} style={styles.badge}>
               <span>{ACTION_ICONS[action as ActionType] ?? '○'}</span>
               <span style={{ color: ACTION_COLORS[action as ActionType] ?? '#888' }}>
                 {action.toUpperCase()}
               </span>
-              <span style={styles.stepCount}>×{count}</span>
+              <span style={styles.badgeCount}>×{count}</span>
             </div>
           ))}
         </div>
@@ -249,76 +196,29 @@ export function TestCaseDetail({
           <div style={styles.label}>Depends On</div>
           <div style={styles.dependencyList}>
             {dependencyIds.map((id, idx) => (
-              <div key={idx} style={styles.dependency}>
-                {id}
-              </div>
+              <div key={idx} style={styles.dependency}>{id}</div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Step List */}
+      {/* Step Sequence (minimal - just action + identifier) */}
       <div style={styles.section}>
         <div style={styles.label}>Step Sequence</div>
         <div style={styles.stepList}>
-          {testCase.steps.map((step, idx) => (
-            <div key={idx} style={styles.stepItem}>
-              <div style={styles.stepHeader}>
+          {testCase.steps.map((step, idx) => {
+            const keyId = getStepKeyIdentifier(step);
+            return (
+              <div key={idx} style={styles.stepItem}>
                 <span style={styles.stepIndex}>{idx + 1}</span>
                 <span style={styles.stepIcon}>{ACTION_ICONS[step.action] ?? '○'}</span>
                 <span style={{ ...styles.stepAction, color: ACTION_COLORS[step.action] ?? '#888' }}>
                   {step.action}
                 </span>
+                {keyId && <code style={styles.stepKey}>{keyId}</code>}
               </div>
-              {'selector' in step && step.selector && (
-                <div style={styles.stepSelector}>
-                  {editingStepIndex === idx ? (
-                    <div style={styles.editContainer}>
-                      <input
-                        type="text"
-                        value={selectorValue}
-                        onChange={(e) => setSelectorValue(e.target.value)}
-                        style={styles.selectorInput}
-                        autoFocus
-                        data-testid={`step-${idx}-selector-input`}
-                      />
-                      {isSelectorDirty(idx) && (
-                        <div style={styles.selectorButtonRow}>
-                          <button
-                            style={{ ...styles.button, ...styles.saveButton }}
-                            onClick={handleSaveSelector}
-                            data-testid={`step-${idx}-save-button`}
-                          >
-                            Save
-                          </button>
-                          <button
-                            style={{ ...styles.button, ...styles.cancelButton }}
-                            onClick={handleCancelSelector}
-                            data-testid={`step-${idx}-cancel-button`}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        ...styles.selectorDisplay,
-                        ...(onStepChange ? styles.selectorDisplayEditable : {}),
-                      }}
-                      onClick={onStepChange ? () => startEditingSelector(idx, step.selector!) : undefined}
-                      title={onStepChange ? 'Click to edit' : undefined}
-                      data-testid={`step-${idx}-selector-display`}
-                    >
-                      <code style={styles.selectorCode}>{step.selector}</code>
-                      {onStepChange && <span style={styles.editIcon}>✎</span>}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -326,7 +226,7 @@ export function TestCaseDetail({
       {editingId && isDirty && (
         <div style={styles.buttonRow}>
           <button
-            style={{ ...styles.button, ...styles.saveButton }}
+            style={styles.saveButton}
             onClick={handleSave}
             disabled={saving || Boolean(idError)}
             data-testid="test-case-save-button"
@@ -334,7 +234,7 @@ export function TestCaseDetail({
             {saving ? 'Saving...' : 'Save'}
           </button>
           <button
-            style={{ ...styles.button, ...styles.cancelButton }}
+            style={styles.cancelButton}
             onClick={handleCancel}
             disabled={saving}
             data-testid="test-case-cancel-button"
@@ -345,9 +245,7 @@ export function TestCaseDetail({
       )}
 
       {/* Hint */}
-      <div style={styles.hint}>
-        Click a step in the graph to see details
-      </div>
+      <div style={styles.hint}>Click a step in the graph to see details</div>
     </div>
   );
 }
@@ -387,12 +285,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#888',
     marginBottom: '8px',
   },
-  stepSummary: {
+  badgeRow: {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '8px',
   },
-  stepType: {
+  badge: {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
@@ -401,7 +299,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
     fontSize: '11px',
   },
-  stepCount: {
+  badgeCount: {
     color: '#666',
     fontSize: '10px',
   },
@@ -424,17 +322,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepItem: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
+    alignItems: 'center',
+    gap: '8px',
     padding: '8px',
     backgroundColor: '#252526',
     borderRadius: '4px',
     fontSize: '12px',
-  },
-  stepHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
   },
   stepIndex: {
     color: '#666',
@@ -449,44 +342,15 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     fontSize: '10px',
   },
-  stepSelector: {
-    marginLeft: '24px',
-  },
-  selectorInput: {
-    width: '100%',
-    padding: '6px 10px',
-    backgroundColor: '#2a2d2e',
-    border: '1px solid #4fc1ff',
-    borderRadius: '4px',
+  stepKey: {
     color: '#ce9178',
     fontSize: '11px',
     fontFamily: 'monospace',
-    outline: 'none',
-    boxSizing: 'border-box' as const,
-  },
-  selectorCode: {
-    color: '#ce9178',
-    fontSize: '11px',
-    fontFamily: 'monospace',
-    wordBreak: 'break-all' as const,
-    flex: 1,
-  },
-  selectorDisplay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '6px 10px',
-    backgroundColor: '#2a2d2e',
-    borderRadius: '4px',
-  },
-  selectorDisplayEditable: {
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  selectorButtonRow: {
-    display: 'flex',
-    gap: '6px',
-    marginTop: '4px',
+    marginLeft: 'auto',
+    maxWidth: '200px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   hint: {
     marginTop: '16px',
@@ -505,7 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#2a2d2e',
     borderRadius: '4px',
   },
-  idDisplayEditable: {
+  editable: {
     cursor: 'pointer',
     transition: 'background-color 0.15s',
   },
@@ -546,19 +410,23 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
     marginTop: '16px',
   },
-  button: {
+  saveButton: {
     padding: '6px 16px',
     border: 'none',
     borderRadius: '4px',
     fontSize: '12px',
     fontWeight: 500,
     cursor: 'pointer',
-  },
-  saveButton: {
     backgroundColor: '#0e639c',
     color: '#fff',
   },
   cancelButton: {
+    padding: '6px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
     backgroundColor: '#3c3c3c',
     color: '#ccc',
   },

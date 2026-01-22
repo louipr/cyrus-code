@@ -31,7 +31,7 @@
  * ```typescript
  * import { DebugSession, generateSessionId } from './macro';
  *
- * const session = new DebugSession(generateSessionId(), testSuite, webContents, config, basePath);
+ * const session = new DebugSession(generateSessionId(), testSuite, webContents, config);
  * session.on((event) => console.log(event));
  * await session.play();
  * ```
@@ -49,6 +49,4 @@ export * from './playback-types.js';
 // DebugSession - Class-based session
 export { DebugSession, generateSessionId, type SessionSnapshot } from './debug-session.js';
 
-// Step Executor - Pure functions for step execution
-export { createStepGenerator, executeAction, executeExpect } from './step-executor.js';
-export type { StepYield, StepStartCallback } from './step-executor.js';
+// Note: Step executor internals (createStepGenerator, StepYield) are used only by DebugSession

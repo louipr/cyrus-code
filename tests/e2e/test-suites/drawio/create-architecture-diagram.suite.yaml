@@ -8,9 +8,7 @@
 # Access: '[data-testid="diagram-webview"]' via webview.executeJavaScript()
 #
 # Globals available in Draw.io context:
-#   __cyrusEditorUi  - EditorUi instance captured by preload hook (drawio-preload.ts)
-#   __cyrusHooked    - Boolean indicating hook was installed
-#   editorUi         - Native Draw.io EditorUi (embed mode only)
+#   editorUi         - Native Draw.io EditorUi instance
 #   App              - Draw.io application class
 #
 # Key selectors:
@@ -20,8 +18,8 @@
 #   .geItem              - Menu items
 #   .mxPopupMenu         - Context menus
 #
-# Hook mechanism (see electron/preload/drawio-preload.ts):
-#   The preload script wraps App.main() to intercept the EditorUi callback.
+# Access pattern (see electron/drawio-preload.ts):
+#   The preload script accesses Draw.io's native window.editorUi instance.
 #   This provides access to:
 #   - editorUi.editor.graph      - the mxGraph instance
 #   - editorUi.editor.exportToCanvas() - native PNG export
@@ -80,7 +78,7 @@ test_cases:
             const interval = 500;
             const start = Date.now();
             while (Date.now() - start < timeout) {
-              const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+              const ui = window.editorUi;
               if (ui && ui.editor && ui.editor.graph) {
                 return { ready: true };
               }
@@ -111,7 +109,7 @@ test_cases:
         webview: "[data-testid='diagram-webview']"
         code: |
           (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            const ui = window.editorUi;
             if (!ui || !ui.editor || !ui.editor.graph) {
               return { error: 'Editor not ready' };
             }
@@ -155,7 +153,7 @@ test_cases:
         webview: "[data-testid='diagram-webview']"
         code: |
           (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            const ui = window.editorUi;
             if (!ui || !ui.editor || !ui.editor.graph) {
               return { error: 'Editor not ready' };
             }
@@ -187,7 +185,7 @@ test_cases:
         webview: "[data-testid='diagram-webview']"
         code: |
           (function() {
-            const ui = window.__cyrusEditorUi || window.editorUi || window.ui;
+            const ui = window.editorUi;
             if (!ui || !ui.actions) {
               throw new Error('Draw.io editor not found');
             }
@@ -227,10 +225,20 @@ test_cases:
     description: Click Export in dialog
     depends: [wait_for_export_dialog]
     steps:
-      - action: click
+      - action: evaluate
         webview: "[data-testid='diagram-webview']"
-        selector: "button"
-        text: Export
+        code: |
+          (function() {
+            const buttons = document.querySelectorAll('button');
+            for (const btn of buttons) {
+              if (btn.textContent && btn.textContent.includes('Export')) {
+                btn.click();
+                return { clicked: true };
+              }
+            }
+            throw new Error('Export button not found');
+          })()
+        timeout: 5000
         why: Click the Export button to proceed to Save As dialog.
 
   - id: wait_for_save_dialog
@@ -330,7 +338,7 @@ test_cases:
           // Get PNG data from Draw.io
           const result = await webview.executeJavaScript(`
             new Promise((resolve, reject) => {
-              const ui = window.__cyrusEditorUi || window.editorUi;
+              const ui = window.editorUi;
               if (!ui || !ui.editor) {
                 reject(new Error('Editor not available'));
                 return;

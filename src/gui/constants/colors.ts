@@ -35,7 +35,6 @@ export const EDGE_COLORS: Record<string, string> = {
 export const STATUS_COLORS: Record<string, string> = {
   draft: '#dcdcaa',
   verified: '#89d185',
-  deprecated: '#f14c4c',
 };
 
 /**

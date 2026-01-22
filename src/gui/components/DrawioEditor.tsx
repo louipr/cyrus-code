@@ -48,6 +48,9 @@ export interface DrawioEditorRef {
 interface DrawioMessage {
   event: string;
   xml?: string;
+  format?: string;
+  data?: unknown;
+  error?: string;
 }
 
 /**
@@ -58,7 +61,6 @@ interface WebviewElement extends HTMLElement {
   src: string;
   preload: string;
   send(channel: string, ...args: unknown[]): void;
-  executeJavaScript(code: string): Promise<unknown>;
 }
 
 /**
@@ -67,6 +69,14 @@ interface WebviewElement extends HTMLElement {
 interface IpcMessageEvent {
   channel: string;
   args: unknown[];
+}
+
+/**
+ * Pending IPC request type for promise resolution.
+ */
+interface PendingRequest {
+  resolve: (value: unknown) => void;
+  reject: (error: Error) => void;
 }
 
 export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
@@ -79,6 +89,21 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
   const [baseDrawioUrl, setBaseDrawioUrl] = useState<string | null>(null);
   const [preloadPath, setPreloadPath] = useState<string | null>(null);
 
+  // Pending IPC requests waiting for response
+  const pendingRequests = React.useRef<Map<string, PendingRequest>>(new Map());
+
+  // Send IPC message and wait for response
+  const sendDrawioMessage = useCallback((action: string, data?: Record<string, unknown>): Promise<unknown> => {
+    return new Promise((resolve, reject) => {
+      if (!webviewElement) {
+        reject(new Error('Webview not available'));
+        return;
+      }
+      pendingRequests.current.set(action, { resolve, reject });
+      webviewElement.send(DRAWIO_CHANNEL, JSON.stringify({ action, ...data }));
+    });
+  }, [webviewElement]);
+
   // Expose methods via ref for external control
   useImperativeHandle(ref, () => ({
     exportPng: async (): Promise<string | null> => {
@@ -88,60 +113,9 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
       }
 
       try {
-        // Execute JavaScript in the webview to export as PNG
-        // Draw.io's EditorUi is captured by our preload script in __cyrusEditorUi
-        const dataUrl = await webviewElement.executeJavaScript(`
-          (async function() {
-            const editorUi = window.__cyrusEditorUi || window.editorUi || window.DRAWIO_UI;
-            if (!editorUi) {
-              throw new Error('Draw.io editor not found');
-            }
-
-            return new Promise((resolve, reject) => {
-              try {
-                const graph = editorUi.editor.graph;
-                if (!graph) {
-                  reject(new Error('No graph found in editor'));
-                  return;
-                }
-
-                // Check if exportImage is available, fall back to exportToCanvas
-                if (typeof editorUi.exportImage !== 'function') {
-                  if (typeof editorUi.editor.exportToCanvas === 'function') {
-                    editorUi.editor.exportToCanvas(
-                      function(canvas) {
-                        try {
-                          resolve(canvas.toDataURL('image/png'));
-                        } catch (e) {
-                          reject(e);
-                        }
-                      },
-                      null, null, '#ffffff',
-                      function(e) { reject(e || new Error('Export failed')); },
-                      null, true, 1, false, false, null, null, 10, true
-                    );
-                  } else {
-                    reject(new Error('No export method available'));
-                  }
-                  return;
-                }
-
-                // Use Draw.io's built-in PNG export
-                editorUi.exportImage(
-                  1, '#ffffff', true,
-                  function(dataUrl) { resolve(dataUrl); },
-                  function(err) { reject(err || new Error('Export failed')); },
-                  'png'
-                );
-              } catch (err) {
-                reject(err);
-              }
-            });
-          })()
-        `);
-
+        const result = await sendDrawioMessage('export', { format: 'png' }) as { data: string | null };
         console.log('[DrawioEditor] PNG export successful');
-        return dataUrl as string;
+        return result.data;
       } catch (err) {
         console.error('[DrawioEditor] PNG export failed:', err);
         return null;
@@ -154,27 +128,7 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
       }
 
       try {
-        // Trigger Draw.io's native export dialog via the actions system
-        await webviewElement.executeJavaScript(`
-          (function() {
-            const editorUi = window.__cyrusEditorUi || window.editorUi || window.DRAWIO_UI;
-            if (!editorUi) {
-              throw new Error('Draw.io editor not found');
-            }
-
-            // Draw.io has an actions system - trigger the export action
-            // 'exportPng' opens the PNG export dialog with options
-            if (editorUi.actions && editorUi.actions.get('exportPng')) {
-              editorUi.actions.get('exportPng').funct();
-            } else if (editorUi.showExportDialog) {
-              // Fallback: some versions have showExportDialog directly
-              editorUi.showExportDialog('png');
-            } else {
-              // Last resort: use saveLocalFile which triggers the save dialog
-              throw new Error('Export dialog not available - use File menu instead');
-            }
-          })()
-        `);
+        await sendDrawioMessage('openExportDialog');
         console.log('[DrawioEditor] Export dialog opened');
       } catch (err) {
         console.error('[DrawioEditor] Failed to open export dialog:', err);
@@ -182,7 +136,7 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
       }
     },
     isReady: () => isReady,
-  }), [webviewElement, isReady]);
+  }), [webviewElement, isReady, sendDrawioMessage]);
 
   // Fetch Draw.io URL and preload path from main process
   useEffect(() => {
@@ -240,25 +194,48 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
     return () => clearTimeout(timeoutId);
   }, [isLoading, isReady]);
 
-  // Handle Draw.io message events (standalone mode only sends 'ready')
+  // Handle Draw.io message events
   const handleDrawioMessage = useCallback(
     (msg: DrawioMessage) => {
-      console.log('[DrawioEditor] Received message:', msg.event);
-
       switch (msg.event) {
         case 'ready':
-          // Standalone mode: preload detected .geDiagramContainer element
           console.log('[DrawioEditor] Draw.io editor ready');
           setIsReady(true);
           setIsLoading(false);
           break;
 
         case 'save':
-          // Reserved for future embed mode integration
           if (msg.xml && onSave) {
             onSave(msg.xml);
           }
           break;
+
+        case 'export': {
+          const pending = pendingRequests.current.get('export');
+          if (pending) {
+            pendingRequests.current.delete('export');
+            pending.resolve({ data: msg.data });
+          }
+          break;
+        }
+
+        case 'exportDialogOpened': {
+          const pending = pendingRequests.current.get('openExportDialog');
+          if (pending) {
+            pendingRequests.current.delete('openExportDialog');
+            pending.resolve(undefined);
+          }
+          break;
+        }
+
+        case 'error': {
+          // Reject all pending requests on error
+          for (const [key, pending] of pendingRequests.current) {
+            pending.reject(new Error(msg.error || 'Unknown error'));
+            pendingRequests.current.delete(key);
+          }
+          break;
+        }
       }
     },
     [onSave]
@@ -504,16 +481,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
   },
 };
-
-// Add keyframes for spinner animation
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = `
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  `;
-  document.head.appendChild(styleSheet);
-}
 
 export default DrawioEditor;

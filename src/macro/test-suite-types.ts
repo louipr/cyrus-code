@@ -20,10 +20,7 @@ export type ActionType =
   | 'click'
   | 'type'
   | 'evaluate'
-  | 'wait'
-  | 'screenshot'
-  | 'hover'
-  | 'keyboard';
+  | 'wait';
 
 // ============================================================================
 // Expectation Types - Post-action verification
@@ -141,33 +138,6 @@ export interface WaitStep extends Omit<BaseStep, 'expect'> {
 }
 
 /**
- * Take a screenshot.
- */
-export interface ScreenshotStep extends BaseStep {
-  action: 'screenshot';
-  /** CSS selector for element to capture (optional, captures full page if omitted) */
-  selector?: string;
-}
-
-/**
- * Hover over an element.
- */
-export interface HoverStep extends BaseStep {
-  action: 'hover';
-  /** CSS selector for the element to hover */
-  selector: string;
-}
-
-/**
- * Send a keyboard event.
- */
-export interface KeyboardStep extends BaseStep {
-  action: 'keyboard';
-  /** Key to send (e.g., 'Enter', 'Escape', 'Tab') */
-  key: string;
-}
-
-/**
  * A single step within a test case.
  * Discriminated union ensures type safety - each action has its required fields.
  */
@@ -175,10 +145,7 @@ export type TestStep =
   | ClickStep
   | TypeStep
   | EvaluateStep
-  | WaitStep
-  | ScreenshotStep
-  | HoverStep
-  | KeyboardStep;
+  | WaitStep;
 
 // ============================================================================
 // Suite Structure - Document hierarchy
@@ -219,7 +186,7 @@ export interface TestSuiteContext {
 /**
  * Test suite status indicating quality/reliability.
  */
-export type TestSuiteStatus = 'draft' | 'verified' | 'deprecated';
+export type TestSuiteStatus = 'draft' | 'verified';
 
 /**
  * Reliability level based on test runs.

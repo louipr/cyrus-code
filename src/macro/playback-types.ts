@@ -7,7 +7,7 @@
  * @see test-suite-types.ts for schema types (document structure)
  */
 
-import type { TestStep, TestCase } from './test-suite-types.js';
+import type { TestStep } from './test-suite-types.js';
 
 // ============================================================================
 // Execution Results - Outcome of running steps
@@ -83,16 +83,6 @@ export interface StepCompleteEvent {
 }
 
 /**
- * Event emitted when a test case starts.
- */
-export interface TestCaseStartEvent {
-  type: 'test-case-start';
-  testCaseIndex: number;
-  testCase: TestCase;
-  timestamp: number;
-}
-
-/**
  * Event emitted when session state changes.
  */
 export interface SessionStateEvent {
@@ -100,15 +90,6 @@ export interface SessionStateEvent {
   state: PlaybackState;
   position?: PlaybackPosition;
   error?: string;
-  timestamp: number;
-}
-
-/**
- * Event emitted when session is fully ready.
- */
-export interface SessionReadyEvent {
-  type: 'session-ready';
-  sessionId: string;
   timestamp: number;
 }
 
@@ -128,9 +109,7 @@ export interface PlaybackCompleteEvent {
 export type PlaybackEvent =
   | StepStartEvent
   | StepCompleteEvent
-  | TestCaseStartEvent
   | SessionStateEvent
-  | SessionReadyEvent
   | PlaybackCompleteEvent;
 
 // ============================================================================

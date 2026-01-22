@@ -11,9 +11,6 @@ export const ACTION_ICONS: Record<ActionType, string> = {
   type: '⌨️',
   evaluate: '🔧',
   wait: '⏳',
-  screenshot: '📷',
-  hover: '🖱️',
-  keyboard: '⌨️',
 };
 
 export const ACTION_COLORS: Record<ActionType, string> = {
@@ -21,7 +18,4 @@ export const ACTION_COLORS: Record<ActionType, string> = {
   type: '#dcdcaa',
   evaluate: '#ce9178',
   wait: '#89d185',
-  screenshot: '#ffd700',
-  hover: '#4fc1ff',
-  keyboard: '#dcdcaa',
 };

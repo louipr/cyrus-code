@@ -121,5 +121,5 @@ flowchart TB
 | SQLite for persistence | Embedded, no server required, portable |
 | Software-oriented relationships | Uses extends/implements/dependencies/contains instead of HDL port-based wiring |
 | YAML recordings for GUI patterns | LLM-readable format with `why` fields explaining each action; enables AI agents to learn and replay GUI interactions |
-| EditorUi hook for Draw.io export | Preload script captures Draw.io's native EditorUi instance via `window.__cyrusEditorUi` for reliable PNG export |
+| EditorUi access for Draw.io export | Preload script accesses Draw.io's native `window.editorUi` instance for reliable PNG export |
 | Visual regression testing | Screenshot comparison for diagrams ensures rendering consistency across changes |

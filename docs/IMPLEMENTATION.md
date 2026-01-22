@@ -402,14 +402,14 @@ npm run electron:dev   # Dev mode with hot reload
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | DIO.1 | EditorUi capture hook in preload | `electron/drawio-preload.ts` | ✅ |
-| DIO.2 | App.main wrapper for EditorUi interception | `electron/drawio-preload.ts` | ✅ |
+| DIO.2 | EditorUi access via window.editorUi | `electron/drawio-preload.ts` | ✅ |
 | DIO.3 | Native exportToCanvas PNG export | `tests/e2e/helpers/actions.ts` | ✅ |
 | DIO.4 | SVG extraction fallback | `tests/e2e/helpers/actions.ts` | ✅ |
 | DIO.5 | Diagram comparison test (Mermaid vs Draw.io) | `tests/e2e/diagram-comparison.spec.ts` | ✅ |
 
-**Summary**: Implemented programmatic PNG export from Draw.io diagrams using the native `exportToCanvas` API. The preload script injects a hook that wraps `App.main()` to capture the `EditorUi` instance in `window.__cyrusEditorUi`, giving access to `editor.exportToCanvas()` for proper PNG generation.
+**Summary**: Implemented programmatic PNG export from Draw.io diagrams using the native `exportToCanvas` API. The preload script accesses Draw.io's native `window.editorUi` instance for `editor.exportToCanvas()` PNG generation.
 
-**Export Flow**: `webview → __cyrusEditorUi → editor.exportToCanvas() → canvas → toDataURL('image/png') → base64 → file`
+**Export Flow**: `webview → window.editorUi → editor.exportToCanvas() → canvas → toDataURL('image/png') → base64 → file`
 
 ---
 
@@ -420,8 +420,8 @@ npm run electron:dev   # Dev mode with hot reload
 | ID | Task | File(s) | Status |
 |----|------|---------|--------|
 | E2E.1 | Test suite schema types | `src/macro/test-suite-types.ts` | ✅ |
-| E2E.2 | TestSuitePlayer (executes YAML test suites) | `src/macro/player.ts` | ✅ |
-| E2E.3 | PlaybackSession (manages test execution) | `src/macro/session.ts` | ✅ |
+| E2E.2 | DebugSession (executes YAML test suites) | `src/macro/debug-session.ts` | ✅ |
+| E2E.3 | StepExecutor (step execution logic) | `src/macro/step-executor.ts` | ✅ |
 | E2E.4 | Draw.io export-png test suite | `tests/e2e/test-suites/drawio/export-png.suite.yaml` | ✅ |
 | E2E.5 | Draw.io SVG fallback test suite | `tests/e2e/test-suites/drawio/export-svg-fallback.suite.yaml` | ✅ |
 | E2E.6 | Draw.io context documentation | `tests/e2e/test-suites/drawio/_context.yaml` | ✅ |

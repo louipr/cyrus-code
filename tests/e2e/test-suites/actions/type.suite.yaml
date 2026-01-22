@@ -1,47 +1,41 @@
-description: Test type action via IPC.
+description: Test type action.
 metadata:
   status: draft
-  reliability: unknown
   tags:
     - actions
     - type
-  author: refactor
-  created: 2025-01-19
-context:
-  app: cyrus-code
-  prerequisites:
-    - App is launched
 test_cases:
-  - id: type_in_search
-    description: Type in search bar
+  - id: setup_input
+    description: Create test input element
     steps:
-      - action: wait
+      - action: evaluate
+        code: |
+          const input = document.createElement('input');
+          input.id = 'test-input';
+          input.setAttribute('data-testid', 'test-input');
+          document.body.appendChild(input);
+          return { created: true };
         timeout: 1000
-        expect:
-          type: selector
-          selector: "[data-testid='view-toggle']"
-        why: Wait for app to be ready.
+        why: Create a test input element.
+
+  - id: type_in_input
+    description: Type text into input
+    depends: [setup_input]
+    steps:
+      - action: type
+        selector: "#test-input"
+        text: "hello world"
+        timeout: 1000
+        why: Type text using IPC-based type action.
 
       - action: evaluate
         code: |
-          // Log to confirm test is running
-          console.log('[TYPE TEST] Starting - switching to Symbols view');
-          const btn = Array.from(document.querySelectorAll('[data-testid="view-toggle"] button'))
-            .find(b => b.textContent?.includes('Symbols'));
-          if (btn) btn.click();
-          return { clicked: !!btn };
-        timeout: 1000
-        why: Switch to Symbols view using evaluate (more reliable).
-
-      - action: wait
+          const input = document.getElementById('test-input');
+          const value = input ? input.value : null;
+          if (input) input.remove();
+          return { value };
         timeout: 1000
         expect:
-          type: selector
-          selector: "[data-testid='search-bar'] input"
-        why: Wait for search bar to be visible.
-
-      - action: type
-        selector: "[data-testid='search-bar'] input"
-        text: "test query"
-        timeout: 1000
-        why: Type text into search bar using IPC-based type action.
+          type: value
+          value: { value: "hello world" }
+        why: Verify typed text and cleanup.

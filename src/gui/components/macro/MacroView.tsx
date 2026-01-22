@@ -11,21 +11,17 @@
  * When any right-side panel collapses, the main panel expands.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api-client';
 import { TestSuiteTree } from './TestSuiteTree';
-import {
-  TestCaseGraph,
-  GraphToolbarButton,
-  ExpandAllIcon,
-  CollapseAllIcon,
-  ZOOM,
-} from './TestCaseGraph';
+import { TestCaseGraph } from './TestCaseGraph';
 import { StepDetail } from './StepDetail';
 import { TestCaseDetail } from './TestCaseDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
 import { DebugControls } from '../debug/DebugControls';
 import { useDebugSession } from '../../stores/DebugSessionStore';
+import { useGraphControls } from '../../hooks/useGraphControls';
+import { updateStepField } from '../../hooks/useStepEditor';
 import { PanelLayout, Panel, ResizeHandle, Column, Card } from '../layout';
 import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
 import type { TestSuite, TestCase, TestStep } from '../../../macro';
@@ -45,40 +41,11 @@ export function MacroView() {
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Lifted state for graph controls (shared with header toolbar)
-  const [graphScale, setGraphScale] = useState(ZOOM.default);
-  const [graphExpandedIds, setGraphExpandedIds] = useState<Set<string>>(new Set());
-
   // Debug session state from context (persists across view switches)
   const debugSession = useDebugSession();
 
-  // Graph control functions
-  const zoomIn = useCallback(() => setGraphScale((s) => Math.min(s + ZOOM.step, ZOOM.max)), []);
-  const zoomOut = useCallback(() => setGraphScale((s) => Math.max(s - ZOOM.step, ZOOM.min)), []);
-  const resetZoom = useCallback(() => setGraphScale(ZOOM.default), []);
-  const expandAll = useCallback(() => {
-    if (testSuite) setGraphExpandedIds(new Set(testSuite.test_cases.map((t) => t.id)));
-  }, [testSuite]);
-  const collapseAll = useCallback(() => setGraphExpandedIds(new Set()), []);
-
-  // Header toolbar actions for graph panel
-  const graphHeaderActions = useMemo(
-    () => (
-      <>
-        <GraphToolbarButton onClick={expandAll} title="Expand All">
-          <ExpandAllIcon />
-        </GraphToolbarButton>
-        <GraphToolbarButton onClick={collapseAll} title="Collapse All">
-          <CollapseAllIcon />
-        </GraphToolbarButton>
-        <GraphToolbarButton onClick={zoomOut} title="Zoom Out">−</GraphToolbarButton>
-        <span style={styles.zoomLabel}>{Math.round(graphScale * 100)}%</span>
-        <GraphToolbarButton onClick={zoomIn} title="Zoom In">+</GraphToolbarButton>
-        <GraphToolbarButton onClick={resetZoom} title="Reset">↺</GraphToolbarButton>
-      </>
-    ),
-    [expandAll, collapseAll, zoomIn, zoomOut, resetZoom, graphScale]
-  );
+  // Graph controls (zoom, expand/collapse) - shared hook
+  const graphControls = useGraphControls(testSuite);
 
   // Load index on mount
   useEffect(() => {
@@ -202,51 +169,19 @@ export function MacroView() {
   );
 
   // Handle step field changes (inline editing)
-  // Supports nested fields like 'expect.selector' via dot notation
   const handleStepChange = useCallback(
     (stepIndex: number, field: string, value: string) => {
       if (!testSuite || !selectedTestCase) return;
 
-      // Find the test case index
-      const testCaseIndex = testSuite.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
-      if (testCaseIndex === -1) return;
-
-      // Create updated test suite with the modified step
-      const updatedTestCases = [...testSuite.test_cases];
-      const updatedSteps = [...(updatedTestCases[testCaseIndex]?.steps ?? [])];
-      const currentStep = updatedSteps[stepIndex];
-      if (!currentStep) return;
-
-      // Handle nested fields (e.g., 'expect.selector')
-      let updatedStep;
-      if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        const parentObj = currentStep[parent as keyof typeof currentStep];
-        updatedStep = {
-          ...currentStep,
-          [parent!]: { ...(parentObj as object), [child!]: value },
-        };
-      } else {
-        updatedStep = { ...currentStep, [field]: value };
-      }
-
-      updatedSteps[stepIndex] = updatedStep;
-      updatedTestCases[testCaseIndex] = {
-        ...updatedTestCases[testCaseIndex]!,
-        steps: updatedSteps,
-      };
-
-      const updatedTestSuite: TestSuite = {
-        ...testSuite,
-        test_cases: updatedTestCases,
-      };
+      const result = updateStepField(testSuite, selectedTestCase.id, stepIndex, field, value);
+      if (!result) return;
 
       // Update local state immediately for responsive UI
-      setTestSuite(updatedTestSuite);
-      setSelectedStep(updatedSteps[stepIndex] ?? null);
+      setTestSuite(result.testSuite);
+      setSelectedStep(result.step);
 
       // Save to file
-      handleSaveTestSuite(updatedTestSuite);
+      handleSaveTestSuite(result.testSuite);
     },
     [testSuite, selectedTestCase, handleSaveTestSuite]
   );
@@ -313,6 +248,7 @@ export function MacroView() {
               style={styles.debugButton}
               onClick={() => debugSession.startDebug(selectedAppId, selectedTestSuiteId, testSuite)}
               title="Start debug session (requires dev mode: npm run electron:dev)"
+              data-testid="debug-session-button"
             >
               🐞 Debug
             </button>
@@ -339,7 +275,7 @@ export function MacroView() {
         position="right"
         size={{ default: 280, min: 200, max: 500 }}
         title="Graph"
-        headerActions={graphHeaderActions}
+        headerActions={graphControls.headerActions}
         testId="macro-right-panel"
         collapsible
       >
@@ -355,10 +291,10 @@ export function MacroView() {
                 executingTestCaseIndex={debugSession.position?.testCaseIndex ?? null}
                 executingStepIndex={debugSession.position?.stepIndex ?? null}
                 stepResults={debugSession.stepResults}
-                scale={graphScale}
-                onScaleChange={setGraphScale}
-                expandedIds={graphExpandedIds}
-                onExpandedIdsChange={setGraphExpandedIds}
+                scale={graphControls.scale}
+                onScaleChange={graphControls.setScale}
+                expandedIds={graphControls.expandedIds}
+                onExpandedIdsChange={graphControls.setExpandedIds}
               />
             ) : (
               <div style={styles.graphPlaceholder}>
@@ -414,7 +350,6 @@ export function MacroView() {
               groupId={selectedAppId ?? undefined}
               suiteId={selectedTestSuiteId ?? undefined}
               onSave={handleSaveTestSuite}
-              onStepChange={handleStepChange}
             />
           ) : testSuite ? (
             <TestSuiteDetail testSuite={testSuite} suiteId={selectedTestSuiteId ?? undefined} />
@@ -502,11 +437,5 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-  },
-  zoomLabel: {
-    color: '#888',
-    fontSize: 10,
-    minWidth: 28,
-    textAlign: 'center',
   },
 };
