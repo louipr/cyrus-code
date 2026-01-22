@@ -416,12 +416,8 @@ const testRunnerAPI = {
       check();
     }),
 
-  // Security: new Function() is intentional here for test automation.
-  // This runs in a sandboxed test environment, not with untrusted user input.
-  evaluate: (code: string): Promise<unknown> => {
-    const fn = new Function(`return (async () => { ${code} })();`);
-    return fn();
-  },
+  // Note: evaluate action is handled directly by step-executor using
+  // webContents.executeJavaScript() to bypass contextIsolation restrictions.
 };
 
 // ============================================================================

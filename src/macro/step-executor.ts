@@ -88,8 +88,12 @@ async function executeAction(
     case 'type':
       return invoke(wc, 'type', [step.selector, step.timeout!, step.text], step.webview);
 
-    case 'evaluate':
-      return invoke(wc, 'evaluate', [step.code], step.webview);
+    case 'evaluate': {
+      // Execute directly via webContents.executeJavaScript() to bypass
+      // preload's code generation restrictions (contextIsolation blocks eval)
+      const code = `(async () => { ${step.code} })()`;
+      return wc.executeJavaScript(code);
+    }
 
     case 'wait':
       return undefined; // Expect block handles the waiting

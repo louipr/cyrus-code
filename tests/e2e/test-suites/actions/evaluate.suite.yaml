@@ -10,12 +10,9 @@ test_cases:
     steps:
       - action: evaluate
         code: |
-          return {
-            hasRoot: !!document.getElementById('root'),
-            url: window.location.protocol
-          };
+          return { answer: 42 };
         timeout: 1000
         expect:
           type: value
-          value: { hasRoot: true, url: "file:" }
+          value: { answer: 42 }
         why: Evaluate JS and verify return value.

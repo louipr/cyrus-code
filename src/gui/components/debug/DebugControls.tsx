@@ -47,6 +47,8 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
   // Completed state
   if (playbackState === 'completed') {
     const isPassed = executionStatus === 'PASSED';
+    // Find first error from step results
+    const firstError = Array.from(stepResults.values()).find((r) => r.error)?.error;
     return (
       <div style={styles.container} data-testid="debug-controls">
         <div style={styles.header}>
@@ -70,6 +72,9 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
             {executionStatus}
           </span>
         </div>
+        {firstError && (
+          <div style={styles.error} data-testid="debug-error">{firstError}</div>
+        )}
         <div style={styles.buttons}>
           <button style={styles.dismissButton} onClick={handleStop}>
             Dismiss

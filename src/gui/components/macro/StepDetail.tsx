@@ -88,7 +88,7 @@ function StepResultDisplay({ result }: { result: StepResult }) {
           </code>
         </div>
       )}
-      {result.error && <div style={styles.resultError}>{result.error}</div>}
+      {result.error && <div style={styles.resultError} data-testid="step-error">{result.error}</div>}
     </div>
   );
 }

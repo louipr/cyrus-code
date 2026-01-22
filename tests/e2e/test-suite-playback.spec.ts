@@ -39,27 +39,9 @@ const SUITE_TESTS: SuiteTestConfig[] = [
 
   // Action tests - testing individual actions
   { group: 'actions', suite: 'wait', shouldPass: true },
-  {
-    group: 'actions',
-    suite: 'click',
-    shouldPass: true,
-    skip: true,
-    skipReason: 'DOM state from prior test cases affects selector matching',
-  },
-  {
-    group: 'actions',
-    suite: 'type',
-    shouldPass: true,
-    skip: true,
-    skipReason: 'DOM state from prior test cases affects selector matching',
-  },
-  {
-    group: 'actions',
-    suite: 'evaluate',
-    shouldPass: true,
-    skip: true,
-    skipReason: 'Evaluate action has timing issues with webview context',
-  },
+  { group: 'actions', suite: 'click', shouldPass: true },
+  { group: 'actions', suite: 'type', shouldPass: true },
+  { group: 'actions', suite: 'evaluate', shouldPass: true },
 
   // Drawio tests - require Draw.io editor initialization
   {
