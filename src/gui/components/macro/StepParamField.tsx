@@ -54,13 +54,7 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
     : '';
   const isDirty = editValue !== originalString;
 
-  // For boolean type, undefined means default (e.g., expect.exists defaults to true)
-  // Other types: don't render if no value
-  if ((value === undefined || value === null) && config.type !== 'boolean') {
-    return null;
-  }
-
-  // Boolean toggle handler
+  // Boolean toggle handler - MUST be before early return to satisfy React hooks rules
   const handleBooleanToggle = useCallback(() => {
     if (!onSave || config.type !== 'boolean') return;
     // Toggle: undefined/true -> false, false -> true
@@ -68,6 +62,12 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
     const newValue = currentValue ? 'false' : 'true';
     onSave(config.field, newValue);
   }, [onSave, config.type, config.field, value]);
+
+  // For boolean type, undefined means default (e.g., expect.exists defaults to true)
+  // Other types: don't render if no value
+  if ((value === undefined || value === null) && config.type !== 'boolean') {
+    return null;
+  }
 
   // For boolean type, render a toggle instead of text input
   if (config.type === 'boolean') {

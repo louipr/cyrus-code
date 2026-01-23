@@ -136,7 +136,7 @@ test.describe('Step Selection UI', () => {
     }
   });
 
-  test('clicking on a type step shows StepDetail without errors', async () => {
+  test('clicking click then type step causes blank screen', async () => {
     const { page } = context;
     const errors: string[] = [];
 
@@ -158,26 +158,30 @@ test.describe('Step Selection UI', () => {
     // Click on type suite to load it (this also expands it)
     const typeSuite = page.locator('[data-testid="test-suite-tree-actions/type"]');
     await typeSuite.click();
-    await page.waitForTimeout(1000); // Wait for suite to load
+    await page.waitForTimeout(1000);
 
-    // The type step (step index 1) should now be visible - path is "actions/type/1"
+    // First click on the CLICK step (step index 0)
+    const clickStep = page.locator('[data-testid="test-suite-tree-actions/type/0"]');
+    await expect(clickStep).toBeVisible({ timeout: 5000 });
+    await clickStep.click();
+    await page.waitForTimeout(500);
+
+    // Screenshot after clicking "click" step
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/after-click-step.png` });
+
+    // Now click on the TYPE step (step index 1) - THIS causes blank screen
     const typeStep = page.locator('[data-testid="test-suite-tree-actions/type/1"]');
-
-    // Debug: take screenshot to see current state
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/before-step-click.png` });
-
-    await expect(typeStep).toBeVisible({ timeout: 5000 });
     await typeStep.click();
     await page.waitForTimeout(500);
 
-    // Take screenshot for debugging
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/step-click-result.png` });
+    // Screenshot after clicking "type" step
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/after-type-step.png` });
 
-    // Verify StepDetail renders
+    // Check if StepDetail is visible
     const stepDetail = page.locator('[data-testid="step-detail"]');
     const isVisible = await stepDetail.isVisible();
 
-    // Log errors if any
+    // Log errors
     if (errors.length > 0) {
       console.log('Errors captured:', errors);
     }
