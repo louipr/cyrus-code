@@ -109,6 +109,7 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
               style={styles.codeInput}
               autoFocus
               rows={4}
+              onBlur={handleCancel}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') handleCancel();
               }}
@@ -121,6 +122,7 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
                 onChange={(e) => setEditValue(e.target.value)}
                 style={styles.input}
                 autoFocus
+                onBlur={handleCancel}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && isDirty) handleSave();
                   if (e.key === 'Escape') handleCancel();
@@ -135,6 +137,7 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
               onChange={(e) => setEditValue(e.target.value)}
               style={styles.input}
               autoFocus
+              onBlur={handleCancel}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && isDirty) handleSave();
                 if (e.key === 'Escape') handleCancel();
@@ -143,8 +146,20 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
           )}
           {isDirty && (
             <div style={styles.buttonRow}>
-              <button style={styles.saveButton} onClick={handleSave}>Save</button>
-              <button style={styles.cancelButton} onClick={handleCancel}>Cancel</button>
+              <button
+                style={styles.saveButton}
+                onClick={handleSave}
+                onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+              >
+                Save
+              </button>
+              <button
+                style={styles.cancelButton}
+                onClick={handleCancel}
+                onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+              >
+                Cancel
+              </button>
             </div>
           )}
         </div>
