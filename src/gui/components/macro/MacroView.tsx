@@ -199,7 +199,11 @@ export function MacroView() {
           <span style={styles.testSuiteLabel} title={testSuite?.description}>
             {testSuite?.description || 'Select test suite'}
           </span>
-          {/* Controls container - fixed position on right */}
+          {/* Controls container - VS Code debugger pattern:
+              Position 1: Continue/Pause (toggles in place)
+              Position 2: Step (when paused)
+              Position 3: Stop (always)
+              This keeps primary action at same position for no-mouse-move workflow */}
           <div style={styles.controlsContainer}>
             {testSuite && selectedAppId && selectedTestSuiteId && !debugSession.sessionId && (
               <button
@@ -213,42 +217,45 @@ export function MacroView() {
             )}
             {debugSession.sessionId && debugSession.playbackState !== 'completed' && (
               <>
+                {/* Position 1: Continue/Pause toggle - primary action stays in same spot */}
                 {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
-                  <>
-                    <button
-                      style={styles.controlButton}
-                      onClick={() => debugSession.commands.step()}
-                      title="Step (F10)"
-                      data-testid="debug-step-button"
-                    >
-                      ⏭ Step
-                    </button>
-                    <button
-                      style={styles.runButton}
-                      onClick={() => debugSession.playbackState === 'idle'
-                        ? debugSession.commands.start()
-                        : debugSession.commands.resume()}
-                      title="Continue (F5)"
-                      data-testid="debug-continue-button"
-                    >
-                      ▶ Continue
-                    </button>
-                  </>
+                  <button
+                    style={styles.runButton}
+                    onClick={() => debugSession.playbackState === 'idle'
+                      ? debugSession.commands.start()
+                      : debugSession.commands.resume()}
+                    title="Continue (F5)"
+                    data-testid="debug-continue-button"
+                  >
+                    ▶ Continue
+                  </button>
                 )}
                 {debugSession.isRunning && (
                   <button
-                    style={styles.controlButton}
+                    style={styles.runButton}
                     onClick={() => debugSession.commands.pause()}
-                    title="Pause"
+                    title="Pause (F5)"
                     data-testid="debug-pause-button"
                   >
                     ⏸ Pause
                   </button>
                 )}
+                {/* Position 2: Step - secondary action when paused */}
+                {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
+                  <button
+                    style={styles.controlButton}
+                    onClick={() => debugSession.commands.step()}
+                    title="Step (F10)"
+                    data-testid="debug-step-button"
+                  >
+                    ⏭ Step
+                  </button>
+                )}
+                {/* Position 3: Stop - always available */}
                 <button
                   style={styles.stopButton}
                   onClick={() => debugSession.commands.stop()}
-                  title="Stop"
+                  title="Stop (Shift+F5)"
                   data-testid="debug-stop-button"
                 >
                   ⏹
@@ -260,6 +267,15 @@ export function MacroView() {
               const isPassed = !hasFailedSteps;
               return (
                 <>
+                  {/* Position 1: Dismiss - primary action */}
+                  <button
+                    style={styles.controlButton}
+                    onClick={() => debugSession.commands.stop()}
+                    data-testid="debug-dismiss-button"
+                  >
+                    Dismiss
+                  </button>
+                  {/* Position 2: Result indicator */}
                   <span
                     style={{
                       ...styles.resultIndicator,
@@ -270,13 +286,6 @@ export function MacroView() {
                   >
                     {isPassed ? '✓ Passed' : '✗ Failed'}
                   </span>
-                  <button
-                    style={styles.controlButton}
-                    onClick={() => debugSession.commands.stop()}
-                    data-testid="debug-dismiss-button"
-                  >
-                    Dismiss
-                  </button>
                 </>
               );
             })()}
