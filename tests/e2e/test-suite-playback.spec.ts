@@ -123,6 +123,70 @@ async function resetForNextTest(page: Page) {
   }
 }
 
+test.describe('Step Selection UI', () => {
+  let context: AppContext;
+
+  test.beforeAll(async () => {
+    context = await launchApp();
+  });
+
+  test.afterAll(async () => {
+    if (context) {
+      await closeApp(context);
+    }
+  });
+
+  test('clicking on a type step shows StepDetail without errors', async () => {
+    const { page } = context;
+    const errors: string[] = [];
+
+    // Capture console errors
+    page.on('pageerror', (err) => errors.push(err.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text());
+    });
+
+    // Navigate to macro view
+    await page.click('[data-testid="macro-view-button"]');
+    await page.waitForTimeout(500);
+
+    // Expand actions group
+    const actionsNode = page.locator('[data-testid="test-suite-tree-actions"]');
+    await actionsNode.click();
+    await page.waitForTimeout(300);
+
+    // Click on type suite to load it (this also expands it)
+    const typeSuite = page.locator('[data-testid="test-suite-tree-actions/type"]');
+    await typeSuite.click();
+    await page.waitForTimeout(1000); // Wait for suite to load
+
+    // The type step (step index 1) should now be visible - path is "actions/type/1"
+    const typeStep = page.locator('[data-testid="test-suite-tree-actions/type/1"]');
+
+    // Debug: take screenshot to see current state
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/before-step-click.png` });
+
+    await expect(typeStep).toBeVisible({ timeout: 5000 });
+    await typeStep.click();
+    await page.waitForTimeout(500);
+
+    // Take screenshot for debugging
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/step-click-result.png` });
+
+    // Verify StepDetail renders
+    const stepDetail = page.locator('[data-testid="step-detail"]');
+    const isVisible = await stepDetail.isVisible();
+
+    // Log errors if any
+    if (errors.length > 0) {
+      console.log('Errors captured:', errors);
+    }
+
+    expect(errors).toEqual([]);
+    expect(isVisible).toBe(true);
+  });
+});
+
 test.describe('Test Suite Playback @suites', () => {
   let context: AppContext;
 
