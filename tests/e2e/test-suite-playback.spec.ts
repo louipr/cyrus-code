@@ -80,7 +80,7 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
   await page.waitForTimeout(300);
 
   // Session starts paused - click Continue to run all steps
-  const continueButton = page.locator('[data-testid="debug-continue-button"], [data-testid="debug-start-button"]');
+  const continueButton = page.locator('[data-testid="debug-continue-button"]');
   await expect(continueButton).toBeVisible({ timeout: 5000 });
   await continueButton.click();
   await page.waitForTimeout(300);

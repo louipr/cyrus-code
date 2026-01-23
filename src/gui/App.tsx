@@ -21,7 +21,6 @@ import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
 import { MacroView } from './components/macro';
 import { DebugSessionProvider, useDebugSession } from './stores/DebugSessionStore';
-import { DebugControls } from './components/debug/DebugControls';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
@@ -436,16 +435,6 @@ function AppContent(): React.ReactElement {
         isOpen={showAboutDialog}
         onClose={() => setShowAboutDialog(false)}
       />
-
-      {/* Floating debug controls - always on top of modals */}
-      {debugSession.sessionId && (
-        <div style={styles.floatingDebugControls}>
-          <DebugControls
-            testSuite={debugSession.testSuite}
-            onClose={debugSession.clearDebug}
-          />
-        </div>
-      )}
     </div>
   );
 }
@@ -634,17 +623,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   diagramContent: {
     flex: 1,
-    overflow: 'hidden',
-  },
-  floatingDebugControls: {
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    zIndex: 1100, // Above modals (typically 1000)
-    backgroundColor: '#1e1e1e',
-    border: '1px solid #3c3c3c',
-    borderRadius: '6px',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
     overflow: 'hidden',
   },
 };
