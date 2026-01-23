@@ -29,7 +29,11 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
 
   const startEditing = useCallback(() => {
     if (!canEdit) return;
-    setEditValue(value !== undefined ? String(value) : '');
+    // For objects (like expect.expected), use JSON.stringify
+    const editString = value !== undefined
+      ? (typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value))
+      : '';
+    setEditValue(editString);
     setEditing(true);
   }, [canEdit, value]);
 
@@ -44,7 +48,11 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
     setEditValue('');
   }, []);
 
-  const isDirty = editValue !== (value !== undefined ? String(value) : '');
+  // Compare with properly formatted original value
+  const originalString = value !== undefined
+    ? (typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value))
+    : '';
+  const isDirty = editValue !== originalString;
 
   // For boolean type, undefined means default (e.g., expect.exists defaults to true)
   // Other types: don't render if no value
