@@ -78,11 +78,17 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
   }
   await runButton.click();
   await page.waitForTimeout(300);
+
+  // Session starts paused - click Continue to run all steps
+  const continueButton = page.locator('[data-testid="debug-continue-button"], [data-testid="debug-start-button"]');
+  await expect(continueButton).toBeVisible({ timeout: 5000 });
+  await continueButton.click();
+  await page.waitForTimeout(300);
 }
 
 /**
  * Wait for test suite execution to complete.
- * (Execution auto-starts when Run button is clicked)
+ * (Called after Continue button is clicked to run all steps)
  */
 async function waitForCompletion(page: Page, timeout = 15000) {
   // Wait for result (passed or failed)
