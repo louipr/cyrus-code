@@ -8,7 +8,6 @@
  *
  * Types (in test-suite-types.ts):
  * - TestSuite      - Complete test suite document
- * - TestCase       - A test case with steps and dependencies
  * - TestStep       - Discriminated union of all step types (type-safe)
  * - ActionType     - Supported step actions
  *
@@ -24,7 +23,7 @@
  *
  * Step Executor (in step-executor.ts):
  * - Pure functions for step execution
- * - Generator-based iteration over test cases and steps
+ * - Generator-based iteration over steps
  *
  * ## Usage
  *
@@ -37,7 +36,7 @@
  * ```
  */
 
-// Test suite definition types (TestSuite, TestCase, TestStep, ActionType)
+// Test suite definition types (TestSuite, TestStep, ActionType)
 export * from './test-suite-types.js';
 
 // Constants

@@ -1,11 +1,11 @@
 /**
  * Step Parameter Configuration
  *
- * SINGLE SOURCE OF TRUTH for step parameters across all components.
- * Adding a new action type or parameter? Update this file ONLY.
+ * UI configuration for displaying and editing step parameters.
+ * This is the SINGLE SOURCE OF TRUTH for step UI rendering.
  */
 
-import type { ActionType, TestStep } from '../../../macro';
+import { getStepValue, type ActionType, type TestStep } from '../../macro/test-suite-types';
 
 /**
  * Parameter display type determines rendering.
@@ -24,7 +24,7 @@ export interface ParamConfig {
   type: ParamType;
   /** Whether this param can be edited */
   editable: boolean;
-  /** Show in summary list (TestCaseDetail step sequence) */
+  /** Show in summary list (step sequence) */
   showInSummary?: boolean;
   /** Unit suffix for display (e.g., 'ms' for timeout) */
   unit?: string;
@@ -44,7 +44,6 @@ interface ActionConfig {
 
 /**
  * Step parameter configurations by action type.
- * This is the SINGLE SOURCE OF TRUTH for what parameters each action has.
  */
 export const STEP_CONFIG: Record<ActionType, ActionConfig> = {
   click: {
@@ -66,14 +65,14 @@ export const STEP_CONFIG: Record<ActionType, ActionConfig> = {
   evaluate: {
     description: 'Execute JavaScript code',
     params: [
-      { field: 'code', label: 'Code', type: 'code', editable: false, showInSummary: false },
+      { field: 'code', label: 'Code', type: 'code', editable: true, showInSummary: false },
       { field: 'webview', label: 'Webview', type: 'selector', editable: false },
     ],
   },
   wait: {
     description: 'Wait for expectation',
-    params: [], // Wait uses expect block only, handled via EXPECT_PARAMS
-    summaryField: 'expect.selector', // Show expect selector in summary
+    params: [],
+    summaryField: 'expect.selector',
   },
 };
 
@@ -86,34 +85,33 @@ const COMMON_PARAMS: ParamConfig[] = [
 ];
 
 /**
- * Expect block parameters (when step has expect).
+ * Expect block parameters based on assertion type.
  */
-const EXPECT_PARAMS: Record<string, ParamConfig[]> = {
-  selector: [
-    { field: 'expect.selector', label: 'Selector', type: 'selector', editable: true },
-    { field: 'expect.exists', label: 'Exists', type: 'boolean', editable: false },
-  ],
-  value: [
-    { field: 'expect.value', label: 'Value', type: 'code', editable: false },
-  ],
-};
+function getExpectParams(step: TestStep): ParamConfig[] {
+  if (!step.expect) return [];
 
-/**
- * Get value from step using dot notation path.
- */
-export function getStepValue(step: TestStep, field: string): unknown {
-  const parts = field.split('.');
-  let value: unknown = step;
-  for (const part of parts) {
-    if (value === null || value === undefined) return undefined;
-    value = (value as Record<string, unknown>)[part];
+  const params: ParamConfig[] = [];
+  const { selector } = step.expect;
+
+  // Selector-based assertions (exists/notExists)
+  if (selector) {
+    params.push({ field: 'expect.selector', label: 'Selector', type: 'selector', editable: true });
+    params.push({ field: 'expect.assert', label: 'Assert', type: 'text', editable: false });
   }
-  return value;
+  // Value-based assertions (all require expected value)
+  else {
+    params.push({ field: 'expect.assert', label: 'Assert', type: 'text', editable: false });
+    params.push({ field: 'expect.expected', label: 'Expected', type: 'code', editable: true });
+  }
+
+  return params;
 }
+
+// Re-export getStepValue for convenience
+export { getStepValue };
 
 /**
  * Get the key identifier for a step (shown in lists).
- * Returns the first showInSummary param value, or summaryField value.
  */
 export function getStepKeyIdentifier(step: TestStep): string | undefined {
   const config = STEP_CONFIG[step.action];
@@ -124,7 +122,6 @@ export function getStepKeyIdentifier(step: TestStep): string | undefined {
       return String(value);
     }
   }
-  // Use summaryField from config if defined
   if (config.summaryField) {
     const value = getStepValue(step, config.summaryField);
     if (value !== undefined && value !== null) {
@@ -141,19 +138,14 @@ export function getStepParams(step: TestStep): ParamConfig[] {
   const actionConfig = STEP_CONFIG[step.action];
   const params: ParamConfig[] = [...actionConfig.params];
 
-  // Add common params that have values
   for (const param of COMMON_PARAMS) {
     if (getStepValue(step, param.field) !== undefined) {
       params.push(param);
     }
   }
 
-  // Add expect params if step has expect
   if (step.expect) {
-    const expectParams = EXPECT_PARAMS[step.expect.type];
-    if (expectParams) {
-      params.push(...expectParams);
-    }
+    params.push(...getExpectParams(step));
   }
 
   return params;

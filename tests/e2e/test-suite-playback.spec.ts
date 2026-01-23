@@ -20,54 +20,21 @@ interface SuiteTestConfig {
   suite: string;
   shouldPass: boolean;
   timeout?: number;
-  skip?: boolean;
-  skipReason?: string;
 }
 
 /**
  * All suites to test. Add new suites here as they're created.
- *
- * Rules:
- * - `shouldPass: true` for suites expected to pass
- * - `skip: true` for suites with known issues (include skipReason)
- * - `timeout` for suites that take longer (default: 15000ms)
  */
 const SUITE_TESTS: SuiteTestConfig[] = [
-  // Smoke tests - high reliability, should always pass
+  // Smoke tests
   { group: 'smoke', suite: 'app-loads', shouldPass: true },
   { group: 'smoke', suite: 'diagram-loads', shouldPass: true },
 
-  // Action tests - testing individual actions
+  // Action tests
   { group: 'actions', suite: 'wait', shouldPass: true },
   { group: 'actions', suite: 'click', shouldPass: true },
   { group: 'actions', suite: 'type', shouldPass: true },
   { group: 'actions', suite: 'evaluate', shouldPass: true },
-
-  // Drawio tests - require Draw.io editor initialization
-  {
-    group: 'drawio',
-    suite: 'export-png',
-    shouldPass: true,
-    timeout: 30000,
-    skip: true,
-    skipReason: 'Draw.io editor initialization timing is flaky in CI',
-  },
-  {
-    group: 'drawio',
-    suite: 'create-architecture-diagram',
-    shouldPass: true,
-    timeout: 30000,
-    skip: true,
-    skipReason: 'Draw.io editor initialization timing is flaky in CI',
-  },
-  {
-    group: 'drawio',
-    suite: 'create-c4-context',
-    shouldPass: true,
-    timeout: 30000,
-    skip: true,
-    skipReason: 'Draw.io editor initialization timing is flaky in CI',
-  },
 ];
 
 /**
@@ -176,13 +143,6 @@ test.describe('Test Suite Playback @suites', () => {
   // Generate a test for each suite configuration
   for (const config of SUITE_TESTS) {
     const testName = `${config.group}/${config.suite} ${config.shouldPass ? 'passes' : 'fails as expected'}`;
-
-    if (config.skip) {
-      test.skip(testName, async () => {
-        // Skipped: ${config.skipReason}
-      });
-      continue;
-    }
 
     test(testName, async () => {
       const { page } = context;

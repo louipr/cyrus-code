@@ -17,13 +17,10 @@ context:
   prerequisites:
     - App is launched
 
-test_cases:
-  - id: verify_app_loaded
-    description: Verify app loaded
-    steps:
-      - action: wait
-        timeout: 1000
-        expect:
-          type: selector
-          selector: "[data-testid='view-toggle']"
-        why: View toggle is the main indicator that the app has fully loaded.
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: View toggle is the main indicator that the app has fully loaded.

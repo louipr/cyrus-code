@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { ParamConfig, ParamType } from './stepConfig';
+import type { ParamConfig, ParamType } from '../../config/step-config';
 
 interface StepParamFieldProps {
   config: ParamConfig;
@@ -46,8 +46,47 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
 
   const isDirty = editValue !== (value !== undefined ? String(value) : '');
 
-  if (value === undefined || value === null) {
+  // For boolean type, undefined means default (e.g., expect.exists defaults to true)
+  // Other types: don't render if no value
+  if ((value === undefined || value === null) && config.type !== 'boolean') {
     return null;
+  }
+
+  // Boolean toggle handler
+  const handleBooleanToggle = useCallback(() => {
+    if (!onSave || config.type !== 'boolean') return;
+    // Toggle: undefined/true -> false, false -> true
+    const currentValue = value ?? true;
+    const newValue = currentValue ? 'false' : 'true';
+    onSave(config.field, newValue);
+  }, [onSave, config.type, config.field, value]);
+
+  // For boolean type, render a toggle instead of text input
+  if (config.type === 'boolean') {
+    const boolValue = value ?? true; // Default to true for expect.exists
+    return (
+      <div style={styles.container}>
+        <div style={styles.label}>{config.label}</div>
+        <div
+          style={{
+            ...styles.booleanContainer,
+            ...(canEdit ? styles.editable : {}),
+          }}
+          onClick={canEdit ? handleBooleanToggle : undefined}
+          title={canEdit ? 'Click to toggle' : undefined}
+        >
+          <span
+            style={{
+              ...styles.booleanValue,
+              color: boolValue ? '#89d185' : '#f48771',
+            }}
+          >
+            {boolValue ? 'true' : 'false'}
+          </span>
+          {canEdit && <span style={styles.editIcon}>↻</span>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -268,5 +307,19 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     backgroundColor: '#3c3c3c',
     color: '#ccc',
+  },
+  booleanContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#2a2d2e',
+    borderRadius: '4px',
+    border: '1px solid #3c3c3c',
+  },
+  booleanValue: {
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    fontWeight: 600,
   },
 };

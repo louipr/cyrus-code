@@ -46,8 +46,8 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
         )}
 
         <div style={styles.metadataItem}>
-          <span style={styles.label}>Test Cases</span>
-          <span style={styles.value}>{testSuite.test_cases.length}</span>
+          <span style={styles.label}>Steps</span>
+          <span style={styles.value}>{testSuite.steps.length}</span>
         </div>
 
         {testSuite.metadata?.reliability && (

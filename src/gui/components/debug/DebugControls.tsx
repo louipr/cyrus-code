@@ -1,9 +1,8 @@
 /**
  * DebugControls Component
  *
- * Compact debug session controls for embedding in sidebars/panels.
- * Shows status, progress, and control buttons without the floating overlay chrome.
- * Uses debug session context directly.
+ * Compact floating debug toolbar with horizontal layout.
+ * Shows status, step position, and control buttons in a single row.
  */
 
 import React from 'react';
@@ -44,39 +43,38 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
     onClose();
   };
 
-  // Completed state
+  // Get step info text
+  const getStepInfo = () => {
+    if (!position || !testSuite) return null;
+    const totalSteps = testSuite.steps.length;
+    return `${position.stepIndex + 1}/${totalSteps}`;
+  };
+
+  // Completed state - compact horizontal layout
   if (playbackState === 'completed') {
     const isPassed = executionStatus === 'PASSED';
-    // Find first error from step results
     const firstError = Array.from(stepResults.values()).find((r) => r.error)?.error;
     return (
       <div style={styles.container} data-testid="debug-controls">
-        <div style={styles.header}>
-          <span style={styles.headerTitle}>Debug Session</span>
-        </div>
-        <div style={{ ...styles.statusBanner, backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a' }}>
-          <span style={{ ...styles.statusIcon, color: isPassed ? '#89d185' : '#f48771' }}>
-            {isPassed ? '✓' : '✗'}
-          </span>
-          <span style={{ ...styles.statusLabel, color: isPassed ? '#89d185' : '#f48771' }}>
-            {isPassed ? 'Complete' : 'Failed'}
-          </span>
+        <div style={styles.row}>
           <span
             style={{
-              ...styles.badge,
-              backgroundColor: isPassed ? '#2d5a2d' : '#5a2d2d',
+              ...styles.statusIndicator,
+              backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a',
               color: isPassed ? '#89d185' : '#f48771',
             }}
-            data-testid={`debug-result-${isPassed ? 'passed' : 'failed'}`}
           >
-            {executionStatus}
+            <span style={styles.statusIcon}>{isPassed ? '✓' : '✗'}</span>
+            <span data-testid={`debug-result-${isPassed ? 'passed' : 'failed'}`}>
+              {isPassed ? 'Passed' : 'Failed'}
+            </span>
           </span>
-        </div>
-        {firstError && (
-          <div style={styles.error} data-testid="debug-error">{firstError}</div>
-        )}
-        <div style={styles.buttons}>
-          <button style={styles.dismissButton} onClick={handleStop}>
+          {firstError && (
+            <span style={styles.errorInline} title={firstError} data-testid="debug-error">
+              {firstError.length > 30 ? firstError.slice(0, 30) + '...' : firstError}
+            </span>
+          )}
+          <button style={styles.dismissBtn} onClick={handleStop}>
             Dismiss
           </button>
         </div>
@@ -84,94 +82,59 @@ export function DebugControls({ testSuite, onClose }: DebugControlsProps) {
     );
   }
 
+  // Active state - compact horizontal layout
   return (
     <div style={styles.container} data-testid="debug-controls">
-      {/* Header */}
-      <div style={styles.header}>
-        <span style={styles.headerTitle}>Debug Session</span>
-      </div>
+      <div style={styles.row}>
+        {/* Status indicator */}
+        <span style={styles.statusIndicator}>
+          <span style={getStatusDotStyle(playbackState)} />
+          <span style={styles.statusText}>{getStatusLabel(playbackState)}</span>
+        </span>
 
-      {/* Status row */}
-      <div style={styles.statusRow}>
-        <span style={getStatusDotStyle(playbackState)} />
-        <span style={styles.statusText}>{getStatusLabel(playbackState)}</span>
-        {position && testSuite && (
-          <span style={styles.positionText}>
-            Test Case {position.testCaseIndex + 1}/{testSuite.test_cases.length}
-          </span>
+        {/* Step counter */}
+        {getStepInfo() && (
+          <span style={styles.stepCounter}>Step {getStepInfo()}</span>
         )}
-      </div>
 
-      {/* Progress bar */}
-      {testSuite && testSuite.test_cases.length > 0 && (
-        <div style={styles.progressBar}>
-          {testSuite.test_cases.map((testCase, idx) => {
-            const isComplete = position ? idx < position.testCaseIndex : false;
-            const isCurrent = position ? idx === position.testCaseIndex : false;
-            const hasFailed = Array.from(stepResults.entries()).some(
-              ([key, result]) => key.startsWith(`${idx}:`) && !result.success
-            );
-            return (
-              <div
-                key={testCase.id}
-                style={{
-                  ...styles.progressSegment,
-                  backgroundColor: hasFailed
-                    ? '#f48771'
-                    : isComplete
-                      ? '#89d185'
-                      : isCurrent
-                        ? '#4fc1ff'
-                        : '#3c3c3c',
-                }}
-                title={testCase.id}
-              />
-            );
-          })}
-        </div>
-      )}
+        {/* Separator */}
+        <span style={styles.separator} />
 
-      {/* Current step info */}
-      {position && testSuite && (
-        <div style={styles.currentStep}>
-          <span style={styles.stepBadge}>
-            Step {position.stepIndex + 1}/
-            {testSuite.test_cases[position.testCaseIndex]?.steps.length || '?'}
-          </span>
-        </div>
-      )}
-
-      {/* Control buttons */}
-      <div style={styles.buttons}>
+        {/* Control buttons */}
         {playbackState === 'idle' && (
-          <button style={styles.button} onClick={() => commands.start()} title="Start" data-testid="debug-start-button">
-            ▶ Start
-          </button>
+          <>
+            <button style={styles.btn} onClick={() => commands.step()} title="Step (F10)" data-testid="debug-step-button">
+              ⏭
+            </button>
+            <button style={styles.btn} onClick={() => commands.start()} title="Run (F5)" data-testid="debug-start-button">
+              ▶
+            </button>
+          </>
         )}
         {isPaused && (
           <>
-            <button style={styles.button} onClick={() => commands.step()} title="Step (F10)" data-testid="debug-step-button">
-              ⏭ Step
+            <button style={styles.btn} onClick={() => commands.step()} title="Step (F10)" data-testid="debug-step-button">
+              ⏭
             </button>
-            <button style={styles.button} onClick={() => commands.resume()} title="Continue (F5)" data-testid="debug-continue-button">
-              ▶ Continue
+            <button style={styles.btn} onClick={() => commands.resume()} title="Continue (F5)" data-testid="debug-continue-button">
+              ▶
             </button>
           </>
         )}
         {isRunning && (
-          <button style={styles.button} onClick={() => commands.pause()} title="Pause" data-testid="debug-pause-button">
-            ⏸ Pause
+          <button style={styles.btn} onClick={() => commands.pause()} title="Pause" data-testid="debug-pause-button">
+            ⏸
           </button>
         )}
         {isActive && (
-          <button style={styles.stopButton} onClick={handleStop} title="Stop" data-testid="debug-stop-button">
-            ⏹ Stop
+          <button style={styles.stopBtn} onClick={handleStop} title="Stop" data-testid="debug-stop-button">
+            ⏹
           </button>
         )}
       </div>
 
-      {/* Error */}
-      {error && <div style={styles.error}>{error}</div>}
+      {/* Error row (only if error) */}
+      {error && <div style={styles.errorRow}>{error}</div>}
     </div>
   );
 }
@@ -181,11 +144,11 @@ function getStatusLabel(state: PlaybackState): string {
     case 'idle':
       return 'Ready';
     case 'running':
-      return 'Running...';
+      return 'Running';
     case 'paused':
       return 'Paused';
     case 'completed':
-      return 'Completed';
+      return 'Done';
   }
 }
 
@@ -207,124 +170,91 @@ function getStatusDotStyle(sessionState: PlaybackState): React.CSSProperties {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    borderTop: '1px solid #3c3c3c',
     backgroundColor: '#252526',
   },
-  header: {
+  row: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: '10px',
     padding: '8px 12px',
   },
-  headerTitle: {
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#cccccc',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-  },
-  statusRow: {
+  statusIndicator: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '6px 12px',
-    borderBottom: '1px solid #3c3c3c',
+    gap: '6px',
+    padding: '4px 10px',
+    borderRadius: '4px',
+    backgroundColor: '#333333',
+    fontSize: '12px',
+    fontWeight: 500,
   },
   statusText: {
-    fontSize: '11px',
     color: '#cccccc',
-  },
-  positionText: {
-    marginLeft: 'auto',
-    fontSize: '10px',
-    color: '#888888',
-    fontFamily: 'monospace',
-  },
-  progressBar: {
-    display: 'flex',
-    gap: '2px',
-    height: '4px',
-    padding: '0 12px',
-    marginTop: '6px',
-  },
-  progressSegment: {
-    flex: 1,
-    borderRadius: '2px',
-    transition: 'background-color 0.2s ease',
-  },
-  currentStep: {
-    padding: '6px 12px',
-  },
-  stepBadge: {
-    fontSize: '10px',
-    color: '#888',
-    backgroundColor: '#3c3c3c',
-    padding: '2px 6px',
-    borderRadius: '3px',
-    fontFamily: 'monospace',
-  },
-  buttons: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px',
-    padding: '8px 12px',
-  },
-  button: {
-    padding: '4px 10px',
-    backgroundColor: '#0e639c',
-    border: 'none',
-    borderRadius: '3px',
-    color: '#fff',
-    fontSize: '11px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  stopButton: {
-    padding: '4px 10px',
-    backgroundColor: '#5a1d1d',
-    border: '1px solid #8a2d2d',
-    borderRadius: '3px',
-    color: '#f48771',
-    fontSize: '11px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  dismissButton: {
-    flex: 1,
-    padding: '6px 12px',
-    backgroundColor: 'transparent',
-    border: '1px solid #4a4a4a',
-    borderRadius: '3px',
-    color: '#cccccc',
-    fontSize: '11px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  error: {
-    padding: '6px 12px',
-    fontSize: '10px',
-    color: '#f48771',
-    backgroundColor: '#3a1a1a',
-  },
-  statusBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
   },
   statusIcon: {
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: 'bold',
   },
-  statusLabel: {
-    fontSize: '12px',
-    fontWeight: 600,
-  },
-  badge: {
-    marginLeft: 'auto',
-    fontSize: '10px',
-    fontWeight: 600,
-    padding: '2px 6px',
+  stepCounter: {
+    fontSize: '11px',
+    color: '#888888',
+    fontFamily: 'monospace',
+    padding: '4px 8px',
+    backgroundColor: '#3c3c3c',
     borderRadius: '3px',
+  },
+  separator: {
+    flex: 1,
+  },
+  btn: {
+    width: '32px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0e639c',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+  stopBtn: {
+    width: '32px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#5a1d1d',
+    border: '1px solid #8a2d2d',
+    borderRadius: '4px',
+    color: '#f48771',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+  dismissBtn: {
+    padding: '6px 14px',
+    backgroundColor: 'transparent',
+    border: '1px solid #4a4a4a',
+    borderRadius: '4px',
+    color: '#cccccc',
+    fontSize: '11px',
+    fontWeight: 500,
+    cursor: 'pointer',
+  },
+  errorInline: {
+    fontSize: '11px',
+    color: '#f48771',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '200px',
+  },
+  errorRow: {
+    padding: '6px 12px',
+    fontSize: '11px',
+    color: '#f48771',
+    backgroundColor: '#3a1a1a',
+    borderTop: '1px solid #4a2020',
   },
 };

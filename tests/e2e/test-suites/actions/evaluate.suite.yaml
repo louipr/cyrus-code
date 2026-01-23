@@ -4,15 +4,12 @@ metadata:
   tags:
     - actions
     - evaluate
-test_cases:
-  - id: evaluate_js
-    description: Evaluate JavaScript and verify result
-    steps:
-      - action: evaluate
-        code: |
-          return { answer: 42 };
-        timeout: 1000
-        expect:
-          type: value
-          value: { answer: 42 }
-        why: Evaluate JS and verify return value.
+steps:
+  - action: evaluate
+    code: |
+      return { answer: 42 };
+    timeout: 1000
+    expect:
+      assert: equals
+      expected: { answer: 42 }
+    why: Evaluate JS and verify return value.

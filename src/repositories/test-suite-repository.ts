@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import fg from 'fast-glob';
-import type { TestSuite, TestSuiteStatus, TestCase, TestStep } from '../macro/index.js';
+import type { TestSuite, TestSuiteStatus, TestStep } from '../macro/index.js';
 import { DEFAULT_TIMEOUT_MS } from '../macro/constants.js';
 
 // ============================================================================
@@ -291,16 +291,14 @@ export class YamlTestSuiteRepository implements TestSuiteRepository {
    * Normalizes step defaults (e.g., timeout) at load time.
    */
   private transformYamlToTestSuite(raw: Record<string, unknown>): TestSuite {
-    if (!raw.test_cases) {
-      raw.test_cases = [];
+    if (!raw.steps) {
+      raw.steps = [];
     }
 
     // Normalize step timeouts
-    const testCases = raw.test_cases as TestCase[];
-    for (const testCase of testCases) {
-      for (const step of testCase.steps) {
-        (step as TestStep).timeout ??= DEFAULT_TIMEOUT_MS;
-      }
+    const steps = raw.steps as TestStep[];
+    for (const step of steps) {
+      step.timeout ??= DEFAULT_TIMEOUT_MS;
     }
 
     return raw as unknown as TestSuite;

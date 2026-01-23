@@ -122,7 +122,7 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
           setPosition(event.position);
           setStepResults((prev) => {
             const next = new Map(prev);
-            const key = `${event.position.testCaseIndex}:${event.position.stepIndex}`;
+            const key = `${event.position.stepIndex}`;
             next.set(key, event.result);
             return next;
           });
@@ -211,6 +211,7 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
         setSessionId(null);
         setPlaybackState('idle');
         setPosition(null);
+        setStepResults(new Map());
         setError(null);
       } else {
         setError(response.error?.message ?? 'Failed to stop');

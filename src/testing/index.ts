@@ -4,9 +4,4 @@
  * Shared test fixtures and helpers.
  */
 
-export {
-  createSymbol,
-  createTypeSymbol,
-  createDependency,
-  createService,
-} from './fixtures.js';
+export { createSymbol, createTypeSymbol, createDependency } from './fixtures.js';

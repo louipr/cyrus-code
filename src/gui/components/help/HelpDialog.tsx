@@ -76,7 +76,7 @@ export function HelpDialog({ isOpen, onClose, initialTopic, initialSearch }: Hel
         {/* Header */}
         <div style={styles.header}>
           <h2 style={styles.title}>cyrus-code Help</h2>
-          <button style={styles.closeButton} onClick={onClose} title="Close (Esc)">
+          <button style={styles.closeButton} onClick={onClose} title="Close (Esc)" data-testid="help-dialog-close">
             &times;
           </button>
         </div>

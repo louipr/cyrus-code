@@ -143,7 +143,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   content: {
     overflow: 'auto',
-    position: 'relative', // Contains absolute-positioned children (like TestCaseGraph)
+    position: 'relative', // Contains absolute-positioned children
   },
   contentFill: {
     flex: 1,

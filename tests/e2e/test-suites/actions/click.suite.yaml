@@ -4,38 +4,19 @@ metadata:
   tags:
     - actions
     - click
-test_cases:
-  - id: setup_button
-    description: Create test button
-    steps:
-      - action: evaluate
-        code: |
-          const btn = document.createElement('button');
-          btn.id = 'test-btn';
-          btn.textContent = 'Click Me';
-          btn.onclick = () => { btn.setAttribute('data-clicked', 'true'); };
-          document.body.appendChild(btn);
-          return { created: true };
-        timeout: 1000
-        why: Create a test button element.
+steps:
+  - action: click
+    selector: "[data-testid='help-button']"
+    timeout: 2000
+    expect:
+      selector: "[data-testid='help-dialog']"
+      assert: exists
+    why: Click help button and verify dialog opens via selector assertion.
 
-  - id: click_button
-    description: Click test button
-    depends: [setup_button]
-    steps:
-      - action: click
-        selector: "#test-btn"
-        timeout: 1000
-        why: Click the button using IPC-based click.
-
-      - action: evaluate
-        code: |
-          const btn = document.getElementById('test-btn');
-          const clicked = btn?.getAttribute('data-clicked') === 'true';
-          if (btn) btn.remove();
-          return { clicked };
-        timeout: 1000
-        expect:
-          type: value
-          value: { clicked: true }
-        why: Verify click occurred and cleanup.
+  - action: click
+    selector: "[data-testid='help-dialog-close']"
+    timeout: 2000
+    expect:
+      selector: "[data-testid='help-dialog']"
+      assert: notExists
+    why: Click close button and verify dialog closes via selector assertion.

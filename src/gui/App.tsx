@@ -19,8 +19,9 @@ import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
-import { MacroView, TestSuitePanel } from './components/macro';
+import { MacroView } from './components/macro';
 import { DebugSessionProvider, useDebugSession } from './stores/DebugSessionStore';
+import { DebugControls } from './components/debug/DebugControls';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
@@ -180,9 +181,6 @@ function AppContent(): React.ReactElement {
     }
   }, []);
 
-  // Show test suite panel in non-recordings views during debug (recordings view has its own layout)
-  const showTestSuitePanel = !!debugSession.sessionId && !!debugSession.testSuite && viewMode !== 'recordings';
-
   return (
     <div style={styles.container}>
       <header style={styles.header}>
@@ -204,6 +202,7 @@ function AppContent(): React.ReactElement {
                 }
               }}
               type="button"
+              data-testid="symbols-view-button"
             >
               Symbols {viewMode === 'symbols' ? `(${symbolSubView})` : ''} ▾
             </button>
@@ -419,9 +418,6 @@ function AppContent(): React.ReactElement {
           )}
         </Panel>
 
-        {/* Test suite panels - appears during debug sessions in non-recordings views */}
-        {/* TestSuitePanel uses context directly - no props needed */}
-        {showTestSuitePanel && <TestSuitePanel />}
       </PanelLayout>
 
       <ExportDialog
@@ -441,6 +437,15 @@ function AppContent(): React.ReactElement {
         onClose={() => setShowAboutDialog(false)}
       />
 
+      {/* Floating debug controls - always on top of modals */}
+      {debugSession.sessionId && (
+        <div style={styles.floatingDebugControls}>
+          <DebugControls
+            testSuite={debugSession.testSuite}
+            onClose={debugSession.clearDebug}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -629,6 +634,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   diagramContent: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  floatingDebugControls: {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    zIndex: 1100, // Above modals (typically 1000)
+    backgroundColor: '#1e1e1e',
+    border: '1px solid #3c3c3c',
+    borderRadius: '6px',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
     overflow: 'hidden',
   },
 };

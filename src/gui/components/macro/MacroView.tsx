@@ -5,26 +5,21 @@
  * Uses the panel layout system for flexible resizing.
  *
  * Layout (all panels are independently collapsible):
- *   LeftPanel (Test Suites) | MainPanel (Canvas) | GraphPanel | DetailsPanel
+ *   LeftPanel (Test Suites) | MainPanel (Canvas) | DetailsPanel
  *
  * All panels use consistent composition: Panel > Card > Content
- * When any right-side panel collapses, the main panel expands.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api-client';
 import { TestSuiteTree } from './TestSuiteTree';
-import { TestCaseGraph } from './TestCaseGraph';
 import { StepDetail } from './StepDetail';
-import { TestCaseDetail } from './TestCaseDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
-import { DebugControls } from '../debug/DebugControls';
 import { useDebugSession } from '../../stores/DebugSessionStore';
-import { useGraphControls } from '../../hooks/useGraphControls';
-import { updateStepField } from '../../hooks/useStepEditor';
-import { PanelLayout, Panel, ResizeHandle, Column, Card } from '../layout';
+import { updateStepField } from '../../utils/step-editor';
+import { PanelLayout, Panel, ResizeHandle, Card } from '../layout';
 import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestCase, TestStep } from '../../../macro';
+import type { TestSuite, TestStep } from '../../../macro';
 
 /**
  * MacroView - Main test suite visualization view
@@ -36,7 +31,6 @@ export function MacroView() {
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [selectedTestSuiteId, setSelectedTestSuiteId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,8 +38,21 @@ export function MacroView() {
   // Debug session state from context (persists across view switches)
   const debugSession = useDebugSession();
 
-  // Graph controls (zoom, expand/collapse) - shared hook
-  const graphControls = useGraphControls(testSuite);
+  // Auto-select step when debug position changes
+  useEffect(() => {
+    if (!debugSession.position || !testSuite) return;
+
+    const stepIdx = debugSession.position.stepIndex;
+    const step = testSuite.steps[stepIdx];
+    if (step) {
+      setSelectedStep(step);
+      setSelectedStepIndex(stepIdx);
+      // Update selected path to highlight in tree
+      if (selectedAppId && selectedTestSuiteId) {
+        setSelectedPath(`${selectedAppId}/${selectedTestSuiteId}/${stepIdx}`);
+      }
+    }
+  }, [debugSession.position, testSuite, selectedAppId, selectedTestSuiteId]);
 
   // Load index on mount
   useEffect(() => {
@@ -61,7 +68,7 @@ export function MacroView() {
 
   // Handle node selection
   const handleSelect = useCallback(
-    async (path: string, type: 'app' | 'testSuite' | 'testCase' | 'step') => {
+    async (path: string, type: 'app' | 'testSuite' | 'step') => {
       setSelectedPath(path);
       const parts = path.split('/');
 
@@ -73,23 +80,13 @@ export function MacroView() {
         const result = await apiClient.recordings.get(appId, testSuiteId);
         if (result.success && result.data) {
           setTestSuite(result.data);
-          setSelectedTestCase(null);
           setSelectedStep(null);
           setSelectedStepIndex(null);
         }
-      } else if (type === 'testCase' && testSuite) {
-        const testCaseId = parts[2];
-        const testCase = testSuite.test_cases.find((t) => t.id === testCaseId);
-        setSelectedTestCase(testCase || null);
-        setSelectedStep(null);
-        setSelectedStepIndex(null);
       } else if (type === 'step' && testSuite) {
-        const testCaseId = parts[2];
-        const stepIdx = parseInt(parts[3], 10);
-        const testCase = testSuite.test_cases.find((t) => t.id === testCaseId);
-        if (testCase && testCase.steps[stepIdx]) {
-          setSelectedTestCase(testCase);
-          setSelectedStep(testCase.steps[stepIdx]);
+        const stepIdx = parseInt(parts[2], 10);
+        if (testSuite.steps[stepIdx]) {
+          setSelectedStep(testSuite.steps[stepIdx]);
           setSelectedStepIndex(stepIdx);
         }
       }
@@ -110,33 +107,7 @@ export function MacroView() {
     });
   }, []);
 
-  // Handle step click from TestCaseGraph
-  const handleStepClick = useCallback(
-    (testCaseId: string, stepIdx: number) => {
-      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
-      if (testCase && testCase.steps[stepIdx]) {
-        setSelectedTestCase(testCase);
-        setSelectedStep(testCase.steps[stepIdx]);
-        setSelectedStepIndex(stepIdx);
-      }
-    },
-    [testSuite]
-  );
-
-  // Handle test case click from TestCaseGraph
-  const handleTestCaseClick = useCallback(
-    (testCaseId: string) => {
-      const testCase = testSuite?.test_cases.find((t) => t.id === testCaseId);
-      if (testCase) {
-        setSelectedTestCase(testCase);
-        setSelectedStep(null);
-        setSelectedStepIndex(null);
-      }
-    },
-    [testSuite]
-  );
-
-  // Handle saving test suite (for test case parameter edits)
+  // Handle saving test suite (for step parameter edits)
   const handleSaveTestSuite = useCallback(
     async (updatedTestSuite: TestSuite) => {
       if (!selectedAppId || !selectedTestSuiteId) return;
@@ -145,35 +116,20 @@ export function MacroView() {
       if (result.success) {
         // Update local state with the saved test suite
         setTestSuite(updatedTestSuite);
-        // Update selected test case if it was modified
-        if (selectedTestCase) {
-          const updatedTestCase = updatedTestSuite.test_cases.find(
-            (tc) => tc.id === selectedTestCase.id
-          );
-          // If the ID was changed, find by index instead
-          if (!updatedTestCase) {
-            const idx = testSuite?.test_cases.findIndex((tc) => tc.id === selectedTestCase.id);
-            if (idx !== undefined && idx >= 0 && updatedTestSuite.test_cases[idx]) {
-              setSelectedTestCase(updatedTestSuite.test_cases[idx]);
-            }
-          } else {
-            setSelectedTestCase(updatedTestCase);
-          }
-        }
       } else {
         // Show error (could add toast notification here)
         console.error('Failed to save test suite:', result.error?.message);
       }
     },
-    [selectedAppId, selectedTestSuiteId, selectedTestCase, testSuite]
+    [selectedAppId, selectedTestSuiteId]
   );
 
   // Handle step field changes (inline editing)
   const handleStepChange = useCallback(
     (stepIndex: number, field: string, value: string) => {
-      if (!testSuite || !selectedTestCase) return;
+      if (!testSuite) return;
 
-      const result = updateStepField(testSuite, selectedTestCase.id, stepIndex, field, value);
+      const result = updateStepField(testSuite, stepIndex, field, value);
       if (!result) return;
 
       // Update local state immediately for responsive UI
@@ -183,7 +139,7 @@ export function MacroView() {
       // Save to file
       handleSaveTestSuite(result.testSuite);
     },
-    [testSuite, selectedTestCase, handleSaveTestSuite]
+    [testSuite, handleSaveTestSuite]
   );
 
   if (loading) {
@@ -263,67 +219,13 @@ export function MacroView() {
 
       <ResizeHandle
         orientation="horizontal"
-        targetId="graph"
-        targetType="panel"
-        constraints={{ default: 280, min: 200, max: 500 }}
-        side="right"
-      />
-
-      {/* Graph Panel - Test Case Graph + Debug Controls */}
-      <Panel
-        id="graph"
-        position="right"
-        size={{ default: 280, min: 200, max: 500 }}
-        title="Graph"
-        headerActions={graphControls.headerActions}
-        testId="macro-right-panel"
-        collapsible
-      >
-        <Column id="graph-debug" stitched fill>
-          <Card id="graph-card" title="Test Case Graph" fill testId="test-case-graph-card" showHeader={false} collapsible={false}>
-            {testSuite ? (
-              <TestCaseGraph
-                testCases={testSuite.test_cases}
-                selectedTestCaseId={selectedTestCase?.id ?? null}
-                selectedStepIndex={selectedStepIndex}
-                onTestCaseClick={handleTestCaseClick}
-                onStepClick={handleStepClick}
-                executingTestCaseIndex={debugSession.position?.testCaseIndex ?? null}
-                executingStepIndex={debugSession.position?.stepIndex ?? null}
-                stepResults={debugSession.stepResults}
-                scale={graphControls.scale}
-                onScaleChange={graphControls.setScale}
-                expandedIds={graphControls.expandedIds}
-                onExpandedIdsChange={graphControls.setExpandedIds}
-              />
-            ) : (
-              <div style={styles.graphPlaceholder}>
-                <span style={styles.placeholder}>Select a test suite to view test cases</span>
-              </div>
-            )}
-          </Card>
-
-          {/* Debug Controls Card - only shown during debug session */}
-          {debugSession.sessionId && (
-            <Card id="debug" title="Debug Session" testId="debug-controls-card">
-              <DebugControls
-                testSuite={debugSession.testSuite}
-                onClose={debugSession.clearDebug}
-              />
-            </Card>
-          )}
-        </Column>
-      </Panel>
-
-      <ResizeHandle
-        orientation="horizontal"
         targetId="details"
         targetType="panel"
         constraints={{ default: 320, min: 200, max: 500 }}
         side="right"
       />
 
-      {/* Details Panel - TestSuite/TestCase/Step details */}
+      {/* Details Panel - TestSuite/Step details */}
       <Panel
         id="details"
         position="right"
@@ -337,26 +239,15 @@ export function MacroView() {
             <StepDetail
               step={selectedStep}
               stepIndex={selectedStepIndex}
-              result={selectedTestCase ? debugSession.stepResults.get(
-                `${testSuite?.test_cases.findIndex((t) => t.id === selectedTestCase.id) ?? -1}:${selectedStepIndex}`
-              ) : undefined}
+              result={debugSession.stepResults.get(`${selectedStepIndex}`)}
               onStepChange={handleStepChange}
-            />
-          ) : selectedTestCase && testSuite ? (
-            <TestCaseDetail
-              testCase={selectedTestCase}
-              testCaseIndex={testSuite.test_cases.findIndex((t) => t.id === selectedTestCase.id)}
-              testSuite={testSuite}
-              groupId={selectedAppId ?? undefined}
-              suiteId={selectedTestSuiteId ?? undefined}
-              onSave={handleSaveTestSuite}
             />
           ) : testSuite ? (
             <TestSuiteDetail testSuite={testSuite} suiteId={selectedTestSuiteId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholder}>
-                Select a test suite, test case, or step to view details
+                Select a test suite or step to view details
               </span>
             </div>
           )}
@@ -394,14 +285,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1e1e1e',
-  },
-  graphPlaceholder: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#888',
-    fontSize: '14px',
   },
   detailsPlaceholder: {
     height: '100%',

@@ -70,20 +70,3 @@ export function createDependency(
     ...overrides,
   };
 }
-
-/**
- * Create a service symbol with specified dependencies.
- */
-export function createService(
-  id: string,
-  dependencies: DependencyRef[] = []
-): ComponentSymbol {
-  const parts = id.split('/');
-  const nameParts = parts[parts.length - 1]?.split('@') ?? ['Service', '1.0.0'];
-  return createSymbol({
-    id,
-    name: nameParts[0] ?? 'Service',
-    namespace: parts.slice(0, -1).join('/'),
-    dependencies,
-  });
-}

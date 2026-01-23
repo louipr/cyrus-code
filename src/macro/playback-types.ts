@@ -47,14 +47,8 @@ export type PlaybackState =
  * Current position in the test suite playback.
  */
 export interface PlaybackPosition {
-  /** Index of current test case (0-based) */
-  testCaseIndex: number;
-
-  /** Index of current step within test case (0-based) */
+  /** Index of current step (0-based) */
   stepIndex: number;
-
-  /** Test case ID for reference */
-  testCaseId: string;
 }
 
 // ============================================================================

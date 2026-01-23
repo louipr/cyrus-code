@@ -37,40 +37,33 @@ export async function* createStepGenerator(
   wc: WebContents,
   onStepStart?: StepStartCallback
 ): AsyncGenerator<StepYield> {
-  for (let tcIdx = 0; tcIdx < suite.test_cases.length; tcIdx++) {
-    const tc = suite.test_cases[tcIdx]!;
-    for (let sIdx = 0; sIdx < tc.steps.length; sIdx++) {
-      const step = tc.steps[sIdx]!;
-      const position: PlaybackPosition = {
-        testCaseIndex: tcIdx,
-        stepIndex: sIdx,
-        testCaseId: tc.id,
+  for (let stepIdx = 0; stepIdx < suite.steps.length; stepIdx++) {
+    const step = suite.steps[stepIdx]!;
+    const position: PlaybackPosition = { stepIndex: stepIdx };
+
+    // Notify before execution
+    onStepStart?.(position, step);
+
+    const start = Date.now();
+    let result: StepResult;
+
+    try {
+      const actionValue = await executeAction(step, wc);
+      const expectValue = await executeExpect(step, actionValue, wc);
+      result = {
+        success: true,
+        duration: Date.now() - start,
+        value: expectValue ?? actionValue,
       };
-
-      // Notify before execution
-      onStepStart?.(position, step);
-
-      const start = Date.now();
-      let result: StepResult;
-
-      try {
-        const actionValue = await executeAction(step, wc);
-        const expectValue = await executeExpect(step, actionValue, wc);
-        result = {
-          success: true,
-          duration: Date.now() - start,
-          value: expectValue ?? actionValue,
-        };
-      } catch (err) {
-        result = {
-          success: false,
-          duration: Date.now() - start,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-
-      yield { position, step, result };
+    } catch (err) {
+      result = {
+        success: false,
+        duration: Date.now() - start,
+        error: err instanceof Error ? err.message : String(err),
+      };
     }
+
+    yield { position, step, result };
   }
 }
 
@@ -111,20 +104,90 @@ async function executeExpect(
   const { expect } = step;
   if (!expect) return undefined;
 
-  switch (expect.type) {
-    case 'value': {
-      const expectedStr = JSON.stringify(expect.value);
-      const actualStr = JSON.stringify(actionValue);
+  const { assert: op, selector, expected } = expect;
+
+  // Selector-based assertions
+  if (selector) {
+    switch (op) {
+      case 'exists':
+        return invoke(wc, 'assert', [selector, step.timeout!, true]);
+      case 'notExists':
+        return invoke(wc, 'assert', [selector, step.timeout!, false]);
+      default:
+        throw new Error(`Invalid assertion operator '${op}' for selector expectation`);
+    }
+  }
+
+  // Value-based assertions (use actionValue as actual)
+  const actual = actionValue;
+
+  switch (op) {
+    case 'equals': {
+      const expectedStr = JSON.stringify(expected);
+      const actualStr = JSON.stringify(actual);
       if (expectedStr !== actualStr) {
         throw new Error(`Expected ${expectedStr} but got ${actualStr}`);
       }
-      return { verified: true, expected: expect.value, actual: actionValue };
+      return { verified: true, expected, actual };
     }
 
-    case 'selector': {
-      const exists = expect.exists ?? true;
-      return invoke(wc, 'assert', [expect.selector, step.timeout!, exists]);
+    case 'notEquals': {
+      const expectedStr = JSON.stringify(expected);
+      const actualStr = JSON.stringify(actual);
+      if (expectedStr === actualStr) {
+        throw new Error(`Expected not to equal ${expectedStr}`);
+      }
+      return { verified: true, expected, actual };
     }
+
+    case 'greaterThan': {
+      if (typeof actual !== 'number' || typeof expected !== 'number') {
+        throw new Error(`greaterThan requires numbers, got ${typeof actual} and ${typeof expected}`);
+      }
+      if (!(actual > expected)) {
+        throw new Error(`Expected ${actual} to be greater than ${expected}`);
+      }
+      return { verified: true, expected, actual };
+    }
+
+    case 'lessThan': {
+      if (typeof actual !== 'number' || typeof expected !== 'number') {
+        throw new Error(`lessThan requires numbers, got ${typeof actual} and ${typeof expected}`);
+      }
+      if (!(actual < expected)) {
+        throw new Error(`Expected ${actual} to be less than ${expected}`);
+      }
+      return { verified: true, expected, actual };
+    }
+
+    case 'contains': {
+      if (typeof actual === 'string' && typeof expected === 'string') {
+        if (!actual.includes(expected)) {
+          throw new Error(`Expected "${actual}" to contain "${expected}"`);
+        }
+      } else if (Array.isArray(actual)) {
+        if (!actual.includes(expected)) {
+          throw new Error(`Expected array to contain ${JSON.stringify(expected)}`);
+        }
+      } else {
+        throw new Error(`contains requires string or array, got ${typeof actual}`);
+      }
+      return { verified: true, expected, actual };
+    }
+
+    case 'matches': {
+      if (typeof actual !== 'string' || typeof expected !== 'string') {
+        throw new Error(`matches requires strings, got ${typeof actual} and ${typeof expected}`);
+      }
+      const regex = new RegExp(expected);
+      if (!regex.test(actual)) {
+        throw new Error(`Expected "${actual}" to match pattern "${expected}"`);
+      }
+      return { verified: true, expected, actual };
+    }
+
+    default:
+      throw new Error(`Unknown assertion operator: ${op}`);
   }
 }
 

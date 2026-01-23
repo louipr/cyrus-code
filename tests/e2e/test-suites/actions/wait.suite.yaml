@@ -4,13 +4,10 @@ metadata:
   tags:
     - actions
     - wait
-test_cases:
-  - id: wait_for_element
-    description: Wait for element to exist
-    steps:
-      - action: wait
-        timeout: 2000
-        expect:
-          type: selector
-          selector: "#root"
-        why: Wait for root element. Success means wait found the element.
+steps:
+  - action: wait
+    timeout: 2000
+    expect:
+      selector: "#root"
+      assert: exists
+    why: Wait for root element. Success means wait found the element.

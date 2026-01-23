@@ -121,7 +121,7 @@ export class DebugSession {
 
       // Store result and update position
       this.position = value.position;
-      const key = `${value.position.testCaseIndex}:${value.position.stepIndex}`;
+      const key = `${value.position.stepIndex}`;
       this.results.set(key, value.result);
 
       // Emit step-complete

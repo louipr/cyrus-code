@@ -1,23 +1,23 @@
 /**
  * TestSuiteTree Component
  *
- * Hierarchical tree navigator for test suites: apps → test suites → test cases → steps
+ * Hierarchical tree navigator for test suites: apps → test suites → steps
  */
 
 import type { TestSuiteIndex, TestSuiteEntry } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestCase, TestStep } from '../../../macro';
+import type { TestSuite, TestStep } from '../../../macro';
 
 interface TestSuiteTreeProps {
   /** The test suite index */
   index: TestSuiteIndex;
-  /** Currently loaded test suite (for showing test cases/steps) */
+  /** Currently loaded test suite (for showing steps) */
   testSuite: TestSuite | null;
-  /** Selected path: "appId" | "appId/testSuiteId" | "appId/testSuiteId/testCaseId" | "appId/testSuiteId/testCaseId/stepIndex" */
+  /** Selected path: "appId" | "appId/testSuiteId" | "appId/testSuiteId/stepIndex" */
   selectedPath: string | null;
   /** Expanded node IDs */
   expandedNodes: Set<string>;
   /** Called when an item is selected */
-  onSelect: (path: string, type: 'app' | 'testSuite' | 'testCase' | 'step') => void;
+  onSelect: (path: string, type: 'app' | 'testSuite' | 'step') => void;
   /** Called when a node is toggled */
   onToggle: (nodeId: string) => void;
 }
@@ -27,38 +27,24 @@ const styles = {
     height: '100%',
     overflow: 'auto',
     backgroundColor: '#1e1e1e',
-    borderRight: '1px solid #333',
-  } as React.CSSProperties,
-  header: {
-    padding: '12px 16px',
-    borderBottom: '1px solid #333',
-    fontSize: '11px',
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
-    color: '#888',
   } as React.CSSProperties,
   tree: {
-    padding: '8px 0',
+    padding: '4px 0',
   } as React.CSSProperties,
   node: {
     display: 'flex',
     alignItems: 'center',
-    padding: '4px 8px',
+    padding: '5px 8px',
     cursor: 'pointer',
-    fontSize: '13px',
-    color: '#ccc',
-    border: 'none',
-    background: 'none',
-    width: '100%',
-    textAlign: 'left' as const,
+    fontSize: '12px',
+    color: '#bbb',
+    backgroundColor: 'transparent',
+    outline: 'none',
+    userSelect: 'none',
   } as React.CSSProperties,
   nodeSelected: {
     backgroundColor: '#094771',
     color: '#fff',
-  } as React.CSSProperties,
-  nodeHover: {
-    backgroundColor: '#2a2d2e',
   } as React.CSSProperties,
   chevron: {
     width: '16px',
@@ -93,7 +79,6 @@ const styles = {
 const ICONS = {
   app: '📁',
   testSuite: '📋',
-  testCase: '⚡',
   step: '○',
   'step-click': '👆',
   'step-type': '⌨️',
@@ -124,7 +109,7 @@ function TreeNode({
 }: {
   id: string;
   label: string;
-  type: 'app' | 'testSuite' | 'testCase' | 'step';
+  type: 'app' | 'testSuite' | 'step';
   icon: string;
   depth: number;
   isExpanded: boolean;
@@ -137,7 +122,9 @@ function TreeNode({
 }) {
   return (
     <div>
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         style={{
           ...styles.node,
           paddingLeft: `${8 + depth * 16}px`,
@@ -149,6 +136,15 @@ function TreeNode({
             onToggle();
           }
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+            if (hasChildren) {
+              onToggle();
+            }
+          }
+        }}
         data-testid={`test-suite-tree-${id}`}
       >
         <span style={styles.chevron}>
@@ -157,7 +153,7 @@ function TreeNode({
         <span style={styles.icon}>{icon}</span>
         <span style={styles.label} title={label}>{label}</span>
         {badge && <span style={styles.badge}>{badge}</span>}
-      </button>
+      </div>
       {isExpanded && children}
     </div>
   );
@@ -179,7 +175,6 @@ export function TestSuiteTree({
   if (apps.length === 0) {
     return (
       <div style={styles.container}>
-        <div style={styles.header}>Test Suites</div>
         <div style={styles.emptyMessage}>No test suites found</div>
       </div>
     );
@@ -188,12 +183,10 @@ export function TestSuiteTree({
   const selectedParts = selectedPath?.split('/') || [];
   const selectedAppId = selectedParts[0];
   const selectedTestSuiteId = selectedParts[1];
-  const selectedTestCaseId = selectedParts[2];
-  const selectedStepIndex = selectedParts[3];
+  const selectedStepIndex = selectedParts[2];
 
   return (
     <div style={styles.container} data-testid="test-suite-tree">
-      <div style={styles.header}>Test Suites</div>
       <div style={styles.tree}>
         {apps.map((appId) => {
           const group = index.groups[appId]!;
@@ -221,10 +214,10 @@ export function TestSuiteTree({
                 const isTestSuiteSelected =
                   selectedAppId === appId &&
                   selectedTestSuiteId === entry.id &&
-                  !selectedTestCaseId;
+                  !selectedStepIndex;
 
-                // Show test cases if this test suite is loaded and expanded
-                const showTestCases =
+                // Show steps if this test suite is loaded and expanded
+                const showSteps =
                   isTestSuiteExpanded &&
                   selectedTestSuiteId === entry.id &&
                   testSuite !== null;
@@ -244,57 +237,28 @@ export function TestSuiteTree({
                     onSelect={() => onSelect(testSuitePath, 'testSuite')}
                     onToggle={() => onToggle(testSuitePath)}
                   >
-                    {showTestCases &&
-                      testSuite.test_cases.map((testCase: TestCase) => {
-                        const testCasePath = `${testSuitePath}/${testCase.id}`;
-                        const isTestCaseExpanded = expandedNodes.has(testCasePath);
-                        const isTestCaseSelected =
+                    {showSteps &&
+                      testSuite.steps.map((step: TestStep, stepIdx: number) => {
+                        const stepPath = `${testSuitePath}/${stepIdx}`;
+                        const isStepSelected =
                           selectedAppId === appId &&
                           selectedTestSuiteId === entry.id &&
-                          selectedTestCaseId === testCase.id &&
-                          !selectedStepIndex;
+                          selectedStepIndex === String(stepIdx);
 
                         return (
                           <TreeNode
-                            key={testCasePath}
-                            id={testCasePath}
-                            label={testCase.id}
-                            type="testCase"
-                            icon={ICONS.testCase}
+                            key={stepPath}
+                            id={stepPath}
+                            label={step.action}
+                            type="step"
+                            icon={getStepIcon(step.action)}
                             depth={2}
-                            isExpanded={isTestCaseExpanded}
-                            isSelected={isTestCaseSelected}
-                            hasChildren={testCase.steps.length > 0}
-                            badge={`${testCase.steps.length}`}
-                            onSelect={() => onSelect(testCasePath, 'testCase')}
-                            onToggle={() => onToggle(testCasePath)}
-                          >
-                            {isTestCaseExpanded &&
-                              testCase.steps.map((step: TestStep, stepIdx: number) => {
-                                const stepPath = `${testCasePath}/${stepIdx}`;
-                                const isStepSelected =
-                                  selectedAppId === appId &&
-                                  selectedTestSuiteId === entry.id &&
-                                  selectedTestCaseId === testCase.id &&
-                                  selectedStepIndex === String(stepIdx);
-
-                                return (
-                                  <TreeNode
-                                    key={stepPath}
-                                    id={stepPath}
-                                    label={step.action}
-                                    type="step"
-                                    icon={getStepIcon(step.action)}
-                                    depth={3}
-                                    isExpanded={false}
-                                    isSelected={isStepSelected}
-                                    hasChildren={false}
-                                    onSelect={() => onSelect(stepPath, 'step')}
-                                    onToggle={() => {}}
-                                  />
-                                );
-                              })}
-                          </TreeNode>
+                            isExpanded={false}
+                            isSelected={isStepSelected}
+                            hasChildren={false}
+                            onSelect={() => onSelect(stepPath, 'step')}
+                            onToggle={() => {}}
+                          />
                         );
                       })}
                   </TreeNode>

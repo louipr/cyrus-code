@@ -27,33 +27,68 @@ export type ActionType =
 // ============================================================================
 
 /**
- * Selector-based expectation - verify element exists/doesn't exist after action.
- */
-export interface SelectorExpectation {
-  type: 'selector';
-  /** CSS selector to verify */
-  selector: string;
-  /** Whether element should exist. Omit for exists check, set false for not-exists check. */
-  exists?: boolean;
-}
-
-/**
- * Value-based expectation - verify return value matches.
- */
-export interface ValueExpectation {
-  type: 'value';
-  /** Expected return value (deep equality check) */
-  value: unknown;
-}
-
-/**
- * Step expectation - what should happen after the action executes.
- * Optional field - omit if no verification needed.
+ * Assertion operators for step expectations.
  *
- * - SelectorExpectation: Verify element state (type: 'selector')
- * - ValueExpectation: Verify return value (type: 'value')
+ * Existence (for selectors):
+ * - 'exists': Element exists in DOM
+ * - 'notExists': Element does not exist in DOM
+ *
+ * Equality (for values):
+ * - 'equals': Deep equality comparison
+ * - 'notEquals': Not equal
+ *
+ * Comparison (for numbers):
+ * - 'greaterThan': Actual > expected
+ * - 'lessThan': Actual < expected
+ *
+ * String/Array:
+ * - 'contains': String contains or array includes
+ * - 'matches': Regex match
  */
-export type StepExpectation = SelectorExpectation | ValueExpectation;
+export type AssertOperator =
+  | 'exists'
+  | 'notExists'
+  | 'equals'
+  | 'notEquals'
+  | 'greaterThan'
+  | 'lessThan'
+  | 'contains'
+  | 'matches';
+
+/**
+ * Step expectation - unified assertion model.
+ *
+ * Examples:
+ *   # Selector exists
+ *   expect:
+ *     selector: "[data-testid='foo']"
+ *     assert: exists
+ *
+ *   # Selector doesn't exist
+ *   expect:
+ *     selector: "[data-testid='loading']"
+ *     assert: notExists
+ *
+ *   # Value equals
+ *   expect:
+ *     assert: equals
+ *     expected: { answer: 42 }
+ *
+ *   # Value greater than
+ *   expect:
+ *     assert: greaterThan
+ *     expected: 10
+ */
+export interface StepExpectation {
+  /** CSS selector for DOM assertions (optional - omit for value assertions) */
+  selector?: string;
+
+  /** Assertion operator - what comparison to perform */
+  assert: AssertOperator;
+
+  /** Expected value (for operators that need a comparison value) */
+  expected?: unknown;
+}
 
 // ============================================================================
 // Step Types - Individual test actions
@@ -124,11 +159,15 @@ export interface EvaluateStep extends BaseStep {
  *
  * Examples:
  *   - action: wait
- *     expect: { type: selector, selector: "[data-testid='foo']" }
+ *     expect:
+ *       selector: "[data-testid='foo']"
+ *       assert: exists
  *     why: Wait for element to appear.
  *
  *   - action: wait
- *     expect: { type: selector, selector: "[data-testid='loading']", exists: false }
+ *     expect:
+ *       selector: "[data-testid='loading']"
+ *       assert: notExists
  *     why: Wait for loading indicator to disappear.
  */
 export interface WaitStep extends Omit<BaseStep, 'expect'> {
@@ -150,23 +189,6 @@ export type TestStep =
 // ============================================================================
 // Suite Structure - Document hierarchy
 // ============================================================================
-
-/**
- * A test case containing multiple steps.
- */
-export interface TestCase {
-  /** Unique identifier for this test case (snake_case, shown in graph) */
-  id: string;
-
-  /** Human-readable description (shown in details panel) */
-  description: string;
-
-  /** Test case IDs this test case depends on */
-  depends?: string[];
-
-  /** Steps to execute in order */
-  steps: TestStep[];
-}
 
 /**
  * Context describing when a test suite applies.
@@ -240,6 +262,24 @@ export interface TestSuite {
   /** Context for when this test suite applies */
   context: TestSuiteContext;
 
-  /** Test cases to execute */
-  test_cases: TestCase[];
+  /** Steps to execute in order */
+  steps: TestStep[];
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+/**
+ * Get value from step using dot notation path.
+ * Example: getStepValue(step, 'expect.selector') returns step.expect?.selector
+ */
+export function getStepValue(step: TestStep, field: string): unknown {
+  const parts = field.split('.');
+  let value: unknown = step;
+  for (const part of parts) {
+    if (value === null || value === undefined) return undefined;
+    value = (value as Record<string, unknown>)[part];
+  }
+  return value;
 }

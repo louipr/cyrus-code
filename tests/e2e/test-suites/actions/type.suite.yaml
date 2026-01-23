@@ -4,38 +4,20 @@ metadata:
   tags:
     - actions
     - type
-test_cases:
-  - id: setup_input
-    description: Create test input element
-    steps:
-      - action: evaluate
-        code: |
-          const input = document.createElement('input');
-          input.id = 'test-input';
-          input.setAttribute('data-testid', 'test-input');
-          document.body.appendChild(input);
-          return { created: true };
-        timeout: 1000
-        why: Create a test input element.
+steps:
+  - action: click
+    selector: "[data-testid='symbols-view-button']"
+    timeout: 2000
+    expect:
+      selector: "[data-testid='search-input']"
+      assert: exists
+    why: Switch to symbols view where search input is visible.
 
-  - id: type_in_input
-    description: Type text into input
-    depends: [setup_input]
-    steps:
-      - action: type
-        selector: "#test-input"
-        text: "hello world"
-        timeout: 1000
-        why: Type text using IPC-based type action.
-
-      - action: evaluate
-        code: |
-          const input = document.getElementById('test-input');
-          const value = input ? input.value : null;
-          if (input) input.remove();
-          return { value };
-        timeout: 1000
-        expect:
-          type: value
-          value: { value: "hello world" }
-        why: Verify typed text and cleanup.
+  - action: type
+    selector: "[data-testid='search-input']"
+    text: "test"
+    timeout: 2000
+    expect:
+      selector: "[data-testid='search-clear']"
+      assert: exists
+    why: Type in search input and verify clear button appears via selector assertion.

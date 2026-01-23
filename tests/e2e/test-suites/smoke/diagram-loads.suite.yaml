@@ -17,24 +17,21 @@ context:
   prerequisites:
     - App is launched
 
-test_cases:
-  - id: open_diagram
-    description: Open diagram view
-    steps:
-      - action: wait
-        timeout: 1000
-        expect:
-          type: selector
-          selector: "[data-testid='view-toggle']"
-        why: Wait for app to be ready.
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: Wait for app to be ready.
 
-      - action: click
-        selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
-        why: Click the Diagram button to switch to diagram view.
+  - action: click
+    selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+    why: Click the Diagram button to switch to diagram view.
 
-      - action: wait
-        timeout: 1000
-        expect:
-          type: selector
-          selector: "[data-testid='diagram-webview']"
-        why: Wait for Draw.io webview to appear.
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='diagram-webview']"
+      assert: exists
+    why: Wait for Draw.io webview to appear.

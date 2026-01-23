@@ -14,7 +14,7 @@ import { LEVEL_COLORS, EDGE_COLORS } from '../constants/colors';
 import { DEPENDENCY_GRAPH_LAYOUT } from '../constants/graph-layout';
 import { useCanvasTransform } from '../hooks/useCanvasTransform';
 import { calculateGridPositions, type GridPosition } from '../utils/calculate-grid-positions';
-import { EdgeLine } from './shared/EdgeLine';
+import { EdgeLine } from './EdgeLine';
 
 interface DependencyGraphProps {
   selectedSymbolId?: string;

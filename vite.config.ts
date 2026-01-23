@@ -15,7 +15,7 @@ export default defineConfig({
   base: './',
   build: {
     outDir: '../../dist/gui',
-    emptyDirOnBuild: true,
+    emptyOutDir: true,
     sourcemap: true,
   },
   resolve: {
