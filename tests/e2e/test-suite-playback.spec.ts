@@ -68,26 +68,23 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
   await suiteNode.click();
   await page.waitForTimeout(1000);
 
-  // Wait for the test suite to load (Debug button appears when testSuite is loaded)
-  const debugButton = page.locator('[data-testid="debug-session-button"]');
+  // Wait for the test suite to load (Run button appears when testSuite is loaded)
+  const runButton = page.locator('[data-testid="run-button"]');
   try {
-    await expect(debugButton).toBeVisible({ timeout: 10000 });
+    await expect(runButton).toBeVisible({ timeout: 10000 });
   } catch {
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/debug-button-not-found-${suiteName}.png` });
-    throw new Error(`Debug button not found for suite ${groupName}/${suiteName}. Check screenshot.`);
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/run-button-not-found-${suiteName}.png` });
+    throw new Error(`Run button not found for suite ${groupName}/${suiteName}. Check screenshot.`);
   }
-  await debugButton.click();
+  await runButton.click();
   await page.waitForTimeout(300);
 }
 
 /**
- * Start the debug session and wait for completion.
+ * Wait for test suite execution to complete.
+ * (Execution auto-starts when Run button is clicked)
  */
-async function runAndWait(page: Page, timeout = 15000) {
-  const startButton = page.locator('[data-testid="debug-start-button"]');
-  await expect(startButton).toBeVisible({ timeout: 5000 });
-  await startButton.click();
-
+async function waitForCompletion(page: Page, timeout = 15000) {
   // Wait for result (passed or failed)
   const result = page.locator('[data-testid="debug-result-passed"], [data-testid="debug-result-failed"]');
   await expect(result).toBeVisible({ timeout });
@@ -148,7 +145,7 @@ test.describe('Test Suite Playback @suites', () => {
       const { page } = context;
 
       await selectAndDebugSuite(page, config.group, config.suite);
-      await runAndWait(page, config.timeout ?? 15000);
+      await waitForCompletion(page, config.timeout ?? 15000);
 
       const passed = await didPass(page);
       if (config.shouldPass) {

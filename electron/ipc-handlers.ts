@@ -801,6 +801,13 @@ export function registerIpcHandlers(facade: Architecture): void {
           });
         }
 
+        // Auto-start if pauseOnStart is false (fire-and-forget, events via listener)
+        if (!config.pauseOnStart) {
+          currentSession.play().catch((err) => {
+            console.error('Playback error:', err);
+          });
+        }
+
         return { success: true, data: { sessionId: currentSession.id } };
       } catch (error) {
         return {

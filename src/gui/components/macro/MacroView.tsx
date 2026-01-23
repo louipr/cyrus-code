@@ -201,12 +201,12 @@ export function MacroView() {
           </span>
           {testSuite && selectedAppId && selectedTestSuiteId && !debugSession.sessionId && (
             <button
-              style={styles.debugButton}
+              style={styles.runButton}
               onClick={() => debugSession.startDebug(selectedAppId, selectedTestSuiteId, testSuite)}
-              title="Start debug session (requires dev mode: npm run electron:dev)"
-              data-testid="debug-session-button"
+              title="Run test suite"
+              data-testid="run-button"
             >
-              🐞 Debug
+              ▶ Run
             </button>
           )}
         </div>
@@ -308,7 +308,7 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     maxWidth: '300px',
   },
-  debugButton: {
+  runButton: {
     padding: '6px 12px',
     backgroundColor: '#0e639c',
     border: 'none',

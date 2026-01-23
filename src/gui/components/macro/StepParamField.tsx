@@ -173,7 +173,11 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
           title={canEdit ? 'Click to edit' : undefined}
         >
           <span style={getCodeStyle(config.type)}>{displayValue}</span>
-          {canEdit && <span style={styles.editIcon}>✎</span>}
+          {canEdit && (
+            <span style={config.type === 'code' ? styles.editIconAbsolute : styles.editIcon}>
+              ✎
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -234,7 +238,9 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #3c3c3c',
   },
   codeBlock: {
+    position: 'relative',
     padding: '8px 12px',
+    paddingRight: '28px', // Room for edit icon
     backgroundColor: '#2a2d2e',
     borderRadius: '4px',
     border: '1px solid #3c3c3c',
@@ -266,6 +272,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     color: '#666',
     marginLeft: 'auto',
+  },
+  editIconAbsolute: {
+    position: 'absolute',
+    top: '6px',
+    right: '8px',
+    fontSize: '12px',
+    color: '#666',
   },
   editContainer: {
     display: 'flex',

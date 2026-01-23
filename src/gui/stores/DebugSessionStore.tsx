@@ -168,7 +168,7 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
         const response = await apiClient.recordings.debug.create({
           groupId: newGroupId,
           suiteId: newSuiteId,
-          pauseOnStart: true,
+          pauseOnStart: false,
         });
 
         if (response.success && response.data) {
