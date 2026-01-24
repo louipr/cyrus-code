@@ -5,7 +5,7 @@
  */
 
 import type { TestSuiteIndex, TestSuiteEntry } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestStep } from '../../../macro';
+import type { TestSuite, TestStep, StepResult } from '../../../macro';
 
 interface TestSuiteTreeProps {
   /** The test suite index */
@@ -16,6 +16,8 @@ interface TestSuiteTreeProps {
   selectedPath: string | null;
   /** Expanded node IDs */
   expandedNodes: Set<string>;
+  /** Step results from debug session (key: stepIndex as string) */
+  stepResults?: Map<string, StepResult>;
   /** Called when an item is selected */
   onSelect: (path: string, type: 'app' | 'testSuite' | 'step') => void;
   /** Called when a node is toggled */
@@ -67,6 +69,18 @@ const styles = {
     color: '#888',
     marginLeft: '8px',
   } as React.CSSProperties,
+  badgePass: {
+    fontSize: '10px',
+    color: '#89d185',
+    marginLeft: '8px',
+    fontWeight: 600,
+  } as React.CSSProperties,
+  badgeFail: {
+    fontSize: '10px',
+    color: '#f48771',
+    marginLeft: '8px',
+    fontWeight: 600,
+  } as React.CSSProperties,
   emptyMessage: {
     padding: '16px',
     color: '#888',
@@ -103,6 +117,7 @@ function TreeNode({
   isSelected,
   hasChildren,
   badge,
+  badgeStyle,
   onSelect,
   onToggle,
   children,
@@ -116,6 +131,7 @@ function TreeNode({
   isSelected: boolean;
   hasChildren: boolean;
   badge?: string;
+  badgeStyle?: React.CSSProperties;
   onSelect: () => void;
   onToggle: () => void;
   children?: React.ReactNode;
@@ -152,7 +168,7 @@ function TreeNode({
         </span>
         <span style={styles.icon}>{icon}</span>
         <span style={styles.label} title={label}>{label}</span>
-        {badge && <span style={styles.badge}>{badge}</span>}
+        {badge && <span style={badgeStyle ?? styles.badge}>{badge}</span>}
       </div>
       {isExpanded && children}
     </div>
@@ -167,6 +183,7 @@ export function TestSuiteTree({
   testSuite,
   selectedPath,
   expandedNodes,
+  stepResults,
   onSelect,
   onToggle,
 }: TestSuiteTreeProps) {
@@ -245,6 +262,13 @@ export function TestSuiteTree({
                           selectedTestSuiteId === entry.id &&
                           selectedStepIndex === String(stepIdx);
 
+                        // Get step result if available
+                        const result = stepResults?.get(String(stepIdx));
+                        const resultBadge = result ? (result.success ? '✓' : '✗') : undefined;
+                        const resultStyle = result
+                          ? (result.success ? styles.badgePass : styles.badgeFail)
+                          : undefined;
+
                         return (
                           <TreeNode
                             key={stepPath}
@@ -256,6 +280,8 @@ export function TestSuiteTree({
                             isExpanded={false}
                             isSelected={isStepSelected}
                             hasChildren={false}
+                            badge={resultBadge}
+                            badgeStyle={resultStyle}
                             onSelect={() => onSelect(stepPath, 'step')}
                             onToggle={() => {}}
                           />

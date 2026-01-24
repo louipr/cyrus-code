@@ -5,7 +5,7 @@
  */
 
 import type { HelpCategory, HelpGroup, HelpTopic } from '../../../domain/help/index';
-import type { HeadingNode } from './useHelpData';
+import type { HeadingNode } from '../../hooks/useHelpData';
 import { HeadingTree } from './HeadingTree';
 import { styles } from './styles';
 

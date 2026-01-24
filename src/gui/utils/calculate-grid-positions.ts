@@ -14,7 +14,7 @@ export interface GridPosition {
   height: number;
 }
 
-export type LayoutDirection = 'horizontal' | 'vertical';
+type LayoutDirection = 'horizontal' | 'vertical';
 
 /**
  * Calculate grid positions for items grouped by level.

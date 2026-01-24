@@ -10,8 +10,6 @@ import { PanelProvider } from './PanelContext';
 import type { PanelLayoutState, PanelDefaultState } from './types';
 
 export interface PanelLayoutProps {
-  /** Storage key for localStorage persistence */
-  storageKey?: string;
   /** Children (Panel and ResizeHandle components) */
   children: React.ReactNode;
   /** Callback when state changes */
@@ -23,14 +21,13 @@ export interface PanelLayoutProps {
 }
 
 export function PanelLayout({
-  storageKey = 'panel-layout',
   children,
   onStateChange,
   testId,
   defaultState,
 }: PanelLayoutProps): React.ReactElement {
   return (
-    <PanelProvider storageKey={storageKey} onStateChange={onStateChange} defaultState={defaultState}>
+    <PanelProvider onStateChange={onStateChange} defaultState={defaultState}>
       <div style={styles.layout} data-testid={testId ?? 'panel-layout'}>
         {children}
       </div>

@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-export interface EdgeLineProps {
+interface EdgeLineProps {
   /** Start X coordinate (right side of source node) */
   x1: number;
   /** Start Y coordinate (center of source node) */

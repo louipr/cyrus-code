@@ -33,14 +33,8 @@ export {
   DiagramSchema,
 } from './schema.js';
 
-// Parser exports
-export {
-  parseDrawioXml,
-  parseStyleString,
-  inferShapeType,
-  inferLevel,
-  inferRelationshipType,
-} from './parser.js';
+// Parser exports (other functions are internal utilities)
+export { parseDrawioXml } from './parser.js';
 
 // Constants exports
 export {

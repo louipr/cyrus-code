@@ -7,10 +7,11 @@
  * @tags @suites
  */
 
+import path from 'path';
 import { test, expect, Page } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 
-const SCREENSHOT_DIR = 'tests/e2e/screenshots/suite-playback';
+const SCREENSHOT_DIR = path.join(__dirname, 'screenshots/suite-playback');
 
 /**
  * Suite test configuration.
@@ -51,7 +52,7 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
 
   // Check if suite is already visible (group already expanded from previous test)
   const suiteNode = page.locator(`[data-testid="test-suite-tree-${groupName}/${suiteName}"]`);
-  const suiteAlreadyVisible = (await suiteNode.count()) > 0 && (await suiteNode.isVisible());
+  const suiteAlreadyVisible = await suiteNode.isVisible().catch(() => false);
 
   if (!suiteAlreadyVisible) {
     // Expand group (e.g., "actions")
@@ -101,7 +102,7 @@ async function waitForCompletion(page: Page, timeout = 15000) {
  */
 async function didPass(page: Page): Promise<boolean> {
   const passed = page.locator('[data-testid="debug-result-passed"]');
-  return (await passed.count()) > 0;
+  return await passed.isVisible();
 }
 
 /**
@@ -136,7 +137,7 @@ test.describe('Step Selection UI', () => {
     }
   });
 
-  test('clicking click then type step causes blank screen', async () => {
+  test('step detail displays when switching between steps', async () => {
     const { page } = context;
     const errors: string[] = [];
 
@@ -188,6 +189,48 @@ test.describe('Step Selection UI', () => {
 
     expect(errors).toEqual([]);
     expect(isVisible).toBe(true);
+  });
+
+  test('assert dropdown renders correctly', async () => {
+    const { page } = context;
+
+    // Navigate to macro view
+    await page.click('[data-testid="macro-view-button"]');
+    await page.waitForTimeout(500);
+
+    // Check if click suite is already visible (actions might be expanded from previous test)
+    const clickSuite = page.locator('[data-testid="test-suite-tree-actions/click"]');
+    const clickSuiteVisible = await clickSuite.isVisible().catch(() => false);
+
+    if (!clickSuiteVisible) {
+      // Expand actions group
+      const actionsNode = page.locator('[data-testid="test-suite-tree-actions"]');
+      await actionsNode.click();
+      await page.waitForTimeout(300);
+      await expect(clickSuite).toBeVisible({ timeout: 5000 });
+    }
+
+    // Click on click suite to load it (has expect.assert)
+    await clickSuite.click();
+    await page.waitForTimeout(1000);
+
+    // Click on the first step (has expect.assert: exists)
+    const step0 = page.locator('[data-testid="test-suite-tree-actions/click/0"]');
+    await expect(step0).toBeVisible({ timeout: 5000 });
+    await step0.click();
+    await page.waitForTimeout(500);
+
+    // Verify the custom assert dropdown is visible
+    const assertDropdown = page.locator('[data-testid="enum-dropdown"]');
+    await expect(assertDropdown).toBeVisible({ timeout: 5000 });
+
+    // Screenshot the details panel with dropdown closed
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/assert-dropdown.png` });
+
+    // Click to open dropdown and screenshot the options menu
+    await assertDropdown.click();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/assert-dropdown-open.png` });
   });
 });
 

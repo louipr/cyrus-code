@@ -11,7 +11,7 @@ import type {
   HelpCategory,
   HelpGroup,
   DocumentHeading,
-} from '../../../domain/help/index';
+} from '../../domain/help/index';
 
 /**
  * Heading node with children for hierarchical sidebar display.
@@ -41,13 +41,13 @@ function buildHeadingTree(headings: DocumentHeading[]): HeadingNode[] {
   return tree;
 }
 
-export interface UseHelpDataOptions {
+interface UseHelpDataOptions {
   isOpen: boolean;
   initialTopic?: string;
   initialSearch?: string;
 }
 
-export interface UseHelpDataResult {
+interface UseHelpDataResult {
   // Data
   categories: HelpCategory[];
   groups: HelpGroup[];

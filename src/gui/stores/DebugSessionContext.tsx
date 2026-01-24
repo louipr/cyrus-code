@@ -1,12 +1,16 @@
 /**
- * Debug Session Store
+ * Debug Session Context
  *
- * Merged Context + Hook for debug session management.
+ * React Context + Provider + Hook for debug session state management.
  * Single source of truth for UI-side debug session state.
  *
+ * Exports:
+ * - DebugSessionProvider: Wrap app to provide context
+ * - useDebugSession(): Hook to access debug session state and commands
+ *
  * Architecture (4 layers):
- * - UI Components use this store via useDebugSession()
- * - Store subscribes to IPC events from main process
+ * - UI Components use this context via useDebugSession()
+ * - Context subscribes to IPC events from main process
  * - Commands dispatch IPC calls to main process
  * - Main process owns authoritative state (DebugSession class)
  */
@@ -18,7 +22,7 @@ import { apiClient } from '../api-client';
 /**
  * Debug session commands.
  */
-export interface DebugCommands {
+interface DebugCommands {
   /** Create a new session and start debugging */
   create: (groupId: string, suiteId: string) => Promise<void>;
   /** Start execution */
@@ -34,6 +38,15 @@ export interface DebugCommands {
 }
 
 /**
+ * Selected suite ready to run (before session starts).
+ */
+interface ReadyToRun {
+  groupId: string;
+  suiteId: string;
+  testSuite: TestSuite;
+}
+
+/**
  * Debug session store value.
  */
 export interface DebugSessionStore {
@@ -42,6 +55,9 @@ export interface DebugSessionStore {
   groupId: string | null;
   suiteId: string | null;
   testSuite: TestSuite | null;
+
+  // Ready to run (suite selected but session not started)
+  readyToRun: ReadyToRun | null;
 
   // Playback state (cached from main process)
   playbackState: PlaybackState;
@@ -61,7 +77,7 @@ export interface DebugSessionStore {
   // Metadata actions
   startDebug: (groupId: string, suiteId: string, testSuite: TestSuite) => Promise<void>;
   updateTestSuite: (testSuite: TestSuite) => void;
-  clearDebug: () => void;
+  setReadyToRun: (groupId: string, suiteId: string, testSuite: TestSuite) => void;
 }
 
 const DebugSessionContext = createContext<DebugSessionStore | null>(null);
@@ -75,6 +91,9 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
   const [groupId, setGroupId] = useState<string | null>(null);
   const [suiteId, setSuiteId] = useState<string | null>(null);
   const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
+
+  // Ready to run (suite selected but session not started)
+  const [readyToRun, setReadyToRunState] = useState<ReadyToRun | null>(null);
 
   // Playback state (cached from events)
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
@@ -245,11 +264,12 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     setTestSuite(newTestSuite);
   }, []);
 
-  const clearDebug = useCallback(() => {
-    setTestSuite(null);
-    setGroupId(null);
-    setSuiteId(null);
-  }, []);
+  const setReadyToRun = useCallback(
+    (newGroupId: string, newSuiteId: string, newTestSuite: TestSuite) => {
+      setReadyToRunState({ groupId: newGroupId, suiteId: newSuiteId, testSuite: newTestSuite });
+    },
+    []
+  );
 
   const store: DebugSessionStore = {
     // Identity
@@ -257,6 +277,8 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     groupId,
     suiteId,
     testSuite,
+    // Ready to run
+    readyToRun,
     // State
     playbackState,
     position,
@@ -272,7 +294,7 @@ export function DebugSessionProvider({ children }: { children: React.ReactNode }
     // Actions
     startDebug,
     updateTestSuite,
-    clearDebug,
+    setReadyToRun,
   };
 
   return (

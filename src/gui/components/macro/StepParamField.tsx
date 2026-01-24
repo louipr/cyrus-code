@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { ParamConfig, ParamType } from '../../config/step-config';
+import { Dropdown } from '../ui';
 
 interface StepParamFieldProps {
   config: ParamConfig;
@@ -63,10 +64,41 @@ export function StepParamField({ config, value, onSave }: StepParamFieldProps) {
     onSave(config.field, newValue);
   }, [onSave, config.type, config.field, value]);
 
+  // Enum option select handler
+  const handleEnumSelect = useCallback(
+    (option: string) => {
+      if (!onSave) return;
+      onSave(config.field, option);
+    },
+    [onSave, config.field]
+  );
+
   // For boolean type, undefined means default (e.g., expect.exists defaults to true)
   // Other types: don't render if no value
   if ((value === undefined || value === null) && config.type !== 'boolean') {
     return null;
+  }
+
+  // For enum type, render a custom styled dropdown
+  if (config.type === 'enum' && config.options) {
+    const currentValue = String(value ?? '');
+    return (
+      <div style={styles.container}>
+        <div style={styles.label}>{config.label}</div>
+        {canEdit ? (
+          <Dropdown
+            value={currentValue}
+            options={config.options}
+            onChange={handleEnumSelect}
+            testId="enum-dropdown"
+          />
+        ) : (
+          <div style={styles.enumDisplay}>
+            <span style={styles.enumValue}>{String(value)}</span>
+          </div>
+        )}
+      </div>
+    );
   }
 
   // For boolean type, render a toggle instead of text input
@@ -357,5 +389,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     fontFamily: 'monospace',
     fontWeight: 600,
+  },
+  // Read-only enum display (when not editable)
+  enumDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 12px',
+    backgroundColor: '#252526',
+    borderRadius: '6px',
+    border: '1px solid #404040',
+  },
+  enumValue: {
+    fontSize: '11px',
+    fontFamily: 'monospace',
+    fontWeight: 600,
+    color: '#4fc1ff',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
   },
 };

@@ -6,13 +6,13 @@
 
 import { useState, useCallback, RefObject } from 'react';
 
-export interface Transform {
+interface Transform {
   x: number;
   y: number;
   scale: number;
 }
 
-export interface CanvasTransformOptions {
+interface CanvasTransformOptions {
   /** Initial X offset (default: 50) */
   initialX?: number;
   /** Initial Y offset (default: 50) */
@@ -29,7 +29,7 @@ export interface CanvasTransformOptions {
   backgroundOnly?: boolean;
 }
 
-export interface CanvasTransformResult {
+interface CanvasTransformResult {
   transform: Transform;
   dragging: boolean;
   handlers: {

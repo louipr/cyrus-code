@@ -114,7 +114,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
 
       try {
         const result = await sendDrawioMessage('export', { format: 'png' }) as { data: string | null };
-        console.log('[DrawioEditor] PNG export successful');
         return result.data;
       } catch (err) {
         console.error('[DrawioEditor] PNG export failed:', err);
@@ -129,7 +128,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
 
       try {
         await sendDrawioMessage('openExportDialog');
-        console.log('[DrawioEditor] Export dialog opened');
       } catch (err) {
         console.error('[DrawioEditor] Failed to open export dialog:', err);
         throw err;
@@ -145,8 +143,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
       apiClient.diagram.getPreloadPath(),
     ])
       .then(([baseUrl, preload]) => {
-        console.log('[DrawioEditor] Using Draw.io base URL:', baseUrl);
-        console.log('[DrawioEditor] Using preload:', preload);
         setBaseDrawioUrl(baseUrl);
         setPreloadPath(preload);
         // Build URL with or without file to load
@@ -167,7 +163,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
       const serverUrl = baseUrl.replace('/index.html', '');
       const diagramUrl = `${serverUrl}/diagram?path=${encodeURIComponent(file)}`;
       url = `${baseUrl}?ui=dark&drafts=0&url=${encodeURIComponent(diagramUrl)}`;
-      console.log('[DrawioEditor] Loading diagram from:', diagramUrl);
     }
     setDrawioUrl(url);
   };
@@ -199,7 +194,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
     (msg: DrawioMessage) => {
       switch (msg.event) {
         case 'ready':
-          console.log('[DrawioEditor] Draw.io editor ready');
           setIsReady(true);
           setIsLoading(false);
           break;
@@ -244,8 +238,6 @@ export const DrawioEditor = forwardRef<DrawioEditorRef, DrawioEditorProps>(
   // Handle electron.request calls from Draw.io
   const handleElectronRequest = useCallback(
     async (requestId: number, msg: { action: string; [key: string]: unknown }) => {
-      console.log('[DrawioEditor] Handling electron.request:', msg.action, msg);
-
       try {
         let responseData: unknown = null;
 

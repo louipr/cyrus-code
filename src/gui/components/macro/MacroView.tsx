@@ -10,12 +10,12 @@
  * All panels use consistent composition: Panel > Card > Content
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../api-client';
 import { TestSuiteTree } from './TestSuiteTree';
 import { StepDetail } from './StepDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
-import { useDebugSession } from '../../stores/DebugSessionStore';
+import { useDebugSession } from '../../stores/DebugSessionContext';
 import { updateStepField } from '../../utils/step-editor';
 import { PanelLayout, Panel, ResizeHandle, Card } from '../layout';
 import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
@@ -54,6 +54,56 @@ export function MacroView() {
     }
   }, [debugSession.position, testSuite, selectedAppId, selectedTestSuiteId]);
 
+  // Restore selection from debug session when remounting with active session
+  // (e.g., after view switches during test execution)
+  useEffect(() => {
+    if (debugSession.sessionId && debugSession.groupId && debugSession.suiteId && !selectedAppId) {
+      setSelectedAppId(debugSession.groupId);
+      setSelectedTestSuiteId(debugSession.suiteId);
+      // Load the test suite
+      apiClient.recordings.get(debugSession.groupId, debugSession.suiteId).then((result) => {
+        if (result.success && result.data) {
+          setTestSuite(result.data);
+          debugSession.setReadyToRun(debugSession.groupId!, debugSession.suiteId!, result.data);
+        }
+      });
+    }
+  }, [debugSession.sessionId, debugSession.groupId, debugSession.suiteId, selectedAppId, debugSession]);
+
+  // Auto-expand suite when session starts so user can watch execution and see results
+  useEffect(() => {
+    if (debugSession.sessionId && selectedAppId && selectedTestSuiteId) {
+      const suitePath = `${selectedAppId}/${selectedTestSuiteId}`;
+      setExpandedNodes((prev) => {
+        // Ensure both group and suite are expanded
+        if (prev.has(selectedAppId) && prev.has(suitePath)) return prev;
+        const next = new Set(prev);
+        next.add(selectedAppId);
+        next.add(suitePath);
+        return next;
+      });
+    }
+  }, [debugSession.sessionId, selectedAppId, selectedTestSuiteId]);
+
+  // Track previous session ID to detect dismiss (session ends)
+  const prevSessionIdRef = useRef<string | null>(null);
+
+  // After dismiss, select the test suite (not the step) per JetBrains/Playwright pattern
+  useEffect(() => {
+    const prevSessionId = prevSessionIdRef.current;
+    const currentSessionId = debugSession.sessionId;
+
+    // Session just ended (was active, now null)
+    if (prevSessionId && !currentSessionId && selectedAppId && selectedTestSuiteId) {
+      // Select suite level (clear step selection)
+      setSelectedPath(`${selectedAppId}/${selectedTestSuiteId}`);
+      setSelectedStep(null);
+      setSelectedStepIndex(null);
+    }
+
+    prevSessionIdRef.current = currentSessionId;
+  }, [debugSession.sessionId, selectedAppId, selectedTestSuiteId]);
+
   // Load index on mount
   useEffect(() => {
     async function loadIndex() {
@@ -82,6 +132,8 @@ export function MacroView() {
           setTestSuite(result.data);
           setSelectedStep(null);
           setSelectedStepIndex(null);
+          // Set ready to run so header shows Run button
+          debugSession.setReadyToRun(appId, testSuiteId, result.data);
         }
       } else if (type === 'step' && testSuite) {
         const stepIdx = parseInt(parts[2], 10);
@@ -91,7 +143,7 @@ export function MacroView() {
         }
       }
     },
-    [testSuite]
+    [testSuite, debugSession]
   );
 
   // Handle node toggle
@@ -163,7 +215,7 @@ export function MacroView() {
   }
 
   return (
-    <PanelLayout storageKey="macro-layout" testId="macro-view">
+    <PanelLayout testId="macro-view">
       {/* Left Panel - Test Suite Tree */}
       <Panel
         id="left"
@@ -179,6 +231,7 @@ export function MacroView() {
             testSuite={testSuite}
             selectedPath={selectedPath}
             expandedNodes={expandedNodes}
+            stepResults={debugSession.stepResults}
             onSelect={handleSelect}
             onToggle={handleToggle}
           />
@@ -192,107 +245,8 @@ export function MacroView() {
         constraints={{ default: 280, min: 200, max: 400 }}
       />
 
-      {/* Main Panel - Canvas area (toolbar + placeholder, draw.io goes here) */}
+      {/* Main Panel - Canvas area (draw.io will render here in diagram mode) */}
       <Panel id="main" position="main" testId="macro-main-panel">
-        {/* Toolbar Row */}
-        <div style={styles.toolbarRow}>
-          <span style={styles.testSuiteLabel} title={testSuite?.description}>
-            {testSuite?.description || 'Select test suite'}
-          </span>
-          {/* Controls container - VS Code debugger pattern:
-              Position 1: Continue/Pause (toggles in place)
-              Position 2: Step (when paused)
-              Position 3: Stop (always)
-              This keeps primary action at same position for no-mouse-move workflow */}
-          <div style={styles.controlsContainer}>
-            {testSuite && selectedAppId && selectedTestSuiteId && !debugSession.sessionId && (
-              <button
-                style={styles.runButton}
-                onClick={() => debugSession.startDebug(selectedAppId, selectedTestSuiteId, testSuite)}
-                title="Run test suite"
-                data-testid="run-button"
-              >
-                ▶ Run
-              </button>
-            )}
-            {debugSession.sessionId && debugSession.playbackState !== 'completed' && (
-              <>
-                {/* Position 1: Continue/Pause toggle - primary action stays in same spot */}
-                {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
-                  <button
-                    style={styles.runButton}
-                    onClick={() => debugSession.playbackState === 'idle'
-                      ? debugSession.commands.start()
-                      : debugSession.commands.resume()}
-                    title="Continue (F5)"
-                    data-testid="debug-continue-button"
-                  >
-                    ▶ Continue
-                  </button>
-                )}
-                {debugSession.isRunning && (
-                  <button
-                    style={styles.runButton}
-                    onClick={() => debugSession.commands.pause()}
-                    title="Pause (F5)"
-                    data-testid="debug-pause-button"
-                  >
-                    ⏸ Pause
-                  </button>
-                )}
-                {/* Position 2: Step - secondary action when paused */}
-                {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
-                  <button
-                    style={styles.controlButton}
-                    onClick={() => debugSession.commands.step()}
-                    title="Step (F10)"
-                    data-testid="debug-step-button"
-                  >
-                    ⏭ Step
-                  </button>
-                )}
-                {/* Position 3: Stop - always available */}
-                <button
-                  style={styles.stopButton}
-                  onClick={() => debugSession.commands.stop()}
-                  title="Stop (Shift+F5)"
-                  data-testid="debug-stop-button"
-                >
-                  ⏹
-                </button>
-              </>
-            )}
-            {debugSession.sessionId && debugSession.playbackState === 'completed' && (() => {
-              const hasFailedSteps = Array.from(debugSession.stepResults.values()).some((r) => !r.success);
-              const isPassed = !hasFailedSteps;
-              return (
-                <>
-                  {/* Position 1: Dismiss - primary action */}
-                  <button
-                    style={styles.controlButton}
-                    onClick={() => debugSession.commands.stop()}
-                    data-testid="debug-dismiss-button"
-                  >
-                    Dismiss
-                  </button>
-                  {/* Position 2: Result indicator */}
-                  <span
-                    style={{
-                      ...styles.resultIndicator,
-                      backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a',
-                      color: isPassed ? '#89d185' : '#f48771',
-                    }}
-                    data-testid={`debug-result-${isPassed ? 'passed' : 'failed'}`}
-                  >
-                    {isPassed ? '✓ Passed' : '✗ Failed'}
-                  </span>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-
-        {/* Canvas placeholder - draw.io will render here in diagram mode */}
         <div style={styles.canvasPlaceholder}>
           <span style={styles.placeholder}>Select a test suite to view details in the right panel</span>
         </div>
@@ -350,22 +304,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toolbarRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '8px',
-    borderBottom: '1px solid #333',
-    flexShrink: 0,
-    position: 'relative',
-    zIndex: 1,
-  },
-  controlsContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    flexShrink: 0,
-  },
   canvasPlaceholder: {
     flex: 1,
     display: 'flex',
@@ -385,55 +323,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#666',
     fontStyle: 'italic',
     fontSize: '13px',
-  },
-  testSuiteLabel: {
-    color: '#ccc',
-    fontSize: '12px',
-    fontWeight: 500,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    maxWidth: '300px',
-  },
-  runButton: {
-    padding: '6px 12px',
-    backgroundColor: '#0e639c',
-    border: 'none',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '12px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  controlButton: {
-    padding: '6px 12px',
-    backgroundColor: '#3c3c3c',
-    border: '1px solid #4a4a4a',
-    borderRadius: '4px',
-    color: '#ccc',
-    fontSize: '12px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  stopButton: {
-    padding: '6px 10px',
-    backgroundColor: '#5a1d1d',
-    border: '1px solid #8a2d2d',
-    borderRadius: '4px',
-    color: '#f48771',
-    fontSize: '12px',
-    cursor: 'pointer',
-  },
-  resultIndicator: {
-    padding: '6px 12px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 600,
   },
 };

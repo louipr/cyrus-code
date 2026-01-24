@@ -12,10 +12,9 @@ steps:
       selector: "[data-testid='search-input']"
       assert: exists
     why: Switch to symbols view where search input is visible.
-
   - action: type
     selector: "[data-testid='search-input']"
-    text: "test"
+    text: test
     timeout: 2000
     expect:
       selector: "[data-testid='search-clear']"

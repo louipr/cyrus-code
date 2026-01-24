@@ -20,7 +20,7 @@ import { calculateGridPositions } from '../utils/calculate-grid-positions';
 
 const { nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT } = CANVAS_LAYOUT;
 
-export interface NodePosition {
+interface NodePosition {
   x: number;
   y: number;
 }

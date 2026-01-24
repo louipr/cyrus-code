@@ -20,12 +20,27 @@ import type {
   ResizeOrientation,
   PanelDefaultState,
 } from './types';
-import { loadState, saveState, INITIAL_STATE, clamp } from './persistence';
+
+/** Current storage version */
+const STORAGE_VERSION = 2;
+
+/** Default empty state */
+const INITIAL_STATE: PanelLayoutState = {
+  panels: {},
+  columns: {},
+  cards: {},
+  version: STORAGE_VERSION,
+};
+
+/** Clamp a value within min/max bounds */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 /**
  * Panel context value interface
  */
-export interface PanelContextValue {
+interface PanelContextValue {
   /** Current layout state */
   state: PanelLayoutState;
   /** Dispatch action */
@@ -210,9 +225,7 @@ const PanelContext = createContext<PanelContextValue | undefined>(undefined);
 /**
  * Panel context provider props
  */
-export interface PanelProviderProps {
-  /** localStorage key for persistence */
-  storageKey?: string;
+interface PanelProviderProps {
   /** Children */
   children: React.ReactNode;
   /** Callback when state changes */
@@ -286,15 +299,12 @@ function applyDefaults(
  * Panel context provider
  */
 export function PanelProvider({
-  storageKey = 'panel-layout',
   children,
   onStateChange,
   defaultState,
 }: PanelProviderProps): React.ReactElement {
   const [state, dispatch] = useReducer(layoutReducer, INITIAL_STATE, (init) => {
-    const saved = loadState(storageKey);
-    const base = saved ?? init;
-    return applyDefaults(base, defaultState);
+    return applyDefaults(init, defaultState);
   });
 
   const [activeResize, setActiveResize] = React.useState<ActiveResize | null>(null);
@@ -302,11 +312,10 @@ export function PanelProvider({
   const startSizeRef = useRef(0);
   const [currentPanelId, setCurrentPanelId] = React.useState<string | null>(null);
 
-  // Persist state on change
+  // Notify on state change
   React.useEffect(() => {
-    saveState(storageKey, state);
     onStateChange?.(state);
-  }, [storageKey, state, onStateChange]);
+  }, [state, onStateChange]);
 
   // Global mouse handlers for resize
   React.useEffect(() => {

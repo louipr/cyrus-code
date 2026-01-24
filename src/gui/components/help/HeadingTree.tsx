@@ -5,7 +5,7 @@
  * h2 headings are expandable, h3 headings are nested children.
  */
 
-import type { HeadingNode } from './useHelpData';
+import type { HeadingNode } from '../../hooks/useHelpData';
 import { styles } from './styles';
 
 interface HeadingTreeProps {

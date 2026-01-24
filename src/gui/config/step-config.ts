@@ -5,12 +5,12 @@
  * This is the SINGLE SOURCE OF TRUTH for step UI rendering.
  */
 
-import { getStepValue, type ActionType, type TestStep } from '../../macro/test-suite-types';
+import { getStepValue, type ActionType, type TestStep, type AssertOperator } from '../../macro/test-suite-types';
 
 /**
  * Parameter display type determines rendering.
  */
-export type ParamType = 'selector' | 'text' | 'code' | 'number' | 'boolean';
+export type ParamType = 'selector' | 'text' | 'code' | 'number' | 'boolean' | 'enum';
 
 /**
  * Configuration for a single step parameter.
@@ -28,6 +28,8 @@ export interface ParamConfig {
   showInSummary?: boolean;
   /** Unit suffix for display (e.g., 'ms' for timeout) */
   unit?: string;
+  /** Options for enum type (dropdown values) */
+  options?: readonly string[];
 }
 
 /**
@@ -84,6 +86,19 @@ const COMMON_PARAMS: ParamConfig[] = [
   { field: 'returns', label: 'Returns', type: 'text', editable: false },
 ];
 
+/** Assertion operators for selector-based assertions */
+const SELECTOR_ASSERT_OPTIONS: readonly AssertOperator[] = ['exists', 'notExists'] as const;
+
+/** Assertion operators for value-based assertions */
+const VALUE_ASSERT_OPTIONS: readonly AssertOperator[] = [
+  'equals',
+  'notEquals',
+  'greaterThan',
+  'lessThan',
+  'contains',
+  'matches',
+] as const;
+
 /**
  * Expect block parameters based on assertion type.
  */
@@ -96,11 +111,23 @@ function getExpectParams(step: TestStep): ParamConfig[] {
   // Selector-based assertions (exists/notExists)
   if (selector) {
     params.push({ field: 'expect.selector', label: 'Selector', type: 'selector', editable: true });
-    params.push({ field: 'expect.assert', label: 'Assert', type: 'text', editable: false });
+    params.push({
+      field: 'expect.assert',
+      label: 'Assert',
+      type: 'enum',
+      editable: true,
+      options: SELECTOR_ASSERT_OPTIONS,
+    });
   }
   // Value-based assertions (all require expected value)
   else {
-    params.push({ field: 'expect.assert', label: 'Assert', type: 'text', editable: false });
+    params.push({
+      field: 'expect.assert',
+      label: 'Assert',
+      type: 'enum',
+      editable: true,
+      options: VALUE_ASSERT_OPTIONS,
+    });
     params.push({ field: 'expect.expected', label: 'Expected', type: 'code', editable: true });
   }
 
@@ -109,27 +136,6 @@ function getExpectParams(step: TestStep): ParamConfig[] {
 
 // Re-export getStepValue for convenience
 export { getStepValue };
-
-/**
- * Get the key identifier for a step (shown in lists).
- */
-export function getStepKeyIdentifier(step: TestStep): string | undefined {
-  const config = STEP_CONFIG[step.action];
-  const summaryParam = config.params.find(p => p.showInSummary);
-  if (summaryParam) {
-    const value = getStepValue(step, summaryParam.field);
-    if (value !== undefined && value !== null) {
-      return String(value);
-    }
-  }
-  if (config.summaryField) {
-    const value = getStepValue(step, config.summaryField);
-    if (value !== undefined && value !== null) {
-      return String(value);
-    }
-  }
-  return undefined;
-}
 
 /**
  * Get all parameters for a step (action-specific + common + expect).

@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useCallback } from 'react';
-import { useHelpData } from './useHelpData';
+import { useHelpData } from '../../hooks/useHelpData';
 import { HelpSidebar } from './HelpSidebar';
 import { HelpContent } from './HelpContent';
 import { styles } from './styles';
@@ -113,5 +113,3 @@ export function HelpDialog({ isOpen, onClose, initialTopic, initialSearch }: Hel
     </div>
   );
 }
-
-export default HelpDialog;
