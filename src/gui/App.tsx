@@ -68,18 +68,46 @@ function AppContent(): React.ReactElement {
 
   const drawioEditorRef = useRef<DrawioEditorRef>(null);
 
-  // Listen for F1 keyboard shortcut
+  // Listen for keyboard shortcuts (F1 = help, F5 = run/continue, Shift+F5 = stop, F10 = step)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F1') {
         e.preventDefault();
         setShowHelpDialog(true);
+      } else if (e.key === 'F5') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+F5 = Stop
+          if (debugSession.sessionId) {
+            debugSession.commands.stop();
+          }
+        } else {
+          // F5 = Run/Continue
+          if (!debugSession.sessionId && debugSession.readyToRun) {
+            // No active session, start new one
+            const { groupId, suiteId, testSuite } = debugSession.readyToRun;
+            debugSession.startDebug(groupId, suiteId, testSuite);
+          } else if (debugSession.sessionId) {
+            // Active session - start or resume
+            if (debugSession.playbackState === 'idle') {
+              debugSession.commands.start();
+            } else if (debugSession.isPaused) {
+              debugSession.commands.resume();
+            }
+          }
+        }
+      } else if (e.key === 'F10') {
+        e.preventDefault();
+        // F10 = Step
+        if (debugSession.sessionId && (debugSession.playbackState === 'idle' || debugSession.isPaused)) {
+          debugSession.commands.step();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [debugSession]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

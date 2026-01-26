@@ -4,6 +4,7 @@
  * Hierarchical tree navigator for test suites: apps → test suites → steps
  */
 
+import { useState } from 'react';
 import type { TestSuiteIndex, TestSuiteEntry } from '../../../repositories/test-suite-repository';
 import type { TestSuite, TestStep, StepResult } from '../../../macro';
 
@@ -22,6 +23,10 @@ interface TestSuiteTreeProps {
   onSelect: (path: string, type: 'app' | 'testSuite' | 'step') => void;
   /** Called when a node is toggled */
   onToggle: (nodeId: string) => void;
+  /** Called when run button is clicked on a test suite */
+  onRunSuite?: (appId: string, testSuiteId: string) => void;
+  /** Called when run all button is clicked on a group */
+  onRunGroup?: (appId: string) => void;
 }
 
 const styles = {
@@ -87,6 +92,22 @@ const styles = {
     fontSize: '13px',
     textAlign: 'center' as const,
   } as React.CSSProperties,
+  playButton: {
+    padding: '2px 6px',
+    fontSize: '10px',
+    backgroundColor: '#0e639c',
+    border: 'none',
+    borderRadius: '3px',
+    color: '#fff',
+    cursor: 'pointer',
+    opacity: 0,
+    transition: 'opacity 0.15s',
+    marginLeft: '4px',
+    flexShrink: 0,
+  } as React.CSSProperties,
+  playButtonVisible: {
+    opacity: 1,
+  } as React.CSSProperties,
 };
 
 // Icons for different node types
@@ -110,7 +131,7 @@ function getStepIcon(action: string): string {
 function TreeNode({
   id,
   label,
-  type: _type,
+  type,
   icon,
   depth,
   isExpanded,
@@ -120,6 +141,8 @@ function TreeNode({
   badgeStyle,
   onSelect,
   onToggle,
+  onRun,
+  runLabel,
   children,
 }: {
   id: string;
@@ -134,8 +157,12 @@ function TreeNode({
   badgeStyle?: React.CSSProperties;
   onSelect: () => void;
   onToggle: () => void;
+  onRun?: () => void;
+  runLabel?: string;
   children?: React.ReactNode;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div>
       <div
@@ -161,6 +188,8 @@ function TreeNode({
             }
           }
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         data-testid={`test-suite-tree-${id}`}
       >
         <span style={styles.chevron}>
@@ -169,6 +198,22 @@ function TreeNode({
         <span style={styles.icon}>{icon}</span>
         <span style={styles.label} title={label}>{label}</span>
         {badge && <span style={badgeStyle ?? styles.badge}>{badge}</span>}
+        {onRun && (type === 'testSuite' || type === 'app') && (
+          <button
+            style={{
+              ...styles.playButton,
+              ...(isHovered ? styles.playButtonVisible : {}),
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRun();
+            }}
+            title={runLabel ?? 'Run'}
+            data-testid={`run-${id}`}
+          >
+            ▶{runLabel ? ` ${runLabel}` : ''}
+          </button>
+        )}
       </div>
       {isExpanded && children}
     </div>
@@ -186,6 +231,8 @@ export function TestSuiteTree({
   stepResults,
   onSelect,
   onToggle,
+  onRunSuite,
+  onRunGroup,
 }: TestSuiteTreeProps) {
   const apps = Object.keys(index.groups);
 
@@ -224,6 +271,8 @@ export function TestSuiteTree({
               badge={`${group.testSuites.length}`}
               onSelect={() => onSelect(appId, 'app')}
               onToggle={() => onToggle(appId)}
+              onRun={onRunGroup ? () => onRunGroup(appId) : undefined}
+              runLabel="All"
             >
               {group.testSuites.map((entry: TestSuiteEntry) => {
                 const testSuitePath = `${appId}/${entry.id}`;
@@ -253,6 +302,7 @@ export function TestSuiteTree({
                     badge={entry.status === 'verified' ? '✓' : undefined}
                     onSelect={() => onSelect(testSuitePath, 'testSuite')}
                     onToggle={() => onToggle(testSuitePath)}
+                    onRun={onRunSuite ? () => onRunSuite(appId, entry.id) : undefined}
                   >
                     {showSteps &&
                       testSuite.steps.map((step: TestStep, stepIdx: number) => {

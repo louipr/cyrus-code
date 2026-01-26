@@ -159,6 +159,42 @@ export function MacroView() {
     });
   }, []);
 
+  // Handle running a single test suite directly (from inline play button)
+  const handleRunSuite = useCallback(
+    async (appId: string, testSuiteId: string) => {
+      // Load the test suite if not already loaded
+      const result = await apiClient.recordings.get(appId, testSuiteId);
+      if (result.success && result.data) {
+        // Update selection state
+        setSelectedAppId(appId);
+        setSelectedTestSuiteId(testSuiteId);
+        setTestSuite(result.data);
+        setSelectedStep(null);
+        setSelectedStepIndex(null);
+        // Start debug session immediately
+        debugSession.startDebug(appId, testSuiteId, result.data);
+      }
+    },
+    [debugSession]
+  );
+
+  // Handle running all test suites in a group
+  const handleRunGroup = useCallback(
+    async (appId: string) => {
+      if (!index) return;
+      const group = index.groups[appId];
+      if (!group || group.testSuites.length === 0) return;
+
+      // For now, run the first test suite in the group
+      // TODO: Implement sequential execution of all suites
+      const firstSuite = group.testSuites[0];
+      if (firstSuite) {
+        await handleRunSuite(appId, firstSuite.id);
+      }
+    },
+    [index, handleRunSuite]
+  );
+
   // Handle saving test suite (for step parameter edits)
   const handleSaveTestSuite = useCallback(
     async (updatedTestSuite: TestSuite) => {
@@ -234,6 +270,8 @@ export function MacroView() {
             stepResults={debugSession.stepResults}
             onSelect={handleSelect}
             onToggle={handleToggle}
+            onRunSuite={handleRunSuite}
+            onRunGroup={handleRunGroup}
           />
         </Card>
       </Panel>
