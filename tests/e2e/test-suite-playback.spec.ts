@@ -69,6 +69,13 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
   await suiteNode.click();
   await page.waitForTimeout(1000);
 
+  // Dismiss any existing completed session from previous test
+  const dismissButton = page.locator('[data-testid="debug-dismiss-button"]');
+  if (await dismissButton.isVisible().catch(() => false)) {
+    await dismissButton.click();
+    await page.waitForTimeout(500);
+  }
+
   // Wait for the test suite to load (Run button appears when testSuite is loaded)
   const runButton = page.locator('[data-testid="run-button"]');
   try {

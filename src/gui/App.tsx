@@ -287,101 +287,6 @@ function AppContent(): React.ReactElement {
           </button>
         </div>
 
-        {/* Execution Controls - Run button and debug controls in same location */}
-        {/* Run button - shown when suite selected but no session active */}
-        {viewMode === 'recordings' && debugSession.readyToRun && !debugSession.sessionId && (
-          <div style={styles.debugControls}>
-            <button
-              style={styles.debugRunButton}
-              onClick={() => {
-                const { groupId, suiteId, testSuite } = debugSession.readyToRun!;
-                debugSession.startDebug(groupId, suiteId, testSuite);
-              }}
-              title="Run test suite"
-              data-testid="run-button"
-            >
-              ▶ Run
-            </button>
-          </div>
-        )}
-        {/* Debug controls - shown when session is active */}
-        {debugSession.sessionId && (
-          <div style={styles.debugControls}>
-            {debugSession.playbackState !== 'completed' && (
-              <>
-                {/* Position 1: Continue/Pause toggle */}
-                {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
-                  <button
-                    style={styles.debugRunButton}
-                    onClick={() => debugSession.playbackState === 'idle'
-                      ? debugSession.commands.start()
-                      : debugSession.commands.resume()}
-                    title="Continue (F5)"
-                    data-testid="debug-continue-button"
-                  >
-                    ▶ Continue
-                  </button>
-                )}
-                {debugSession.isRunning && (
-                  <button
-                    style={styles.debugRunButton}
-                    onClick={() => debugSession.commands.pause()}
-                    title="Pause (F5)"
-                    data-testid="debug-pause-button"
-                  >
-                    ⏸ Pause
-                  </button>
-                )}
-                {/* Position 2: Step */}
-                {(debugSession.playbackState === 'idle' || debugSession.isPaused) && (
-                  <button
-                    style={styles.debugControlButton}
-                    onClick={() => debugSession.commands.step()}
-                    title="Step (F10)"
-                    data-testid="debug-step-button"
-                  >
-                    ⏭ Step
-                  </button>
-                )}
-                {/* Position 3: Stop */}
-                <button
-                  style={styles.debugStopButton}
-                  onClick={() => debugSession.commands.stop()}
-                  title="Stop (Shift+F5)"
-                  data-testid="debug-stop-button"
-                >
-                  ⏹
-                </button>
-              </>
-            )}
-            {debugSession.playbackState === 'completed' && (() => {
-              const hasFailedSteps = Array.from(debugSession.stepResults.values()).some((r) => !r.success);
-              const isPassed = !hasFailedSteps;
-              return (
-                <>
-                  <button
-                    style={styles.debugControlButton}
-                    onClick={() => debugSession.commands.stop()}
-                    data-testid="debug-dismiss-button"
-                  >
-                    Dismiss
-                  </button>
-                  <span
-                    style={{
-                      ...styles.debugResultIndicator,
-                      backgroundColor: isPassed ? '#1e3a1e' : '#3a1a1a',
-                      color: isPassed ? '#89d185' : '#f48771',
-                    }}
-                    data-testid={`debug-result-${isPassed ? 'passed' : 'failed'}`}
-                  >
-                    {isPassed ? '✓ Passed' : '✗ Failed'}
-                  </span>
-                </>
-              );
-            })()}
-          </div>
-        )}
-
         {/* Tool Buttons */}
         <div style={styles.toolButtons}>
           <button
@@ -574,7 +479,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #3c3c3c',
     backgroundColor: '#252526',
     position: 'relative',
-    zIndex: 1100, // Above modals (Z_INDEX_MODAL = 1000) so debug controls remain clickable
+    zIndex: 1100, // Above modals (Z_INDEX_MODAL = 1000)
   },
   title: {
     fontSize: '20px',
@@ -637,56 +542,6 @@ const styles: Record<string, React.CSSProperties> = {
   toggleButtonActive: {
     backgroundColor: '#094771',
     color: '#ffffff',
-  },
-  debugControls: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginLeft: '16px',
-    padding: '4px 12px',
-    backgroundColor: '#1e1e1e',
-    borderRadius: '4px',
-  },
-  debugRunButton: {
-    padding: '6px 12px',
-    backgroundColor: '#0e639c',
-    border: 'none',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '12px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  debugControlButton: {
-    padding: '6px 12px',
-    backgroundColor: '#3c3c3c',
-    border: '1px solid #4a4a4a',
-    borderRadius: '4px',
-    color: '#ccc',
-    fontSize: '12px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  debugStopButton: {
-    padding: '6px 10px',
-    backgroundColor: '#5a1d1d',
-    border: '1px solid #8a2d2d',
-    borderRadius: '4px',
-    color: '#f48771',
-    fontSize: '12px',
-    cursor: 'pointer',
-  },
-  debugResultIndicator: {
-    padding: '6px 12px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 600,
   },
   toolButtons: {
     display: 'flex',
