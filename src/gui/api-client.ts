@@ -36,11 +36,6 @@ import type {
   SessionSnapshot,
   PlaybackEvent,
 } from '../macro';
-import type { ExportHistoryRecord } from '../repositories/export-history-repository';
-
-// Re-export for components that import from api-client
-export type { ExportHistoryRecord };
-
 /**
  * Type definition for the cyrus API exposed via preload script.
  *
@@ -73,7 +68,6 @@ interface CyrusAPI {
   graph: {
     build: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
     detectCycles: () => Promise<ApiResponse<string[][]>>;
-    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
     getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
   };
   validation: {
@@ -92,7 +86,7 @@ interface CyrusAPI {
     preview: (request: PreviewRequest) => Promise<ApiResponse<PreviewResultDTO>>;
     listGeneratable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     canGenerate: (symbolId: string) => Promise<ApiResponse<boolean>>;
-    hasUserImplementation: (symbolId: string, outputDir: string) => Promise<ApiResponse<boolean>>;
+
   };
   dialog: {
     selectDirectory: () => Promise<ApiResponse<string | null>>;
@@ -122,12 +116,6 @@ interface CyrusAPI {
     }) => Promise<ApiResponse<{ size: number }>>;
     getHomeDir: () => Promise<ApiResponse<string>>;
     getDownloadsDir: () => Promise<ApiResponse<string>>;
-  };
-  exportHistory: {
-    getRecent: (limit?: number) => Promise<ApiResponse<ExportHistoryRecord[]>>;
-    get: (id: number) => Promise<ApiResponse<ExportHistoryRecord | null>>;
-    delete: (id: number) => Promise<ApiResponse<boolean>>;
-    clear: () => Promise<ApiResponse<void>>;
   };
   help: {
     getCategories: () => Promise<ApiResponse<HelpCategory[]>>;

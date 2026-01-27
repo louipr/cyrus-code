@@ -54,11 +54,10 @@ L0: Primitive               [JwtPayload, Role enum]
 ### Completed
 - [x] Architecture: 8 ADRs, C4 diagrams, symbol table schema
 - [x] Slice 1: Symbol Table, Registry, Component Browser GUI
-- [x] Slice 2 Backend: Validator Service, Graph Service, API + CLI
+- [x] Slice 2 Backend: Validator Service, Graph Service, API
 - [x] Slice 3 Backend: Code Synthesizer, Generation Gap pattern, TypeScript backend
-- [x] 233 unit tests + 12 E2E tests passing
+- [x] 276 unit tests + 12 E2E tests passing
 - [x] Electron desktop app with React frontend
-- [x] CLI commands: `validate`, `graph` with full graph support
 
 ### Implementation Approach: Vertical Slices
 
@@ -67,7 +66,7 @@ Each slice delivers end-to-end functionality (backend + GUI) enabling early UX v
 | Slice | Backend | GUI | Status |
 |-------|---------|-----|--------|
 | 1: Foundation | Symbol Table, Registry | Component Browser | ✅ Complete |
-| 2: Graph | Graph Service, Validator, API+CLI | Validation | ✅ Complete |
+| 2: Graph | Graph Service, Validator, API | Validation | ✅ Complete |
 | 3: Generation | Code Synthesizer | Preview, Export | ✅ Complete |
 | 4: Analysis | Static Analyzer | Status, Dead Code | Not Started |
 | 5: Lifecycle | Spec, Test, Release | Full SDLC | Not Started |
@@ -109,51 +108,11 @@ npm install
 npm run build:all
 
 # Run tests
-npm test           # 233 unit tests
-npm run test:e2e   # 12 E2E tests (2 spec files)
+npm test           # 276 unit tests
+npm run test:e2e   # 12 E2E tests
 
 # Launch desktop app
 npm run electron
-```
-
-## CLI Commands
-
-### Implemented ✅
-
-```bash
-# Symbol management
-cyrus-code register <file>        # Register component from source
-cyrus-code list [--level L1]      # List symbols, optionally filter
-cyrus-code get <symbol-id>        # Get symbol details
-
-# Graph & Validation
-cyrus-code graph                  # Display dependency graph
-cyrus-code validate               # Validate all symbols and relationships
-
-# Code Generation
-cyrus-code generate <output>      # Generate code from symbol graph
-
-# Help
-cyrus-code help                   # Show help information
-```
-
-### Planned 🔮
-
-```bash
-# Symbol management
-cyrus-code remove <symbol-id>     # Remove from registry
-cyrus-code version <symbol-id>    # Show version history
-cyrus-code bump <symbol-id> <type># Bump version (major/minor/patch)
-
-# Dead code analysis (ADR-005)
-cyrus-code analyze                # Run static analysis
-cyrus-code analyze --entry <file> # Specify entry points
-cyrus-code dead                   # List dead code candidates
-cyrus-code status <symbol-id>     # Show symbol status
-
-# Import detection (ADR-006)
-cyrus-code scan                   # Find untracked files
-cyrus-code import <file>          # Import file to registry
 ```
 
 ## See Also

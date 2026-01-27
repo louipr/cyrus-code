@@ -69,10 +69,8 @@ export interface C4CodeDirective {
 export class MarkdownPreprocessor {
   private extractor: TypeScriptExtractor;
   private c4Generator: C4DiagramGenerator;
-  private projectRoot: string;
 
   constructor(projectRoot: string, sourceFileManager: SourceFileManager) {
-    this.projectRoot = projectRoot;
     this.extractor = new TypeScriptExtractor(sourceFileManager);
     // Share the same sourceFileManager to avoid duplicate caches
     this.c4Generator = new C4DiagramGenerator(projectRoot, sourceFileManager);

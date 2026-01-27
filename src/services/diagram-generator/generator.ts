@@ -36,7 +36,6 @@ import type { SourceFileManager } from '../../infrastructure/typescript-ast/inde
  * complete C4 Level 4 diagrams from TypeScript source code.
  */
 export class C4DiagramGenerator {
-  private projectRoot: string;
   private sourceFileManager: SourceFileManager;
   private interfaceExtractor: InterfaceExtractor;
   private typeExtractor: TypeExtractor;
@@ -44,8 +43,7 @@ export class C4DiagramGenerator {
   private simplifier: TypeSimplifier;
   private renderer: MermaidRenderer;
 
-  constructor(projectRoot: string, sourceFileManager: SourceFileManager) {
-    this.projectRoot = projectRoot;
+  constructor(_projectRoot: string, sourceFileManager: SourceFileManager) {
     this.simplifier = new TypeSimplifier();
     this.sourceFileManager = sourceFileManager;
     this.interfaceExtractor = new InterfaceExtractor(this.sourceFileManager, this.simplifier);

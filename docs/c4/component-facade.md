@@ -17,7 +17,6 @@ flowchart TD
         types["DTO Types<br/><small>TypeScript</small>"]
     end
 
-    cli["CLI"] -->|"call"| arch
     gui["GUI"] -->|"IPC"| arch
 
     arch -->|"symbols"| symbols
@@ -36,18 +35,18 @@ flowchart TD
     classDef external fill:#999,color:#fff
 
     class arch,symbols,generation,validation,graph,types component
-    class cli,gui,st external
+    class gui,st external
 ```
 
 ## Components
 
 | Component | Responsibility | Key Operations | Status | Location |
 |-----------|----------------|----------------|--------|----------|
-| **Architecture** | Entry point, DB lifecycle, facade composition | `create()`, `createInMemory()`, `close()` | ✅ | `src/api/facade.ts` |
+| **Architecture** | Entry point, DB lifecycle, facade composition | `create()`, `close()` | ✅ | `src/api/facade.ts` |
 | **SymbolFacade** | Symbol CRUD, queries, relationships, status | `registerSymbol`, `getSymbol`, `listSymbols`, `findContains`, `findUnreachable` | ✅ | `src/api/symbol-facade.ts` |
 | **GenerationFacade** | Code synthesis operations | `generate`, `generateMultiple`, `generateAll`, `preview`, `listGeneratable` | ✅ | `src/api/generation-facade.ts` |
 | **ValidationFacade** | Symbol and graph validation | `validate`, `validateSymbol`, `checkCircular` | ✅ | `src/api/validation-facade.ts` |
-| **GraphFacade** | Dependency graph operations | `build`, `detectCycles`, `getTopologicalOrder`, `getStats` | ✅ | `src/api/graph-facade.ts` |
+| **GraphFacade** | Dependency graph operations | `build`, `detectCycles`, `getStats` | ✅ | `src/api/graph-facade.ts` |
 | **DTO Types** | Transport-safe type definitions | DTOs for all domain types | ✅ | `src/api/types.ts` |
 
 ## Design Decisions
@@ -56,10 +55,9 @@ flowchart TD
 |----------|-----------|
 | Focused facades | Single Responsibility - each facade handles one domain concern |
 | Composition over inheritance | Architecture composes facades, not monolithic class |
-| DTO conversion | Transport-agnostic: works with Electron IPC, HTTP, CLI |
+| DTO conversion | Transport-agnostic: works with Electron IPC, HTTP |
 | ApiResponse wrapper | Consistent error handling across all operations |
-| Factory methods | `create()` and `createInMemory()` for different contexts |
-| Transport-agnostic | Same facade used by CLI (direct) and GUI (via IPC) |
+| Factory method | `create()` for database-backed initialization |
 
 ---
 
@@ -72,7 +70,7 @@ flowchart TD
 | **symbols** | Symbol CRUD, queries, relationships, status |
 | **generation** | Code synthesis (generate, preview) |
 | **validation** | Validation (symbol, graph) |
-| **graph** | Graph algorithms (cycles, topological sort) |
+| **graph** | Graph algorithms (cycles, stats) |
 
 ### Architecture API
 
@@ -84,7 +82,6 @@ class Architecture {
   readonly graph: GraphFacade;
 
   static create(dbPath: string): Architecture;
-  static createInMemory(): Architecture;
   close(): void;
 }
 ```
@@ -102,9 +99,9 @@ type ApiResponse<T> =
 | Facade | Methods |
 |--------|---------|
 | **symbols** | `registerSymbol`, `getSymbol`, `updateSymbol`, `removeSymbol`, `listSymbols`, `searchSymbols`, `resolveSymbol`, `getSymbolVersions`, `findContains`, `findContainedBy`, `getDependents`, `getDependencies`, `updateStatus`, `findUnreachable`, `findUntested` |
-| **generation** | `generate`, `generateMultiple`, `generateAll`, `preview`, `listGeneratable`, `canGenerate`, `hasUserImplementation` |
+| **generation** | `generate`, `generateMultiple`, `generateAll`, `preview`, `listGeneratable`, `canGenerate` |
 | **validation** | `validate`, `validateSymbol`, `checkCircular` |
-| **graph** | `build`, `detectCycles`, `getTopologicalOrder`, `getStats` |
+| **graph** | `build`, `detectCycles`, `getStats` |
 
 ### IPC Channel Mapping
 
@@ -134,7 +131,6 @@ For Electron GUI, the facade methods are exposed via IPC handlers:
 |-------------|---------------|
 | `graph:build` | DependencyGraphService.buildGraph() |
 | `graph:detectCycles` | DependencyGraphService.detectCycles() |
-| `graph:getTopologicalOrder` | DependencyGraphService.getTopologicalOrder() |
 | `graph:getStats` | DependencyGraphService.getStats() |
 
 **Validation Operations:**
@@ -159,8 +155,6 @@ For Electron GUI, the facade methods are exposed via IPC handlers:
 | `synthesizer:preview` | `generation.preview()` |
 | `synthesizer:listGeneratable` | `generation.listGeneratable()` |
 | `synthesizer:canGenerate` | `generation.canGenerate()` |
-| `synthesizer:hasUserImplementation` | `generation.hasUserImplementation()` |
-
 **Help Operations (separate service):**
 | IPC Channel | Service Method |
 |-------------|----------------|

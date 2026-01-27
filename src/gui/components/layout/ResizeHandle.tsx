@@ -1,7 +1,7 @@
 /**
  * ResizeHandle Component
  *
- * Draggable resize control for panels and columns.
+ * Draggable resize control for panels.
  */
 
 import React, { useState } from 'react';
@@ -11,10 +11,8 @@ import { usePanelContext } from './PanelContext';
 export interface ResizeHandleProps {
   /** Resize orientation */
   orientation: ResizeOrientation;
-  /** Target identifier */
+  /** Target panel identifier */
   targetId: string;
-  /** Target type */
-  targetType: 'panel' | 'column';
   /** Size constraints for the target */
   constraints: SizeConstraint;
   /** Side of layout (for inverting delta on right panels) */
@@ -24,18 +22,16 @@ export interface ResizeHandleProps {
 export function ResizeHandle({
   orientation,
   targetId,
-  targetType,
   constraints,
   side,
 }: ResizeHandleProps): React.ReactElement {
   const { startResize, activeResize } = usePanelContext();
   const [isHovered, setIsHovered] = useState(false);
 
-  const isActive =
-    (activeResize?.id === targetId && activeResize?.type === targetType) || isHovered;
+  const isActive = activeResize?.id === targetId || isHovered;
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    startResize(targetType, targetId, orientation, constraints, e, side);
+    startResize(targetId, orientation, constraints, e, side);
   };
 
   const containerStyle: React.CSSProperties =
@@ -66,7 +62,7 @@ export function ResizeHandle({
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      data-testid={`resize-handle-${targetType}-${targetId}`}
+      data-testid={`resize-handle-${targetId}`}
     >
       <div style={lineStyle} />
     </div>

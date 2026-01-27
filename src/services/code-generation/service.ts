@@ -245,20 +245,6 @@ export class CodeGenerationService implements ICodeGenerationService {
     return symbol !== undefined && isGeneratable(symbol);
   }
 
-  /**
-   * Check if user implementation file exists for a symbol.
-   */
-  hasUserImplementation(symbolId: string, outputDir: string): boolean {
-    const symbol = this.repo.find(symbolId);
-    if (!symbol) {
-      return false;
-    }
-
-    const className = getClassName(symbol);
-    const paths = getGeneratedPaths(className, symbol.namespace, outputDir);
-    return fileExists(paths.implementationPath);
-  }
-
   // ===========================================================================
   // Private Generation Methods (Generation Gap Pattern Implementation)
   // ===========================================================================

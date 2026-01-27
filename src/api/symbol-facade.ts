@@ -12,8 +12,6 @@ import type {
   PaginatedResponse,
   SymbolQuery,
   RegisterSymbolRequest,
-  UpdateSymbolRequest,
-  UpdateStatusRequest,
 } from './types.js';
 
 export class SymbolFacade {
@@ -43,15 +41,6 @@ export class SymbolFacade {
       },
       `Symbol '${id}' not found`
     );
-  }
-
-  updateSymbol(request: UpdateSymbolRequest): ApiResponse<Serialized<ComponentSymbol>> {
-    return apiCall(() => {
-      const updates = deserialize(request.updates) as Partial<ComponentSymbol>;
-      this.symbolTable.update(request.id, updates);
-      const updated = this.symbolTable.get(request.id)!;
-      return serialize(updated);
-    }, 'UPDATE_FAILED');
   }
 
   removeSymbol(id: string): ApiResponse<void> {
@@ -154,35 +143,6 @@ export class SymbolFacade {
   // ==========================================================================
   // Status Operations
   // ==========================================================================
-
-  updateStatus(request: UpdateStatusRequest): ApiResponse<void> {
-    return apiCall(() => {
-      const symbol = this.symbolTable.get(request.id);
-      if (!symbol) {
-        throw new Error(`Symbol '${request.id}' not found`);
-      }
-
-      const statusInfo: ComponentSymbol['statusInfo'] = {
-        updatedAt: new Date(),
-        source: request.info.source,
-        referencedBy: request.info.referencedBy,
-        testedBy: request.info.testedBy,
-        executionInfo: request.info.executionInfo
-          ? {
-              firstSeen: new Date(request.info.executionInfo.firstSeen),
-              lastSeen: new Date(request.info.executionInfo.lastSeen),
-              count: request.info.executionInfo.count,
-              contexts: request.info.executionInfo.contexts,
-            }
-          : undefined,
-      };
-
-      this.symbolTable.update(request.id, {
-        status: request.status,
-        statusInfo,
-      });
-    }, 'UPDATE_FAILED');
-  }
 
   findUnreachable(): ApiResponse<Serialized<ComponentSymbol>[]> {
     return apiCall(() => {

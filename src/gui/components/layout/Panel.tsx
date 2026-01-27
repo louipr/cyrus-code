@@ -141,6 +141,8 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: 'none',
     backgroundColor: '#252526',
     minHeight: '32px',
+    position: 'relative',
+    zIndex: 1100, // Keep RunControls above modals (z-index 1000)
   },
   headerTitle: {
     fontSize: '11px',

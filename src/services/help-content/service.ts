@@ -6,7 +6,6 @@
  *
  * Collaborators:
  * - IHelpRepository: Data access (exposed via repository property)
- * - HelpFormatter: Terminal output formatting
  * - MarkdownPreprocessor: TypeScript code extraction
  *
  * Use createHelpContentService() from factory.ts for convenient instantiation.
@@ -14,14 +13,11 @@
 
 import type { HelpContentService as IHelpContentService } from './schema.js';
 import type {
-  HelpTopic,
   HelpSearchResult,
   HelpOutputFormat,
   HelpRepository,
 } from '../../domain/help/index.js';
-import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
-import { HelpFormatter } from './formatter.js';
 import type { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
 
 /**
@@ -32,7 +28,6 @@ import type { SourceFileManager } from '../../infrastructure/typescript-ast/inde
  */
 export class HelpContentService implements IHelpContentService {
   readonly repository: HelpRepository;
-  private formatter: HelpFormatter;
   private preprocessor: MarkdownPreprocessor;
 
   constructor(
@@ -41,7 +36,6 @@ export class HelpContentService implements IHelpContentService {
     sourceFileManager: SourceFileManager
   ) {
     this.repository = repository;
-    this.formatter = new HelpFormatter();
     this.preprocessor = new MarkdownPreprocessor(projectRoot, sourceFileManager);
   }
 
@@ -106,40 +100,14 @@ export class HelpContentService implements IHelpContentService {
    */
   getTopicContent(
     topicId: string,
-    format: HelpOutputFormat = 'terminal'
+    format: HelpOutputFormat = 'raw'
   ): string {
     let content = this.repository.readTopicContent(topicId);
 
     // Preprocess typescript:include blocks (extract from source files)
     content = this.preprocessor.process(content);
 
-    switch (format) {
-      case 'terminal':
-        return renderMarkdownForTerminal(content);
-      case 'html':
-        // Reserved for future server-side HTML rendering.
-        // GUI currently uses 'raw' and renders markdown client-side.
-        return content;
-      case 'raw':
-        return content;
-      default:
-        return content;
-    }
-  }
-
-  // ==========================================================================
-  // Formatter Delegation
-  // ==========================================================================
-
-  formatTopicList(topics: HelpTopic[]): string {
-    return this.formatter.formatTopicList(topics);
-  }
-
-  formatCategoryOverview(): string {
-    return this.formatter.formatCategoryOverview(
-      this.repository.getCategories(),
-      (categoryId) => this.repository.getByCategory(categoryId)
-    );
+    return content;
   }
 
   // ==========================================================================

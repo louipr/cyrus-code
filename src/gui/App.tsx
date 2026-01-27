@@ -53,7 +53,7 @@ function AppContent(): React.ReactElement {
   // Debug session store - persists across view switches
   const debugSession = useDebugSession();
 
-  // Switch to recordings view when debug session completes
+  // Switch to Tests view when debug session completes
   useEffect(() => {
     if (debugSession.playbackState === 'completed') {
       setViewMode('recordings');
@@ -208,8 +208,7 @@ function AppContent(): React.ReactElement {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <h1 style={styles.title}>cyrus-code</h1>
-        <span style={styles.subtitle}>Component Registry</span>
+        <h1 style={styles.title}>Cyrus Studio</h1>
         <div style={styles.viewToggle} data-testid="view-toggle">
           {/* Symbols Dropdown */}
           <div style={styles.dropdownContainer} data-dropdown="symbols">
@@ -285,6 +284,17 @@ function AppContent(): React.ReactElement {
           >
             Diagram
           </button>
+          <button
+            style={{
+              ...styles.toggleButton,
+              ...(viewMode === 'recordings' ? styles.toggleButtonActive : {}),
+            }}
+            onClick={() => setViewMode('recordings')}
+            type="button"
+            data-testid="macro-view-button"
+          >
+            Tests
+          </button>
         </div>
 
         {/* Tool Buttons */}
@@ -296,18 +306,6 @@ function AppContent(): React.ReactElement {
             data-testid="export-all-button"
           >
             Export All
-          </button>
-          <button
-            style={{
-              ...styles.toolButton,
-              ...(viewMode === 'recordings' ? styles.toolButtonActive : {}),
-            }}
-            onClick={() => setViewMode('recordings')}
-            type="button"
-            data-testid="macro-view-button"
-            title="Macro - Test Suite Visualization"
-          >
-            📼
           </button>
           <button
             style={styles.toolButton}
@@ -479,17 +477,13 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #3c3c3c',
     backgroundColor: '#252526',
     position: 'relative',
-    zIndex: 1100, // Above modals (Z_INDEX_MODAL = 1000)
+    zIndex: 1100, // Keep header dropdowns above modals (Z_INDEX_MODAL = 1000)
   },
   title: {
     fontSize: '20px',
     fontWeight: 600,
     color: '#ffffff',
     margin: 0,
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#808080',
   },
   viewToggle: {
     marginLeft: 'auto',
@@ -571,10 +565,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  toolButtonActive: {
-    backgroundColor: '#094771',
-    color: '#ffffff',
   },
   toolbar: {
     padding: '12px 24px',

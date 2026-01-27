@@ -6,7 +6,6 @@
  */
 
 import type {
-  HelpTopic,
   HelpOutputFormat,
   HelpSearchResult,
   HelpRepository,
@@ -29,14 +28,8 @@ export interface HelpContentService {
   /** Search topics by query string (adds scoring logic) */
   search(query: string): HelpSearchResult[];
 
-  /** Get the content of a topic's markdown file (preprocessed + formatted) */
+  /** Get the content of a topic's markdown file (preprocessed) */
   getTopicContent(topicId: string, format?: HelpOutputFormat): string;
-
-  /** Format a topic list for terminal display */
-  formatTopicList(topics: HelpTopic[]): string;
-
-  /** Format categories with their topics for terminal display */
-  formatCategoryOverview(): string;
 
   /** Clear all caches (manifest and preprocessor) */
   clearCache(): void;

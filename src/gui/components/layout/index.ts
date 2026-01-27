@@ -5,7 +5,6 @@
  *
  * Architecture:
  * - Panels: Left, Main, Right (Left can collapse entirely)
- * - Columns: Vertical stacks within panels
  * - Cards: Collapsible content containers
  */
 
@@ -18,9 +17,6 @@ export type { PanelLayoutProps } from './PanelLayout';
 
 export { Panel } from './Panel';
 export type { PanelProps } from './Panel';
-
-export { Column } from './Column';
-export type { ColumnProps } from './Column';
 
 export { Card } from './Card';
 export type { CardProps } from './Card';

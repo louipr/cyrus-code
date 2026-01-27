@@ -10,13 +10,10 @@ Internal architecture of cyrus-code showing major containers and their responsib
 
 ```mermaid
 flowchart TB
-    dev["👤 Developer"] -->|"commands"| cli
-    dev -->|"visual editing"| gui
-    ai["🤖 AI Agent"] -->|"commands"| cli
-    ai -->|"recordings"| recordings
+    dev["👤 Developer"] -->|"visual editing"| gui
+    ai["🤖 AI Agent"] -->|"recordings"| recordings
 
     subgraph cyrus ["cyrus-code"]
-        cli["CLI<br/><small>Node.js</small>"]
         gui["GUI<br/><small>Electron + React</small>"]
 
         api["API Facade<br/><small>TypeScript</small>"]
@@ -34,7 +31,6 @@ flowchart TB
         end
     end
 
-    cli -->|"commands"| api
     gui -->|"IPC"| api
     gui -->|"IPC"| help
     gui -->|"embed"| drawio
@@ -59,7 +55,7 @@ flowchart TB
     classDef testing fill:#2e7d32,color:#fff
 
     class dev,ai person
-    class cli,gui,api,help,graph,synth,st container
+    class gui,api,help,graph,synth,st container
     class db storage
     class fs,docs external
     class recordings,drawio testing
@@ -73,8 +69,7 @@ flowchart TB
 
 | Container | Technology | Purpose | Status |
 |-----------|------------|---------|--------|
-| **CLI** | Node.js | Primary interface for all operations | ✅ |
-| **GUI** | Electron + React | Visual component editing, diagram view (see [ADR-009](../adr/009-electron-gui-framework.md), [Panel System](component-gui-panel.md)) | ✅ |
+| **GUI** | Electron + React | Primary interface for all operations (see [ADR-009](../adr/009-electron-gui-framework.md), [Panel System](component-gui-panel.md)) | ✅ |
 | **Language Server** | TypeScript | IDE integration (LSP protocol) | 🔮 |
 
 ### Core Services

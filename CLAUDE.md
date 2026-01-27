@@ -124,13 +124,12 @@ npm run build:gui      # Build frontend (Vite)
 npm run build:all      # Build everything
 
 # Test
-npm test               # Run 233 unit tests (auto-rebuilds native module)
+npm test               # Run 276 unit tests (auto-rebuilds native module)
 npm run test:gui       # Type-check GUI code
 npm run test:e2e       # Run 12 Playwright E2E tests (auto-rebuilds for Electron)
 npm run test:all       # Run unit tests + GUI type-check
 
 # Run
-npm run cli -- <cmd>   # Run CLI (builds + rebuilds native module)
 npm run electron       # Launch desktop app (production build)
 npm run electron:dev   # Dev mode with hot reload
 
@@ -138,8 +137,6 @@ npm run electron:dev   # Dev mode with hot reload
 npm run clean          # Remove dist/
 npm run lint           # ESLint
 ```
-
-> **CLI Commands**: See [README.md](README.md#cli-commands) for `cyrus-code` CLI usage.
 
 ## Development Philosophy
 

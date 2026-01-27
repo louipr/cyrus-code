@@ -1,14 +1,13 @@
 /**
  * Help Service Tests
  *
- * Tests for HelpService, terminal renderer, and search functionality.
+ * Tests for HelpService and search functionality.
  */
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { createHelpContentService } from './index.js';
 import type { HelpContentService } from './index.js';
-import { renderMarkdownForTerminal } from './terminal-renderer.js';
 import { TypeScriptExtractor } from './typescript-extractor.js';
 import { MarkdownPreprocessor } from './preprocessor.js';
 import { SourceFileManager } from '../../infrastructure/typescript-ast/index.js';
@@ -104,13 +103,6 @@ describe('HelpContentService', () => {
   });
 
   describe('getTopicContent', () => {
-    it('should return topic content in terminal format', () => {
-      const content = service.getTopicContent('getting-started', 'terminal');
-      assert.ok(content.length > 0);
-      // Should contain ANSI codes
-      assert.ok(content.includes('\x1b['), 'Should have ANSI formatting');
-    });
-
     it('should return raw content when requested', () => {
       const content = service.getTopicContent('getting-started', 'raw');
       assert.ok(content.length > 0);
@@ -123,87 +115,6 @@ describe('HelpContentService', () => {
         service.getTopicContent('nonexistent');
       }, /Topic not found/);
     });
-  });
-
-  describe('formatCategoryOverview', () => {
-    it('should format overview with all categories', () => {
-      const overview = service.formatCategoryOverview();
-      assert.ok(overview.includes('cyrus-code Help'));
-      assert.ok(overview.includes('Concepts'));
-      assert.ok(overview.includes('Guides'));
-    });
-  });
-});
-
-describe('Terminal Markdown Renderer', () => {
-  it('should render headers (H1, H2, H3) with appropriate styling', () => {
-    // H1: cyan + bold
-    const h1 = renderMarkdownForTerminal('# Hello');
-    assert.ok(h1.includes('\x1b[1m'), 'H1 should be bold');
-    assert.ok(h1.includes('\x1b[36m'), 'H1 should be cyan');
-    assert.ok(h1.includes('Hello'));
-
-    // H2: yellow
-    const h2 = renderMarkdownForTerminal('## Section');
-    assert.ok(h2.includes('\x1b[33m'), 'H2 should be yellow');
-    assert.ok(h2.includes('Section'));
-
-    // H3: bold
-    const h3 = renderMarkdownForTerminal('### Subsection');
-    assert.ok(h3.includes('\x1b[1m'), 'H3 should be bold');
-    assert.ok(h3.includes('Subsection'));
-  });
-
-  it('should render lists (ordered and unordered) with markers', () => {
-    // Unordered list
-    const ul = renderMarkdownForTerminal('- Item one\n- Item two');
-    assert.ok(ul.includes('•'), 'Unordered list should have bullets');
-    assert.ok(ul.includes('Item one'));
-    assert.ok(ul.includes('Item two'));
-
-    // Ordered list
-    const ol = renderMarkdownForTerminal('1. First\n2. Second');
-    assert.ok(ol.includes('1.'));
-    assert.ok(ol.includes('2.'));
-    assert.ok(ol.includes('First'));
-  });
-
-  it('should render code (blocks and inline) with styling', () => {
-    // Code block with language
-    const codeBlock = renderMarkdownForTerminal('```typescript\nconst x = 1;\n```');
-    assert.ok(codeBlock.includes('typescript'));
-    assert.ok(codeBlock.includes('const x = 1'));
-
-    // Code block without language
-    const plainBlock = renderMarkdownForTerminal('```\ncode\n```');
-    assert.ok(plainBlock.includes('code'));
-
-    // Inline code
-    const inline = renderMarkdownForTerminal('Use `npm install` to install');
-    assert.ok(inline.includes('\x1b[36m'), 'Inline code should be cyan');
-    assert.ok(inline.includes('npm install'));
-  });
-
-  it('should render inline elements and special blocks', () => {
-    // Bold text
-    const bold = renderMarkdownForTerminal('This is **bold** text');
-    assert.ok(bold.includes('\x1b[1m'), 'Bold should use bold ANSI');
-    assert.ok(bold.includes('bold'));
-
-    // Links
-    const link = renderMarkdownForTerminal('[link](http://example.com)');
-    assert.ok(link.includes('\x1b[4m'), 'Link should be underlined');
-    assert.ok(link.includes('link'));
-    assert.ok(link.includes('(http://example.com)'));
-
-    // Blockquote
-    const quote = renderMarkdownForTerminal('> This is a quote');
-    assert.ok(quote.includes('│'), 'Blockquote should have vertical bar');
-    assert.ok(quote.includes('This is a quote'));
-
-    // Horizontal rule
-    const hr = renderMarkdownForTerminal('---');
-    assert.ok(hr.includes('─'), 'HR should use box drawing char');
   });
 });
 

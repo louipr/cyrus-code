@@ -43,7 +43,7 @@ import type {
 } from '../src/macro/index.js';
 import { IPC_CHANNEL_TEST_RUNNER, POLL_INTERVAL_MS } from '../src/macro/index.js';
 import type { TestSuiteIndex, TestSuiteEntry } from '../src/repositories/index.js';
-import type { ExportHistoryRecord } from '../src/repositories/index.js';
+
 
 /**
  * Type definitions for the exposed API.
@@ -73,7 +73,6 @@ export interface CyrusAPI {
   graph: {
     build: (symbolId?: string) => Promise<ApiResponse<DependencyGraphDTO>>;
     detectCycles: () => Promise<ApiResponse<string[][]>>;
-    getTopologicalOrder: () => Promise<ApiResponse<string[] | null>>;
     getStats: () => Promise<ApiResponse<GraphStatsDTO>>;
   };
   // Validation operations
@@ -95,7 +94,6 @@ export interface CyrusAPI {
     preview: (request: PreviewRequest) => Promise<ApiResponse<PreviewResultDTO>>;
     listGeneratable: () => Promise<ApiResponse<ComponentSymbolDTO[]>>;
     canGenerate: (symbolId: string) => Promise<ApiResponse<boolean>>;
-    hasUserImplementation: (symbolId: string, outputDir: string) => Promise<ApiResponse<boolean>>;
   };
   // Dialog operations
   dialog: {
@@ -127,13 +125,6 @@ export interface CyrusAPI {
     }) => Promise<ApiResponse<{ size: number }>>;
     getHomeDir: () => Promise<ApiResponse<string>>;
     getDownloadsDir: () => Promise<ApiResponse<string>>;
-  };
-  // Export history operations
-  exportHistory: {
-    getRecent: (limit?: number) => Promise<ApiResponse<ExportHistoryRecord[]>>;
-    get: (id: number) => Promise<ApiResponse<ExportHistoryRecord | null>>;
-    delete: (id: number) => Promise<ApiResponse<boolean>>;
-    clear: () => Promise<ApiResponse<void>>;
   };
   // Help operations
   help: {
@@ -208,7 +199,6 @@ const cyrusAPI: CyrusAPI = {
   graph: {
     build: (symbolId) => ipcRenderer.invoke('graph:build', symbolId),
     detectCycles: () => ipcRenderer.invoke('graph:detectCycles'),
-    getTopologicalOrder: () => ipcRenderer.invoke('graph:getTopologicalOrder'),
     getStats: () => ipcRenderer.invoke('graph:getStats'),
   },
   validation: {
@@ -227,8 +217,6 @@ const cyrusAPI: CyrusAPI = {
     preview: (request) => ipcRenderer.invoke('synthesizer:preview', request),
     listGeneratable: () => ipcRenderer.invoke('synthesizer:listGeneratable'),
     canGenerate: (symbolId) => ipcRenderer.invoke('synthesizer:canGenerate', symbolId),
-    hasUserImplementation: (symbolId, outputDir) =>
-      ipcRenderer.invoke('synthesizer:hasUserImplementation', symbolId, outputDir),
   },
   dialog: {
     selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
@@ -241,12 +229,6 @@ const cyrusAPI: CyrusAPI = {
     writeFile: (options) => ipcRenderer.invoke('shell:writeFile', options),
     getHomeDir: () => ipcRenderer.invoke('shell:getHomeDir'),
     getDownloadsDir: () => ipcRenderer.invoke('shell:getDownloadsDir'),
-  },
-  exportHistory: {
-    getRecent: (limit) => ipcRenderer.invoke('exportHistory:getRecent', limit),
-    get: (id) => ipcRenderer.invoke('exportHistory:get', id),
-    delete: (id) => ipcRenderer.invoke('exportHistory:delete', id),
-    clear: () => ipcRenderer.invoke('exportHistory:clear'),
   },
   help: {
     getCategories: () => ipcRenderer.invoke('help:getCategories'),

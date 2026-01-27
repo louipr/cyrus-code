@@ -14,7 +14,6 @@
 import {
   type DatabaseType,
   initDatabase,
-  initMemoryDatabase,
   closeDatabase,
 } from '../repositories/persistence.js';
 import { SqliteSymbolRepository } from '../repositories/symbol-repository.js';
@@ -44,10 +43,6 @@ export class Architecture {
 
   static create(dbPath: string): Architecture {
     return new Architecture(initDatabase(dbPath));
-  }
-
-  static createInMemory(): Architecture {
-    return new Architecture(initMemoryDatabase());
   }
 
   close(): void {

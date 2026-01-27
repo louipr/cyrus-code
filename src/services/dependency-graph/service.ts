@@ -10,14 +10,9 @@ import type { DependencyGraph, GraphStats, DependencyGraphService as IDependency
 import {
   buildDependencyGraph,
   detectCycles,
-  topologicalSort,
   getUpstreamDependencies,
   getDownstreamDependencies,
-  getDirectDependencies,
-  getRootNodes,
-  getLeafNodes,
   getGraphStats,
-  wouldCreateCycle,
 } from './algorithms.js';
 
 // ============================================================================
@@ -31,8 +26,7 @@ import {
  * - Build dependency graphs from symbols and their UML relationships
  * - Detect cycles
  * - Compute topological order
- * - Graph traversal (upstream/downstream)
- * - Graph analysis (roots, leaves, components, stats)
+ * - Graph statistics
  */
 export class DependencyGraphService implements IDependencyGraphService {
   constructor(private repo: SymbolRepository) {}
@@ -81,74 +75,9 @@ export class DependencyGraphService implements IDependencyGraphService {
     return detectCycles(graph);
   }
 
-  /**
-   * Check if adding a relationship would create a cycle.
-   */
-  wouldCreateCycle(fromSymbolId: string, toSymbolId: string): boolean {
-    const graph = this.buildGraph();
-    return wouldCreateCycle(graph, fromSymbolId, toSymbolId);
-  }
-
-  // ==========================================================================
-  // Ordering
-  // ==========================================================================
-
-  /**
-   * Get topological order of components.
-   * Returns null if the graph has cycles.
-   */
-  getTopologicalOrder(): string[] | null {
-    const graph = this.buildGraph();
-    return topologicalSort(graph);
-  }
-
-  // ==========================================================================
-  // Traversal
-  // ==========================================================================
-
-  /**
-   * Get all upstream dependencies of a symbol.
-   */
-  getUpstream(symbolId: string): string[] {
-    const graph = this.buildGraph();
-    return getUpstreamDependencies(graph, symbolId);
-  }
-
-  /**
-   * Get all downstream dependencies of a symbol.
-   */
-  getDownstream(symbolId: string): string[] {
-    const graph = this.buildGraph();
-    return getDownstreamDependencies(graph, symbolId);
-  }
-
-  /**
-   * Get direct dependencies (one hop only).
-   */
-  getDirect(symbolId: string): { upstream: string[]; downstream: string[] } {
-    const graph = this.buildGraph();
-    return getDirectDependencies(graph, symbolId);
-  }
-
   // ==========================================================================
   // Graph Analysis
   // ==========================================================================
-
-  /**
-   * Get root nodes (entry points with no dependencies).
-   */
-  getRootNodes(): string[] {
-    const graph = this.buildGraph();
-    return getRootNodes(graph);
-  }
-
-  /**
-   * Get leaf nodes (endpoints with no dependents).
-   */
-  getLeafNodes(): string[] {
-    const graph = this.buildGraph();
-    return getLeafNodes(graph);
-  }
 
   /**
    * Get statistics about the dependency graph.

@@ -129,11 +129,6 @@ export function registerIpcHandlers(facade: Architecture): void {
     return { success: true, data: service.detectCycles() };
   });
 
-  ipcMain.handle('graph:getTopologicalOrder', async () => {
-    const service = getGraphService();
-    return { success: true, data: service.getTopologicalOrder() };
-  });
-
   ipcMain.handle('graph:getStats', async () => {
     const service = getGraphService();
     return { success: true, data: service.getStats() };
@@ -200,13 +195,6 @@ export function registerIpcHandlers(facade: Architecture): void {
   ipcMain.handle('synthesizer:canGenerate', async (_event, symbolId: string) => {
     return facade.generation.canGenerate(symbolId);
   });
-
-  ipcMain.handle(
-    'synthesizer:hasUserImplementation',
-    async (_event, symbolId: string, outputDir: string) => {
-      return facade.generation.hasUserImplementation(symbolId, outputDir);
-    }
-  );
 
   // ==========================================================================
   // Dialog Operations
@@ -412,60 +400,6 @@ export function registerIpcHandlers(facade: Architecture): void {
       }
     }
   );
-
-  // ==========================================================================
-  // Export History Operations
-  // ==========================================================================
-
-  ipcMain.handle('exportHistory:getRecent', async (_event, limit?: number) => {
-    try {
-      const repo = getExportHistoryRepo();
-      return { success: true, data: repo.getRecent(limit ?? 10) };
-    } catch (error) {
-      return {
-        success: false,
-        error: { message: extractErrorMessage(error) },
-      };
-    }
-  });
-
-  ipcMain.handle('exportHistory:get', async (_event, id: number) => {
-    try {
-      const repo = getExportHistoryRepo();
-      return { success: true, data: repo.get(id) };
-    } catch (error) {
-      return {
-        success: false,
-        error: { message: extractErrorMessage(error) },
-      };
-    }
-  });
-
-  ipcMain.handle('exportHistory:delete', async (_event, id: number) => {
-    try {
-      const repo = getExportHistoryRepo();
-      const deleted = repo.delete(id);
-      return { success: true, data: deleted };
-    } catch (error) {
-      return {
-        success: false,
-        error: { message: extractErrorMessage(error) },
-      };
-    }
-  });
-
-  ipcMain.handle('exportHistory:clear', async () => {
-    try {
-      const repo = getExportHistoryRepo();
-      repo.clear();
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: { message: extractErrorMessage(error) },
-      };
-    }
-  });
 
   // ==========================================================================
   // Help Operations

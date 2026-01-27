@@ -109,18 +109,7 @@ export interface DependencyGraphService {
 
   // Cycle Detection
   detectCycles(): string[][];
-  wouldCreateCycle(fromSymbolId: string, toSymbolId: string): boolean;
-
-  // Ordering
-  getTopologicalOrder(): string[] | null;
-
-  // Traversal
-  getUpstream(symbolId: string): string[];
-  getDownstream(symbolId: string): string[];
-  getDirect(symbolId: string): { upstream: string[]; downstream: string[] };
 
   // Analysis
-  getRootNodes(): string[];
-  getLeafNodes(): string[];
   getStats(): GraphStats;
 }

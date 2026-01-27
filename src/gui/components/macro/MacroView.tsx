@@ -4,8 +4,7 @@
  * Main container for the Macro (Test Suite) visualization view.
  * Uses the panel layout system for flexible resizing.
  *
- * Layout (all panels are independently collapsible):
- *   LeftPanel (Test Suites) | MainPanel (Canvas) | DetailsPanel
+ * Layout: LeftPanel (Test Suites) | MainPanel (Details)
  *
  * All panels use consistent composition: Panel > Card > Content
  */
@@ -281,34 +280,11 @@ export function MacroView() {
       <ResizeHandle
         orientation="horizontal"
         targetId="left"
-        targetType="panel"
         constraints={{ default: 280, min: 200, max: 400 }}
       />
 
-      {/* Main Panel - Canvas area (draw.io will render here in diagram mode) */}
-      <Panel id="main" position="main" testId="macro-main-panel">
-        <div style={styles.canvasPlaceholder}>
-          <span style={styles.placeholder}>Select a test suite to view details in the right panel</span>
-        </div>
-      </Panel>
-
-      <ResizeHandle
-        orientation="horizontal"
-        targetId="details"
-        targetType="panel"
-        constraints={{ default: 320, min: 200, max: 500 }}
-        side="right"
-      />
-
-      {/* Details Panel - TestSuite/Step details */}
-      <Panel
-        id="details"
-        position="right"
-        size={{ default: 320, min: 200, max: 500 }}
-        title="Details"
-        testId="details-panel"
-        collapsible
-      >
+      {/* Main Panel - TestSuite/Step details */}
+      <Panel id="main" position="main" testId="details-panel">
         <Card id="details-content" title="Details" fill testId="details-card" showHeader={false} collapsible={false}>
           {selectedStep && selectedStepIndex !== null ? (
             <StepDetail
@@ -343,13 +319,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  canvasPlaceholder: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1e1e1e',
   },
   detailsPlaceholder: {
     height: '100%',

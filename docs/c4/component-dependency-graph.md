@@ -35,7 +35,7 @@ flowchart TD
 
 | Component | Responsibility | Key Operations | Status | Notes |
 |-----------|----------------|----------------|--------|-------|
-| **DependencyGraphService** | Graph orchestration | `buildGraph()`, `detectCycles()`, `getTopologicalOrder()`, `wouldCreateCycle()` | ✅ | `src/services/dependency-graph/service.ts` |
+| **DependencyGraphService** | Graph orchestration | `buildGraph()`, `detectCycles()`, `wouldCreateCycle()`, `getStats()` | ✅ | `src/services/dependency-graph/service.ts` |
 | **Graph Algorithms** | Pure graph algorithms | `topologicalSort()`, `getUpstreamDependencies()`, `getDownstreamDependencies()`, `getConnectedComponents()` | ✅ | `src/services/dependency-graph/algorithms.ts` |
 | **Schema** | Type definitions and interface | `DependencyGraph`, `GraphNode`, `GraphEdge`, `GraphStats`, `DependencyGraphService` | ✅ | `src/services/dependency-graph/schema.ts` |
 
@@ -60,7 +60,6 @@ flowchart TD
 |----------|---------|
 | **Graph Building** | `buildGraph()`, `buildSubgraph()` |
 | **Cycle Analysis** | `detectCycles()`, `wouldCreateCycle()` |
-| **Ordering** | `getTopologicalOrder()` |
 | **Traversal** | `getUpstream()`, `getDownstream()`, `getDirect()` |
 | **Analysis** | `getRootNodes()`, `getLeafNodes()`, `getStats()` |
 

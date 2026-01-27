@@ -90,7 +90,7 @@ export interface HelpManifest {
 /**
  * Output format for topic content.
  */
-export type HelpOutputFormat = 'terminal' | 'html' | 'raw';
+export type HelpOutputFormat = 'html' | 'raw';
 
 /**
  * Search result with relevance score.

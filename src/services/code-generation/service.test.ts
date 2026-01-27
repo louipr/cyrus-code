@@ -266,23 +266,6 @@ describe('CodeGenerationService', () => {
     });
   });
 
-  describe('hasUserImplementation', () => {
-    it('should return false before generation', () => {
-      const symbol = createTestSymbol();
-      store.register(symbol);
-
-      assert.strictEqual(service.hasUserImplementation(symbol.id, tempDir), false);
-    });
-
-    it('should return true after generation', () => {
-      const symbol = createTestSymbol();
-      store.register(symbol);
-
-      service.generateSymbol(symbol.id, { outputDir: tempDir });
-
-      assert.strictEqual(service.hasUserImplementation(symbol.id, tempDir), true);
-    });
-  });
 });
 
 // =============================================================================

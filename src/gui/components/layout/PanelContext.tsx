@@ -2,7 +2,7 @@
  * Panel Context
  *
  * State management for the panel layout system.
- * Supports panels, columns, and cards with collapsible states.
+ * Supports panels and cards with collapsible states.
  */
 
 import React, { createContext, useContext, useReducer, useCallback, useRef } from 'react';
@@ -10,8 +10,6 @@ import type {
   PanelLayoutState,
   PanelState,
   PanelConfig,
-  ColumnConfig,
-  ColumnState,
   CardConfig,
   CardState,
   ActiveResize,
@@ -27,7 +25,6 @@ const STORAGE_VERSION = 2;
 /** Default empty state */
 const INITIAL_STATE: PanelLayoutState = {
   panels: {},
-  columns: {},
   cards: {},
   version: STORAGE_VERSION,
 };
@@ -48,8 +45,6 @@ interface PanelContextValue {
 
   /** Get panel state by ID */
   getPanelState: (panelId: string) => PanelState | undefined;
-  /** Get column state by ID */
-  getColumnState: (columnId: string) => ColumnState | undefined;
   /** Get card state by ID */
   getCardState: (cardId: string) => CardState | undefined;
 
@@ -63,14 +58,11 @@ interface PanelContextValue {
 
   /** Register a panel (for initial state) */
   registerPanel: (config: PanelConfig) => void;
-  /** Register a column */
-  registerColumn: (config: ColumnConfig) => void;
   /** Register a card */
   registerCard: (config: CardConfig) => void;
 
   /** Start resize operation */
   startResize: (
-    type: 'panel' | 'column',
     id: string,
     orientation: ResizeOrientation,
     constraints: SizeConstraint,
@@ -102,21 +94,6 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
           [config.id]: {
             width: config.size?.default ?? 0,
             collapsed: config.defaultCollapsed ?? false,
-          },
-        },
-      };
-    }
-
-    case 'REGISTER_COLUMN': {
-      const { config } = action;
-      if (state.columns[config.id]) return state;
-      return {
-        ...state,
-        columns: {
-          ...state.columns,
-          [config.id]: {
-            width: config.width?.default ?? 0,
-            collapsed: false,
           },
         },
       };
@@ -196,21 +173,6 @@ function layoutReducer(state: PanelLayoutState, action: LayoutAction): PanelLayo
       };
     }
 
-    case 'SET_COLUMN_WIDTH': {
-      const column = state.columns[action.columnId];
-      if (!column) return state;
-      return {
-        ...state,
-        columns: {
-          ...state.columns,
-          [action.columnId]: {
-            ...column,
-            width: action.width,
-          },
-        },
-      };
-    }
-
     case 'RESTORE_STATE':
       return action.state;
 
@@ -259,22 +221,6 @@ function applyDefaults(
       }
     }
     result = { ...result, panels: mergedPanels };
-  }
-
-  // Apply column defaults
-  if (defaultState.columns) {
-    const mergedColumns = { ...result.columns };
-    for (const [columnId, defaults] of Object.entries(defaultState.columns)) {
-      if (mergedColumns[columnId]) {
-        mergedColumns[columnId] = { ...mergedColumns[columnId], ...defaults };
-      } else {
-        mergedColumns[columnId] = {
-          width: defaults.width ?? 0,
-          collapsed: defaults.collapsed ?? false,
-        };
-      }
-    }
-    result = { ...result, columns: mergedColumns };
   }
 
   // Apply card defaults
@@ -336,11 +282,7 @@ export function PanelProvider({
         activeResize.constraints.max
       );
 
-      if (activeResize.type === 'panel') {
-        dispatch({ type: 'SET_PANEL_WIDTH', panelId: activeResize.id, width: newSize });
-      } else {
-        dispatch({ type: 'SET_COLUMN_WIDTH', columnId: activeResize.id, width: newSize });
-      }
+      dispatch({ type: 'SET_PANEL_WIDTH', panelId: activeResize.id, width: newSize });
     };
 
     const handleMouseUp = () => {
@@ -367,11 +309,6 @@ export function PanelProvider({
     [state.panels]
   );
 
-  const getColumnState = useCallback(
-    (columnId: string) => state.columns[columnId],
-    [state.columns]
-  );
-
   const getCardState = useCallback(
     (cardId: string) => state.cards[cardId],
     [state.cards]
@@ -393,17 +330,12 @@ export function PanelProvider({
     dispatch({ type: 'REGISTER_PANEL', config });
   }, []);
 
-  const registerColumn = useCallback((config: ColumnConfig) => {
-    dispatch({ type: 'REGISTER_COLUMN', config });
-  }, []);
-
   const registerCard = useCallback((config: CardConfig) => {
     dispatch({ type: 'REGISTER_CARD', config });
   }, []);
 
   const startResize = useCallback(
     (
-      type: 'panel' | 'column',
       id: string,
       orientation: ResizeOrientation,
       constraints: SizeConstraint,
@@ -416,14 +348,10 @@ export function PanelProvider({
       const startPos = orientation === 'horizontal' ? e.clientX : e.clientY;
       startPosRef.current = startPos;
 
-      const currentSize =
-        type === 'panel'
-          ? state.panels[id]?.width ?? constraints.default
-          : state.columns[id]?.width ?? constraints.default;
+      const currentSize = state.panels[id]?.width ?? constraints.default;
       startSizeRef.current = currentSize;
 
       setActiveResize({
-        type,
         id,
         orientation,
         startPos,
@@ -432,20 +360,18 @@ export function PanelProvider({
         side,
       });
     },
-    [state.panels, state.columns]
+    [state.panels]
   );
 
   const value: PanelContextValue = {
     state,
     dispatch,
     getPanelState,
-    getColumnState,
     getCardState,
     togglePanel,
     toggleCard,
     setPanelCollapsed,
     registerPanel,
-    registerColumn,
     registerCard,
     startResize,
     activeResize,

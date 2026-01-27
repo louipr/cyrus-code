@@ -348,45 +348,15 @@ export function getDownstreamDependencies(
   return Array.from(downstream);
 }
 
-/**
- * Get direct dependencies (one hop only).
- */
-export function getDirectDependencies(
-  graph: DependencyGraph,
-  symbolId: string
-): { upstream: string[]; downstream: string[] } {
-  const upstream = new Set<string>();
-  const downstream = new Set<string>();
-
-  // Downstream: edges from this node
-  const edges = graph.edges.get(symbolId) ?? [];
-  for (const edge of edges) {
-    downstream.add(edge.to);
-  }
-
-  // Upstream: edges to this node
-  for (const [sourceId, sourceEdges] of graph.edges) {
-    for (const edge of sourceEdges) {
-      if (edge.to === symbolId) {
-        upstream.add(sourceId);
-      }
-    }
-  }
-
-  return {
-    upstream: Array.from(upstream),
-    downstream: Array.from(downstream),
-  };
-}
-
 // ============================================================================
 // Graph Analysis
 // ============================================================================
 
 /**
  * Get root nodes (nodes with no incoming relationships).
+ * Internal helper used by getMaxDepth and getGraphStats.
  */
-export function getRootNodes(graph: DependencyGraph): string[] {
+function getRootNodes(graph: DependencyGraph): string[] {
   const hasIncoming = new Set<string>();
 
   for (const edges of graph.edges.values()) {
@@ -407,8 +377,9 @@ export function getRootNodes(graph: DependencyGraph): string[] {
 
 /**
  * Get leaf nodes (nodes with no outgoing relationships).
+ * Internal helper used by getGraphStats.
  */
-export function getLeafNodes(graph: DependencyGraph): string[] {
+function getLeafNodes(graph: DependencyGraph): string[] {
   const leaves: string[] = [];
 
   for (const nodeId of graph.nodes.keys()) {
@@ -538,19 +509,3 @@ export function getGraphStats(graph: DependencyGraph): GraphStats {
   };
 }
 
-// ============================================================================
-// Would-Create-Cycle Check
-// ============================================================================
-
-/**
- * Check if adding a relationship would create a cycle.
- */
-export function wouldCreateCycle(
-  graph: DependencyGraph,
-  fromSymbolId: string,
-  toSymbolId: string
-): boolean {
-  // A cycle would be created if toSymbol can already reach fromSymbol
-  const downstream = getDownstreamDependencies(graph, toSymbolId);
-  return downstream.includes(fromSymbolId) || fromSymbolId === toSymbolId;
-}

@@ -84,9 +84,4 @@ export class GenerationFacade {
     }, 'CHECK_FAILED');
   }
 
-  hasUserImplementation(symbolId: string, outputDir: string): ApiResponse<boolean> {
-    return apiCall(() => {
-      return this.codeGenService.hasUserImplementation(symbolId, outputDir);
-    }, 'CHECK_FAILED');
-  }
 }

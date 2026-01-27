@@ -6,7 +6,7 @@
 
 import type { SymbolRepository } from '../domain/symbol/index.js';
 import { DependencyGraphService } from '../services/dependency-graph/service.js';
-import type { DependencyGraph, GraphStats } from '../services/dependency-graph/schema.js';
+import type { DependencyGraph } from '../services/dependency-graph/schema.js';
 import { apiCall } from './utils/index.js';
 import type { ApiResponse, DependencyGraphDTO, GraphStatsDTO } from './types.js';
 
@@ -57,59 +57,9 @@ export class GraphFacade {
     }, 'DETECT_CYCLES_FAILED');
   }
 
-  wouldCreateCycle(fromSymbolId: string, toSymbolId: string): ApiResponse<boolean> {
-    return apiCall(() => {
-      return this.graphService.wouldCreateCycle(fromSymbolId, toSymbolId);
-    }, 'CHECK_CYCLE_FAILED');
-  }
-
-  // ==========================================================================
-  // Ordering
-  // ==========================================================================
-
-  getTopologicalOrder(): ApiResponse<string[] | null> {
-    return apiCall(() => {
-      return this.graphService.getTopologicalOrder();
-    }, 'GET_ORDER_FAILED');
-  }
-
-  // ==========================================================================
-  // Traversal
-  // ==========================================================================
-
-  getUpstream(symbolId: string): ApiResponse<string[]> {
-    return apiCall(() => {
-      return this.graphService.getUpstream(symbolId);
-    }, 'GET_UPSTREAM_FAILED');
-  }
-
-  getDownstream(symbolId: string): ApiResponse<string[]> {
-    return apiCall(() => {
-      return this.graphService.getDownstream(symbolId);
-    }, 'GET_DOWNSTREAM_FAILED');
-  }
-
-  getDirect(symbolId: string): ApiResponse<{ upstream: string[]; downstream: string[] }> {
-    return apiCall(() => {
-      return this.graphService.getDirect(symbolId);
-    }, 'GET_DIRECT_FAILED');
-  }
-
   // ==========================================================================
   // Analysis
   // ==========================================================================
-
-  getRootNodes(): ApiResponse<string[]> {
-    return apiCall(() => {
-      return this.graphService.getRootNodes();
-    }, 'GET_ROOTS_FAILED');
-  }
-
-  getLeafNodes(): ApiResponse<string[]> {
-    return apiCall(() => {
-      return this.graphService.getLeafNodes();
-    }, 'GET_LEAVES_FAILED');
-  }
 
   getStats(): ApiResponse<GraphStatsDTO> {
     return apiCall(() => {

@@ -127,19 +127,6 @@ export interface RegisterSymbolRequest {
   };
 }
 
-export interface UpdateSymbolRequest {
-  id: string;
-  updates: Partial<
-    Omit<ComponentSymbolDTO, 'id' | 'createdAt' | 'updatedAt'>
-  >;
-}
-
-export interface UpdateStatusRequest {
-  id: string;
-  status: SymbolStatus;
-  info: Omit<StatusInfoDTO, 'updatedAt'>;
-}
-
 // ============================================================================
 // Graph DTOs (re-exported from service - no Date transformation needed)
 // ============================================================================

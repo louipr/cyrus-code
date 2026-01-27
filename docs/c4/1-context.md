@@ -9,8 +9,8 @@ System context showing cyrus-code's external actors and dependencies. This is th
 ```mermaid
 flowchart TB
     subgraph users ["Users"]
-        dev["👤 Developer<br/><small>GUI & CLI</small>"]
-        ai["🤖 AI Agent<br/><small>CLI</small>"]
+        dev["👤 Developer<br/><small>GUI</small>"]
+        ai["🤖 AI Agent<br/><small>Recordings</small>"]
     end
 
     cyrus["🔷 cyrus-code<br/><small>Component architecture tool</small>"]
@@ -38,10 +38,8 @@ flowchart TB
 
 | Actor | Description | Interface |
 |-------|-------------|-----------|
-| **Developer** | Software architect designing systems | GUI & CLI |
-| **AI Agent** | Claude Code using cyrus-code as a tool | CLI (`cyrus-code` commands) |
-
-Both actors perform the same operations: `register`, `list`, `wire`, `validate`, `generate`, `graph`.
+| **Developer** | Software architect designing systems | GUI (Electron desktop app) |
+| **AI Agent** | Claude Code using cyrus-code as a tool | Recordings (YAML-based GUI exploration) |
 
 ## External Systems
 
@@ -55,5 +53,5 @@ Both actors perform the same operations: `register`, `list`, `wire`, `validate`,
 
 | Decision | Rationale |
 |----------|-----------|
-| Separate Developer and AI actors | Different interaction patterns (visual vs CLI-only) |
+| Separate Developer and AI actors | Different interaction patterns (visual editing vs recorded explorations) |
 | File System as only external system | Keeps L1 focused; package registries are future scope |
