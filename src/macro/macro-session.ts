@@ -23,7 +23,7 @@ export interface SessionSnapshot {
   state: PlaybackState;
   position: PlaybackPosition | null;
   groupId: string;
-  suiteId: string;
+  macroId: string;
   results: Record<string, StepResult>;
 }
 
@@ -226,7 +226,7 @@ export class MacroSession {
       state: this.state,
       position: this.position,
       groupId: this.config.groupId,
-      suiteId: this.config.suiteId,
+      macroId: this.config.macroId,
       results: Object.fromEntries(this.results),
     };
   }

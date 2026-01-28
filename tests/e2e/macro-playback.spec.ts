@@ -85,7 +85,7 @@ async function selectAndRunMacro(page: Page, groupName: string, macroId: string)
   await page.waitForTimeout(1000);
 
   // Dismiss any existing completed session from previous test
-  const dismissButton = page.locator('[data-testid="debug-dismiss-button"]');
+  const dismissButton = page.locator('[data-testid="playback-dismiss-button"]');
   if (await dismissButton.isVisible().catch(() => false)) {
     await dismissButton.click();
     await page.waitForTimeout(500);
@@ -103,7 +103,7 @@ async function selectAndRunMacro(page: Page, groupName: string, macroId: string)
   await page.waitForTimeout(300);
 
   // Session starts paused - click Continue to run all steps
-  const continueButton = page.locator('[data-testid="debug-continue-button"]');
+  const continueButton = page.locator('[data-testid="playback-continue-button"]');
   await expect(continueButton).toBeVisible({ timeout: 5000 });
   await continueButton.click();
   await page.waitForTimeout(300);
@@ -114,7 +114,7 @@ async function selectAndRunMacro(page: Page, groupName: string, macroId: string)
  */
 async function waitForCompletion(page: Page, timeout = 15000) {
   // Wait for result (passed or failed)
-  const result = page.locator('[data-testid="debug-result-passed"], [data-testid="debug-result-failed"]');
+  const result = page.locator('[data-testid="playback-result-passed"], [data-testid="playback-result-failed"]');
   await expect(result).toBeVisible({ timeout });
 }
 
@@ -122,7 +122,7 @@ async function waitForCompletion(page: Page, timeout = 15000) {
  * Check if macro passed.
  */
 async function didPass(page: Page): Promise<boolean> {
-  const passed = page.locator('[data-testid="debug-result-passed"]');
+  const passed = page.locator('[data-testid="playback-result-passed"]');
   return await passed.isVisible();
 }
 

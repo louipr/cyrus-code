@@ -22,7 +22,7 @@ import type { Macro, MacroStep } from '../../../macro';
 
 interface MacroViewProps {
   /** Callback when a macro is selected (for Run button visibility) */
-  onMacroSelect: (selection: { groupId: string; suiteId: string; macro: Macro } | null) => void;
+  onMacroSelect: (selection: { groupId: string; macroId: string; macro: Macro } | null) => void;
 }
 
 /**
@@ -61,18 +61,18 @@ export function MacroView({ onMacroSelect }: MacroViewProps) {
   // Restore selection from debug session when remounting with active session
   // (e.g., after view switches during test execution)
   useEffect(() => {
-    if (macroSession.sessionId && macroSession.groupId && macroSession.suiteId && !selectedAppId) {
+    if (macroSession.sessionId && macroSession.groupId && macroSession.macroId && !selectedAppId) {
       setSelectedAppId(macroSession.groupId);
-      setSelectedMacroId(macroSession.suiteId);
+      setSelectedMacroId(macroSession.macroId);
       // Load the macro
-      apiClient.macros.get(macroSession.groupId, macroSession.suiteId).then((result) => {
+      apiClient.macros.get(macroSession.groupId, macroSession.macroId).then((result) => {
         if (result.success && result.data) {
           setMacro(result.data);
-          onMacroSelect({ groupId: macroSession.groupId!, suiteId: macroSession.suiteId!, macro: result.data });
+          onMacroSelect({ groupId: macroSession.groupId!, macroId: macroSession.macroId!, macro: result.data });
         }
       });
     }
-  }, [macroSession.sessionId, macroSession.groupId, macroSession.suiteId, selectedAppId, macroSession, onMacroSelect]);
+  }, [macroSession.sessionId, macroSession.groupId, macroSession.macroId, selectedAppId, macroSession, onMacroSelect]);
 
   // Auto-expand suite when session starts so user can watch execution and see results
   useEffect(() => {
@@ -140,7 +140,7 @@ export function MacroView({ onMacroSelect }: MacroViewProps) {
           setSelectedStep(null);
           setSelectedStepIndex(null);
           // Notify parent of selection (enables Run button in header)
-          onMacroSelect({ groupId: appId, suiteId: macroId, macro: result.data });
+          onMacroSelect({ groupId: appId, macroId: macroId, macro: result.data });
         }
       } else if (type === 'step' && macro) {
         const stepIdx = parseInt(parts[2], 10);

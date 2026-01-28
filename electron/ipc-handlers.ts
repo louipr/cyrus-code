@@ -703,10 +703,10 @@ export function registerIpcHandlers(facade: Architecture): void {
           throw new Error('No window available for debug session');
         }
 
-        // Load test suite from repository
-        const macro = macroRepository.getMacro(config.groupId, config.suiteId);
+        // Load macro from repository
+        const macro = macroRepository.getMacro(config.groupId, config.macroId);
         if (!macro) {
-          throw new Error(`Test suite not found: ${config.groupId}/${config.suiteId}`);
+          throw new Error(`Macro not found: ${config.groupId}/${config.macroId}`);
         }
 
         // Dispose previous session if exists

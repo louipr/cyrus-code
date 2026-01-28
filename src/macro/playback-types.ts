@@ -118,7 +118,7 @@ export interface PlaybackConfig {
   groupId: string;
 
   /** Macro ID (filename without extension) */
-  suiteId: string;
+  macroId: string;
 
   /** Whether to pause before first step */
   pauseOnStart?: boolean;

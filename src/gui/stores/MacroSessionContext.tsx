@@ -24,7 +24,7 @@ import { apiClient } from '../api-client';
  */
 interface PlaybackCommands {
   /** Create a new session and start debugging */
-  create: (groupId: string, suiteId: string) => Promise<void>;
+  create: (groupId: string, macroId: string) => Promise<void>;
   /** Start execution */
   start: () => Promise<void>;
   /** Execute single step */
@@ -47,7 +47,7 @@ export interface MacroSessionStore {
   // Session identity
   sessionId: string | null;
   groupId: string | null;
-  suiteId: string | null;
+  macroId: string | null;
   macro: Macro | null;
 
   // Playback state (cached from main process)
@@ -66,7 +66,7 @@ export interface MacroSessionStore {
   commands: PlaybackCommands;
 
   // Metadata actions
-  startPlayback: (groupId: string, suiteId: string, macro: Macro) => Promise<void>;
+  startPlayback: (groupId: string, macroId: string, macro: Macro) => Promise<void>;
   updateMacro: (macro: Macro) => void;
 }
 
@@ -79,7 +79,7 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
   // Session identity
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
-  const [suiteId, setSuiteId] = useState<string | null>(null);
+  const [macroId, setSuiteId] = useState<string | null>(null);
   const [macro, setMacro] = useState<Macro | null>(null);
 
   // Playback state (cached from events)
@@ -173,7 +173,7 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
 
         const response = await apiClient.macros.playback.create({
           groupId: newGroupId,
-          suiteId: newSuiteId,
+          macroId: newSuiteId,
           pauseOnStart: true,
         });
 
@@ -258,7 +258,7 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
     // Identity
     sessionId,
     groupId,
-    suiteId,
+    macroId,
     macro,
     // State
     playbackState,

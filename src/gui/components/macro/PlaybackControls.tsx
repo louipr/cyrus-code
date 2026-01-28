@@ -15,7 +15,7 @@ import type { Macro } from '../../../macro';
 /** Selected macro (UI selection state, not session state) */
 interface SelectedMacro {
   groupId: string;
-  suiteId: string;
+  macroId: string;
   macro: Macro;
 }
 
@@ -44,8 +44,8 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
         <button
           style={styles.runButton}
           onClick={() => {
-            const { groupId, suiteId, macro } = selectedMacro;
-            session.startPlayback(groupId, suiteId, macro);
+            const { groupId, macroId, macro } = selectedMacro;
+            session.startPlayback(groupId, macroId, macro);
           }}
           title="Run macro (F5)"
           data-testid="run-button"
@@ -69,7 +69,7 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
             style={styles.controlButton}
             onClick={() => commands.stop()}
             title="Dismiss results"
-            data-testid="debug-dismiss-button"
+            data-testid="playback-dismiss-button"
           >
             ✕
           </button>
@@ -96,7 +96,7 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
             style={styles.runButton}
             onClick={() => playbackState === 'idle' ? commands.start() : commands.resume()}
             title="Continue (F5)"
-            data-testid="debug-continue-button"
+            data-testid="playback-continue-button"
           >
             ▶
           </button>
@@ -106,7 +106,7 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
             style={styles.runButton}
             onClick={() => commands.pause()}
             title="Pause (F5)"
-            data-testid="debug-pause-button"
+            data-testid="playback-pause-button"
           >
             ⏸
           </button>
@@ -118,7 +118,7 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
             style={styles.controlButton}
             onClick={() => commands.step()}
             title="Step (F10)"
-            data-testid="debug-step-button"
+            data-testid="playback-step-button"
           >
             ⏭
           </button>
@@ -129,7 +129,7 @@ export function PlaybackControls({ session, selectedMacro }: PlaybackControlsPro
           style={styles.stopButton}
           onClick={() => commands.stop()}
           title="Stop (Shift+F5)"
-          data-testid="debug-stop-button"
+          data-testid="playback-stop-button"
         >
           ⏹
         </button>

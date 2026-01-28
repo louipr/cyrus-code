@@ -33,7 +33,7 @@ type SymbolSubView = 'list' | 'graph' | 'canvas';
 /** Selected macro (UI selection state, not session state) */
 interface SelectedMacro {
   groupId: string;
-  suiteId: string;
+  macroId: string;
   macro: Macro;
 }
 
@@ -97,8 +97,8 @@ function AppContent(): React.ReactElement {
           // F5 = Run/Continue
           if (!macroSession.sessionId && selectedMacro) {
             // No active session, start new one
-            const { groupId, suiteId, macro } = selectedMacro;
-            macroSession.startPlayback(groupId, suiteId, macro);
+            const { groupId, macroId, macro } = selectedMacro;
+            macroSession.startPlayback(groupId, macroId, macro);
           } else if (macroSession.sessionId) {
             // Active session - start or resume
             if (macroSession.playbackState === 'idle') {
