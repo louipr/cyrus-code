@@ -1,0 +1,53 @@
+description: Open an existing diagram file in the Draw.io editor
+
+metadata:
+  status: draft
+  reliability: medium
+  tags: [drawio, file, open, load]
+  author: macro-generator
+  created: "2026-01-27"
+  modified: "2026-01-27"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+    - Test diagram file exists
+
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: Wait for app to be ready
+
+  - action: click
+    selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+    why: Switch to diagram view
+
+  - action: wait
+    timeout: 2000
+    expect:
+      selector: "[data-testid='diagram-webview']"
+      assert: exists
+    why: Wait for Draw.io webview to load
+
+  - action: evaluate
+    script: |
+      // TODO: Trigger file open dialog or load specific diagram
+      // This will require integration with Electron's file picker
+      // or direct file loading via the DrawioEditor component
+      const webview = document.querySelector('[data-testid="diagram-webview"]');
+      if (webview) {
+        console.log('Ready to open diagram file');
+        return true;
+      }
+      return false;
+    expect:
+      script: result === true
+    why: Verify diagram view is ready for file operations
+
+  - action: wait
+    timeout: 1000
+    why: Wait for diagram to load

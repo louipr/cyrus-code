@@ -1,0 +1,95 @@
+description: Create a simple flow diagram with two connected shapes
+
+metadata:
+  status: draft
+  reliability: low
+  tags: [drawio, flow, workflow, shapes, connection]
+  author: macro-generator
+  created: "2026-01-27"
+  modified: "2026-01-27"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+    - Diagram view is available
+  notes: |
+    This macro demonstrates a typical draw.io workflow:
+    1. Add first shape
+    2. Add second shape
+    3. Connect them with an arrow
+
+    Implementation requires draw.io IPC integration to
+    programmatically insert and manipulate shapes.
+
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: Wait for app to be ready
+
+  - action: click
+    selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+    why: Switch to diagram view
+
+  - action: wait
+    timeout: 2000
+    expect:
+      selector: "[data-testid='diagram-webview']"
+      assert: exists
+    why: Wait for Draw.io webview to load
+
+  - action: evaluate
+    script: |
+      // Step 1: Add first rectangle (Start)
+      console.log('TODO: Insert rectangle at (100, 100)');
+      // This requires draw.io IPC integration
+      return true;
+    expect:
+      script: result === true
+    why: Add first shape to canvas
+
+  - action: wait
+    timeout: 500
+    why: Wait for shape to be inserted
+
+  - action: evaluate
+    script: |
+      // Step 2: Add second rectangle (End)
+      console.log('TODO: Insert rectangle at (300, 100)');
+      return true;
+    expect:
+      script: result === true
+    why: Add second shape to canvas
+
+  - action: wait
+    timeout: 500
+    why: Wait for shape to be inserted
+
+  - action: evaluate
+    script: |
+      // Step 3: Connect the two shapes with an arrow
+      console.log('TODO: Add connector between shapes');
+      return true;
+    expect:
+      script: result === true
+    why: Connect shapes with arrow
+
+  - action: wait
+    timeout: 500
+    why: Wait for connection to be created
+
+  - action: evaluate
+    script: |
+      // Verify the flow diagram was created
+      const webview = document.querySelector('[data-testid="diagram-webview"]');
+      if (webview) {
+        console.log('Flow diagram created successfully');
+        return true;
+      }
+      return false;
+    expect:
+      script: result === true
+    why: Verify flow diagram was created

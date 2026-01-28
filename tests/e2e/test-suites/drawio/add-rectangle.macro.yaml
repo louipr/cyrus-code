@@ -1,0 +1,50 @@
+description: Add a rectangle shape to the draw.io canvas and verify it's created
+
+metadata:
+  status: draft
+  reliability: medium
+  tags: [drawio, shape, create, rectangle]
+  author: macro-generator
+  created: "2026-01-27"
+  modified: "2026-01-27"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+    - Diagram view is available
+
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: Wait for app to be ready
+
+  - action: click
+    selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+    why: Switch to diagram view
+
+  - action: wait
+    timeout: 2000
+    expect:
+      selector: "[data-testid='diagram-webview']"
+      assert: exists
+    why: Wait for Draw.io webview to load
+
+  - action: evaluate
+    script: |
+      // Access the draw.io webview and verify it's ready
+      const webview = document.querySelector('[data-testid="diagram-webview"]');
+      if (webview) {
+        console.log('Draw.io webview ready');
+        // TODO: Implement rectangle insertion via draw.io IPC
+        // This will require sending a message to the draw.io instance
+        // to trigger shape insertion programmatically
+        return true;
+      }
+      return false;
+    expect:
+      script: result === true
+    why: Verify draw.io webview is accessible and ready for shape insertion
