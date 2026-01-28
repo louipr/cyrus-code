@@ -490,7 +490,6 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
   },
   viewToggle: {
-    marginLeft: 'auto',
     display: 'flex',
     gap: '2px',
     backgroundColor: '#1e1e1e',
@@ -545,7 +544,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    marginLeft: '16px',
+    marginLeft: 'auto',
   },
   exportButton: {
     padding: '6px 14px',
