@@ -20,10 +20,15 @@ import { PanelLayout, Panel, ResizeHandle, Card } from '../layout';
 import type { MacroIndex } from '../../../repositories/macro-repository';
 import type { Macro, MacroStep } from '../../../macro';
 
+interface MacroViewProps {
+  /** Callback when a macro is selected (for Run button visibility) */
+  onMacroSelect: (selection: { groupId: string; suiteId: string; macro: Macro } | null) => void;
+}
+
 /**
  * MacroView - Main macro visualization view
  */
-export function MacroView() {
+export function MacroView({ onMacroSelect }: MacroViewProps) {
   const [index, setIndex] = useState<MacroIndex | null>(null);
   const [macro, setMacro] = useState<Macro | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -63,11 +68,11 @@ export function MacroView() {
       apiClient.macros.get(macroSession.groupId, macroSession.suiteId).then((result) => {
         if (result.success && result.data) {
           setMacro(result.data);
-          macroSession.setReadyToRun(macroSession.groupId!, macroSession.suiteId!, result.data);
+          onMacroSelect({ groupId: macroSession.groupId!, suiteId: macroSession.suiteId!, macro: result.data });
         }
       });
     }
-  }, [macroSession.sessionId, macroSession.groupId, macroSession.suiteId, selectedAppId, macroSession]);
+  }, [macroSession.sessionId, macroSession.groupId, macroSession.suiteId, selectedAppId, macroSession, onMacroSelect]);
 
   // Auto-expand suite when session starts so user can watch execution and see results
   useEffect(() => {
@@ -121,7 +126,10 @@ export function MacroView() {
       setSelectedPath(path);
       const parts = path.split('/');
 
-      if (type === 'macro') {
+      if (type === 'app') {
+        // Clear macro selection when selecting app-level node
+        onMacroSelect(null);
+      } else if (type === 'macro') {
         const appId = parts[0];
         const macroId = parts[1];
         setSelectedAppId(appId);
@@ -131,8 +139,8 @@ export function MacroView() {
           setMacro(result.data);
           setSelectedStep(null);
           setSelectedStepIndex(null);
-          // Set ready to run so header shows Run button
-          macroSession.setReadyToRun(appId, macroId, result.data);
+          // Notify parent of selection (enables Run button in header)
+          onMacroSelect({ groupId: appId, suiteId: macroId, macro: result.data });
         }
       } else if (type === 'step' && macro) {
         const stepIdx = parseInt(parts[2], 10);
@@ -142,7 +150,7 @@ export function MacroView() {
         }
       }
     },
-    [macro, macroSession]
+    [macro, macroSession, onMacroSelect]
   );
 
   // Handle node toggle

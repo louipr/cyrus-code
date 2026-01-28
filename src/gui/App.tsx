@@ -25,9 +25,17 @@ import { MacroSessionProvider, useMacroSession } from './stores/MacroSessionCont
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
+import type { Macro } from '../macro';
 
 type ViewMode = 'symbols' | 'diagram' | 'macros';
 type SymbolSubView = 'list' | 'graph' | 'canvas';
+
+/** Selected macro (UI selection state, not session state) */
+interface SelectedMacro {
+  groupId: string;
+  suiteId: string;
+  macro: Macro;
+}
 
 /**
  * Main App component with context provider.
@@ -54,12 +62,22 @@ function AppContent(): React.ReactElement {
   // Macro session store - persists across view switches
   const macroSession = useMacroSession();
 
+  // Selected macro (view-local state, cleared when leaving Macros view)
+  const [selectedMacro, setSelectedMacro] = useState<SelectedMacro | null>(null);
+
   // Switch to Macros view when playback session completes
   useEffect(() => {
     if (macroSession.playbackState === 'completed') {
       setViewMode('macros');
     }
   }, [macroSession.playbackState]);
+
+  // Clear selected macro when leaving Macros view
+  useEffect(() => {
+    if (viewMode !== 'macros') {
+      setSelectedMacro(null);
+    }
+  }, [viewMode]);
 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
@@ -84,9 +102,9 @@ function AppContent(): React.ReactElement {
           }
         } else {
           // F5 = Run/Continue
-          if (!macroSession.sessionId && macroSession.readyToRun) {
+          if (!macroSession.sessionId && selectedMacro) {
             // No active session, start new one
-            const { groupId, suiteId, macro } = macroSession.readyToRun;
+            const { groupId, suiteId, macro } = selectedMacro;
             macroSession.startPlayback(groupId, suiteId, macro);
           } else if (macroSession.sessionId) {
             // Active session - start or resume
@@ -108,7 +126,7 @@ function AppContent(): React.ReactElement {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [macroSession]);
+  }, [macroSession, selectedMacro]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -299,7 +317,7 @@ function AppContent(): React.ReactElement {
         </div>
 
         {/* Playback controls - always in header (fixed position) */}
-        <PlaybackControls session={macroSession} />
+        <PlaybackControls session={macroSession} selectedMacro={selectedMacro} />
 
         {/* Tool Buttons */}
         <div style={styles.toolButtons}>
@@ -438,7 +456,7 @@ function AppContent(): React.ReactElement {
 
           {viewMode === 'macros' && (
             <main style={styles.diagramMain}>
-              <MacroView />
+              <MacroView onMacroSelect={setSelectedMacro} />
             </main>
           )}
         </Panel>

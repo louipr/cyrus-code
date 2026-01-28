@@ -38,16 +38,10 @@ interface PlaybackCommands {
 }
 
 /**
- * Selected suite ready to run (before session starts).
- */
-interface ReadyToRun {
-  groupId: string;
-  suiteId: string;
-  macro: Macro;
-}
-
-/**
  * Macro session store value.
+ *
+ * Manages active playback session state only.
+ * UI selection state (which macro is selected) is managed by App.tsx.
  */
 export interface MacroSessionStore {
   // Session identity
@@ -55,9 +49,6 @@ export interface MacroSessionStore {
   groupId: string | null;
   suiteId: string | null;
   macro: Macro | null;
-
-  // Ready to run (suite selected but session not started)
-  readyToRun: ReadyToRun | null;
 
   // Playback state (cached from main process)
   playbackState: PlaybackState;
@@ -77,7 +68,6 @@ export interface MacroSessionStore {
   // Metadata actions
   startPlayback: (groupId: string, suiteId: string, macro: Macro) => Promise<void>;
   updateMacro: (macro: Macro) => void;
-  setReadyToRun: (groupId: string, suiteId: string, macro: Macro) => void;
 }
 
 const MacroSessionContext = createContext<MacroSessionStore | null>(null);
@@ -91,9 +81,6 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
   const [groupId, setGroupId] = useState<string | null>(null);
   const [suiteId, setSuiteId] = useState<string | null>(null);
   const [macro, setMacro] = useState<Macro | null>(null);
-
-  // Ready to run (suite selected but session not started)
-  const [readyToRun, setReadyToRunState] = useState<ReadyToRun | null>(null);
 
   // Playback state (cached from events)
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
@@ -228,6 +215,9 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
       const response = await apiClient.macros.playback.stop(sessionId);
       if (response.success) {
         setSessionId(null);
+        setGroupId(null);
+        setSuiteId(null);
+        setMacro(null);
         setPlaybackState('idle');
         setPosition(null);
         setStepResults(new Map());
@@ -264,25 +254,12 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
     setMacro(newMacro);
   }, []);
 
-  const setReadyToRun = useCallback(
-    (newGroupId: string, newSuiteId: string, newMacro: Macro) => {
-      setReadyToRunState({
-        groupId: newGroupId,
-        suiteId: newSuiteId,
-        macro: newMacro,
-      });
-    },
-    []
-  );
-
   const store: MacroSessionStore = {
     // Identity
     sessionId,
     groupId,
     suiteId,
     macro,
-    // Ready to run
-    readyToRun,
     // State
     playbackState,
     position,
@@ -298,7 +275,6 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
     // Actions
     startPlayback,
     updateMacro,
-    setReadyToRun,
   };
 
   return (

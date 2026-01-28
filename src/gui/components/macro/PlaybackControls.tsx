@@ -10,34 +10,44 @@
  */
 
 import type { MacroSessionStore } from '../../stores/MacroSessionContext';
+import type { Macro } from '../../../macro';
+
+/** Selected macro (UI selection state, not session state) */
+interface SelectedMacro {
+  groupId: string;
+  suiteId: string;
+  macro: Macro;
+}
 
 interface PlaybackControlsProps {
-  /** Debug session from context */
+  /** Active session from context */
   session: MacroSessionStore;
+  /** Currently selected macro (null if no selection) */
+  selectedMacro: SelectedMacro | null;
 }
 
 /**
  * PlaybackControls - Playback control buttons
  */
-export function PlaybackControls({ session }: PlaybackControlsProps) {
-  const { sessionId, readyToRun, playbackState, isPaused, isRunning, stepResults, commands } = session;
+export function PlaybackControls({ session, selectedMacro }: PlaybackControlsProps) {
+  const { sessionId, playbackState, isPaused, isRunning, stepResults, commands } = session;
 
-  // No session and no suite selected - nothing to show
-  if (!sessionId && !readyToRun) {
+  // No session and no macro selected - nothing to show
+  if (!sessionId && !selectedMacro) {
     return null;
   }
 
-  // Run button - shown when suite selected but no session active
-  if (!sessionId && readyToRun) {
+  // Run button - shown when macro selected but no session active
+  if (!sessionId && selectedMacro) {
     return (
       <div style={styles.container}>
         <button
           style={styles.runButton}
           onClick={() => {
-            const { groupId, suiteId, testSuite } = readyToRun;
-            session.startDebug(groupId, suiteId, testSuite);
+            const { groupId, suiteId, macro } = selectedMacro;
+            session.startPlayback(groupId, suiteId, macro);
           }}
-          title="Run test suite (F5)"
+          title="Run macro (F5)"
           data-testid="run-button"
         >
           ▶
