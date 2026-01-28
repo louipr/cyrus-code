@@ -87,7 +87,7 @@ export function ExecutionPanel({ session, initialCollapsed = false }: ExecutionP
               {isRunning && <span style={styles.runningIndicator}>⟳</span>}
               {isPaused && <span style={styles.pausedIndicator}>⏸</span>}
             </div>
-            {currentStep.selector && (
+            {'selector' in currentStep && currentStep.selector && (
               <div style={styles.stepDetail}>
                 <span style={styles.stepLabel}>Selector:</span>
                 <span style={styles.stepValue}>{currentStep.selector}</span>
