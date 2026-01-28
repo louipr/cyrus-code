@@ -445,52 +445,8 @@ ipcRenderer.on(IPC_CHANNEL_TEST_RUNNER, async (_event, command: TestRunnerComman
 });
 
 /**
- * Generate JavaScript code for webview execution.
- * Supports 'evaluate' and Draw.io-specific actions.
- */
-function generateWebviewCode(action: string, args: unknown[]): string {
-  if (action === 'evaluate') {
-    const [code] = args as [string];
-    return `(async () => { ${code} })()`;
-  }
-
-  if (action === 'drawio:insertVertex') {
-    const [x, y, width, height, label, style] = args as [number, number, number, number, string | undefined, string | undefined];
-    return `
-      (function() {
-        if (!window.editorUi || !window.editorUi.editor || !window.editorUi.editor.graph) {
-          throw new Error('Draw.io graph not available');
-        }
-
-        const graph = window.editorUi.editor.graph;
-        const parent = graph.getDefaultParent();
-
-        graph.getModel().beginUpdate();
-        try {
-          const vertex = graph.insertVertex(
-            parent,
-            null,
-            ${JSON.stringify(label || '')},
-            ${x},
-            ${y},
-            ${width},
-            ${height},
-            ${JSON.stringify(style || '')}
-          );
-          return vertex.id;
-        } finally {
-          graph.getModel().endUpdate();
-        }
-      })()
-    `;
-  }
-
-  throw new Error(`Unsupported webview action: ${action}`);
-}
-
-/**
- * Forward command to webview using executeJavaScript.
- * Eliminates need for IPC forwarding and test runner API in webview preload.
+ * Forward command to webview using IPC send pattern (like DrawioEditor).
+ * Webview preload must handle IPC_CHANNEL_TEST_RUNNER messages.
  */
 function forwardToWebview(command: TestRunnerCommand): void {
   // Convert webview ID to data-testid selector if not already a selector
@@ -500,10 +456,13 @@ function forwardToWebview(command: TestRunnerCommand): void {
   }
 
   const webview = document.querySelector(selector) as HTMLElement & {
-    executeJavaScript: (code: string) => Promise<unknown>;
+    send(channel: string, ...args: unknown[]): void;
+    addEventListener(event: string, listener: (event: any) => void): void;
+    removeEventListener(event: string, listener: (event: any) => void): void;
   };
 
   if (!webview) {
+    console.error('[Preload] Webview not found:', selector);
     ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
       success: false,
       error: `Webview not found: ${selector} (original: ${command.context})`,
@@ -511,22 +470,34 @@ function forwardToWebview(command: TestRunnerCommand): void {
     return;
   }
 
-  const code = generateWebviewCode(command.action, command.args);
+  console.log('[Preload] Forwarding to webview via send():', command.action);
+  console.log('[Preload] Webview element type:', webview.tagName);
+  console.log('[Preload] Webview send exists:', typeof webview.send);
 
-  webview
-    .executeJavaScript(code)
-    .then((result) => {
-      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
-        success: true,
-        result,
-      });
-    })
-    .catch((error) => {
-      ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+  // Set up one-time listener for the response from the webview
+  const responseChannel = `${IPC_CHANNEL_TEST_RUNNER}:${command.id}`;
+
+  const responseHandler = (event: any) => {
+    console.log('[Preload] ipc-message event received, channel:', event.channel);
+    if (event.channel === responseChannel) {
+      console.log('[Preload] Received response from webview:', event.args[0]);
+
+      // Forward the response back to the main process
+      ipcRenderer.send(responseChannel, event.args[0]);
+
+      // Clean up listener
+      webview.removeEventListener('ipc-message', responseHandler);
+    }
+  };
+
+  // Listen for the response
+  console.log('[Preload] Adding ipc-message listener for channel:', responseChannel);
+  webview.addEventListener('ipc-message', responseHandler);
+
+  // Forward the command to the webview's preload script
+  console.log('[Preload] Sending command to webview...');
+  webview.send(IPC_CHANNEL_TEST_RUNNER, command);
+  console.log('[Preload] Command sent');
 }
 
 // Type augmentation for window.cyrus

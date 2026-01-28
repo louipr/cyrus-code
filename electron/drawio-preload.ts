@@ -16,6 +16,9 @@
 
 import { ipcRenderer, contextBridge } from 'electron';
 
+// IPC channel for test runner commands
+const IPC_CHANNEL_TEST_RUNNER = '__testRunner';
+
 // Log immediately to verify preload is executing
 console.log('[DrawioPreload] Preload script starting...');
 
@@ -317,10 +320,96 @@ function setupIpcHandlers(): void {
   });
 }
 
+/**
+ * Set up test runner handler for macro execution.
+ * Handles drawio-specific actions from the macro system.
+ */
+function setupTestRunnerHandler(): void {
+  console.log('[DrawioPreload] Setting up test runner handler');
+  ipcRenderer.on(IPC_CHANNEL_TEST_RUNNER, async (_event, command) => {
+    const { id, action, args } = command;
+    const responseChannel = `${IPC_CHANNEL_TEST_RUNNER}:${id}`;
+
+    console.log('[DrawioPreload] Received test runner command:', action);
+
+    try {
+      switch (action) {
+        case 'drawio:insertVertex': {
+          const [x, y, width, height, label, style] = args;
+          console.log('[DrawioPreload] Executing insertVertex:', { x, y, width, height, label });
+
+          const graph = findGraph();
+
+          if (!graph) {
+            throw new Error('Draw.io graph not available');
+          }
+
+          // Get the default parent (the root cell)
+          const parent = graph.getDefaultParent();
+
+          // Begin update transaction
+          graph.getModel().beginUpdate();
+          try {
+            // Insert vertex: insertVertex(parent, id, value, x, y, width, height, style)
+            const vertex = graph.insertVertex(
+              parent,
+              null, // auto-generate ID
+              label || '', // vertex label
+              x,
+              y,
+              width,
+              height,
+              style || '' // style string
+            );
+
+            console.log('[DrawioPreload] Vertex created:', vertex.id);
+
+            ipcRenderer.sendToHost(responseChannel, {
+              success: true,
+              result: vertex.id,
+            });
+          } finally {
+            // End update transaction (commits changes)
+            graph.getModel().endUpdate();
+          }
+          break;
+        }
+
+        case 'evaluate': {
+          // Execute arbitrary JavaScript code in the webview context
+          const [code] = args as [string];
+          console.log('[DrawioPreload] Executing evaluate');
+
+          const wrappedCode = `(async () => { ${code} })()`;
+          const result = await eval(wrappedCode);
+
+          console.log('[DrawioPreload] Evaluate succeeded:', result);
+
+          ipcRenderer.sendToHost(responseChannel, {
+            success: true,
+            result,
+          });
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
+    } catch (error) {
+      console.error('[DrawioPreload] Test runner action error:', error);
+      ipcRenderer.sendToHost(responseChannel, {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+}
+
 // Initialize IMMEDIATELY - bridge must be ready BEFORE Draw.io scripts run
 // Preload scripts execute before page scripts, so this will be ready in time
 setupElectronBridge();
 setupIpcHandlers();
+setupTestRunnerHandler();
 console.log('[DrawioPreload] Bridge initialized for standalone mode');
 
 // Start ready detection after DOM is loaded (for polling .geDiagramContainer)
