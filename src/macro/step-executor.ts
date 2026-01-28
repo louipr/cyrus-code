@@ -1,13 +1,13 @@
 /**
  * Step Executor
  *
- * Pure functions for executing test steps. No state, no side effects except IPC.
- * Used by DebugSession to execute individual steps.
+ * Pure functions for executing macro steps. No state, no side effects except IPC.
+ * Used by MacroSession to execute individual steps.
  */
 
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
-import type { TestSuite, TestStep } from './test-suite-types.js';
+import type { Macro, MacroStep } from './macro-types.js';
 import type { PlaybackPosition, StepResult } from './playback-types.js';
 import { IPC_CHANNEL_TEST_RUNNER, IPC_DEFAULT_TIMEOUT_MS } from './constants.js';
 
@@ -16,14 +16,14 @@ import { IPC_CHANNEL_TEST_RUNNER, IPC_DEFAULT_TIMEOUT_MS } from './constants.js'
  */
 export interface StepYield {
   position: PlaybackPosition;
-  step: TestStep;
+  step: MacroStep;
   result: StepResult;
 }
 
 /**
  * Callback for step-start events (emitted before execution).
  */
-type StepStartCallback = (position: PlaybackPosition, step: TestStep) => void;
+type StepStartCallback = (position: PlaybackPosition, step: MacroStep) => void;
 
 /**
  * Create a generator that executes test steps sequentially.
@@ -33,7 +33,7 @@ type StepStartCallback = (position: PlaybackPosition, step: TestStep) => void;
  * @param onStepStart - Callback invoked before each step executes
  */
 export async function* createStepGenerator(
-  suite: TestSuite,
+  suite: Macro,
   wc: WebContents,
   onStepStart?: StepStartCallback
 ): AsyncGenerator<StepYield> {
@@ -71,7 +71,7 @@ export async function* createStepGenerator(
  * Execute a step's action.
  */
 async function executeAction(
-  step: TestStep,
+  step: MacroStep,
   wc: WebContents
 ): Promise<unknown> {
   switch (step.action) {
@@ -97,7 +97,7 @@ async function executeAction(
  * Execute a step's expectation/assertion.
  */
 async function executeExpect(
-  step: TestStep,
+  step: MacroStep,
   actionValue: unknown,
   wc: WebContents
 ): Promise<unknown> {

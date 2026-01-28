@@ -23,10 +23,20 @@ export {
   type ExportHistoryRepository,
 } from './export-history-repository.js';
 export {
-  YamlTestSuiteRepository,
-  createTestSuiteRepository,
-  type TestSuiteEntry,
-  type TestSuiteGroup,
-  type TestSuiteIndex,
-  type TestSuiteRepository,
-} from './test-suite-repository.js';
+  YamlMacroRepository,
+  createMacroRepository,
+  type MacroEntry,
+  type MacroGroup,
+  type MacroIndex,
+  type MacroRepository,
+} from './macro-repository.js';
+
+// Backward compatibility
+export {
+  YamlMacroRepository as YamlTestSuiteRepository,
+  createMacroRepository as createTestSuiteRepository,
+  type MacroEntry as TestSuiteEntry,
+  type MacroGroup as TestSuiteGroup,
+  type MacroIndex as TestSuiteIndex,
+  type MacroRepository as TestSuiteRepository,
+} from './macro-repository.js';

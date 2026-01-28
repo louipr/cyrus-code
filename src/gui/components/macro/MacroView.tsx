@@ -14,7 +14,6 @@ import { apiClient } from '../../api-client';
 import { TestSuiteTree } from './TestSuiteTree';
 import { StepDetail } from './StepDetail';
 import { TestSuiteDetail } from './TestSuiteDetail';
-import { RunControls } from './RunControls';
 import { useDebugSession } from '../../stores/DebugSessionContext';
 import { updateStepField } from '../../utils/step-editor';
 import { PanelLayout, Panel, ResizeHandle, Card } from '../layout';
@@ -258,7 +257,7 @@ export function MacroView() {
         position="left"
         size={{ default: 280, min: 200, max: 400 }}
         title="Test Suites"
-        headerActions={<RunControls debugSession={debugSession} />}
+        headerActions={undefined}
         testId="test-suite-tree-panel"
         collapsible
       >

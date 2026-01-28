@@ -20,6 +20,7 @@ import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
 import { MacroView } from './components/macro';
+import { RunControls } from './components/macro/RunControls';
 import { DebugSessionProvider, useDebugSession } from './stores/DebugSessionContext';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
@@ -296,6 +297,9 @@ function AppContent(): React.ReactElement {
             Tests
           </button>
         </div>
+
+        {/* Run controls - always in header (fixed position) */}
+        <RunControls debugSession={debugSession} />
 
         {/* Tool Buttons */}
         <div style={styles.toolButtons}>

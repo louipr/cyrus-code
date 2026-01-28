@@ -1,14 +1,14 @@
 /**
  * Macro Module
  *
- * GUI automation engine for recording and playing back test suites.
- * Test suites are YAML-based scripts (*.suite.yaml) that automate GUI interactions.
+ * GUI automation engine for recording and playing back macros.
+ * Macros are YAML-based scripts (*.macro.yaml) that automate GUI interactions.
  *
  * ## Module Structure
  *
- * Types (in test-suite-types.ts):
- * - TestSuite      - Complete test suite document
- * - TestStep       - Discriminated union of all step types (type-safe)
+ * Types (in macro-types.ts):
+ * - Macro          - Complete macro document
+ * - MacroStep      - Discriminated union of all step types (type-safe)
  * - ActionType     - Supported step actions
  *
  * Playback Types (in playback-types.ts):
@@ -16,7 +16,7 @@
  * - PlaybackEvent  - Events emitted during execution
  * - StepResult     - Result of executing a single step
  *
- * DebugSession (in debug-session.ts):
+ * MacroSession (in macro-session.ts):
  * - Class-based session with encapsulated state
  * - Supports multiple event listeners via on()
  * - play(), pause(), step(), resume(), stop()
@@ -28,16 +28,16 @@
  * ## Usage
  *
  * ```typescript
- * import { DebugSession, generateSessionId } from './macro';
+ * import { MacroSession, generateSessionId } from './macro';
  *
- * const session = new DebugSession(generateSessionId(), testSuite, webContents, config);
+ * const session = new MacroSession(generateSessionId(), macro, webContents, config);
  * session.on((event) => console.log(event));
  * await session.play();
  * ```
  */
 
-// Test suite definition types (TestSuite, TestStep, ActionType)
-export * from './test-suite-types.js';
+// Macro definition types (Macro, MacroStep, ActionType)
+export * from './macro-types.js';
 
 // Constants
 export * from './constants.js';
@@ -45,7 +45,11 @@ export * from './constants.js';
 // Playback types (PlaybackState, PlaybackEvent, StepResult, etc.)
 export * from './playback-types.js';
 
-// DebugSession - Class-based session
-export { DebugSession, generateSessionId, type SessionSnapshot } from './debug-session.js';
+// MacroSession - Class-based session
+export { MacroSession, generateSessionId, type SessionSnapshot } from './macro-session.js';
 
-// Note: Step executor internals (createStepGenerator, StepYield) are used only by DebugSession
+// Backward compatibility - re-export with old names
+export { MacroSession as DebugSession } from './macro-session.js';
+export type { Macro as TestSuite, MacroStep as TestStep, MacroStatus as TestSuiteStatus, MacroMetadata as TestSuiteMetadata, MacroContext as TestSuiteContext } from './macro-types.js';
+
+// Note: Step executor internals (createStepGenerator, StepYield) are used only by MacroSession
