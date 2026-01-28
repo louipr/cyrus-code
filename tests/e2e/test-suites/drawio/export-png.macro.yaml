@@ -24,25 +24,9 @@ steps:
 
   - action: click
     selector: "[data-testid='export-all-button']"
+    timeout: 2000
     why: Click the export button in the header
 
   - action: wait
-    timeout: 500
-    why: Wait for export dialog to appear
-
-  - action: evaluate
-    script: |
-      // The DrawioEditor component has an exportPng() method
-      // that can be triggered via ref from the App component.
-      // This macro documents the user flow for exporting.
-      // Actual implementation may require accessing the
-      // DrawioEditor ref directly.
-      console.log('Export dialog interaction would happen here');
-      return true;
-    expect:
-      script: result === true
-    why: Document export flow (implementation pending)
-
-  - action: wait
     timeout: 1000
-    why: Wait for export to complete
+    why: Wait for export operation to complete

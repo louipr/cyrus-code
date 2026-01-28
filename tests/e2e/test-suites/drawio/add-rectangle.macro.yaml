@@ -31,20 +31,4 @@ steps:
     expect:
       selector: "[data-testid='diagram-webview']"
       assert: exists
-    why: Wait for Draw.io webview to load
-
-  - action: evaluate
-    script: |
-      // Access the draw.io webview and verify it's ready
-      const webview = document.querySelector('[data-testid="diagram-webview"]');
-      if (webview) {
-        console.log('Draw.io webview ready');
-        // TODO: Implement rectangle insertion via draw.io IPC
-        // This will require sending a message to the draw.io instance
-        // to trigger shape insertion programmatically
-        return true;
-      }
-      return false;
-    expect:
-      script: result === true
-    why: Verify draw.io webview is accessible and ready for shape insertion
+    why: Wait for Draw.io webview to load and verify it exists

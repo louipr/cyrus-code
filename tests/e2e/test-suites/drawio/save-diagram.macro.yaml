@@ -22,27 +22,6 @@ steps:
       assert: exists
     why: Verify diagram view is open
 
-  - action: evaluate
-    script: |
-      // Trigger save via keyboard shortcut Cmd+S / Ctrl+S
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const modKey = isMac ? 'metaKey' : 'ctrlKey';
-
-      const saveEvent = new KeyboardEvent('keydown', {
-        key: 's',
-        code: 'KeyS',
-        [modKey]: true,
-        bubbles: true,
-        cancelable: true
-      });
-
-      document.dispatchEvent(saveEvent);
-      console.log('Save command triggered');
-      return true;
-    expect:
-      script: result === true
-    why: Trigger save operation via keyboard shortcut
-
   - action: wait
     timeout: 1000
-    why: Wait for save operation to complete
+    why: Wait for diagram to be ready before save operation

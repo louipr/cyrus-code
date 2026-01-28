@@ -33,21 +33,6 @@ steps:
       assert: exists
     why: Wait for Draw.io webview to load
 
-  - action: evaluate
-    script: |
-      // TODO: Trigger file open dialog or load specific diagram
-      // This will require integration with Electron's file picker
-      // or direct file loading via the DrawioEditor component
-      const webview = document.querySelector('[data-testid="diagram-webview"]');
-      if (webview) {
-        console.log('Ready to open diagram file');
-        return true;
-      }
-      return false;
-    expect:
-      script: result === true
-    why: Verify diagram view is ready for file operations
-
   - action: wait
     timeout: 1000
-    why: Wait for diagram to load
+    why: Wait for diagram to be ready for file operations
