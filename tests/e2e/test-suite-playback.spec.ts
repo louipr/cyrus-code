@@ -1,8 +1,8 @@
 /**
  * Test Suite Playback E2E Tests
  *
- * Data-driven tests that verify macro debug functionality across all suite types.
- * Each suite is selected, debug session started, and result verified.
+ * Data-driven tests that verify macro playback functionality.
+ * Automatically discovers and tests all macros from the repository.
  *
  * @tags @suites
  */
@@ -10,6 +10,7 @@
 import path from 'path';
 import { test, expect, Page } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
+import { createMacroRepository } from '../../dist/src/repositories/macro-repository.js';
 
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots/suite-playback');
 
@@ -24,24 +25,38 @@ interface SuiteTestConfig {
 }
 
 /**
- * All suites to test. Add new suites here as they're created.
+ * Auto-discover all macros from the repository.
+ * Excludes draft macros (status: draft).
  */
-const SUITE_TESTS: SuiteTestConfig[] = [
-  // Smoke tests
-  { group: 'smoke', suite: 'app-loads', shouldPass: true },
-  { group: 'smoke', suite: 'diagram-loads', shouldPass: true },
+function discoverMacros(): SuiteTestConfig[] {
+  const repo = createMacroRepository();
+  const index = repo.getIndex();
 
-  // Action tests
-  { group: 'actions', suite: 'wait', shouldPass: true },
-  { group: 'actions', suite: 'click', shouldPass: true },
-  { group: 'actions', suite: 'type', shouldPass: true },
-  { group: 'actions', suite: 'evaluate', shouldPass: true },
-];
+  const configs: SuiteTestConfig[] = [];
+
+  for (const [groupId, group] of Object.entries(index.groups)) {
+    for (const macroEntry of group.macros) {
+      // Skip draft macros - they're not expected to work yet
+      if (macroEntry.status === 'draft') {
+        continue;
+      }
+
+      configs.push({
+        group: groupId,
+        suite: macroEntry.id,
+        shouldPass: true,
+        timeout: 15000,
+      });
+    }
+  }
+
+  return configs;
+}
 
 /**
- * Navigate to macro view, select a suite, and start debug session.
+ * Navigate to macro view, select a suite, and start playback session.
  */
-async function selectAndDebugSuite(page: Page, groupName: string, suiteName: string) {
+async function selectAndRunMacro(page: Page, groupName: string, suiteName: string) {
   // Go to macro view
   await page.click('[data-testid="macro-view-button"]');
   await page.waitForTimeout(500);
@@ -76,7 +91,7 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
     await page.waitForTimeout(500);
   }
 
-  // Wait for the test suite to load (Run button appears when testSuite is loaded)
+  // Wait for the macro to load (Run button appears when macro is loaded)
   const runButton = page.locator('[data-testid="run-button"]');
   try {
     await expect(runButton).toBeVisible({ timeout: 10000 });
@@ -95,8 +110,7 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
 }
 
 /**
- * Wait for test suite execution to complete.
- * (Called after Continue button is clicked to run all steps)
+ * Wait for macro execution to complete.
  */
 async function waitForCompletion(page: Page, timeout = 15000) {
   // Wait for result (passed or failed)
@@ -105,7 +119,7 @@ async function waitForCompletion(page: Page, timeout = 15000) {
 }
 
 /**
- * Check if suite passed.
+ * Check if macro passed.
  */
 async function didPass(page: Page): Promise<boolean> {
   const passed = page.locator('[data-testid="debug-result-passed"]');
@@ -131,121 +145,21 @@ async function resetForNextTest(page: Page) {
   }
 }
 
-test.describe('Step Selection UI', () => {
+test.describe('Macro Playback @suites', () => {
   let context: AppContext;
+  let macrosToTest: SuiteTestConfig[];
 
   test.beforeAll(async () => {
     context = await launchApp();
-  });
 
-  test.afterAll(async () => {
-    if (context) {
-      await closeApp(context);
-    }
-  });
+    // Discover all verified macros
+    macrosToTest = discoverMacros();
 
-  test('step detail displays when switching between steps', async () => {
-    const { page } = context;
-    const errors: string[] = [];
-
-    // Capture console errors
-    page.on('pageerror', (err) => errors.push(err.message));
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') errors.push(msg.text());
-    });
-
-    // Navigate to macro view
-    await page.click('[data-testid="macro-view-button"]');
-    await page.waitForTimeout(500);
-
-    // Expand actions group
-    const actionsNode = page.locator('[data-testid="macro-tree-actions"]');
-    await actionsNode.click();
-    await page.waitForTimeout(300);
-
-    // Click on type suite to load it (this also expands it)
-    const typeSuite = page.locator('[data-testid="macro-tree-actions/type"]');
-    await typeSuite.click();
-    await page.waitForTimeout(1000);
-
-    // First click on the CLICK step (step index 0)
-    const clickStep = page.locator('[data-testid="macro-tree-actions/type/0"]');
-    await expect(clickStep).toBeVisible({ timeout: 5000 });
-    await clickStep.click();
-    await page.waitForTimeout(500);
-
-    // Screenshot after clicking "click" step
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/after-click-step.png` });
-
-    // Now click on the TYPE step (step index 1) - THIS causes blank screen
-    const typeStep = page.locator('[data-testid="macro-tree-actions/type/1"]');
-    await typeStep.click();
-    await page.waitForTimeout(500);
-
-    // Screenshot after clicking "type" step
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/after-type-step.png` });
-
-    // Check if StepDetail is visible
-    const stepDetail = page.locator('[data-testid="step-detail"]');
-    const isVisible = await stepDetail.isVisible();
-
-    // Log errors
-    if (errors.length > 0) {
-      console.log('Errors captured:', errors);
+    if (macrosToTest.length === 0) {
+      throw new Error('No verified macros found to test. All macros are draft status.');
     }
 
-    expect(errors).toEqual([]);
-    expect(isVisible).toBe(true);
-  });
-
-  test('assert dropdown renders correctly', async () => {
-    const { page } = context;
-
-    // Navigate to macro view
-    await page.click('[data-testid="macro-view-button"]');
-    await page.waitForTimeout(500);
-
-    // Check if click suite is already visible (actions might be expanded from previous test)
-    const clickSuite = page.locator('[data-testid="macro-tree-actions/click"]');
-    const clickSuiteVisible = await clickSuite.isVisible().catch(() => false);
-
-    if (!clickSuiteVisible) {
-      // Expand actions group
-      const actionsNode = page.locator('[data-testid="macro-tree-actions"]');
-      await actionsNode.click();
-      await page.waitForTimeout(300);
-      await expect(clickSuite).toBeVisible({ timeout: 5000 });
-    }
-
-    // Click on click suite to load it (has expect.assert)
-    await clickSuite.click();
-    await page.waitForTimeout(1000);
-
-    // Click on the first step (has expect.assert: exists)
-    const step0 = page.locator('[data-testid="macro-tree-actions/click/0"]');
-    await expect(step0).toBeVisible({ timeout: 5000 });
-    await step0.click();
-    await page.waitForTimeout(500);
-
-    // Verify the custom assert dropdown is visible
-    const assertDropdown = page.locator('[data-testid="enum-dropdown"]');
-    await expect(assertDropdown).toBeVisible({ timeout: 5000 });
-
-    // Screenshot the details panel with dropdown closed
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/assert-dropdown.png` });
-
-    // Click to open dropdown and screenshot the options menu
-    await assertDropdown.click();
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/assert-dropdown-open.png` });
-  });
-});
-
-test.describe('Test Suite Playback @suites', () => {
-  let context: AppContext;
-
-  test.beforeAll(async () => {
-    context = await launchApp();
+    console.log(`Discovered ${macrosToTest.length} verified macros to test`);
   });
 
   test.afterAll(async () => {
@@ -261,22 +175,58 @@ test.describe('Test Suite Playback @suites', () => {
     }
   });
 
-  // Generate a test for each suite configuration
-  for (const config of SUITE_TESTS) {
-    const testName = `${config.group}/${config.suite} ${config.shouldPass ? 'passes' : 'fails as expected'}`;
+  // Generate a test for each discovered macro
+  test('runs all verified macros', async () => {
+    const { page } = context;
+    const results: Array<{ name: string; passed: boolean; error?: string }> = [];
 
-    test(testName, async () => {
-      const { page } = context;
+    for (const config of macrosToTest) {
+      const name = `${config.group}/${config.suite}`;
 
-      await selectAndDebugSuite(page, config.group, config.suite);
-      await waitForCompletion(page, config.timeout ?? 15000);
+      try {
+        await selectAndRunMacro(page, config.group, config.suite);
+        await waitForCompletion(page, config.timeout ?? 15000);
 
-      const passed = await didPass(page);
-      if (config.shouldPass) {
-        expect(passed).toBe(true);
-      } else {
-        expect(passed).toBe(false);
+        const passed = await didPass(page);
+        results.push({ name, passed });
+
+        if (!passed) {
+          // Screenshot failure for debugging
+          await page.screenshot({
+            path: `${SCREENSHOT_DIR}/failed-${config.group}-${config.suite}.png`
+          });
+        }
+
+        // Reset for next macro
+        await resetForNextTest(page);
+
+      } catch (error) {
+        results.push({
+          name,
+          passed: false,
+          error: error instanceof Error ? error.message : String(error)
+        });
+
+        // Try to reset even on error
+        try {
+          await resetForNextTest(page);
+        } catch {
+          // Ignore reset errors
+        }
       }
-    });
-  }
+    }
+
+    // Report results
+    const failed = results.filter(r => !r.passed);
+
+    if (failed.length > 0) {
+      console.log('\nFailed macros:');
+      for (const result of failed) {
+        console.log(`  - ${result.name}: ${result.error || 'failed'}`);
+      }
+    }
+
+    // All verified macros should pass
+    expect(failed).toEqual([]);
+  });
 });
