@@ -1,30 +1,30 @@
 /**
- * TestSuiteTree Component
+ * MacroTree Component
  *
  * Hierarchical tree navigator for test suites: apps → test suites → steps
  */
 
 import { useState } from 'react';
-import type { TestSuiteIndex, TestSuiteEntry } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestStep, StepResult } from '../../../macro';
+import type { MacroIndex, MacroEntry } from '../../../repositories/macro-repository';
+import type { Macro, MacroStep, StepResult } from '../../../macro';
 
-interface TestSuiteTreeProps {
+interface MacroTreeProps {
   /** The test suite index */
-  index: TestSuiteIndex;
+  index: MacroIndex;
   /** Currently loaded test suite (for showing steps) */
-  testSuite: TestSuite | null;
-  /** Selected path: "appId" | "appId/testSuiteId" | "appId/testSuiteId/stepIndex" */
+  macro: Macro | null;
+  /** Selected path: "appId" | "appId/macroId" | "appId/macroId/stepIndex" */
   selectedPath: string | null;
   /** Expanded node IDs */
   expandedNodes: Set<string>;
   /** Step results from debug session (key: stepIndex as string) */
   stepResults?: Map<string, StepResult>;
   /** Called when an item is selected */
-  onSelect: (path: string, type: 'app' | 'testSuite' | 'step') => void;
+  onSelect: (path: string, type: 'app' | 'macro' | 'step') => void;
   /** Called when a node is toggled */
   onToggle: (nodeId: string) => void;
   /** Called when run button is clicked on a test suite */
-  onRunSuite?: (appId: string, testSuiteId: string) => void;
+  onRunSuite?: (appId: string, macroId: string) => void;
   /** Called when run all button is clicked on a group */
   onRunGroup?: (appId: string) => void;
 }
@@ -113,7 +113,7 @@ const styles = {
 // Icons for different node types
 const ICONS = {
   app: '📁',
-  testSuite: '📋',
+  macro: '📋',
   step: '○',
   'step-click': '👆',
   'step-type': '⌨️',
@@ -147,7 +147,7 @@ function TreeNode({
 }: {
   id: string;
   label: string;
-  type: 'app' | 'testSuite' | 'step';
+  type: 'app' | 'macro' | 'step';
   icon: string;
   depth: number;
   isExpanded: boolean;
@@ -190,7 +190,7 @@ function TreeNode({
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        data-testid={`test-suite-tree-${id}`}
+        data-testid={`macro-tree-${id}`}
       >
         <span style={styles.chevron}>
           {hasChildren ? (isExpanded ? '▼' : '▶') : ' '}
@@ -198,7 +198,7 @@ function TreeNode({
         <span style={styles.icon}>{icon}</span>
         <span style={styles.label} title={label}>{label}</span>
         {badge && <span style={badgeStyle ?? styles.badge}>{badge}</span>}
-        {onRun && (type === 'testSuite' || type === 'app') && (
+        {onRun && (type === 'macro' || type === 'app') && (
           <button
             style={{
               ...styles.playButton,
@@ -221,11 +221,11 @@ function TreeNode({
 }
 
 /**
- * TestSuiteTree - Tree navigator for test suites
+ * MacroTree - Tree navigator for test suites
  */
-export function TestSuiteTree({
+export function MacroTree({
   index,
-  testSuite,
+  macro,
   selectedPath,
   expandedNodes,
   stepResults,
@@ -233,7 +233,7 @@ export function TestSuiteTree({
   onToggle,
   onRunSuite,
   onRunGroup,
-}: TestSuiteTreeProps) {
+}: MacroTreeProps) {
   const apps = Object.keys(index.groups);
 
   if (apps.length === 0) {
@@ -246,16 +246,16 @@ export function TestSuiteTree({
 
   const selectedParts = selectedPath?.split('/') || [];
   const selectedAppId = selectedParts[0];
-  const selectedTestSuiteId = selectedParts[1];
+  const selectedMacroId = selectedParts[1];
   const selectedStepIndex = selectedParts[2];
 
   return (
-    <div style={styles.container} data-testid="test-suite-tree">
+    <div style={styles.container} data-testid="macro-tree">
       <div style={styles.tree}>
         {apps.map((appId) => {
           const group = index.groups[appId]!;
           const isAppExpanded = expandedNodes.has(appId);
-          const isAppSelected = selectedAppId === appId && !selectedTestSuiteId;
+          const isAppSelected = selectedAppId === appId && !selectedMacroId;
 
           return (
             <TreeNode
@@ -267,49 +267,49 @@ export function TestSuiteTree({
               depth={0}
               isExpanded={isAppExpanded}
               isSelected={isAppSelected}
-              hasChildren={group.testSuites.length > 0}
-              badge={`${group.testSuites.length}`}
+              hasChildren={group.macros.length > 0}
+              badge={`${group.macros.length}`}
               onSelect={() => onSelect(appId, 'app')}
               onToggle={() => onToggle(appId)}
               onRun={onRunGroup ? () => onRunGroup(appId) : undefined}
               runLabel="All"
             >
-              {group.testSuites.map((entry: TestSuiteEntry) => {
-                const testSuitePath = `${appId}/${entry.id}`;
-                const isTestSuiteExpanded = expandedNodes.has(testSuitePath);
-                const isTestSuiteSelected =
+              {group.macros.map((entry: MacroEntry) => {
+                const macroPath = `${appId}/${entry.id}`;
+                const isMacroExpanded = expandedNodes.has(macroPath);
+                const isMacroSelected =
                   selectedAppId === appId &&
-                  selectedTestSuiteId === entry.id &&
+                  selectedMacroId === entry.id &&
                   !selectedStepIndex;
 
                 // Show steps if this test suite is loaded and expanded
                 const showSteps =
-                  isTestSuiteExpanded &&
-                  selectedTestSuiteId === entry.id &&
-                  testSuite !== null;
+                  isMacroExpanded &&
+                  selectedMacroId === entry.id &&
+                  macro !== null;
 
                 return (
                   <TreeNode
-                    key={testSuitePath}
-                    id={testSuitePath}
+                    key={macroPath}
+                    id={macroPath}
                     label={entry.id}
-                    type="testSuite"
-                    icon={ICONS.testSuite}
+                    type="macro"
+                    icon={ICONS.macro}
                     depth={1}
-                    isExpanded={isTestSuiteExpanded}
-                    isSelected={isTestSuiteSelected}
+                    isExpanded={isMacroExpanded}
+                    isSelected={isMacroSelected}
                     hasChildren={true}
                     badge={entry.status === 'verified' ? '✓' : undefined}
-                    onSelect={() => onSelect(testSuitePath, 'testSuite')}
-                    onToggle={() => onToggle(testSuitePath)}
+                    onSelect={() => onSelect(macroPath, 'macro')}
+                    onToggle={() => onToggle(macroPath)}
                     onRun={onRunSuite ? () => onRunSuite(appId, entry.id) : undefined}
                   >
                     {showSteps &&
-                      testSuite.steps.map((step: TestStep, stepIdx: number) => {
-                        const stepPath = `${testSuitePath}/${stepIdx}`;
+                      macro.steps.map((step: MacroStep, stepIdx: number) => {
+                        const stepPath = `${macroPath}/${stepIdx}`;
                         const isStepSelected =
                           selectedAppId === appId &&
-                          selectedTestSuiteId === entry.id &&
+                          selectedMacroId === entry.id &&
                           selectedStepIndex === String(stepIdx);
 
                         // Get step result if available

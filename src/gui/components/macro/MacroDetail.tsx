@@ -1,78 +1,78 @@
 /**
- * TestSuiteDetail Component
+ * MacroDetail Component
  *
  * Displays detailed information about a selected test suite.
  * Shows metadata, context, and status information.
  */
 
-import type { TestSuite } from '../../../macro';
+import type { Macro } from '../../../macro';
 import { STATUS_COLORS, RELIABILITY_COLORS, FALLBACK_COLOR } from '../../constants/colors';
 
-interface TestSuiteDetailProps {
-  testSuite: TestSuite;
-  /** Suite ID (derived from filename, e.g., "export-dialog") */
-  suiteId?: string;
+interface MacroDetailProps {
+  macro: Macro;
+  /** Macro ID (derived from filename, e.g., "export-dialog") */
+  macroId?: string;
 }
 
-export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
-  const statusColor = STATUS_COLORS[testSuite.metadata?.status] ?? FALLBACK_COLOR;
-  const reliabilityColor = RELIABILITY_COLORS[testSuite.metadata?.reliability] ?? FALLBACK_COLOR;
+export function MacroDetail({ macro, macroId }: MacroDetailProps) {
+  const statusColor = STATUS_COLORS[macro.metadata?.status] ?? FALLBACK_COLOR;
+  const reliabilityColor = RELIABILITY_COLORS[macro.metadata?.reliability] ?? FALLBACK_COLOR;
 
-  // Display suiteId as title (derived from filename)
-  const title = suiteId ?? 'Test Suite';
+  // Display macroId as title (derived from filename)
+  const title = macroId ?? 'Macro';
 
   return (
-    <div style={styles.container} data-testid="test-suite-detail">
+    <div style={styles.container} data-testid="macro-detail">
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.title}>{title}</span>
-        {testSuite.metadata?.status && (
+        {macro.metadata?.status && (
           <span style={{ ...styles.statusBadge, color: statusColor, borderColor: statusColor }}>
-            {testSuite.metadata.status}
+            {macro.metadata.status}
           </span>
         )}
       </div>
 
       {/* Description */}
-      <div style={styles.description}>{testSuite.description}</div>
+      <div style={styles.description}>{macro.description}</div>
 
       {/* Metadata */}
       <div style={styles.metadataGrid}>
-        {testSuite.context?.app && (
+        {macro.context?.app && (
           <div style={styles.metadataItem}>
             <span style={styles.label}>App</span>
-            <span style={styles.value}>{testSuite.context.app}</span>
+            <span style={styles.value}>{macro.context.app}</span>
           </div>
         )}
 
         <div style={styles.metadataItem}>
           <span style={styles.label}>Steps</span>
-          <span style={styles.value}>{testSuite.steps.length}</span>
+          <span style={styles.value}>{macro.steps.length}</span>
         </div>
 
-        {testSuite.metadata?.reliability && (
+        {macro.metadata?.reliability && (
           <div style={styles.metadataItem}>
             <span style={styles.label}>Reliability</span>
             <span style={{ ...styles.value, color: reliabilityColor }}>
-              {testSuite.metadata.reliability}
+              {macro.metadata.reliability}
             </span>
           </div>
         )}
 
-        {testSuite.metadata?.successRate !== undefined && (
+        {macro.metadata?.successRate !== undefined && (
           <div style={styles.metadataItem}>
             <span style={styles.label}>Success Rate</span>
-            <span style={styles.value}>{testSuite.metadata.successRate}%</span>
+            <span style={styles.value}>{macro.metadata.successRate}%</span>
           </div>
         )}
       </div>
 
       {/* Tags */}
-      {testSuite.metadata?.tags && testSuite.metadata.tags.length > 0 && (
+      {macro.metadata?.tags && macro.metadata.tags.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Tags</div>
           <div style={styles.tagList}>
-            {testSuite.metadata.tags.map((tag: string, idx: number) => (
+            {macro.metadata.tags.map((tag: string, idx: number) => (
               <span key={idx} style={styles.tag}>
                 {tag}
               </span>
@@ -82,11 +82,11 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
       )}
 
       {/* Prerequisites */}
-      {testSuite.context?.prerequisites && testSuite.context.prerequisites.length > 0 && (
+      {macro.context?.prerequisites && macro.context.prerequisites.length > 0 && (
         <div style={styles.section}>
           <div style={styles.label}>Prerequisites</div>
           <ul style={styles.prereqList}>
-            {testSuite.context.prerequisites.map((prereq: string, idx: number) => (
+            {macro.context.prerequisites.map((prereq: string, idx: number) => (
               <li key={idx} style={styles.prereqItem}>
                 {prereq}
               </li>
@@ -97,14 +97,14 @@ export function TestSuiteDetail({ testSuite, suiteId }: TestSuiteDetailProps) {
 
       {/* Author & Dates */}
       <div style={styles.footer}>
-        {testSuite.metadata?.author && (
-          <span style={styles.footerItem}>By: {testSuite.metadata.author}</span>
+        {macro.metadata?.author && (
+          <span style={styles.footerItem}>By: {macro.metadata.author}</span>
         )}
-        {testSuite.metadata?.created && (
-          <span style={styles.footerItem}>Created: {testSuite.metadata.created}</span>
+        {macro.metadata?.created && (
+          <span style={styles.footerItem}>Created: {macro.metadata.created}</span>
         )}
-        {testSuite.metadata?.lastRun && (
-          <span style={styles.footerItem}>Last run: {testSuite.metadata.lastRun}</span>
+        {macro.metadata?.lastRun && (
+          <span style={styles.footerItem}>Last run: {macro.metadata.lastRun}</span>
         )}
       </div>
     </div>

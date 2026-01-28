@@ -48,8 +48,4 @@ export * from './playback-types.js';
 // MacroSession - Class-based session
 export { MacroSession, generateSessionId, type SessionSnapshot } from './macro-session.js';
 
-// Backward compatibility - re-export with old names
-export { MacroSession as DebugSession } from './macro-session.js';
-export type { Macro as TestSuite, MacroStep as TestStep, MacroStatus as TestSuiteStatus, MacroMetadata as TestSuiteMetadata, MacroContext as TestSuiteContext } from './macro-types.js';
-
 // Note: Step executor internals (createStepGenerator, StepYield) are used only by MacroSession

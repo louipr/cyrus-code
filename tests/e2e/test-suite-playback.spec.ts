@@ -47,16 +47,16 @@ async function selectAndDebugSuite(page: Page, groupName: string, suiteName: str
   await page.waitForTimeout(500);
 
   // Wait for tree to be visible
-  const tree = page.locator('[data-testid="test-suite-tree"]');
+  const tree = page.locator('[data-testid="macro-tree"]');
   await expect(tree).toBeVisible({ timeout: 5000 });
 
   // Check if suite is already visible (group already expanded from previous test)
-  const suiteNode = page.locator(`[data-testid="test-suite-tree-${groupName}/${suiteName}"]`);
+  const suiteNode = page.locator(`[data-testid="macro-tree-${groupName}/${suiteName}"]`);
   const suiteAlreadyVisible = await suiteNode.isVisible().catch(() => false);
 
   if (!suiteAlreadyVisible) {
     // Expand group (e.g., "actions")
-    const groupNode = page.locator(`[data-testid="test-suite-tree-${groupName}"]`);
+    const groupNode = page.locator(`[data-testid="macro-tree-${groupName}"]`);
     await expect(groupNode).toBeVisible({ timeout: 5000 });
     await groupNode.click();
     await page.waitForTimeout(300);
@@ -159,17 +159,17 @@ test.describe('Step Selection UI', () => {
     await page.waitForTimeout(500);
 
     // Expand actions group
-    const actionsNode = page.locator('[data-testid="test-suite-tree-actions"]');
+    const actionsNode = page.locator('[data-testid="macro-tree-actions"]');
     await actionsNode.click();
     await page.waitForTimeout(300);
 
     // Click on type suite to load it (this also expands it)
-    const typeSuite = page.locator('[data-testid="test-suite-tree-actions/type"]');
+    const typeSuite = page.locator('[data-testid="macro-tree-actions/type"]');
     await typeSuite.click();
     await page.waitForTimeout(1000);
 
     // First click on the CLICK step (step index 0)
-    const clickStep = page.locator('[data-testid="test-suite-tree-actions/type/0"]');
+    const clickStep = page.locator('[data-testid="macro-tree-actions/type/0"]');
     await expect(clickStep).toBeVisible({ timeout: 5000 });
     await clickStep.click();
     await page.waitForTimeout(500);
@@ -178,7 +178,7 @@ test.describe('Step Selection UI', () => {
     await page.screenshot({ path: `${SCREENSHOT_DIR}/after-click-step.png` });
 
     // Now click on the TYPE step (step index 1) - THIS causes blank screen
-    const typeStep = page.locator('[data-testid="test-suite-tree-actions/type/1"]');
+    const typeStep = page.locator('[data-testid="macro-tree-actions/type/1"]');
     await typeStep.click();
     await page.waitForTimeout(500);
 
@@ -206,12 +206,12 @@ test.describe('Step Selection UI', () => {
     await page.waitForTimeout(500);
 
     // Check if click suite is already visible (actions might be expanded from previous test)
-    const clickSuite = page.locator('[data-testid="test-suite-tree-actions/click"]');
+    const clickSuite = page.locator('[data-testid="macro-tree-actions/click"]');
     const clickSuiteVisible = await clickSuite.isVisible().catch(() => false);
 
     if (!clickSuiteVisible) {
       // Expand actions group
-      const actionsNode = page.locator('[data-testid="test-suite-tree-actions"]');
+      const actionsNode = page.locator('[data-testid="macro-tree-actions"]');
       await actionsNode.click();
       await page.waitForTimeout(300);
       await expect(clickSuite).toBeVisible({ timeout: 5000 });
@@ -222,7 +222,7 @@ test.describe('Step Selection UI', () => {
     await page.waitForTimeout(1000);
 
     // Click on the first step (has expect.assert: exists)
-    const step0 = page.locator('[data-testid="test-suite-tree-actions/click/0"]');
+    const step0 = page.locator('[data-testid="macro-tree-actions/click/0"]');
     await expect(step0).toBeVisible({ timeout: 5000 });
     await step0.click();
     await page.waitForTimeout(500);

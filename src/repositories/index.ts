@@ -30,13 +30,3 @@ export {
   type MacroIndex,
   type MacroRepository,
 } from './macro-repository.js';
-
-// Backward compatibility
-export {
-  YamlMacroRepository as YamlTestSuiteRepository,
-  createMacroRepository as createTestSuiteRepository,
-  type MacroEntry as TestSuiteEntry,
-  type MacroGroup as TestSuiteGroup,
-  type MacroIndex as TestSuiteIndex,
-  type MacroRepository as TestSuiteRepository,
-} from './macro-repository.js';

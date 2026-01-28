@@ -1,5 +1,5 @@
 /**
- * RunControls Component
+ * PlaybackControls Component
  *
  * Playback controls for test suite execution.
  * Shows contextual buttons based on session state:
@@ -9,18 +9,18 @@
  * - Completed: Dismiss, Pass/Fail indicator
  */
 
-import type { DebugSessionStore } from '../../stores/DebugSessionContext';
+import type { MacroSessionStore } from '../../stores/MacroSessionContext';
 
-interface RunControlsProps {
+interface PlaybackControlsProps {
   /** Debug session from context */
-  debugSession: DebugSessionStore;
+  session: MacroSessionStore;
 }
 
 /**
- * RunControls - Playback control buttons
+ * PlaybackControls - Playback control buttons
  */
-export function RunControls({ debugSession }: RunControlsProps) {
-  const { sessionId, readyToRun, playbackState, isPaused, isRunning, stepResults, commands } = debugSession;
+export function PlaybackControls({ session }: PlaybackControlsProps) {
+  const { sessionId, readyToRun, playbackState, isPaused, isRunning, stepResults, commands } = session;
 
   // No session and no suite selected - nothing to show
   if (!sessionId && !readyToRun) {
@@ -35,7 +35,7 @@ export function RunControls({ debugSession }: RunControlsProps) {
           style={styles.runButton}
           onClick={() => {
             const { groupId, suiteId, testSuite } = readyToRun;
-            debugSession.startDebug(groupId, suiteId, testSuite);
+            session.startDebug(groupId, suiteId, testSuite);
           }}
           title="Run test suite (F5)"
           data-testid="run-button"

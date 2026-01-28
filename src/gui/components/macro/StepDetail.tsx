@@ -5,13 +5,13 @@
  * Hides redundant Expected field when result already shows comparison.
  */
 
-import type { TestStep, StepResult } from '../../../macro';
+import type { MacroStep, StepResult } from '../../../macro';
 import { ACTION_ICONS } from '../../constants/action-icons';
 import { STEP_CONFIG, getStepParams, getStepValue } from '../../config/step-config';
 import { StepParamField } from './StepParamField';
 
 interface StepDetailProps {
-  step: TestStep;
+  step: MacroStep;
   stepIndex: number;
   result?: StepResult;
   onStepChange?: (stepIndex: number, field: string, value: string) => void;

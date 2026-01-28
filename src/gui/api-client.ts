@@ -29,9 +29,9 @@ import type {
   C4Hierarchy,
   DocumentHeading,
 } from '../domain/help/index';
-import type { TestSuiteIndex, TestSuiteEntry } from '../repositories/test-suite-repository';
+import type { MacroIndex, MacroEntry } from '../repositories/macro-repository';
 import type {
-  TestSuite,
+  Macro,
   PlaybackConfig,
   SessionSnapshot,
   PlaybackEvent,
@@ -143,14 +143,14 @@ interface CyrusAPI {
     onOpen: (callback: (path: string, xml: string) => void) => void;
     onExportPng: (callback: () => void) => void;
   };
-  recordings: {
-    getIndex: () => Promise<ApiResponse<TestSuiteIndex>>;
+  macros: {
+    getIndex: () => Promise<ApiResponse<MacroIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
-    getByApp: (appId: string) => Promise<ApiResponse<TestSuiteEntry[]>>;
-    get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
-    getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
-    save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
-    debug: {
+    getByApp: (appId: string) => Promise<ApiResponse<MacroEntry[]>>;
+    get: (appId: string, macroId: string) => Promise<ApiResponse<Macro | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<Macro | null>>;
+    save: (appId: string, macroId: string, macro: Macro) => Promise<ApiResponse<void>>;
+    playback: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;
       step: (sessionId: string) => Promise<ApiResponse<void>>;

@@ -44,8 +44,6 @@ interface ReadyToRun {
   groupId: string;
   suiteId: string;
   macro: Macro;
-  /** @deprecated Use macro instead */
-  testSuite: Macro;
 }
 
 /**
@@ -78,8 +76,6 @@ export interface MacroSessionStore {
 
   // Metadata actions
   startPlayback: (groupId: string, suiteId: string, macro: Macro) => Promise<void>;
-  /** @deprecated Use startPlayback instead */
-  startDebug: (groupId: string, suiteId: string, macro: Macro) => Promise<void>;
   updateMacro: (macro: Macro) => void;
   setReadyToRun: (groupId: string, suiteId: string, macro: Macro) => void;
 }
@@ -107,21 +103,21 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
 
   const subscribed = useRef(false);
 
-  // Subscribe to debug events on mount
+  // Subscribe to playback events on mount
   useEffect(() => {
     if (subscribed.current) return;
     subscribed.current = true;
 
-    apiClient.recordings.debug.subscribe().catch((err) => {
-      console.error('Failed to subscribe to debug events:', err);
+    apiClient.macros.playback.subscribe().catch((err) => {
+      console.error('Failed to subscribe to playback events:', err);
     });
 
-    window.cyrus.recordings.debug.onEvent((data) => {
+    window.cyrus.macros.playback.onEvent((data) => {
       handleEvent(data.sessionId, data.event);
     });
   }, []);
 
-  // Handle incoming debug events
+  // Handle incoming playback events
   const handleEvent = useCallback((eventSessionId: string, event: PlaybackEvent) => {
     setSessionId((currentId) => {
       if (currentId !== eventSessionId) return currentId;
@@ -188,7 +184,7 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
         setPosition(null);
         setPlaybackState('idle');
 
-        const response = await apiClient.recordings.debug.create({
+        const response = await apiClient.macros.playback.create({
           groupId: newGroupId,
           suiteId: newSuiteId,
           pauseOnStart: true,
@@ -207,29 +203,29 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
   );
 
   const start = useCallback(
-    () => runCommand(apiClient.recordings.debug.start, 'Failed to start'),
+    () => runCommand(apiClient.macros.playback.start, 'Failed to start'),
     [runCommand]
   );
 
   const step = useCallback(
-    () => runCommand(apiClient.recordings.debug.step, 'Failed to step'),
+    () => runCommand(apiClient.macros.playback.step, 'Failed to step'),
     [runCommand]
   );
 
   const pause = useCallback(
-    () => runCommand(apiClient.recordings.debug.pause, 'Failed to pause'),
+    () => runCommand(apiClient.macros.playback.pause, 'Failed to pause'),
     [runCommand]
   );
 
   const resume = useCallback(
-    () => runCommand(apiClient.recordings.debug.resume, 'Failed to resume'),
+    () => runCommand(apiClient.macros.playback.resume, 'Failed to resume'),
     [runCommand]
   );
 
   const stop = useCallback(async () => {
     if (!sessionId) return;
     try {
-      const response = await apiClient.recordings.debug.stop(sessionId);
+      const response = await apiClient.macros.playback.stop(sessionId);
       if (response.success) {
         setSessionId(null);
         setPlaybackState('idle');
@@ -274,7 +270,6 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
         groupId: newGroupId,
         suiteId: newSuiteId,
         macro: newMacro,
-        testSuite: newMacro // backward compat
       });
     },
     []
@@ -302,7 +297,6 @@ export function MacroSessionProvider({ children }: { children: React.ReactNode }
     commands,
     // Actions
     startPlayback,
-    startDebug: startPlayback, // backward compat
     updateMacro,
     setReadyToRun,
   };

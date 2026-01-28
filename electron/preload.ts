@@ -36,13 +36,13 @@ import type {
   DocumentHeading,
 } from '../src/domain/help/index.js';
 import type {
-  TestSuite,
+  Macro,
   PlaybackConfig,
   SessionSnapshot,
   PlaybackEvent,
 } from '../src/macro/index.js';
 import { IPC_CHANNEL_TEST_RUNNER, POLL_INTERVAL_MS } from '../src/macro/index.js';
-import type { TestSuiteIndex, TestSuiteEntry } from '../src/repositories/index.js';
+import type { MacroIndex, MacroEntry } from '../src/repositories/index.js';
 
 
 /**
@@ -154,16 +154,16 @@ export interface CyrusAPI {
     onOpen: (callback: (path: string, xml: string) => void) => void;
     onExportPng: (callback: () => void) => void;
   };
-  // Macro operations (test suite record/playback)
-  recordings: {
-    getIndex: () => Promise<ApiResponse<TestSuiteIndex>>;
+  // Macro operations (macro record/playback)
+  macros: {
+    getIndex: () => Promise<ApiResponse<MacroIndex>>;
     getApps: () => Promise<ApiResponse<string[]>>;
-    getByApp: (appId: string) => Promise<ApiResponse<TestSuiteEntry[]>>;
-    get: (appId: string, testSuiteId: string) => Promise<ApiResponse<TestSuite | null>>;
-    getByPath: (filePath: string) => Promise<ApiResponse<TestSuite | null>>;
-    save: (appId: string, testSuiteId: string, testSuite: TestSuite) => Promise<ApiResponse<void>>;
-    // Debug session operations
-    debug: {
+    getByApp: (appId: string) => Promise<ApiResponse<MacroEntry[]>>;
+    get: (appId: string, macroId: string) => Promise<ApiResponse<Macro | null>>;
+    getByPath: (filePath: string) => Promise<ApiResponse<Macro | null>>;
+    save: (appId: string, macroId: string, macro: Macro) => Promise<ApiResponse<void>>;
+    // Playback session operations
+    playback: {
       create: (config: PlaybackConfig) => Promise<ApiResponse<{ sessionId: string }>>;
       start: (sessionId: string) => Promise<ApiResponse<void>>;
       step: (sessionId: string) => Promise<ApiResponse<void>>;
@@ -272,25 +272,25 @@ const cyrusAPI: CyrusAPI = {
       ipcRenderer.on('diagram:export-png', callback);
     },
   },
-  recordings: {
-    getIndex: () => ipcRenderer.invoke('recordings:index'),
-    getApps: () => ipcRenderer.invoke('recordings:apps'),
-    getByApp: (appId) => ipcRenderer.invoke('recordings:byApp', appId),
-    get: (appId, testSuiteId) => ipcRenderer.invoke('recordings:get', appId, testSuiteId),
-    getByPath: (filePath) => ipcRenderer.invoke('recordings:getByPath', filePath),
-    save: (appId, testSuiteId, testSuite) =>
-      ipcRenderer.invoke('recordings:save', appId, testSuiteId, testSuite),
-    debug: {
-      create: (config) => ipcRenderer.invoke('recordings:debug:create', config),
-      start: (sessionId) => ipcRenderer.invoke('recordings:debug:start', sessionId),
-      step: (sessionId) => ipcRenderer.invoke('recordings:debug:step', sessionId),
-      pause: (sessionId) => ipcRenderer.invoke('recordings:debug:pause', sessionId),
-      resume: (sessionId) => ipcRenderer.invoke('recordings:debug:resume', sessionId),
-      stop: (sessionId) => ipcRenderer.invoke('recordings:debug:stop', sessionId),
-      snapshot: (sessionId) => ipcRenderer.invoke('recordings:debug:snapshot', sessionId),
-      subscribe: () => ipcRenderer.invoke('recordings:debug:subscribe'),
+  macros: {
+    getIndex: () => ipcRenderer.invoke('macros:index'),
+    getApps: () => ipcRenderer.invoke('macros:apps'),
+    getByApp: (appId) => ipcRenderer.invoke('macros:byApp', appId),
+    get: (appId, macroId) => ipcRenderer.invoke('macros:get', appId, macroId),
+    getByPath: (filePath) => ipcRenderer.invoke('macros:getByPath', filePath),
+    save: (appId, macroId, macro) =>
+      ipcRenderer.invoke('macros:save', appId, macroId, macro),
+    playback: {
+      create: (config) => ipcRenderer.invoke('macros:playback:create', config),
+      start: (sessionId) => ipcRenderer.invoke('macros:playback:start', sessionId),
+      step: (sessionId) => ipcRenderer.invoke('macros:playback:step', sessionId),
+      pause: (sessionId) => ipcRenderer.invoke('macros:playback:pause', sessionId),
+      resume: (sessionId) => ipcRenderer.invoke('macros:playback:resume', sessionId),
+      stop: (sessionId) => ipcRenderer.invoke('macros:playback:stop', sessionId),
+      snapshot: (sessionId) => ipcRenderer.invoke('macros:playback:snapshot', sessionId),
+      subscribe: () => ipcRenderer.invoke('macros:playback:subscribe'),
       onEvent: (callback) => {
-        ipcRenderer.on('recordings:debug:event', (_event, data) => callback(data));
+        ipcRenderer.on('macros:playback:event', (_event, data) => callback(data));
       },
     },
   },

@@ -5,7 +5,7 @@
  * Handles nested field updates (e.g., 'expect.selector') via dot notation.
  */
 
-import type { TestSuite, TestStep } from '../../macro';
+import type { Macro, MacroStep } from '../../macro';
 
 /**
  * Convert a string value to the appropriate type based on field name.
@@ -31,18 +31,18 @@ function coerceValue(field: string, value: string): unknown {
 }
 
 /**
- * Update a step field within a test suite.
+ * Update a step field within a macro.
  * Supports nested fields via dot notation (e.g., 'expect.selector').
  *
- * @returns Updated test suite, or null if update failed
+ * @returns Updated macro, or null if update failed
  */
 export function updateStepField(
-  testSuite: TestSuite,
+  macro: Macro,
   stepIndex: number,
   field: string,
   value: string
-): { testSuite: TestSuite; step: TestStep } | null {
-  const updatedSteps = [...testSuite.steps];
+): { macro: Macro; step: MacroStep } | null {
+  const updatedSteps = [...macro.steps];
   const currentStep = updatedSteps[stepIndex];
   if (!currentStep) return null;
 
@@ -50,22 +50,22 @@ export function updateStepField(
   const typedValue = coerceValue(field, value);
 
   // Handle nested fields (e.g., 'expect.selector')
-  let updatedStep: TestStep;
+  let updatedStep: MacroStep;
   if (field.includes('.')) {
     const [parent, child] = field.split('.');
     const parentObj = currentStep[parent as keyof typeof currentStep];
     updatedStep = {
       ...currentStep,
       [parent!]: { ...(parentObj as object), [child!]: typedValue },
-    } as TestStep;
+    } as MacroStep;
   } else {
-    updatedStep = { ...currentStep, [field]: typedValue } as TestStep;
+    updatedStep = { ...currentStep, [field]: typedValue } as MacroStep;
   }
 
   updatedSteps[stepIndex] = updatedStep;
 
   return {
-    testSuite: { ...testSuite, steps: updatedSteps },
+    macro: { ...macro, steps: updatedSteps },
     step: updatedStep,
   };
 }

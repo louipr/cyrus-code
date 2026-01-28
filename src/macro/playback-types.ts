@@ -1,13 +1,13 @@
 /**
  * Playback Runtime Types
  *
- * Types for playing back test suites with step-through capability.
+ * Types for playing back macros with step-through capability.
  * These are "runtime" types - what happens during execution.
  *
- * @see test-suite-types.ts for schema types (document structure)
+ * @see macro-types.ts for schema types (document structure)
  */
 
-import type { TestStep } from './test-suite-types.js';
+import type { MacroStep } from './macro-types.js';
 
 // ============================================================================
 // Execution Results - Outcome of running steps
@@ -61,7 +61,7 @@ export interface PlaybackPosition {
 export interface StepStartEvent {
   type: 'step-start';
   position: PlaybackPosition;
-  step: TestStep;
+  step: MacroStep;
   timestamp: number;
 }
 
@@ -71,7 +71,7 @@ export interface StepStartEvent {
 export interface StepCompleteEvent {
   type: 'step-complete';
   position: PlaybackPosition;
-  step: TestStep;
+  step: MacroStep;
   result: StepResult;
   timestamp: number;
 }

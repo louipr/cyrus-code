@@ -1,78 +1,78 @@
 /**
  * MacroView Component
  *
- * Main container for the Macro (Test Suite) visualization view.
+ * Main container for the Macro visualization view.
  * Uses the panel layout system for flexible resizing.
  *
- * Layout: LeftPanel (Test Suites) | MainPanel (Details)
+ * Layout: LeftPanel (Macros) | MainPanel (Details)
  *
  * All panels use consistent composition: Panel > Card > Content
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../api-client';
-import { TestSuiteTree } from './TestSuiteTree';
+import { MacroTree } from './MacroTree';
 import { StepDetail } from './StepDetail';
-import { TestSuiteDetail } from './TestSuiteDetail';
-import { useDebugSession } from '../../stores/DebugSessionContext';
+import { MacroDetail } from './MacroDetail';
+import { useMacroSession } from '../../stores/MacroSessionContext';
 import { updateStepField } from '../../utils/step-editor';
 import { PanelLayout, Panel, ResizeHandle, Card } from '../layout';
-import type { TestSuiteIndex } from '../../../repositories/test-suite-repository';
-import type { TestSuite, TestStep } from '../../../macro';
+import type { MacroIndex } from '../../../repositories/macro-repository';
+import type { Macro, MacroStep } from '../../../macro';
 
 /**
- * MacroView - Main test suite visualization view
+ * MacroView - Main macro visualization view
  */
 export function MacroView() {
-  const [index, setIndex] = useState<TestSuiteIndex | null>(null);
-  const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
+  const [index, setIndex] = useState<MacroIndex | null>(null);
+  const [macro, setMacro] = useState<Macro | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedTestSuiteId, setSelectedTestSuiteId] = useState<string | null>(null);
+  const [selectedMacroId, setSelectedMacroId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [selectedStep, setSelectedStep] = useState<TestStep | null>(null);
+  const [selectedStep, setSelectedStep] = useState<MacroStep | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Debug session state from context (persists across view switches)
-  const debugSession = useDebugSession();
+  // Macro session state from context (persists across view switches)
+  const macroSession = useMacroSession();
 
   // Auto-select step when debug position changes
   useEffect(() => {
-    if (!debugSession.position || !testSuite) return;
+    if (!macroSession.position || !macro) return;
 
-    const stepIdx = debugSession.position.stepIndex;
-    const step = testSuite.steps[stepIdx];
+    const stepIdx = macroSession.position.stepIndex;
+    const step = macro.steps[stepIdx];
     if (step) {
       setSelectedStep(step);
       setSelectedStepIndex(stepIdx);
       // Update selected path to highlight in tree
-      if (selectedAppId && selectedTestSuiteId) {
-        setSelectedPath(`${selectedAppId}/${selectedTestSuiteId}/${stepIdx}`);
+      if (selectedAppId && selectedMacroId) {
+        setSelectedPath(`${selectedAppId}/${selectedMacroId}/${stepIdx}`);
       }
     }
-  }, [debugSession.position, testSuite, selectedAppId, selectedTestSuiteId]);
+  }, [macroSession.position, macro, selectedAppId, selectedMacroId]);
 
   // Restore selection from debug session when remounting with active session
   // (e.g., after view switches during test execution)
   useEffect(() => {
-    if (debugSession.sessionId && debugSession.groupId && debugSession.suiteId && !selectedAppId) {
-      setSelectedAppId(debugSession.groupId);
-      setSelectedTestSuiteId(debugSession.suiteId);
-      // Load the test suite
-      apiClient.recordings.get(debugSession.groupId, debugSession.suiteId).then((result) => {
+    if (macroSession.sessionId && macroSession.groupId && macroSession.suiteId && !selectedAppId) {
+      setSelectedAppId(macroSession.groupId);
+      setSelectedMacroId(macroSession.suiteId);
+      // Load the macro
+      apiClient.macros.get(macroSession.groupId, macroSession.suiteId).then((result) => {
         if (result.success && result.data) {
-          setTestSuite(result.data);
-          debugSession.setReadyToRun(debugSession.groupId!, debugSession.suiteId!, result.data);
+          setMacro(result.data);
+          macroSession.setReadyToRun(macroSession.groupId!, macroSession.suiteId!, result.data);
         }
       });
     }
-  }, [debugSession.sessionId, debugSession.groupId, debugSession.suiteId, selectedAppId, debugSession]);
+  }, [macroSession.sessionId, macroSession.groupId, macroSession.suiteId, selectedAppId, macroSession]);
 
   // Auto-expand suite when session starts so user can watch execution and see results
   useEffect(() => {
-    if (debugSession.sessionId && selectedAppId && selectedTestSuiteId) {
-      const suitePath = `${selectedAppId}/${selectedTestSuiteId}`;
+    if (macroSession.sessionId && selectedAppId && selectedMacroId) {
+      const suitePath = `${selectedAppId}/${selectedMacroId}`;
       setExpandedNodes((prev) => {
         // Ensure both group and suite are expanded
         if (prev.has(selectedAppId) && prev.has(suitePath)) return prev;
@@ -82,31 +82,31 @@ export function MacroView() {
         return next;
       });
     }
-  }, [debugSession.sessionId, selectedAppId, selectedTestSuiteId]);
+  }, [macroSession.sessionId, selectedAppId, selectedMacroId]);
 
   // Track previous session ID to detect dismiss (session ends)
   const prevSessionIdRef = useRef<string | null>(null);
 
-  // After dismiss, select the test suite (not the step) per JetBrains/Playwright pattern
+  // After dismiss, select the macro (not the step) per JetBrains/Playwright pattern
   useEffect(() => {
     const prevSessionId = prevSessionIdRef.current;
-    const currentSessionId = debugSession.sessionId;
+    const currentSessionId = macroSession.sessionId;
 
     // Session just ended (was active, now null)
-    if (prevSessionId && !currentSessionId && selectedAppId && selectedTestSuiteId) {
+    if (prevSessionId && !currentSessionId && selectedAppId && selectedMacroId) {
       // Select suite level (clear step selection)
-      setSelectedPath(`${selectedAppId}/${selectedTestSuiteId}`);
+      setSelectedPath(`${selectedAppId}/${selectedMacroId}`);
       setSelectedStep(null);
       setSelectedStepIndex(null);
     }
 
     prevSessionIdRef.current = currentSessionId;
-  }, [debugSession.sessionId, selectedAppId, selectedTestSuiteId]);
+  }, [macroSession.sessionId, selectedAppId, selectedMacroId]);
 
   // Load index on mount
   useEffect(() => {
     async function loadIndex() {
-      const result = await apiClient.recordings.getIndex();
+      const result = await apiClient.macros.getIndex();
       if (result.success && result.data) {
         setIndex(result.data);
       }
@@ -117,32 +117,32 @@ export function MacroView() {
 
   // Handle node selection
   const handleSelect = useCallback(
-    async (path: string, type: 'app' | 'testSuite' | 'step') => {
+    async (path: string, type: 'app' | 'macro' | 'step') => {
       setSelectedPath(path);
       const parts = path.split('/');
 
-      if (type === 'testSuite') {
+      if (type === 'macro') {
         const appId = parts[0];
-        const testSuiteId = parts[1];
+        const macroId = parts[1];
         setSelectedAppId(appId);
-        setSelectedTestSuiteId(testSuiteId);
-        const result = await apiClient.recordings.get(appId, testSuiteId);
+        setSelectedMacroId(macroId);
+        const result = await apiClient.macros.get(appId, macroId);
         if (result.success && result.data) {
-          setTestSuite(result.data);
+          setMacro(result.data);
           setSelectedStep(null);
           setSelectedStepIndex(null);
           // Set ready to run so header shows Run button
-          debugSession.setReadyToRun(appId, testSuiteId, result.data);
+          macroSession.setReadyToRun(appId, macroId, result.data);
         }
-      } else if (type === 'step' && testSuite) {
+      } else if (type === 'step' && macro) {
         const stepIdx = parseInt(parts[2], 10);
-        if (testSuite.steps[stepIdx]) {
-          setSelectedStep(testSuite.steps[stepIdx]);
+        if (macro.steps[stepIdx]) {
+          setSelectedStep(macro.steps[stepIdx]);
           setSelectedStepIndex(stepIdx);
         }
       }
     },
-    [testSuite, debugSession]
+    [macro, macroSession]
   );
 
   // Handle node toggle
@@ -158,82 +158,82 @@ export function MacroView() {
     });
   }, []);
 
-  // Handle running a single test suite directly (from inline play button)
+  // Handle running a single macro directly (from inline play button)
   const handleRunSuite = useCallback(
-    async (appId: string, testSuiteId: string) => {
-      // Load the test suite if not already loaded
-      const result = await apiClient.recordings.get(appId, testSuiteId);
+    async (appId: string, macroId: string) => {
+      // Load the macro if not already loaded
+      const result = await apiClient.macros.get(appId, macroId);
       if (result.success && result.data) {
         // Update selection state
         setSelectedAppId(appId);
-        setSelectedTestSuiteId(testSuiteId);
-        setTestSuite(result.data);
+        setSelectedMacroId(macroId);
+        setMacro(result.data);
         setSelectedStep(null);
         setSelectedStepIndex(null);
-        // Start debug session immediately
-        debugSession.startDebug(appId, testSuiteId, result.data);
+        // Start playback session immediately
+        macroSession.startPlayback(appId, macroId, result.data);
       }
     },
-    [debugSession]
+    [macroSession]
   );
 
-  // Handle running all test suites in a group
+  // Handle running all macros in a group
   const handleRunGroup = useCallback(
     async (appId: string) => {
       if (!index) return;
       const group = index.groups[appId];
-      if (!group || group.testSuites.length === 0) return;
+      if (!group || group.macros.length === 0) return;
 
-      // For now, run the first test suite in the group
-      // TODO: Implement sequential execution of all suites
-      const firstSuite = group.testSuites[0];
-      if (firstSuite) {
-        await handleRunSuite(appId, firstSuite.id);
+      // For now, run the first macro in the group
+      // TODO: Implement sequential execution of all macros
+      const firstMacro = group.macros[0];
+      if (firstMacro) {
+        await handleRunSuite(appId, firstMacro.id);
       }
     },
     [index, handleRunSuite]
   );
 
-  // Handle saving test suite (for step parameter edits)
-  const handleSaveTestSuite = useCallback(
-    async (updatedTestSuite: TestSuite) => {
-      if (!selectedAppId || !selectedTestSuiteId) return;
+  // Handle saving macro (for step parameter edits)
+  const handleSaveMacro = useCallback(
+    async (updatedMacro: Macro) => {
+      if (!selectedAppId || !selectedMacroId) return;
 
-      const result = await apiClient.recordings.save(selectedAppId, selectedTestSuiteId, updatedTestSuite);
+      const result = await apiClient.macros.save(selectedAppId, selectedMacroId, updatedMacro);
       if (result.success) {
-        // Update local state with the saved test suite
-        setTestSuite(updatedTestSuite);
+        // Update local state with the saved macro
+        setMacro(updatedMacro);
       } else {
         // Show error (could add toast notification here)
-        console.error('Failed to save test suite:', result.error?.message);
+        console.error('Failed to save macro:', result.error?.message);
       }
     },
-    [selectedAppId, selectedTestSuiteId]
+    [selectedAppId, selectedMacroId]
   );
 
   // Handle step field changes (inline editing)
   const handleStepChange = useCallback(
     (stepIndex: number, field: string, value: string) => {
-      if (!testSuite) return;
+      if (!macro) return;
 
-      const result = updateStepField(testSuite, stepIndex, field, value);
+      const result = updateStepField(macro, stepIndex, field, value);
       if (!result) return;
 
       // Update local state immediately for responsive UI
-      setTestSuite(result.testSuite);
+      setMacro(result.macro);
       setSelectedStep(result.step);
 
       // Save to file
-      handleSaveTestSuite(result.testSuite);
+      handleSaveMacro(result.macro);
     },
-    [testSuite, handleSaveTestSuite]
+    [macro, handleSaveMacro]
   );
 
   if (loading) {
     return (
       <div style={styles.container}>
         <div style={styles.centered}>
-          <span style={styles.placeholder}>Loading test suites...</span>
+          <span style={styles.placeholder}>Loading macros...</span>
         </div>
       </div>
     );
@@ -243,7 +243,7 @@ export function MacroView() {
     return (
       <div style={styles.container}>
         <div style={styles.centered}>
-          <span style={styles.placeholder}>No test suites found</span>
+          <span style={styles.placeholder}>No macros found</span>
         </div>
       </div>
     );
@@ -251,23 +251,23 @@ export function MacroView() {
 
   return (
     <PanelLayout testId="macro-view">
-      {/* Left Panel - Test Suite Tree */}
+      {/* Left Panel - Macro Tree */}
       <Panel
         id="left"
         position="left"
         size={{ default: 280, min: 200, max: 400 }}
-        title="Test Suites"
+        title="Macros"
         headerActions={undefined}
-        testId="test-suite-tree-panel"
+        testId="macro-tree-panel"
         collapsible
       >
-        <Card id="test-suite-tree" title="Test Suites" fill testId="test-suite-tree-card" showHeader={false} collapsible={false}>
-          <TestSuiteTree
+        <Card id="macro-tree" title="Macros" fill testId="macro-tree-card" showHeader={false} collapsible={false}>
+          <MacroTree
             index={index}
-            testSuite={testSuite}
+            macro={macro}
             selectedPath={selectedPath}
             expandedNodes={expandedNodes}
-            stepResults={debugSession.stepResults}
+            stepResults={macroSession.stepResults}
             onSelect={handleSelect}
             onToggle={handleToggle}
             onRunSuite={handleRunSuite}
@@ -282,22 +282,22 @@ export function MacroView() {
         constraints={{ default: 280, min: 200, max: 400 }}
       />
 
-      {/* Main Panel - TestSuite/Step details */}
+      {/* Main Panel - Macro/Step details */}
       <Panel id="main" position="main" testId="details-panel">
         <Card id="details-content" title="Details" fill testId="details-card" showHeader={false} collapsible={false}>
           {selectedStep && selectedStepIndex !== null ? (
             <StepDetail
               step={selectedStep}
               stepIndex={selectedStepIndex}
-              result={debugSession.stepResults.get(`${selectedStepIndex}`)}
+              result={macroSession.stepResults.get(`${selectedStepIndex}`)}
               onStepChange={handleStepChange}
             />
-          ) : testSuite ? (
-            <TestSuiteDetail testSuite={testSuite} suiteId={selectedTestSuiteId ?? undefined} />
+          ) : macro ? (
+            <MacroDetail macro={macro} macroId={selectedMacroId ?? undefined} />
           ) : (
             <div style={styles.detailsPlaceholder}>
               <span style={styles.placeholder}>
-                Select a test suite or step to view details
+                Select a macro or step to view details
               </span>
             </div>
           )}

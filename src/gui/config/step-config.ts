@@ -5,7 +5,7 @@
  * This is the SINGLE SOURCE OF TRUTH for step UI rendering.
  */
 
-import { getStepValue, type ActionType, type TestStep, type AssertOperator } from '../../macro/test-suite-types';
+import { getStepValue, type ActionType, type MacroStep, type AssertOperator } from '../../macro/macro-types';
 
 /**
  * Parameter display type determines rendering.
@@ -102,7 +102,7 @@ const VALUE_ASSERT_OPTIONS: readonly AssertOperator[] = [
 /**
  * Expect block parameters based on assertion type.
  */
-function getExpectParams(step: TestStep): ParamConfig[] {
+function getExpectParams(step: MacroStep): ParamConfig[] {
   if (!step.expect) return [];
 
   const params: ParamConfig[] = [];
@@ -140,7 +140,7 @@ export { getStepValue };
 /**
  * Get all parameters for a step (action-specific + common + expect).
  */
-export function getStepParams(step: TestStep): ParamConfig[] {
+export function getStepParams(step: MacroStep): ParamConfig[] {
   const actionConfig = STEP_CONFIG[step.action];
   const params: ParamConfig[] = [...actionConfig.params];
 

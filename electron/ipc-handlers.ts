@@ -23,11 +23,11 @@ import type {
 import type { GenerationOptions } from '../src/services/code-generation/index.js';
 import { createHelpContentService } from '../src/services/help-content/index.js';
 import {
-  DebugSession,
+  MacroSession,
   generateSessionId,
   type PlaybackConfig,
   type PlaybackEvent,
-  type TestSuite,
+  type Macro,
 } from '../src/macro/index.js';
 import { DependencyGraphService } from '../src/services/dependency-graph/service.js';
 import {
@@ -35,7 +35,7 @@ import {
   SqliteExportHistoryRepository,
   type ExportHistoryEntry,
   getDatabase,
-  createTestSuiteRepository,
+  createMacroRepository,
 } from '../src/repositories/index.js';
 
 export function registerIpcHandlers(facade: Architecture): void {
@@ -595,11 +595,11 @@ export function registerIpcHandlers(facade: Architecture): void {
   // ==========================================================================
 
   // Initialize test suite repository with same project root as help
-  const testSuiteRepository = createTestSuiteRepository(helpProjectRoot);
+  const macroRepository = createMacroRepository(helpProjectRoot);
 
-  ipcMain.handle('recordings:index', async () => {
+  ipcMain.handle('macros:index', async () => {
     try {
-      return { success: true, data: testSuiteRepository.getIndex() };
+      return { success: true, data: macroRepository.getIndex() };
     } catch (error) {
       return {
         success: false,
@@ -608,9 +608,9 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   });
 
-  ipcMain.handle('recordings:apps', async () => {
+  ipcMain.handle('macros:apps', async () => {
     try {
-      return { success: true, data: testSuiteRepository.getApps() };
+      return { success: true, data: macroRepository.getApps() };
     } catch (error) {
       return {
         success: false,
@@ -619,9 +619,9 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   });
 
-  ipcMain.handle('recordings:byApp', async (_event, appId: string) => {
+  ipcMain.handle('macros:byApp', async (_event, appId: string) => {
     try {
-      return { success: true, data: testSuiteRepository.getTestSuitesByApp(appId) };
+      return { success: true, data: macroRepository.getMacrosByApp(appId) };
     } catch (error) {
       return {
         success: false,
@@ -630,9 +630,9 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   });
 
-  ipcMain.handle('recordings:get', async (_event, appId: string, testSuiteId: string) => {
+  ipcMain.handle('macros:get', async (_event, appId: string, macroId: string) => {
     try {
-      return { success: true, data: testSuiteRepository.getTestSuite(appId, testSuiteId) };
+      return { success: true, data: macroRepository.getMacro(appId, macroId) };
     } catch (error) {
       return {
         success: false,
@@ -641,9 +641,9 @@ export function registerIpcHandlers(facade: Architecture): void {
     }
   });
 
-  ipcMain.handle('recordings:getByPath', async (_event, filePath: string) => {
+  ipcMain.handle('macros:getByPath', async (_event, filePath: string) => {
     try {
-      return { success: true, data: testSuiteRepository.getTestSuiteByPath(filePath) };
+      return { success: true, data: macroRepository.getMacroByPath(filePath) };
     } catch (error) {
       return {
         success: false,
@@ -653,10 +653,10 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   ipcMain.handle(
-    'recordings:save',
-    async (_event, appId: string, testSuiteId: string, testSuite: TestSuite) => {
+    'macros:save',
+    async (_event, appId: string, macroId: string, macro: Macro) => {
       try {
-        testSuiteRepository.saveTestSuite(appId, testSuiteId, testSuite);
+        macroRepository.saveMacro(appId, macroId, macro);
         return { success: true };
       } catch (error) {
         return {
@@ -672,7 +672,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   // ==========================================================================
 
   // Single-session design: one active debug session at a time
-  let currentSession: DebugSession | null = null;
+  let currentSession: MacroSession | null = null;
   let debugEventUnsubscribe: (() => void) | null = null;
   let isEventSubscribed = false;
 
@@ -680,7 +680,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   const getMainWindow = () => BrowserWindow.getAllWindows()[0];
 
   /** Validate sessionId matches current session */
-  const validateSession = (sessionId: string | undefined): DebugSession => {
+  const validateSession = (sessionId: string | undefined): MacroSession => {
     if (!sessionId) {
       throw new Error('Session ID required');
     }
@@ -695,7 +695,7 @@ export function registerIpcHandlers(facade: Architecture): void {
 
   // Create a new debug session (runs in current Electron window)
   ipcMain.handle(
-    'recordings:debug:create',
+    'macros:playback:create',
     async (_event, config: PlaybackConfig) => {
       try {
         const mainWindow = getMainWindow();
@@ -704,8 +704,8 @@ export function registerIpcHandlers(facade: Architecture): void {
         }
 
         // Load test suite from repository
-        const testSuite = testSuiteRepository.getTestSuite(config.groupId, config.suiteId);
-        if (!testSuite) {
+        const macro = macroRepository.getMacro(config.groupId, config.suiteId);
+        if (!macro) {
           throw new Error(`Test suite not found: ${config.groupId}/${config.suiteId}`);
         }
 
@@ -715,9 +715,9 @@ export function registerIpcHandlers(facade: Architecture): void {
         }
 
         // Create new debug session
-        currentSession = new DebugSession(
+        currentSession = new MacroSession(
           generateSessionId(),
-          testSuite,
+          macro,
           mainWindow.webContents,
           config
         );
@@ -727,7 +727,7 @@ export function registerIpcHandlers(facade: Architecture): void {
           debugEventUnsubscribe = currentSession.on((event: PlaybackEvent) => {
             const win = getMainWindow();
             if (win && currentSession) {
-              win.webContents.send('recordings:debug:event', {
+              win.webContents.send('macros:playback:event', {
                 sessionId: currentSession.id,
                 event,
               });
@@ -753,7 +753,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   );
 
   // Start debug session execution
-  ipcMain.handle('recordings:debug:start', async (_event, sessionId: string) => {
+  ipcMain.handle('macros:playback:start', async (_event, sessionId: string) => {
     try {
       const session = validateSession(sessionId);
 
@@ -762,7 +762,7 @@ export function registerIpcHandlers(facade: Architecture): void {
         // Forward error as event so GUI can display it
         const mainWindow = getMainWindow();
         if (mainWindow && currentSession) {
-          mainWindow.webContents.send('recordings:debug:event', {
+          mainWindow.webContents.send('macros:playback:event', {
             sessionId: currentSession.id,
             event: {
               type: 'session-state',
@@ -783,7 +783,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Execute single step
-  ipcMain.handle('recordings:debug:step', async (_event, sessionId: string) => {
+  ipcMain.handle('macros:playback:step', async (_event, sessionId: string) => {
     try {
       const session = validateSession(sessionId);
       await session.step();
@@ -797,7 +797,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Pause execution
-  ipcMain.handle('recordings:debug:pause', async (_event, sessionId: string) => {
+  ipcMain.handle('macros:playback:pause', async (_event, sessionId: string) => {
     try {
       const session = validateSession(sessionId);
       session.pause();
@@ -811,7 +811,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Resume execution
-  ipcMain.handle('recordings:debug:resume', async (_event, sessionId: string) => {
+  ipcMain.handle('macros:playback:resume', async (_event, sessionId: string) => {
     try {
       const session = validateSession(sessionId);
       await session.resume();
@@ -825,7 +825,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Stop debug session
-  ipcMain.handle('recordings:debug:stop', async (_event, sessionId: string) => {
+  ipcMain.handle('macros:playback:stop', async (_event, sessionId: string) => {
     try {
       const session = validateSession(sessionId);
       if (debugEventUnsubscribe) {
@@ -844,7 +844,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Get session snapshot
-  ipcMain.handle('recordings:debug:snapshot', async () => {
+  ipcMain.handle('macros:playback:snapshot', async () => {
     try {
       if (!currentSession) {
         return {
@@ -862,7 +862,7 @@ export function registerIpcHandlers(facade: Architecture): void {
   });
 
   // Subscribe to debug events (set up event streaming)
-  ipcMain.handle('recordings:debug:subscribe', async () => {
+  ipcMain.handle('macros:playback:subscribe', async () => {
     try {
       isEventSubscribed = true;
       return { success: true };

@@ -20,13 +20,13 @@ import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
 import { MacroView } from './components/macro';
-import { RunControls } from './components/macro/RunControls';
-import { DebugSessionProvider, useDebugSession } from './stores/DebugSessionContext';
+import { PlaybackControls } from './components/macro/PlaybackControls';
+import { MacroSessionProvider, useMacroSession } from './stores/MacroSessionContext';
 import { PanelLayout, Panel } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 
-type ViewMode = 'symbols' | 'diagram' | 'recordings';
+type ViewMode = 'symbols' | 'diagram' | 'macros';
 type SymbolSubView = 'list' | 'graph' | 'canvas';
 
 /**
@@ -34,14 +34,14 @@ type SymbolSubView = 'list' | 'graph' | 'canvas';
  */
 export default function App(): React.ReactElement {
   return (
-    <DebugSessionProvider>
+    <MacroSessionProvider>
       <AppContent />
-    </DebugSessionProvider>
+    </MacroSessionProvider>
   );
 }
 
 /**
- * Inner app content that can access debug session context.
+ * Inner app content that can access macro session context.
  */
 function AppContent(): React.ReactElement {
   const [selectedComponent, setSelectedComponent] = useState<ComponentSymbolDTO | null>(null);
@@ -51,15 +51,15 @@ function AppContent(): React.ReactElement {
   const [showSymbolsDropdown, setShowSymbolsDropdown] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  // Debug session store - persists across view switches
-  const debugSession = useDebugSession();
+  // Macro session store - persists across view switches
+  const macroSession = useMacroSession();
 
-  // Switch to Tests view when debug session completes
+  // Switch to Macros view when playback session completes
   useEffect(() => {
-    if (debugSession.playbackState === 'completed') {
-      setViewMode('recordings');
+    if (macroSession.playbackState === 'completed') {
+      setViewMode('macros');
     }
-  }, [debugSession.playbackState]);
+  }, [macroSession.playbackState]);
 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
@@ -79,36 +79,36 @@ function AppContent(): React.ReactElement {
         e.preventDefault();
         if (e.shiftKey) {
           // Shift+F5 = Stop
-          if (debugSession.sessionId) {
-            debugSession.commands.stop();
+          if (macroSession.sessionId) {
+            macroSession.commands.stop();
           }
         } else {
           // F5 = Run/Continue
-          if (!debugSession.sessionId && debugSession.readyToRun) {
+          if (!macroSession.sessionId && macroSession.readyToRun) {
             // No active session, start new one
-            const { groupId, suiteId, testSuite } = debugSession.readyToRun;
-            debugSession.startDebug(groupId, suiteId, testSuite);
-          } else if (debugSession.sessionId) {
+            const { groupId, suiteId, macro } = macroSession.readyToRun;
+            macroSession.startPlayback(groupId, suiteId, macro);
+          } else if (macroSession.sessionId) {
             // Active session - start or resume
-            if (debugSession.playbackState === 'idle') {
-              debugSession.commands.start();
-            } else if (debugSession.isPaused) {
-              debugSession.commands.resume();
+            if (macroSession.playbackState === 'idle') {
+              macroSession.commands.start();
+            } else if (macroSession.isPaused) {
+              macroSession.commands.resume();
             }
           }
         }
       } else if (e.key === 'F10') {
         e.preventDefault();
         // F10 = Step
-        if (debugSession.sessionId && (debugSession.playbackState === 'idle' || debugSession.isPaused)) {
-          debugSession.commands.step();
+        if (macroSession.sessionId && (macroSession.playbackState === 'idle' || macroSession.isPaused)) {
+          macroSession.commands.step();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [debugSession]);
+  }, [macroSession]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -288,18 +288,18 @@ function AppContent(): React.ReactElement {
           <button
             style={{
               ...styles.toggleButton,
-              ...(viewMode === 'recordings' ? styles.toggleButtonActive : {}),
+              ...(viewMode === 'macros' ? styles.toggleButtonActive : {}),
             }}
-            onClick={() => setViewMode('recordings')}
+            onClick={() => setViewMode('macros')}
             type="button"
             data-testid="macro-view-button"
           >
-            Tests
+            Macros
           </button>
         </div>
 
-        {/* Run controls - always in header (fixed position) */}
-        <RunControls debugSession={debugSession} />
+        {/* Playback controls - always in header (fixed position) */}
+        <PlaybackControls session={macroSession} />
 
         {/* Tool Buttons */}
         <div style={styles.toolButtons}>
@@ -436,7 +436,7 @@ function AppContent(): React.ReactElement {
             </main>
           )}
 
-          {viewMode === 'recordings' && (
+          {viewMode === 'macros' && (
             <main style={styles.diagramMain}>
               <MacroView />
             </main>

@@ -21,7 +21,7 @@ import { DEFAULT_TIMEOUT_MS } from '../macro/constants.js';
 const MACROS_DIR = 'tests/e2e/test-suites';
 
 /** File extension for macro YAML files */
-const MACRO_FILE_EXTENSION = '.suite.yaml';
+const MACRO_FILE_EXTENSION = '.macro.yaml';
 
 /** Glob pattern for discovering macro files */
 const MACRO_GLOB_PATTERN = `**/*${MACRO_FILE_EXTENSION}`;
@@ -47,7 +47,7 @@ export interface MacroEntry {
  */
 export interface MacroGroup {
   description: string;
-  testSuites: MacroEntry[];
+  macros: MacroEntry[];
 }
 
 /**
@@ -66,10 +66,10 @@ export interface MacroRepository {
   initialize(): void;
   getIndex(): MacroIndex;
   getApps(): string[];
-  getTestSuitesByApp(appId: string): MacroEntry[];
-  getTestSuite(appId: string, testSuiteId: string): Macro | null;
-  getTestSuiteByPath(filePath: string): Macro | null;
-  saveTestSuite(appId: string, testSuiteId: string, testSuite: Macro): void;
+  getMacrosByApp(appId: string): MacroEntry[];
+  getMacro(appId: string, macroId: string): Macro | null;
+  getMacroByPath(filePath: string): Macro | null;
+  saveMacro(appId: string, macroId: string, macro: Macro): void;
   clearCache(): void;
 }
 
@@ -89,9 +89,9 @@ function createMacroEntry(id: string, macro: Macro): MacroEntry {
  * YAML Macro Repository - loads and provides access to macro data.
  *
  * Uses file-based discovery:
- * - Discovers macros via fast-glob: **\/*.suite.yaml
- * - Derives app ID from directory name (e.g., drawio/export-png.suite.yaml → app: drawio)
- * - Derives suite ID from filename (e.g., export-png.suite.yaml → id: export-png)
+ * - Discovers macros via fast-glob: **\/*.macro.yaml
+ * - Derives app ID from directory name (e.g., drawio/export-png.macro.yaml → app: drawio)
+ * - Derives suite ID from filename (e.g., export-png.macro.yaml → id: export-png)
  * - Builds index by loading metadata from each file
  *
  * Fail-fast initialization:
@@ -119,7 +119,7 @@ export class YamlMacroRepository implements MacroRepository {
       return;
     }
 
-    // Discover all .suite.yaml files
+    // Discover all .macro.yaml files
     const files = fg.sync(MACRO_GLOB_PATTERN, {
       cwd: this.macrosDir,
       onlyFiles: true,
@@ -140,7 +140,7 @@ export class YamlMacroRepository implements MacroRepository {
     const groups: Record<string, MacroGroup> = {};
 
     for (const file of files) {
-      // Parse path: {app}/{id}.suite.yaml
+      // Parse path: {app}/{id}.macro.yaml
       const parts = file.split('/');
       if (parts.length !== 2) {
         throw new Error(
@@ -150,7 +150,7 @@ export class YamlMacroRepository implements MacroRepository {
 
       const appId = parts[0]!;
       const filename = parts[1]!;
-      const testSuiteId = filename.replace(MACRO_FILE_EXTENSION, '');
+      const macroId = filename.replace(MACRO_FILE_EXTENSION, '');
 
       // Load the macro to extract metadata
       const macro = this.loadMacroFile(file);
@@ -159,23 +159,23 @@ export class YamlMacroRepository implements MacroRepository {
       }
 
       // Cache the loaded macro
-      const cacheKey = `${appId}/${testSuiteId}`;
+      const cacheKey = `${appId}/${macroId}`;
       this.macros.set(cacheKey, macro);
 
       // Create group entry if needed
       if (!groups[appId]) {
         groups[appId] = {
-          description: `${appId} test suites`,
-          testSuites: [],
+          description: `${appId} macros`,
+          macros: [],
         };
       }
 
-      groups[appId]!.testSuites.push(createMacroEntry(testSuiteId, macro));
+      groups[appId]!.macros.push(createMacroEntry(macroId, macro));
     }
 
     // Sort entries within each group by ID for consistent ordering
     for (const group of Object.values(groups)) {
-      group.testSuites.sort((a, b) => a.id.localeCompare(b.id));
+      group.macros.sort((a, b) => a.id.localeCompare(b.id));
     }
 
     this.index = {
@@ -209,17 +209,17 @@ export class YamlMacroRepository implements MacroRepository {
   /**
    * Get macros for a specific app.
    */
-  getTestSuitesByApp(appId: string): MacroEntry[] {
+  getMacrosByApp(appId: string): MacroEntry[] {
     const index = this.getIndex();
     const group = index.groups[appId];
-    return group?.testSuites ?? [];
+    return group?.macros ?? [];
   }
 
   /**
    * Get a specific macro by app and test suite ID.
    */
-  getTestSuite(appId: string, testSuiteId: string): Macro | null {
-    const cacheKey = `${appId}/${testSuiteId}`;
+  getMacro(appId: string, macroId: string): Macro | null {
+    const cacheKey = `${appId}/${macroId}`;
 
     // If initialized, all macros are already cached
     if (this.initialized) {
@@ -231,7 +231,7 @@ export class YamlMacroRepository implements MacroRepository {
       return this.macros.get(cacheKey) ?? null;
     }
 
-    const filePath = `${appId}/${testSuiteId}${MACRO_FILE_EXTENSION}`;
+    const filePath = `${appId}/${macroId}${MACRO_FILE_EXTENSION}`;
     const macro = this.loadMacroFile(filePath);
     if (macro) {
       this.macros.set(cacheKey, macro);
@@ -242,7 +242,7 @@ export class YamlMacroRepository implements MacroRepository {
   /**
    * Get macro by file path (relative to macros directory).
    */
-  getTestSuiteByPath(filePath: string): Macro | null {
+  getMacroByPath(filePath: string): Macro | null {
     // Normalize the path
     const normalizedPath = filePath.endsWith(MACRO_FILE_EXTENSION)
       ? filePath
@@ -252,8 +252,8 @@ export class YamlMacroRepository implements MacroRepository {
     const parts = normalizedPath.split('/');
     if (parts.length === 2) {
       const appId = parts[0]!;
-      const testSuiteId = parts[1]!.replace(MACRO_FILE_EXTENSION, '');
-      return this.getTestSuite(appId, testSuiteId);
+      const macroId = parts[1]!.replace(MACRO_FILE_EXTENSION, '');
+      return this.getMacro(appId, macroId);
     }
 
     // Fallback to direct file load
@@ -307,8 +307,8 @@ export class YamlMacroRepository implements MacroRepository {
   /**
    * Save a macro to its YAML file.
    */
-  saveTestSuite(appId: string, testSuiteId: string, macro: Macro): void {
-    const filePath = `${appId}/${testSuiteId}${MACRO_FILE_EXTENSION}`;
+  saveMacro(appId: string, macroId: string, macro: Macro): void {
+    const filePath = `${appId}/${macroId}${MACRO_FILE_EXTENSION}`;
     const fullPath = path.join(this.macrosDir, filePath);
 
     // Ensure directory exists
@@ -328,16 +328,16 @@ export class YamlMacroRepository implements MacroRepository {
     fs.writeFileSync(fullPath, yamlContent, 'utf-8');
 
     // Update cache
-    const cacheKey = `${appId}/${testSuiteId}`;
+    const cacheKey = `${appId}/${macroId}`;
     this.macros.set(cacheKey, macro);
 
     // Update index entry if initialized
     if (this.initialized && this.index) {
       const group = this.index.groups[appId];
       if (group) {
-        const entryIndex = group.testSuites.findIndex((e) => e.id === testSuiteId);
+        const entryIndex = group.macros.findIndex((e) => e.id === macroId);
         if (entryIndex >= 0) {
-          group.testSuites[entryIndex] = createMacroEntry(testSuiteId, macro);
+          group.macros[entryIndex] = createMacroEntry(macroId, macro);
         }
       }
     }
