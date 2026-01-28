@@ -1,0 +1,45 @@
+description: Minimal test - insert one vertex using typed action
+
+metadata:
+  status: draft
+  reliability: unknown
+  tags: [drawio, vertex, minimal-test, proof-of-concept]
+  author: macro-generator
+  created: "2026-01-28"
+  modified: "2026-01-28"
+
+context:
+  app: cyrus-code
+  prerequisites:
+    - App is launched
+    - Draw.io webview is ready
+
+steps:
+  - action: wait
+    timeout: 1000
+    expect:
+      selector: "[data-testid='view-toggle']"
+      assert: exists
+    why: Wait for app to be ready
+
+  - action: click
+    selector: "[data-testid='view-toggle'] button:has-text('Diagram')"
+    why: Switch to diagram view
+
+  - action: wait
+    timeout: 15000
+    expect:
+      selector: "[data-testid='diagram-webview']"
+      assert: exists
+    why: Wait for Draw.io webview to load and initialize (giving extra time)
+
+  - action: drawio:insertVertex
+    x: 100
+    y: 100
+    width: 120
+    height: 60
+    label: "Test Rectangle"
+    style: "rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf"
+    webview: diagram-webview
+    timeout: 5000
+    why: Insert a single vertex using new typed action to verify architecture works

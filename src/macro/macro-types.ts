@@ -15,12 +15,14 @@
  * Supported action types for steps.
  *
  * - 'wait': No action, just run the expect block (used for waitFor/assert patterns)
+ * - 'drawio:insertVertex': Insert a vertex into Draw.io diagram (application-specific)
  */
 export type ActionType =
   | 'click'
   | 'type'
   | 'evaluate'
-  | 'wait';
+  | 'wait'
+  | 'drawio:insertVertex';
 
 // ============================================================================
 // Expectation Types - Post-action verification
@@ -177,6 +179,28 @@ export interface WaitStep extends Omit<BaseStep, 'expect'> {
 }
 
 /**
+ * Insert a vertex into a Draw.io diagram.
+ * Application-specific action using Draw.io's mxGraph API.
+ */
+export interface DrawioInsertVertexStep extends BaseStep {
+  action: 'drawio:insertVertex';
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Width of the vertex */
+  width: number;
+  /** Height of the vertex */
+  height: number;
+  /** Optional label text */
+  label?: string;
+  /** Optional style string (e.g., 'rounded=1;fillColor=#dae8fc') */
+  style?: string;
+  /** Target webview (must be 'diagram-webview' for Draw.io) */
+  webview: 'diagram-webview';
+}
+
+/**
  * A single step within a macro.
  * Discriminated union ensures type safety - each action has its required fields.
  */
@@ -184,7 +208,8 @@ export type MacroStep =
   | ClickStep
   | TypeStep
   | EvaluateStep
-  | WaitStep;
+  | WaitStep
+  | DrawioInsertVertexStep;
 
 // ============================================================================
 // Suite Structure - Document hierarchy

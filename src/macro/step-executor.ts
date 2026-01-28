@@ -82,14 +82,26 @@ async function executeAction(
       return invoke(wc, 'type', [step.selector, step.timeout!, step.text], step.webview);
 
     case 'evaluate': {
-      // Execute directly via webContents.executeJavaScript() to bypass
-      // preload's code generation restrictions (contextIsolation blocks eval)
+      // If webview is specified, route through invoke to execute in webview context
+      if (step.webview) {
+        return invoke(wc, 'evaluate', [step.code], step.webview);
+      }
+      // Otherwise execute directly in main window context via webContents.executeJavaScript()
+      // to bypass preload's code generation restrictions (contextIsolation blocks eval)
       const code = `(async () => { ${step.code} })()`;
       return wc.executeJavaScript(code);
     }
 
     case 'wait':
       return undefined; // Expect block handles the waiting
+
+    case 'drawio:insertVertex':
+      return invoke(
+        wc,
+        'drawio:insertVertex',
+        [step.x, step.y, step.width, step.height, step.label, step.style],
+        step.webview
+      );
   }
 }
 

@@ -446,15 +446,46 @@ ipcRenderer.on(IPC_CHANNEL_TEST_RUNNER, async (_event, command: TestRunnerComman
 
 /**
  * Generate JavaScript code for webview execution.
- * Only supports 'evaluate' action - other actions should be implemented
- * in evaluate code blocks in test suites.
+ * Supports 'evaluate' and Draw.io-specific actions.
  */
 function generateWebviewCode(action: string, args: unknown[]): string {
-  if (action !== 'evaluate') {
-    throw new Error(`Webview only supports 'evaluate' action, got: ${action}`);
+  if (action === 'evaluate') {
+    const [code] = args as [string];
+    return `(async () => { ${code} })()`;
   }
-  const [code] = args as [string];
-  return `(async () => { ${code} })()`;
+
+  if (action === 'drawio:insertVertex') {
+    const [x, y, width, height, label, style] = args as [number, number, number, number, string | undefined, string | undefined];
+    return `
+      (function() {
+        if (!window.editorUi || !window.editorUi.editor || !window.editorUi.editor.graph) {
+          throw new Error('Draw.io graph not available');
+        }
+
+        const graph = window.editorUi.editor.graph;
+        const parent = graph.getDefaultParent();
+
+        graph.getModel().beginUpdate();
+        try {
+          const vertex = graph.insertVertex(
+            parent,
+            null,
+            ${JSON.stringify(label || '')},
+            ${x},
+            ${y},
+            ${width},
+            ${height},
+            ${JSON.stringify(style || '')}
+          );
+          return vertex.id;
+        } finally {
+          graph.getModel().endUpdate();
+        }
+      })()
+    `;
+  }
+
+  throw new Error(`Unsupported webview action: ${action}`);
 }
 
 /**
@@ -462,14 +493,20 @@ function generateWebviewCode(action: string, args: unknown[]): string {
  * Eliminates need for IPC forwarding and test runner API in webview preload.
  */
 function forwardToWebview(command: TestRunnerCommand): void {
-  const webview = document.querySelector(command.context!) as HTMLElement & {
+  // Convert webview ID to data-testid selector if not already a selector
+  let selector = command.context!;
+  if (!selector.startsWith('[') && !selector.startsWith('#') && !selector.startsWith('.')) {
+    selector = `[data-testid="${selector}"]`;
+  }
+
+  const webview = document.querySelector(selector) as HTMLElement & {
     executeJavaScript: (code: string) => Promise<unknown>;
   };
 
   if (!webview) {
     ipcRenderer.send(`${IPC_CHANNEL_TEST_RUNNER}:${command.id}`, {
       success: false,
-      error: `Webview not found: ${command.context}`,
+      error: `Webview not found: ${selector} (original: ${command.context})`,
     });
     return;
   }
