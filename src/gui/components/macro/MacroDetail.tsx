@@ -1,7 +1,7 @@
 /**
  * MacroDetail Component
  *
- * Displays detailed information about a selected test suite.
+ * Displays detailed information about a selected macro.
  * Shows metadata, context, and status information.
  */
 

@@ -1,10 +1,10 @@
 /**
- * Test Suite Playback E2E Tests
+ * Macro Playback E2E Tests
  *
  * Data-driven tests that verify macro playback functionality.
  * Automatically discovers and tests all macros from the repository.
  *
- * @tags @suites
+ * @tags @macros
  */
 
 import path from 'path';
@@ -12,14 +12,14 @@ import { test, expect, Page } from '@playwright/test';
 import { launchApp, closeApp, type AppContext } from './helpers/app';
 import { createMacroRepository } from '../../dist/src/repositories/macro-repository.js';
 
-const SCREENSHOT_DIR = path.join(__dirname, 'screenshots/suite-playback');
+const SCREENSHOT_DIR = path.join(__dirname, 'screenshots/macro-playback');
 
 /**
- * Suite test configuration.
+ * Macro test configuration.
  */
-interface SuiteTestConfig {
+interface MacroTestConfig {
   group: string;
-  suite: string;
+  macroId: string;
   shouldPass: boolean;
   timeout?: number;
 }
@@ -28,11 +28,11 @@ interface SuiteTestConfig {
  * Auto-discover all macros from the repository.
  * Excludes draft macros (status: draft).
  */
-function discoverMacros(): SuiteTestConfig[] {
+function discoverMacros(): MacroTestConfig[] {
   const repo = createMacroRepository();
   const index = repo.getIndex();
 
-  const configs: SuiteTestConfig[] = [];
+  const configs: MacroTestConfig[] = [];
 
   for (const [groupId, group] of Object.entries(index.groups)) {
     for (const macroEntry of group.macros) {
@@ -43,7 +43,7 @@ function discoverMacros(): SuiteTestConfig[] {
 
       configs.push({
         group: groupId,
-        suite: macroEntry.id,
+        macroId: macroEntry.id,
         shouldPass: true,
         timeout: 15000,
       });
@@ -54,9 +54,9 @@ function discoverMacros(): SuiteTestConfig[] {
 }
 
 /**
- * Navigate to macro view, select a suite, and start playback session.
+ * Navigate to macro view, select a macro, and start playback session.
  */
-async function selectAndRunMacro(page: Page, groupName: string, suiteName: string) {
+async function selectAndRunMacro(page: Page, groupName: string, macroId: string) {
   // Go to macro view
   await page.click('[data-testid="macro-view-button"]');
   await page.waitForTimeout(500);
@@ -65,23 +65,23 @@ async function selectAndRunMacro(page: Page, groupName: string, suiteName: strin
   const tree = page.locator('[data-testid="macro-tree"]');
   await expect(tree).toBeVisible({ timeout: 5000 });
 
-  // Check if suite is already visible (group already expanded from previous test)
-  const suiteNode = page.locator(`[data-testid="macro-tree-${groupName}/${suiteName}"]`);
-  const suiteAlreadyVisible = await suiteNode.isVisible().catch(() => false);
+  // Check if macro is already visible (group already expanded from previous test)
+  const macroNode = page.locator(`[data-testid="macro-tree-${groupName}/${macroId}"]`);
+  const macroAlreadyVisible = await macroNode.isVisible().catch(() => false);
 
-  if (!suiteAlreadyVisible) {
+  if (!macroAlreadyVisible) {
     // Expand group (e.g., "actions")
     const groupNode = page.locator(`[data-testid="macro-tree-${groupName}"]`);
     await expect(groupNode).toBeVisible({ timeout: 5000 });
     await groupNode.click();
     await page.waitForTimeout(300);
 
-    // Wait for suite to be visible
-    await expect(suiteNode).toBeVisible({ timeout: 5000 });
+    // Wait for macro to be visible
+    await expect(macroNode).toBeVisible({ timeout: 5000 });
   }
 
-  // Select suite (this loads it into the view)
-  await suiteNode.click();
+  // Select macro (this loads it into the view)
+  await macroNode.click();
   await page.waitForTimeout(1000);
 
   // Dismiss any existing completed session from previous test
@@ -96,8 +96,8 @@ async function selectAndRunMacro(page: Page, groupName: string, suiteName: strin
   try {
     await expect(runButton).toBeVisible({ timeout: 10000 });
   } catch {
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/run-button-not-found-${suiteName}.png` });
-    throw new Error(`Run button not found for suite ${groupName}/${suiteName}. Check screenshot.`);
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/run-button-not-found-${macroId}.png` });
+    throw new Error(`Run button not found for macro ${groupName}/${macroId}. Check screenshot.`);
   }
   await runButton.click();
   await page.waitForTimeout(300);
@@ -130,7 +130,7 @@ async function didPass(page: Page): Promise<boolean> {
  * Reset view state for next test.
  */
 async function resetForNextTest(page: Page) {
-  // Dismiss any active debug session
+  // Dismiss any active playback session
   const dismissButton = page.locator('button:has-text("Dismiss")');
   if ((await dismissButton.count()) > 0 && (await dismissButton.isVisible())) {
     await dismissButton.click();
@@ -145,9 +145,9 @@ async function resetForNextTest(page: Page) {
   }
 }
 
-test.describe('Macro Playback @suites', () => {
+test.describe('Macro Playback @macros', () => {
   let context: AppContext;
-  let macrosToTest: SuiteTestConfig[];
+  let macrosToTest: MacroTestConfig[];
 
   test.beforeAll(async () => {
     context = await launchApp();
@@ -181,10 +181,10 @@ test.describe('Macro Playback @suites', () => {
     const results: Array<{ name: string; passed: boolean; error?: string }> = [];
 
     for (const config of macrosToTest) {
-      const name = `${config.group}/${config.suite}`;
+      const name = `${config.group}/${config.macroId}`;
 
       try {
-        await selectAndRunMacro(page, config.group, config.suite);
+        await selectAndRunMacro(page, config.group, config.macroId);
         await waitForCompletion(page, config.timeout ?? 15000);
 
         const passed = await didPass(page);
@@ -193,7 +193,7 @@ test.describe('Macro Playback @suites', () => {
         if (!passed) {
           // Screenshot failure for debugging
           await page.screenshot({
-            path: `${SCREENSHOT_DIR}/failed-${config.group}-${config.suite}.png`
+            path: `${SCREENSHOT_DIR}/failed-${config.group}-${config.macroId}.png`
           });
         }
 

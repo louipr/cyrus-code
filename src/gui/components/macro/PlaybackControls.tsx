@@ -1,9 +1,9 @@
 /**
  * PlaybackControls Component
  *
- * Playback controls for test suite execution.
+ * Playback controls for macro execution.
  * Shows contextual buttons based on session state:
- * - No session: Run button (if suite selected)
+ * - No session: Run button (if macro selected)
  * - Running: Pause, Step, Stop
  * - Paused: Continue, Step, Stop
  * - Completed: Dismiss, Pass/Fail indicator

@@ -44,7 +44,7 @@ export type PlaybackState =
   | 'completed'; // All tasks/steps finished
 
 /**
- * Current position in the test suite playback.
+ * Current position in the macro playback.
  */
 export interface PlaybackPosition {
   /** Index of current step (0-based) */
@@ -114,10 +114,10 @@ export type PlaybackEvent =
  * Configuration for creating a playback session.
  */
 export interface PlaybackConfig {
-  /** Group/category for the test suite (directory name, e.g., "drawio", "smoke") */
+  /** Group/category for the macro (directory name, e.g., "drawio", "smoke") */
   groupId: string;
 
-  /** Test suite ID (filename without extension) */
+  /** Macro ID (filename without extension) */
   suiteId: string;
 
   /** Whether to pause before first step */

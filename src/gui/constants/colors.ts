@@ -30,7 +30,7 @@ export const EDGE_COLORS: Record<string, string> = {
 };
 
 /**
- * Colors for test suite status.
+ * Colors for macro status.
  */
 export const STATUS_COLORS: Record<string, string> = {
   draft: '#dcdcaa',

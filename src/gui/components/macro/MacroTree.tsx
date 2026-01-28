@@ -1,7 +1,7 @@
 /**
  * MacroTree Component
  *
- * Hierarchical tree navigator for test suites: apps → test suites → steps
+ * Hierarchical tree navigator for macros: apps → macros → steps
  */
 
 import { useState } from 'react';
@@ -9,21 +9,21 @@ import type { MacroIndex, MacroEntry } from '../../../repositories/macro-reposit
 import type { Macro, MacroStep, StepResult } from '../../../macro';
 
 interface MacroTreeProps {
-  /** The test suite index */
+  /** The macro index */
   index: MacroIndex;
-  /** Currently loaded test suite (for showing steps) */
+  /** Currently loaded macro (for showing steps) */
   macro: Macro | null;
   /** Selected path: "appId" | "appId/macroId" | "appId/macroId/stepIndex" */
   selectedPath: string | null;
   /** Expanded node IDs */
   expandedNodes: Set<string>;
-  /** Step results from debug session (key: stepIndex as string) */
+  /** Step results from playback session (key: stepIndex as string) */
   stepResults?: Map<string, StepResult>;
   /** Called when an item is selected */
   onSelect: (path: string, type: 'app' | 'macro' | 'step') => void;
   /** Called when a node is toggled */
   onToggle: (nodeId: string) => void;
-  /** Called when run button is clicked on a test suite */
+  /** Called when run button is clicked on a macro */
   onRunSuite?: (appId: string, macroId: string) => void;
   /** Called when run all button is clicked on a group */
   onRunGroup?: (appId: string) => void;
@@ -221,7 +221,7 @@ function TreeNode({
 }
 
 /**
- * MacroTree - Tree navigator for test suites
+ * MacroTree - Tree navigator for macros
  */
 export function MacroTree({
   index,
@@ -239,7 +239,7 @@ export function MacroTree({
   if (apps.length === 0) {
     return (
       <div style={styles.container}>
-        <div style={styles.emptyMessage}>No test suites found</div>
+        <div style={styles.emptyMessage}>No macros found</div>
       </div>
     );
   }
@@ -282,7 +282,7 @@ export function MacroTree({
                   selectedMacroId === entry.id &&
                   !selectedStepIndex;
 
-                // Show steps if this test suite is loaded and expanded
+                // Show steps if this macro is loaded and expanded
                 const showSteps =
                   isMacroExpanded &&
                   selectedMacroId === entry.id &&

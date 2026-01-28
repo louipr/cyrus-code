@@ -216,7 +216,7 @@ export class YamlMacroRepository implements MacroRepository {
   }
 
   /**
-   * Get a specific macro by app and test suite ID.
+   * Get a specific macro by app and macro ID.
    */
   getMacro(appId: string, macroId: string): Macro | null {
     const cacheKey = `${appId}/${macroId}`;
