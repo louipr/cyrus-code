@@ -65,7 +65,14 @@ function AppContent(): React.ReactElement {
   // Selected macro (view-local state, cleared when leaving Macros view)
   const [selectedMacro, setSelectedMacro] = useState<SelectedMacro | null>(null);
 
-  // Switch to Macros view when playback session completes
+  // Switch to Macros view when playback session starts (so user can see execution progress)
+  useEffect(() => {
+    if (macroSession.sessionId) {
+      setViewMode('macros');
+    }
+  }, [macroSession.sessionId]);
+
+  // Switch to Macros view when playback session completes (redundant with above, but explicit)
   useEffect(() => {
     if (macroSession.playbackState === 'completed') {
       setViewMode('macros');
