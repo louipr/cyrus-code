@@ -19,10 +19,10 @@ import { HelpDialog } from './components/help/HelpDialog';
 import { AboutDialog } from './components/AboutDialog';
 import { DrawioEditor, type DrawioEditorRef } from './components/DrawioEditor';
 import { Z_INDEX_MODAL } from './constants/colors';
-import { MacroView } from './components/macro';
+import { MacroView, ExecutionPanel } from './components/macro';
 import { PlaybackControls } from './components/macro/PlaybackControls';
 import { MacroSessionProvider, useMacroSession } from './stores/MacroSessionContext';
-import { PanelLayout, Panel } from './components/layout';
+import { PanelLayout, Panel, ResizeHandle, Card } from './components/layout';
 import type { ComponentSymbolDTO } from '../api/types';
 import { apiClient } from './api-client';
 import type { Macro } from '../macro';
@@ -467,6 +467,37 @@ function AppContent(): React.ReactElement {
             </main>
           )}
         </Panel>
+
+        {/* Execution Panel - appears on right during active playback session */}
+        {macroSession.sessionId && (
+          <>
+            <ResizeHandle
+              orientation="horizontal"
+              targetId="execution-panel"
+              constraints={{ default: 300, min: 250, max: 500 }}
+            />
+
+            <Panel
+              id="execution-panel"
+              position="right"
+              size={{ default: 300, min: 250, max: 500 }}
+              title="Execution"
+              testId="execution-panel-container"
+              collapsible={false}
+            >
+              <Card
+                id="execution-card"
+                title="Macro Execution"
+                fill
+                testId="execution-card"
+                showHeader={false}
+                collapsible={false}
+              >
+                <ExecutionPanel session={macroSession} />
+              </Card>
+            </Panel>
+          </>
+        )}
 
       </PanelLayout>
 

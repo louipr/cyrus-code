@@ -5,3 +5,4 @@
  * Internal components (MacroTree, MacroDetail, etc.) are imported directly within the module.
  */
 export { MacroView } from './MacroView';
+export { ExecutionPanel } from './ExecutionPanel';
