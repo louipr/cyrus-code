@@ -18,7 +18,7 @@ import { DEFAULT_TIMEOUT_MS } from '../macro/constants.js';
 // ============================================================================
 
 /** Relative path from project root to macros directory */
-const MACROS_DIR = 'tests/e2e/test-suites';
+const MACROS_DIR = 'tests/e2e/macros';
 
 /** File extension for macro YAML files */
 const MACRO_FILE_EXTENSION = '.macro.yaml';
